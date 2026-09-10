@@ -1,0 +1,51 @@
+version: '3.8'
+
+services:
+  postgis:
+    image: postgis/postgis:16-3.4
+    container_name: roadsaarthi_postgis
+    environment:
+      POSTGRES_USER: roadsaarthi
+      POSTGRES_PASSWORD: roadsaarthi_secure_password
+      POSTGRES_DB: roadsaarthi_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgis_data:/var/lib/postgresql/data
+      - ./backend/app/storage/postgis_schema.sql:/docker-entrypoint-initdb.d/init.sql
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U roadsaarthi -d roadsaarthi_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: roadsaarthi_backend
+    environment:
+      DATABASE_URL: postgresql://roadsaarthi:roadsaarthi_secure_password@postgis:5432/roadsaarthi_db
+      USE_POSTGIS: "true"
+      PORT: 8000
+    ports:
+      - "8000:8000"
+    depends_on:
+      postgis:
+        condition: service_healthy
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: roadsaarthi_frontend
+    ports:
+      - "5173:80"
+    depends_on:
+      - backend
+    restart: unless-stopped
+
+volumes:
+  postgis_data:

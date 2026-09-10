@@ -1,0 +1,334 @@
+import React, { useState } from 'react';
+import {
+  Truck, Radio, Gauge, Camera, Cpu, Image as ImageIcon, SlidersVertical, Activity, CheckCircle2, Wifi
+} from 'lucide-react';
+import { FleetNode } from '../types';
+import { LiveCameraFeed } from '../components/fleet/LiveCameraFeed';
+import { VoiceRadioDispatcher } from '../components/fleet/VoiceRadioDispatcher';
+import { SensorDiagnosticsPanel } from '../components/fleet/SensorDiagnosticsPanel';
+import { Card, Badge } from '../components/ui';
+
+interface FleetNodesProps {
+  fleet: FleetNode[];
+}
+
+export const FleetNodes: React.FC<FleetNodesProps> = ({ fleet }) => {
+  const [selectedBusId, setSelectedBusId] = useState<string>(fleet[0]?.id || 'BUS-TN01-1042');
+  const [viewMode, setViewMode] = useState<'camera' | 'sensors' | 'radio'>('camera');
+  const [capturedSnapshots, setCapturedSnapshots] = useState<Array<{ id: string; url: string; time: string; busId: string }>>([]);
+
+  const activeBus = fleet.find((b) => b.id === selectedBusId) || fleet[0];
+
+  const handleSnapshotCapture = (dataUrl: string) => {
+    const newSnap = {
+      id: `snap-${Date.now()}`,
+      url: dataUrl,
+      time: new Date().toLocaleTimeString(),
+      busId: activeBus.id,
+    };
+    setCapturedSnapshots((prev) => [newSnap, ...prev.slice(0, 5)]);
+  };
+
+  const onlineCount = fleet.filter((b) => b.is_online).length;
+
+  return (
+    <div className="flex-1 flex flex-col min-h-0 overflow-y-auto custom-scrollbar p-4 md:p-6 space-y-4 max-w-[1750px] mx-auto w-full select-none">
+      
+      {/* 1. Sleek Fleet Control & Selection Header */}
+      <Card className="p-3.5 shadow-xs">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-xl bg-blue-50 dark:bg-blue-950/60 border border-blue-200 dark:border-blue-800 flex items-center justify-center shrink-0">
+              <Truck className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-bold text-slate-900 dark:text-slate-100 tracking-tight">
+                  MTC Fleet Live Telemetry &amp; Vision
+                </span>
+                <Badge variant="medium" size="sm" className="font-mono font-bold">
+                  {activeBus.id}
+                </Badge>
+              </div>
+              <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                Assigned Route: <b className="text-slate-700 dark:text-slate-300">{activeBus.route_name}</b> &bull; AIS-140 GPS &amp; IMU Telemetry
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2 self-start sm:self-auto">
+            <select
+              value={selectedBusId}
+              onChange={(e) => setSelectedBusId(e.target.value)}
+              className="text-xs font-mono font-semibold px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200 shadow-xs outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              {fleet.map((bus) => (
+                <option key={bus.id} value={bus.id}>
+                  {bus.id} — {bus.speed_kmh} km/h ({bus.route_name.split('·')[0].trim()})
+                </option>
+              ))}
+            </select>
+
+            <Badge variant="success" size="md" dot className="font-semibold">
+              {onlineCount}/{fleet.length} Online
+            </Badge>
+          </div>
+        </div>
+      </Card>
+
+      {/* 2. Sleek 4-Metric Operational Stat Row */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        <Card className="p-3.5 flex flex-col justify-between shadow-xs">
+          <div className="flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400">
+            <span className="uppercase tracking-wider font-semibold">Live Fleet Nodes</span>
+            <Truck className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+          </div>
+          <div className="my-1 flex items-baseline gap-2">
+            <span className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white tabular-nums">{onlineCount}</span>
+            <span className="text-[10px] text-slate-500 truncate ml-auto">Active on Corridors</span>
+          </div>
+          <div className="w-full bg-slate-100 dark:bg-slate-800 rounded-full h-1 overflow-hidden">
+            <div className="h-full bg-emerald-500 rounded-full" style={{ width: `${(onlineCount / fleet.length) * 100}%` }} />
+          </div>
+        </Card>
+
+        <Card className="p-3.5 flex flex-col justify-between shadow-xs">
+          <div className="flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400">
+            <span className="uppercase tracking-wider font-semibold">Active Bus Speed</span>
+            <Gauge className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
+          </div>
+          <div className="my-1 flex items-baseline gap-2">
+            <span className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white tabular-nums">{activeBus.speed_kmh} km/h</span>
+            <span className="text-[10px] text-slate-500 truncate ml-auto">AIS-140 Speedometer</span>
+          </div>
+          <div className="w-full bg-slate-100 dark:bg-slate-800 rounded-full h-1 overflow-hidden">
+            <div className="h-full bg-blue-600 rounded-full" style={{ width: `${Math.min(100, (activeBus.speed_kmh / 80) * 100)}%` }} />
+          </div>
+        </Card>
+
+        <Card className="p-3.5 flex flex-col justify-between shadow-xs">
+          <div className="flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400">
+            <span className="uppercase tracking-wider font-semibold">IMU Shock Spike</span>
+            <Activity className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
+          </div>
+          <div className="my-1 flex items-baseline gap-2">
+            <span className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white tabular-nums">{activeBus.imu_jerk_gz}g</span>
+            <span className="text-[10px] text-slate-500 truncate ml-auto">Vertical Acceleration</span>
+          </div>
+          <div className="w-full bg-slate-100 dark:bg-slate-800 rounded-full h-1 overflow-hidden">
+            <div className="h-full bg-amber-500 rounded-full" style={{ width: `${Math.min(100, (activeBus.imu_jerk_gz / 2.5) * 100)}%` }} />
+          </div>
+        </Card>
+
+        <Card className="p-3.5 flex flex-col justify-between shadow-xs">
+          <div className="flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400">
+            <span className="uppercase tracking-wider font-semibold">Detection Ingests</span>
+            <Wifi className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" />
+          </div>
+          <div className="my-1 flex items-baseline gap-2">
+            <span className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white tabular-nums">{activeBus.raw_ingests_count || 142}</span>
+            <span className="text-[10px] text-slate-500 truncate ml-auto">Edge Telemetry Frames</span>
+          </div>
+          <div className="w-full bg-slate-100 dark:bg-slate-800 rounded-full h-1 overflow-hidden">
+            <div className="h-full bg-indigo-600 rounded-full" style={{ width: '85%' }} />
+          </div>
+        </Card>
+      </div>
+
+      {/* 3. Operational Mode Tabs */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-200 dark:border-slate-800 pb-2">
+        <div className="flex items-center gap-1 p-1 bg-slate-100 dark:bg-slate-800 rounded-xl w-fit">
+          <button
+            onClick={() => setViewMode('camera')}
+            className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+              viewMode === 'camera'
+                ? 'bg-white dark:bg-slate-900 text-blue-600 dark:text-blue-400 shadow-xs'
+                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
+            }`}
+          >
+            <Camera className="w-3.5 h-3.5 text-rose-500" />
+            <span>Live Video &amp; Telemetry Stream</span>
+          </button>
+
+          <button
+            onClick={() => setViewMode('sensors')}
+            className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+              viewMode === 'sensors'
+                ? 'bg-white dark:bg-slate-900 text-blue-600 dark:text-blue-400 shadow-xs'
+                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
+            }`}
+          >
+            <Cpu className="w-3.5 h-3.5 text-blue-600" />
+            <span>Telemetry Diagnostics</span>
+          </button>
+
+          <button
+            onClick={() => setViewMode('radio')}
+            className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+              viewMode === 'radio'
+                ? 'bg-white dark:bg-slate-900 text-blue-600 dark:text-blue-400 shadow-xs'
+                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
+            }`}
+          >
+            <Radio className="w-3.5 h-3.5 text-amber-500" />
+            <span>AI Voice Radio Dispatch</span>
+          </button>
+        </div>
+
+        <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400 font-mono">
+          <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+          <span>5Hz Stream: <b>{activeBus.id}</b></span>
+        </div>
+      </div>
+
+      {/* 4. Main View Display Area */}
+      {viewMode === 'camera' && (
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
+          <div className="lg:col-span-8 flex flex-col gap-3">
+            <LiveCameraFeed
+              bus={activeBus}
+              onSnapshot={handleSnapshotCapture}
+            />
+
+            {capturedSnapshots.length > 0 && (
+              <Card className="p-3 bg-slate-900 text-slate-100 border-slate-800">
+                <div className="flex items-center justify-between mb-2 text-xs">
+                  <div className="flex items-center gap-1.5 font-bold">
+                    <ImageIcon className="w-3.5 h-3.5 text-emerald-400" />
+                    <span>Captured Forensic Evidence ({capturedSnapshots.length})</span>
+                  </div>
+                  <span className="text-[10px] text-slate-400">Auto-tagged with GPS &amp; Timestamp</span>
+                </div>
+                <div className="flex gap-2 overflow-x-auto custom-scrollbar pb-1">
+                  {capturedSnapshots.map((snap) => (
+                    <div key={snap.id} className="relative group shrink-0 w-28 rounded-lg overflow-hidden border border-slate-700 bg-slate-950">
+                      <img src={snap.url} alt="Snapshot evidence" className="w-full h-16 object-cover" />
+                      <div className="p-1 text-[9px] font-mono text-slate-400 truncate bg-slate-900">
+                        {snap.time}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </Card>
+            )}
+          </div>
+
+          <div className="lg:col-span-4 flex flex-col gap-3">
+            <Card className="p-4 flex flex-col justify-between shadow-xs">
+              <div>
+                <div className="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-slate-800 text-xs">
+                  <div className="flex items-center gap-1.5 font-bold text-slate-900 dark:text-slate-100">
+                    <SlidersVertical className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
+                    <span>Node Telemetry Metrics</span>
+                  </div>
+                  <Badge variant="medium" size="sm" className="font-bold font-mono">
+                    {activeBus.id}
+                  </Badge>
+                </div>
+
+                <div className="space-y-3 mt-3 text-xs">
+                  <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 flex items-center justify-between">
+                    <span className="text-slate-500 text-[11px]">Assigned Route</span>
+                    <span className="font-semibold text-slate-800 dark:text-slate-200 text-right truncate max-w-[180px]">
+                      {activeBus.route_name}
+                    </span>
+                  </div>
+
+                  <div>
+                    <div className="flex justify-between mb-1 text-[11px]">
+                      <span className="text-slate-600 dark:text-slate-400">Vertical IMU Jerk (G_z):</span>
+                      <span className="text-emerald-600 dark:text-emerald-400 font-bold font-mono">{activeBus.imu_jerk_gz}g</span>
+                    </div>
+                    <div className="w-full bg-slate-100 dark:bg-slate-800 rounded-full h-2">
+                      <div className="bg-emerald-500 h-2 rounded-full" style={{ width: `${(activeBus.imu_jerk_gz / 2.0) * 100}%` }} />
+                    </div>
+                  </div>
+
+                  <div>
+                    <div className="flex justify-between mb-1 text-[11px]">
+                      <span className="text-slate-600 dark:text-slate-400">Road Speed:</span>
+                      <span className="text-amber-600 dark:text-amber-400 font-bold font-mono">{activeBus.speed_kmh} km/h</span>
+                    </div>
+                    <div className="w-full bg-slate-100 dark:bg-slate-800 rounded-full h-2">
+                      <div className="bg-amber-500 h-2 rounded-full" style={{ width: `${(activeBus.speed_kmh / 80) * 100}%` }} />
+                    </div>
+                  </div>
+
+                  <div>
+                    <div className="flex justify-between mb-1 text-[11px]">
+                      <span className="text-slate-600 dark:text-slate-400">Edge Stream Rate:</span>
+                      <span className="text-blue-600 dark:text-blue-400 font-bold font-mono">{activeBus.edge_fps || 28.4} FPS</span>
+                    </div>
+                    <div className="w-full bg-slate-100 dark:bg-slate-800 rounded-full h-2">
+                      <div className="bg-blue-600 h-2 rounded-full" style={{ width: '88%' }} />
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="mt-4 pt-3 border-t border-slate-100 dark:border-slate-800 text-[11px] text-slate-500 flex items-center justify-between">
+                <span>AIS-140 GPS: <b className="text-slate-700 dark:text-slate-300 font-mono">13.0827° N, 80.2707° E</b></span>
+                <span className="text-emerald-600 dark:text-emerald-400 font-semibold">● Active</span>
+              </div>
+            </Card>
+          </div>
+        </div>
+      )}
+
+      {viewMode === 'sensors' && (
+        <SensorDiagnosticsPanel bus={activeBus} />
+      )}
+
+      {viewMode === 'radio' && (
+        <VoiceRadioDispatcher />
+      )}
+
+      {/* 5. Active Fleet Unit Roster Grid */}
+      <div className="flex flex-col gap-3 pt-2">
+        <div className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider flex items-center gap-2">
+          <Truck className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+          <span>Active Transit Bus Fleet Roster ({fleet.length})</span>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3.5">
+          {fleet.map((bus) => (
+            <Card
+              key={bus.id}
+              onClick={() => setSelectedBusId(bus.id)}
+              className={`p-3.5 flex flex-col justify-between gap-2.5 cursor-pointer transition ${
+                selectedBusId === bus.id
+                  ? 'border-blue-500 bg-blue-50/40 dark:bg-slate-800/80 ring-1 ring-blue-500/20 shadow-xs'
+                  : 'hover:border-slate-300 dark:hover:border-slate-700'
+              }`}
+            >
+              <div className="flex items-start justify-between">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="font-bold text-slate-900 dark:text-slate-100 text-sm font-mono">{bus.id}</span>
+                    <Badge variant="success" size="sm" dot>
+                      ONLINE
+                    </Badge>
+                  </div>
+                  <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">{bus.vehicle_type}</p>
+                </div>
+                <div className="p-1.5 rounded-lg bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-blue-600 dark:text-blue-400">
+                  <Radio className="w-3.5 h-3.5" />
+                </div>
+              </div>
+
+              <div className="bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 p-2 rounded-lg text-xs">
+                <span className="text-[10px] text-slate-400 uppercase font-semibold block">Route</span>
+                <span className="text-slate-800 dark:text-slate-200 font-medium text-[11px] truncate block">{bus.route_name}</span>
+              </div>
+
+              <div className="pt-2 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-[11px] font-mono">
+                <span className="text-slate-600 dark:text-slate-400">Speed: <b className="text-slate-900 dark:text-slate-100">{bus.speed_kmh} km/h</b></span>
+                <span className="text-blue-600 dark:text-blue-400 font-semibold">IMU: {bus.imu_jerk_gz}g</span>
+              </div>
+            </Card>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+};

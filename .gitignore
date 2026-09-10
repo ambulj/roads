@@ -1,0 +1,67 @@
+﻿# ============================================================
+# RoadSaarthi — .gitignore
+# ============================================================
+
+# ── Python / Backend ─────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*.pyc
+*.pyo
+*.pyd
+*.egg
+*.egg-info/
+dist/
+build/
+*.whl
+.eggs/
+
+# Python virtual environments
+.venv/
+venv/
+env/
+ENV/
+.Python
+
+# Type checking & linting caches
+.mypy_cache/
+.ruff_cache/
+.pytest_cache/
+
+# ── Node / Frontend ──────────────────────────────────────────
+node_modules/
+frontend/dist/
+frontend/.vite/
+*.tsbuildinfo
+
+# ── Environment & Secrets ────────────────────────────────────
+# IMPORTANT: .env files contain credentials — never commit them.
+# Use .env.example as the committed template.
+.env
+.env.local
+.env.*.local
+
+# Allow example files (no secrets)
+!.env.example
+!.env.*.example
+
+# ── Database files ────────────────────────────────────────────
+# The SQLite database is created automatically on first run.
+# Commit the file only if you want to bundle seed data.
+backend/roadsaarthi.db
+
+# ── OS & Editor junk ─────────────────────────────────────────
+.DS_Store
+Thumbs.db
+Desktop.ini
+.idea/
+.vscode/settings.json
+*.swp
+*.swo
+*~
+
+# ── Docker ───────────────────────────────────────────────────
+.dockerignore
+
+# ── Logs ─────────────────────────────────────────────────────
+*.log
+logs/

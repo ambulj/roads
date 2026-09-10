@@ -1,0 +1,226 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* =========================================================================
+   Base Layer — CSS Custom Properties & Typography
+   ========================================================================= */
+@layer base {
+  :root {
+    --font-sans: Georgia, "Times New Roman", serif;
+    --font-mono: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+
+    /* Civic Engineering Light Tokens — Soft Atmospheric Palette (No Stark White) */
+    --bg-canvas:    #f0efea;
+    --bg-surface:   #fcfbf8;
+    --bg-elevated:  #f6f4ef;
+    --text-primary: #20232a;
+    --text-muted:   #6b6e77;
+    --border-base:  #d9d5ce;
+    --border-subtle:#e7e3db;
+    --accent:       #3949ab;
+    --accent-hover: #27368c;
+  }
+
+  html.dark {
+    /* Aerospace Obsidian Command Tokens */
+    --bg-canvas:    #111319;
+    --bg-surface:   #181b22;
+    --bg-elevated:  #20232c;
+    --text-primary: #f3f0e9;
+    --text-muted:   #a6a8b0;
+    --border-base:  #30323b;
+    --border-subtle:#24272f;
+    --accent:       #aeb8ff;
+    --accent-hover: #c5ccff;
+  }
+
+
+
+  html {
+    font-size: 16px;
+    -webkit-text-size-adjust: 100%;
+    tab-size: 4;
+  }
+
+  body {
+    @apply antialiased font-sans overflow-x-hidden transition-colors duration-200;
+    background-color: var(--bg-canvas);
+    color: var(--text-primary);
+    font-feature-settings: "kern" 1, "liga" 1, "calt" 1, "tnum" 1;
+    letter-spacing: -0.011em;
+  }
+
+  /* Smooth focus outlines for accessibility */
+  :focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 1px;
+    border-radius: 4px;
+  }
+
+  /* Text selection */
+  ::selection {
+    background-color: rgba(37, 99, 235, 0.2);
+    color: inherit;
+  }
+  html.dark ::selection {
+    background-color: rgba(59, 130, 246, 0.35);
+  }
+
+  /* Better number rendering */
+  .tabular-nums { font-variant-numeric: tabular-nums; }
+
+  /* Precision Engineering Borders & Surfaces */
+  .hud-border {
+    border: 1px solid var(--border-base);
+  }
+  
+  .hud-panel {
+    background-color: var(--bg-surface);
+    border: 1px solid var(--border-base);
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+  }
+  html.dark .hud-panel {
+    box-shadow: 0 4px 20px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.05);
+  }
+
+  /* Monospaced Technical Telemetry */
+  .telemetry-mono {
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.03em;
+  }
+
+  button { cursor: pointer; font-family: inherit; }
+  button:disabled { cursor: not-allowed; }
+}
+
+/* =========================================================================
+   Custom Scrollbars — Thin, OS-native feel
+   ========================================================================= */
+.custom-scrollbar { scrollbar-width: thin; scrollbar-color: #CBD5E1 transparent; }
+.custom-scrollbar::-webkit-scrollbar { width: 5px; height: 5px; }
+.custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+.custom-scrollbar::-webkit-scrollbar-thumb { background: #CBD5E1; border-radius: 9999px; }
+.custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #94A3B8; }
+
+html.dark .custom-scrollbar { scrollbar-color: #374151 transparent; }
+html.dark .custom-scrollbar::-webkit-scrollbar-thumb { background: #374151; }
+html.dark .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #4B5563; }
+
+/* =========================================================================
+   Animations
+   ========================================================================= */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes scaleIn {
+  from { opacity: 0; transform: scale(0.95); }
+  to   { opacity: 1; transform: scale(1); }
+}
+
+.animate-fadeIn  { animation: fadeIn  0.18s ease-out both; }
+.animate-slideUp { animation: slideUp 0.22s ease-out both; }
+.animate-scaleIn { animation: scaleIn 0.15s ease-out both; }
+
+/* =========================================================================
+   MapLibre GL Controls & Popups
+   ========================================================================= */
+.maplibregl-ctrl-group {
+  border-radius: 12px !important;
+  overflow: hidden !important;
+  border: 1px solid var(--border-base) !important;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08) !important;
+  background: var(--bg-surface) !important;
+}
+html.dark .maplibregl-ctrl-group {
+  background: #111827 !important;
+  border-color: #1F2937 !important;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.4) !important;
+}
+html.dark .maplibregl-ctrl-group button {
+  background-color: #111827 !important;
+  border-bottom: 1px solid #1F2937 !important;
+  color: #94A3B8 !important;
+  filter: invert(0.7);
+}
+html.dark .maplibregl-ctrl-group button:hover {
+  background-color: #1F2937 !important;
+}
+
+.maplibregl-popup-content {
+  background: #FFFFFF !important;
+  border: 1px solid #E2E8F0 !important;
+  color: #0F172A !important;
+  border-radius: 14px !important;
+  padding: 14px !important;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.1) !important;
+  font-family: var(--font-sans) !important;
+  font-size: 13px !important;
+}
+html.dark .maplibregl-popup-content {
+  background: rgba(17, 24, 39, 0.97) !important;
+  backdrop-filter: blur(16px) !important;
+  -webkit-backdrop-filter: blur(16px) !important;
+  border: 1px solid rgba(255,255,255,0.1) !important;
+  color: #F1F5F9 !important;
+  box-shadow: 0 12px 32px rgba(0,0,0,0.6) !important;
+}
+.maplibregl-popup-anchor-bottom .maplibregl-popup-tip { border-top-color: #FFFFFF !important; }
+html.dark .maplibregl-popup-anchor-bottom .maplibregl-popup-tip { border-top-color: rgba(17,24,39,0.97) !important; }
+.maplibregl-popup-close-button {
+  color: #94A3B8 !important;
+  padding: 6px 10px !important;
+  font-size: 18px !important;
+  line-height: 1 !important;
+  border-radius: 8px !important;
+  transition: background 0.15s, color 0.15s !important;
+}
+.maplibregl-popup-close-button:hover {
+  background: rgba(0,0,0,0.06) !important;
+  color: #475569 !important;
+}
+
+/* =========================================================================
+   ApexCharts dark-mode override
+   ========================================================================= */
+html.dark .apexcharts-tooltip { 
+  background: #1A2235 !important; 
+  border: 1px solid #1F2937 !important; 
+  color: #F1F5F9 !important;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.4) !important;
+}
+html.dark .apexcharts-tooltip-title { 
+  background: #111827 !important; 
+  border-bottom: 1px solid #1F2937 !important; 
+  color: #94A3B8 !important; 
+}
+html.dark .apexcharts-xaxistooltip { 
+  background: #1A2235 !important; 
+  border: 1px solid #1F2937 !important; 
+  color: #F1F5F9 !important;
+}
+
+/* =========================================================================
+   Animation Keyframes
+   ========================================================================= */
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.animate-slideUp {
+  animation: slideUp 0.2s ease-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+.animate-fadeIn {
+  animation: fadeIn 0.15s ease-out;
+}
