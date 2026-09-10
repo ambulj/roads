@@ -16,7 +16,6 @@ import { BriefModal } from "./components/modals/BriefModal";
 import { CommandPalette } from "./components/modals/CommandPalette";
 import { AuthModal } from "./components/modals/AuthModal";
 import { InterventionSimulatorModal } from "./components/modals/InterventionSimulatorModal";
-import { ScenarioRunnerModal } from "./components/modals/ScenarioRunnerModal";
 import { StreamModelConfigModal } from "./components/modals/StreamModelConfigModal";
 import { DocumentExportModal } from "./components/modals/DocumentExportModal";
 import { KeyboardShortcutsModal } from "./components/modals/KeyboardShortcutsModal";
@@ -63,12 +62,10 @@ export const App: React.FC = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [isInterventionModalOpen, setIsInterventionModalOpen] = useState(false);
-  const [isScenarioModalOpen, setIsScenarioModalOpen] = useState(false);
   const [isStreamModelModalOpen, setIsStreamModelModalOpen] = useState(false);
   const [isDocumentModalOpen, setIsDocumentModalOpen] = useState(false);
   const [isShortcutsModalOpen, setIsShortcutsModalOpen] = useState(false);
   const [isSensorFusionModalOpen, setIsSensorFusionModalOpen] = useState(false);
-  const [isDemoMode, setIsDemoMode] = useState(false);
   const [selectedIncident, setSelectedIncident] = useState<TrafficIncident | null>(null);
   const { toggleTheme } = useTheme();
   const { info: showInfoToast, warning: showWarningToast } = useToast();
@@ -128,7 +125,7 @@ export const App: React.FC = () => {
         if (isBriefModalOpen) { setIsBriefModalOpen(false); return; }
         if (isAuthModalOpen) { setIsAuthModalOpen(false); return; }
         if (isInterventionModalOpen) { setIsInterventionModalOpen(false); return; }
-        if (isScenarioModalOpen) { setIsScenarioModalOpen(false); setIsDemoMode(false); return; }
+        if (isSensorFusionModalOpen) { setIsSensorFusionModalOpen(false); return; }
         if (isMobileMenuOpen) { setIsMobileMenuOpen(false); return; }
         return;
       }
@@ -169,7 +166,7 @@ export const App: React.FC = () => {
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [isAuthenticated, handleNavigate, toggleTheme, isCommandPaletteOpen, isRPIModalOpen, isBriefModalOpen, isAuthModalOpen, isInterventionModalOpen, isScenarioModalOpen, isMobileMenuOpen]);
+  }, [isAuthenticated, handleNavigate, toggleTheme, isCommandPaletteOpen, isRPIModalOpen, isBriefModalOpen, isAuthModalOpen, isInterventionModalOpen, isSensorFusionModalOpen, isMobileMenuOpen]);
 
   // Deep Linking & URL Query Sync (e.g. #/command?bus=BUS-TN01-1042)
   useEffect(() => {
@@ -249,12 +246,10 @@ export const App: React.FC = () => {
         onTriggerDedup={handleTriggerDedup}
         onOpenAuthModal={() => setIsAuthModalOpen(true)}
         onOpenInterventionModal={() => setIsInterventionModalOpen(true)}
-        onOpenScenarioModal={() => { setIsScenarioModalOpen(true); setIsDemoMode(true); }}
         onOpenStreamModelModal={() => setIsStreamModelModalOpen(true)}
         onOpenDocumentModal={() => setIsDocumentModalOpen(true)}
         onOpenShortcutsModal={() => setIsShortcutsModalOpen(true)}
         onOpenSensorFusionModal={() => setIsSensorFusionModalOpen(true)}
-        isDemoMode={isDemoMode}
         incidents={incidents}
         onSelectIncident={handleSelectIncident}
       />
@@ -362,17 +357,6 @@ export const App: React.FC = () => {
       <InterventionSimulatorModal
         isOpen={isInterventionModalOpen}
         onClose={() => setIsInterventionModalOpen(false)}
-      />
-      <ScenarioRunnerModal
-        isOpen={isScenarioModalOpen}
-        onClose={() => { setIsScenarioModalOpen(false); setIsDemoMode(false); }}
-        onInjectEvent={(event) => {
-          setIncidents((prev) => [event as any, ...prev]);
-          audioAlerts.playEmergencyPing();
-          showInfoToast(`Live Alert: ${event.incident_type || 'Incident'}`, event.road_name || 'Chennai Arterial');
-          setSelectedIncident(event as any);
-          handleNavigate("command");
-        }}
       />
       <StreamModelConfigModal
         isOpen={isStreamModelModalOpen}

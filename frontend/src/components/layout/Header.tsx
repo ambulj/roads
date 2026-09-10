@@ -39,12 +39,10 @@ interface HeaderProps {
   onTriggerDedup?: () => void;
   onOpenAuthModal?: () => void;
   onOpenInterventionModal?: () => void;
-  onOpenScenarioModal?: () => void;
   onOpenStreamModelModal?: () => void;
   onOpenDocumentModal?: () => void;
   onOpenShortcutsModal?: () => void;
   onOpenSensorFusionModal?: () => void;
-  isDemoMode?: boolean;
   incidents?: TrafficIncident[];
   onSelectIncident?: (incident: TrafficIncident) => void;
 }
@@ -57,12 +55,10 @@ export const Header: React.FC<HeaderProps> = ({
   activeNodesCount,
   onOpenAuthModal,
   onOpenInterventionModal,
-  onOpenScenarioModal,
   onOpenStreamModelModal,
   onOpenDocumentModal,
   onOpenShortcutsModal,
   onOpenSensorFusionModal,
-  isDemoMode = false,
   incidents = [],
   onSelectIncident
 }) => {
@@ -156,21 +152,13 @@ export const Header: React.FC<HeaderProps> = ({
 
           {/* Live Node Telemetry Pulse Pill */}
           <button
-            onClick={onOpenScenarioModal}
-            title={
-              isDemoMode
-                ? "Demo Mode Active — Click to manage scenarios"
-                : "Live Telemetry Active — Click to run simulation drill"
-            }
-            className={`flex h-8 items-center gap-1.5 rounded-lg border px-2.5 font-mono text-[10.5px] font-bold tracking-wide transition ${
-              isDemoMode
-                ? "border-[#dcae3b] bg-[#fff6dc] text-[#8b5e00] dark:bg-[#332810] dark:text-[#f5c552]"
-                : "border-[#b7d9c3] bg-[#edf8f0] text-[#17623a] dark:border-[#235b43] dark:bg-[#10261c] dark:text-[#90d7aa]"
-            }`}
+            onClick={onOpenSensorFusionModal}
+            title={t("header.liveTelemetryTitle", "Live Fleet Telemetry Active — Click to view Zero-Hardware Sensor Fusion engine (<45ms)")}
+            className="flex h-8 items-center gap-1.5 rounded-lg border border-[#b7d9c3] bg-[#edf8f0] px-2.5 font-mono text-[10.5px] font-bold tracking-wide text-[#17623a] transition hover:border-[#86c59b] dark:border-[#235b43] dark:bg-[#10261c] dark:text-[#90d7aa]"
           >
-            {isDemoMode ? <Play className="h-3 w-3" /> : <Radio className="h-3 w-3 animate-pulse" />}
+            <Radio className="h-3 w-3 animate-pulse" />
             <span className="hidden sm:inline">
-              {isDemoMode ? "Demo Mode" : `${activeNodesCount || 24} Nodes`}
+              {`${activeNodesCount || 24} Nodes Live`}
             </span>
           </button>
 
