@@ -55,3 +55,70 @@ def analyze_live_keyframe(bus_id: str):
     """
     return stream_manager.analyze_live_keyframe(bus_id)
 
+@router.get("/probe")
+def probe_stream(url: str):
+    """Diagnoses an RTSP / IP stream URL for TCP reachability, credentials, and video decoding."""
+    import socket
+    import cv2
+    from urllib.parse import urlparse
+    
+    clean_url = url.strip()
+    if clean_url.isdigit():
+        cap = cv2.VideoCapture(int(clean_url))
+        opened = cap.isOpened()
+        if opened:
+            w = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+            h = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+            cap.release()
+            return {"reachable": True, "resolution": f"{w}x{h}", "message": f"Local video device {clean_url} is active and ready."}
+        return {"reachable": False, "message": f"Local video device {clean_url} is busy or not found."}
+
+    parsed = urlparse(clean_url)
+    host = parsed.hostname
+    port = parsed.port or 554
+
+    if host:
+        try:
+            sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            sock.settimeout(2.5)
+            res = sock.connect_ex((host, port))
+            sock.close()
+            if res != 0:
+                return {
+                    "reachable": False,
+                    "tcp_port_open": False,
+                    "message": f"Could not reach {host}:{port}. Verify that your PC and DVR/Camera are on the SAME local network, and TCP Port {port} is enabled."
+                }
+        except Exception as e:
+            return {"reachable": False, "message": f"Network resolution error for {host}: {e}"}
+
+    try:
+        cap = cv2.VideoCapture(clean_url)
+        if cap.isOpened():
+            ret, frame = cap.read()
+            w = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+            h = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+            cap.release()
+            if ret:
+                return {
+                    "reachable": True,
+                    "tcp_port_open": True,
+                    "resolution": f"{w}x{h}",
+                    "message": f"Connection verified! Live stream resolution: {w}x{h}."
+                }
+            else:
+                return {
+                    "reachable": False,
+                    "tcp_port_open": True,
+                    "message": "Connected to port 554, but failed to decode video frames. Check username/password authentication or channel number (try subtype=1)."
+                }
+        else:
+            return {
+                "reachable": False,
+                "tcp_port_open": True,
+                "message": "Port 554 open, but RTSP authentication failed. Verify username and password."
+            }
+    except Exception as e:
+        return {"reachable": False, "message": f"RTSP handshake error: {e}"}
+
+

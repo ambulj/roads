@@ -1337,6 +1337,16 @@ class ApiService {
     }
     return { success: false, error: 'Analysis failed' };
   }
+
+  async probeStream(url: string): Promise<any> {
+    try {
+      const res = await fetch(`${API_BASE}/v1/streams/probe?url=${encodeURIComponent(url)}`);
+      if (res.ok) return await res.json();
+    } catch (err) {
+      console.error('Failed to probe stream:', err);
+    }
+    return { reachable: false, message: 'Could not connect to backend stream probe' };
+  }
 }
 
 export const INITIAL_SAFE_CORRIDORS: SafeCorridor[] = [
