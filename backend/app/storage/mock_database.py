@@ -1001,6 +1001,41 @@ class PersistentStore:
         finally:
             db.close()
 
+    def upsert_fleet_node(self, node_data: Dict[str, Any]) -> Dict[str, Any]:
+        db = self._get_db_session()
+        try:
+            from app.models.db_models import DBFleetNode
+            bus_id = node_data.get("id")
+            existing = db.query(DBFleetNode).filter(DBFleetNode.id == bus_id).first()
+            if existing:
+                for k, v in node_data.items():
+                    if hasattr(existing, k) and v is not None:
+                        setattr(existing, k, v)
+                existing.is_online = True
+            else:
+                new_node = DBFleetNode(
+                    id=bus_id,
+                    route_name=node_data.get("route_name", "Live RTSP Patrolling Route"),
+                    route_code=node_data.get("route_code", "LIVE-CAM"),
+                    vehicle_type=node_data.get("vehicle_type", "MTC Volvo 8400 Low-Floor (Live Camera)"),
+                    npu_hardware=node_data.get("npu_hardware", "Zero-Hardware RTSP Ingest"),
+                    camera_model=node_data.get("camera_model", "Real RTSP / IP Camera"),
+                    is_online=True,
+                    speed_kmh=node_data.get("speed_kmh", 34.5),
+                    lat=node_data.get("lat", 12.9516),
+                    lng=node_data.get("lng", 80.1462),
+                    heading=node_data.get("heading", 45.0),
+                    last_ping_at=datetime.utcnow().isoformat(),
+                    raw_ingests_count=node_data.get("raw_ingests_count", 12),
+                    edge_fps=node_data.get("edge_fps", 30.0),
+                    imu_jerk_gz=node_data.get("imu_jerk_gz", 0.98),
+                )
+                db.add(new_node)
+            db.commit()
+            return {"success": True, "bus_id": bus_id}
+        finally:
+            db.close()
+
     @property
     def fleet_nodes(self) -> List[Dict[str, Any]]:
         return self.get_fleet_nodes()

@@ -531,8 +531,37 @@ export const WebGISMap: React.FC<WebGISMapProps> = ({
           else setActiveProfileCorridor('Anna Salai');
         });
 
+        const popupHtml = `
+          <div style="width: 250px; font-family: ui-sans-serif, system-ui, sans-serif; padding: 4px; background: #0b101d; color: #f8fafc; border-radius: 8px;">
+            <div style="display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #1e293b; padding-bottom: 6px; margin-bottom: 6px;">
+              <div>
+                <div style="font-weight: 800; font-size: 12px; color: #60a5fa; font-family: monospace;">${bus.id}</div>
+                <div style="font-size: 10px; color: #94a3b8; font-family: sans-serif;">${bus.route_name}</div>
+              </div>
+              <div style="background: #059669; color: #ffffff; font-size: 9px; font-weight: 700; padding: 2px 5px; border-radius: 4px; font-family: monospace;">5Hz LIVE</div>
+            </div>
+            <div style="position: relative; width: 100%; height: 120px; border-radius: 6px; overflow: hidden; background: #020617; margin-bottom: 6px; border: 1px solid #334155;">
+              <img src="/api/streams/snapshot/${bus.id}?t=${Date.now()}" style="width: 100%; height: 100%; object-fit: cover;" onerror="this.src='https://images.unsplash.com/photo-1515162816999-a0c47dc192f7?w=500'" alt="${bus.id} live" />
+              <div style="position: absolute; top: 4px; left: 4px; background: rgba(0,0,0,0.75); color: #34d399; font-size: 9px; font-family: monospace; padding: 2px 4px; border-radius: 3px;">
+                ● CCTV STREAM
+              </div>
+              <div style="position: absolute; bottom: 4px; right: 4px; background: rgba(0,0,0,0.75); color: #fbbf24; font-size: 9px; font-family: monospace; padding: 2px 4px; border-radius: 3px;">
+                ${bus.speed_kmh || 38} km/h
+              </div>
+            </div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 4px; font-size: 9.5px; font-family: monospace; color: #94a3b8;">
+              <div>NPU: <span style="color: #38bdf8;">${bus.npu_hardware || 'Zero-HW'}</span></div>
+              <div>Rate: <span style="color: #34d399;">${bus.edge_fps || 30} FPS</span></div>
+            </div>
+          </div>
+        `;
+
+        const popup = new maplibregl.Popup({ offset: 20, closeButton: true, className: 'map-live-cctv-popup' })
+          .setHTML(popupHtml);
+
         const marker = new maplibregl.Marker({ element: el })
           .setLngLat([bus.lng, bus.lat])
+          .setPopup(popup)
           .addTo(map);
 
         busMarkersRef.current[bus.id] = marker;

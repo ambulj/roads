@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { 
   Camera, 
   Upload, 
@@ -355,12 +355,60 @@ export const MobileDashcam: React.FC<MobileDashcamProps> = ({
   const [activeTab, setActiveTab] = useState<'citizen' | 'dashcam' | 'contractor'>('dashcam');
 
   // ── 360° MULTI-CAMERA BUS RIG STATE ───────────────────────────────────────
+  const [activeStreams, setActiveStreams] = useState<any[]>([]);
+  const [frameTimestamp, setFrameTimestamp] = useState<number>(Date.now());
+  const [streamError, setStreamError] = useState<boolean>(false);
+  const [useLiveRtsp, setUseLiveRtsp] = useState<boolean>(true);
+
+  // Poll active configured streams from backend
+  useEffect(() => {
+    const fetchStreams = async () => {
+      try {
+        const res = await api.getActiveStreams();
+        if (Array.isArray(res)) setActiveStreams(res);
+      } catch {}
+    };
+    fetchStreams();
+    const interval = setInterval(fetchStreams, 3000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const dynamicRigs: FleetBusRig[] = activeStreams
+    .filter(s => !FLEET_BUS_RIGS.some(r => r.id === s.bus_id))
+    .map(s => ({
+      id: s.bus_id,
+      routeCode: s.stream_type === 'CP_PLUS_DVR_RTSP' ? 'CP-PLUS' : 'LIVE-RTSP',
+      routeCorridor: `Live Stream: ${s.rtsp_url || 'Active Video Node'}`,
+      vehicleType: 'Transit Bus (Connected Real RTSP Feed)',
+      npuHardware: 'Edge-AI Zero-Hardware Perception',
+      cameras: [
+        {
+          position: 'front_road' as CameraMountPosition,
+          label: 'Windshield Real RTSP Stream',
+          lensModel: 'Real Optical Stream Ingestion',
+          resolution: s.resolution || '1080p Stream',
+          fps: Math.round(s.current_fps || 30),
+          fov: '120° Wide Angle',
+          feedPreviewUrl: `/api/streams/snapshot/${s.bus_id}`,
+          primaryRole: 'Live Surface Perceptual Detection',
+          detectedOverlay: {
+            label: 'REAL-TIME RTSP INGEST',
+            confidence: 97.5,
+            subtext: `${s.status || 'STREAMING'} • 5Hz GPS Telematics`,
+            bboxStyle: 'border-emerald-500 bg-emerald-500/15 text-emerald-300',
+            hudColor: 'emerald',
+            incidentType: 'D40',
+            defectType: 'D40'
+          }
+        }
+      ]
+    }));
+
+  const allBusRigs = [...FLEET_BUS_RIGS, ...dynamicRigs];
   const [selectedBusId, setSelectedBusId] = useState<string>('BUS-TN01-1042');
-  const activeBusRig = FLEET_BUS_RIGS.find(b => b.id === selectedBusId) || FLEET_BUS_RIGS[0];
+  const activeBusRig = allBusRigs.find(b => b.id === selectedBusId) || allBusRigs[0];
 
   const [activeCameraPos, setActiveCameraPos] = useState<CameraMountPosition>('front_road');
-  
-  // Ensure selected camera position is physically mounted on the selected bus
   const activeCamera = activeBusRig.cameras.find(c => c.position === activeCameraPos) || activeBusRig.cameras[0];
 
   const [isScanning, setIsScanning] = useState<boolean>(true);
@@ -370,6 +418,15 @@ export const MobileDashcam: React.FC<MobileDashcamProps> = ({
   const [isDvrRewindActive, setIsDvrRewindActive] = useState<boolean>(false);
   const [dvrSeconds, setDvrSeconds] = useState<number>(0);
   const [isFrozen, setIsFrozen] = useState<boolean>(false);
+
+  // Refresh live video frames when not frozen
+  useEffect(() => {
+    if (isFrozen) return;
+    const frameInterval = setInterval(() => {
+      setFrameTimestamp(Date.now());
+    }, 180);
+    return () => clearInterval(frameInterval);
+  }, [isFrozen]);
   const [isDocModalOpen, setIsDocModalOpen] = useState<boolean>(false);
   const [snapshotDownloadedNotice, setSnapshotDownloadedNotice] = useState<string | null>(null);
 
@@ -649,7 +706,7 @@ export const MobileDashcam: React.FC<MobileDashcamProps> = ({
                     }}
                     className="mt-0.5 text-sm font-bold bg-transparent border-b border-blue-500 text-slate-900 dark:text-white outline-none cursor-pointer pr-4"
                   >
-                    {FLEET_BUS_RIGS.map(rig => (
+                    {allBusRigs.map(rig => (
                       <option key={rig.id} value={rig.id} className="bg-white dark:bg-slate-900 text-slate-900 dark:text-white">
                         {rig.id} ({rig.routeCode}) • {rig.routeCorridor}
                       </option>
@@ -807,9 +864,16 @@ export const MobileDashcam: React.FC<MobileDashcamProps> = ({
               {/* Viewport Frame */}
               <div className="relative h-72 sm:h-96 rounded-2xl overflow-hidden bg-slate-950 border border-slate-800 flex items-center justify-center">
                 <img
-                  src={activeCamera.feedPreviewUrl}
+                  key={`${selectedBusId}-${activeCameraPos}`}
+                  src={
+                    useLiveRtsp && !streamError
+                      ? `/api/streams/snapshot/${selectedBusId}?t=${frameTimestamp}`
+                      : activeCamera.feedPreviewUrl
+                  }
+                  onError={() => setStreamError(true)}
+                  onLoad={() => setStreamError(false)}
                   alt={activeCamera.label}
-                  className="w-full h-full object-cover opacity-85"
+                  className="w-full h-full object-cover opacity-90 transition-opacity duration-200"
                 />
 
                 {/* Perspective Bounding Box HUD */}
@@ -829,6 +893,21 @@ export const MobileDashcam: React.FC<MobileDashcamProps> = ({
                   <span>REC ● {activeBusRig.id}</span>
                   <span className="text-slate-400">|</span>
                   <span>{activeCamera.position.toUpperCase()}</span>
+                </div>
+
+                {/* Top Right Live RTSP Status Pill */}
+                <div className="absolute top-3 right-3 bg-slate-900/85 backdrop-blur-md px-2.5 py-1 rounded-xl border border-slate-700 text-xs font-mono flex items-center gap-2 shadow-lg">
+                  <span className={`w-2 h-2 rounded-full ${!streamError ? 'bg-emerald-500 animate-pulse' : 'bg-amber-400'}`} />
+                  <span className="text-white font-bold text-[11px]">
+                    {!streamError ? 'LIVE ZERO-HW RTSP' : 'STANDBY HUD'}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setUseLiveRtsp(prev => !prev)}
+                    className="ml-1 text-[10px] text-blue-400 hover:text-blue-300 underline font-sans cursor-pointer"
+                  >
+                    {useLiveRtsp ? 'Sim' : 'Live'}
+                  </button>
                 </div>
 
                 {/* Bottom Right Telemetry */}

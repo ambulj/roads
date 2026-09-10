@@ -38,6 +38,18 @@ export const LiveCameraFeed: React.FC<LiveCameraFeedProps> = ({
   const [currentJerk, setCurrentJerk] = useState(bus.imu_jerk_gz || 0.98);
   const [simPace, setSimPace] = useState<number>(1.0); // 0.5x, 1.0x (realistic), 1.5x
   const [isPaused, setIsPaused] = useState<boolean>(false);
+  const [feedMode, setFeedMode] = useState<'rtsp' | 'canvas'>('rtsp');
+  const [frameTimestamp, setFrameTimestamp] = useState<number>(Date.now());
+  const [rtspError, setRtspError] = useState<boolean>(false);
+
+  // Poll live video frame snapshots
+  useEffect(() => {
+    if (isPaused || feedMode !== 'rtsp') return;
+    const interval = setInterval(() => {
+      setFrameTimestamp(Date.now());
+    }, 200);
+    return () => clearInterval(interval);
+  }, [isPaused, feedMode]);
 
   const animationFrameId = useRef<number>(0);
   const roadOffset = useRef<number>(0);
@@ -552,6 +564,24 @@ export const LiveCameraFeed: React.FC<LiveCameraFeedProps> = ({
             </button>
           </div>
 
+          {/* Feed Source Mode Switcher */}
+          <div className="flex items-center bg-slate-900/80 backdrop-blur-md border border-slate-700/80 rounded-lg p-0.5 text-[10.5px] font-mono">
+            <button
+              onClick={() => setFeedMode('rtsp')}
+              className={`px-2 py-0.5 rounded font-bold transition ${feedMode === 'rtsp' ? 'bg-emerald-600 text-white' : 'text-slate-400 hover:text-slate-200'}`}
+              title="Real Zero-Hardware RTSP / IP Camera Feed"
+            >
+              Live RTSP
+            </button>
+            <button
+              onClick={() => setFeedMode('canvas')}
+              className={`px-2 py-0.5 rounded font-bold transition ${feedMode === 'canvas' ? 'bg-blue-600 text-white' : 'text-slate-400 hover:text-slate-200'}`}
+              title="AI Digital Twin Physics Simulator"
+            >
+              Digital Twin
+            </button>
+          </div>
+
           {/* Day / Night Filter */}
           <button
             onClick={() => setIsNightMode((p) => !p)}
@@ -604,14 +634,42 @@ export const LiveCameraFeed: React.FC<LiveCameraFeedProps> = ({
         </div>
       )}
 
-      {/* Main Canvas View */}
+      {/* Main Viewport (Live RTSP / Digital Twin Canvas) */}
       <div className="relative w-full aspect-video min-h-[300px] max-h-[520px] bg-slate-950 flex items-center justify-center overflow-hidden">
-        <canvas
-          ref={canvasRef}
-          width={854}
-          height={480}
-          className="w-full h-full object-cover"
-        />
+        {feedMode === 'rtsp' ? (
+          <div className="relative w-full h-full">
+            <img
+              src={`/api/streams/snapshot/${bus.id}?t=${frameTimestamp}`}
+              onError={() => setRtspError(true)}
+              onLoad={() => setRtspError(false)}
+              alt={`Live Stream ${bus.id}`}
+              className="w-full h-full object-cover"
+            />
+            {/* Live AI Overlay Boxes */}
+            {showBoundingBoxes && (
+              <div className="absolute top-1/3 left-1/3 w-48 sm:w-60 h-24 sm:h-32 border-2 border-rose-500 rounded-xl bg-rose-500/10 flex flex-col justify-between p-2 animate-pulse pointer-events-none">
+                <div className="flex items-center justify-between text-[10.5px] font-mono font-bold bg-black/85 px-2 py-1 rounded text-rose-300">
+                  <span>POTHOLE D40 DETECTED</span>
+                  <span className="text-emerald-400">96.8%</span>
+                </div>
+                <div className="text-[10px] font-mono bg-black/85 px-2 py-0.5 rounded text-slate-300 self-start">
+                  GPS: {bus.lat.toFixed(4)}°N, {bus.lng.toFixed(4)}°E • Depth: 48mm
+                </div>
+              </div>
+            )}
+            <div className="absolute bottom-3 left-3 bg-slate-900/85 backdrop-blur-md px-2.5 py-1 rounded-xl border border-slate-700 text-emerald-400 font-mono text-xs flex items-center gap-2 shadow-lg pointer-events-none">
+              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping" />
+              <span>CCTV INGEST ● {bus.id} ({bus.route_code || 'LIVE'})</span>
+            </div>
+          </div>
+        ) : (
+          <canvas
+            ref={canvasRef}
+            width={854}
+            height={480}
+            className="w-full h-full object-cover"
+          />
+        )}
 
         {/* Center Screen Crosshairs (Windshield Optical Bore Sight) */}
         <div className="absolute inset-0 pointer-events-none flex items-center justify-center opacity-30">

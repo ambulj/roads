@@ -218,6 +218,21 @@ class ZeroHardwareStreamManager:
             "configured_at": time.strftime("%Y-%m-%d %H:%M:%S")
         }
         self.stream_configs[bus_id] = new_config
+        try:
+            from app.storage.mock_database import store
+            store.upsert_fleet_node({
+                "id": bus_id,
+                "route_name": f"Live RTSP Ingest ({bus_id})",
+                "route_code": "LIVE-RTSP",
+                "vehicle_type": "MTC Transit Bus (Live Video Node)",
+                "npu_hardware": "Edge-Perception Zero-Hardware",
+                "camera_model": stream_type,
+                "is_online": True,
+                "edge_fps": sampling_fps,
+            })
+        except Exception:
+            pass
+
         return {
             "success": True,
             "message": f"Real RTSP Stream Connector for {bus_id} registered successfully.",
