@@ -12,9 +12,9 @@ CRITICAL_POIS = [
     {"name": "IIT Madras Research Park Highway Gate", "lat": 12.9880, "lng": 80.2440, "type": "university"},
     {"name": "Madras Medical College & Central Corridor", "lat": 13.0805, "lng": 80.2760, "type": "hospital"},
     {"name": "Kendriya Vidyalaya Anna Nagar", "lat": 13.0890, "lng": 80.2120, "type": "school"},
-    {"name": "Chennai International Airport T1 Arterial", "lat": 12.9941, "lng": 80.1709, "type": "transit"},
     {"name": "CMBT Koyambedu Central Bus Terminal", "lat": 13.0694, "lng": 80.2057, "type": "transit"},
 ]
+CHENNAI_POIS = CRITICAL_POIS
 
 def haversine_distance_m(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
     """Computes accurate geodesic distance between two points in meters."""
