@@ -1325,6 +1325,18 @@ class ApiService {
     } catch {}
     return { success: true, message: `Zero-Hardware Stream Connector registered for ${config.bus_id}` };
   }
+
+  async analyzeLiveKeyframe(busId: string): Promise<any> {
+    try {
+      const res = await fetch(`${API_BASE}/v1/streams/analyze/${busId}`, {
+        method: 'POST'
+      });
+      if (res.ok) return await res.json();
+    } catch (err) {
+      console.error('Failed to analyze live keyframe:', err);
+    }
+    return { success: false, error: 'Analysis failed' };
+  }
 }
 
 export const INITIAL_SAFE_CORRIDORS: SafeCorridor[] = [
