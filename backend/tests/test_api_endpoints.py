@@ -435,6 +435,88 @@ class TestAPIEndpoints(unittest.TestCase):
         self.assertIn("new_version", train_data)
         self.assertEqual(train_data["hot_reload_status"], "DEPLOYED_TO_ALL_FLEET_NODES")
 
+    def test_21_budget_knapsack_optimizer(self):
+        """Verify 0/1 Knapsack municipal budget optimization and Pareto curve."""
+        res = self.client.post("/api/city-brain/optimize-budget", json={"budget_lakhs": 15.0, "target_corridor": "ALL"})
+        self.assertEqual(res.status_code, 200)
+        data = res.json()
+        self.assertGreater(data["interventions_selected_count"], 0)
+        self.assertLessEqual(data["budget_utilized_lakhs"], 15.0)
+        self.assertGreater(data["total_safety_benefit_points"], 0.0)
+        self.assertIn("pareto_tradeoff_curve", data)
+        self.assertGreater(len(data["pareto_tradeoff_curve"]), 0)
+
+    def test_22_shift_workload_triage_and_fatigue(self):
+        """Verify command centre shift triage and alert-fatigue suppression."""
+        res = self.client.get("/api/city-brain/shift-triage?max_items=20")
+        self.assertEqual(res.status_code, 200)
+        data = res.json()
+        self.assertLessEqual(len(data["top_interventions"]), 20)
+        self.assertIn("p1_immediate_count", data)
+        self.assertIn("alert_fatigue_suppressed_count", data)
+
+    def test_23_defensible_xai_reasoning_trace(self):
+        """Verify XAI reasoning trace with MoRTH Section 198A statutory liability."""
+        res = self.client.get("/api/city-brain/xai-trace/CL-ANNA-01")
+        self.assertEqual(res.status_code, 200)
+        data = res.json()
+        self.assertIn("statutory_liability", data)
+        self.assertIn("198A", data["statutory_liability"]["clause"])
+        self.assertGreater(len(data["contributing_factors"]), 2)
+        self.assertIn("time_to_collision_sec", data)
+        self.assertIn("xai_narrative_explanation", data)
+
+    def test_24_chronic_infrastructure_failures_irc37(self):
+        """Verify citywide chronic failure recurrence engine and IRC:37 mandate."""
+        res = self.client.get("/api/city-brain/chronic-failures?window_days=180&threshold_events=3")
+        self.assertEqual(res.status_code, 200)
+        data = res.json()
+        self.assertIn("chronic_corridors", data)
+        self.assertIn("IRC:37", data["governing_statute"])
+        if data["chronic_corridors"]:
+            first = data["chronic_corridors"][0]
+            self.assertIn("estimated_rehab_budget_lakhs", first)
+            self.assertIn("IRC:37", first["statutory_mandate"])
+
+    def test_25_map_matching_lane_and_3d_lifting(self):
+        """Verify geospatial map-matching, lane assignment, and monocular 3D lifting."""
+        # 1. Map Matching
+        res_mm = self.client.post("/api/city-brain/map-match", json={"lat": 12.9516, "lng": 80.1462, "heading": 90.0})
+        self.assertEqual(res_mm.status_code, 200)
+        data_mm = res_mm.json()
+        self.assertIn("road_name", data_mm)
+        self.assertIn("lane_assignment", data_mm)
+        self.assertIn("lane_index", data_mm["lane_assignment"])
+
+        # 2. 3D Lifting
+        res_lift = self.client.post("/api/city-brain/lift-3d", json={"bbox_2d": [450, 520, 650, 680]})
+        self.assertEqual(res_lift.status_code, 200)
+        data_lift = res_lift.json()
+        self.assertIn("distance_3d_m", data_lift)
+        self.assertGreater(data_lift["distance_3d_m"], 0.0)
+
+    def test_26_federated_learning_and_bandwidth_scheduler(self):
+        """Verify federated learning FedAvg round and 3-tier bandwidth scheduler."""
+        # 1. Federated Round
+        res_fed = self.client.post("/api/city-brain/federated-round", json={})
+        self.assertEqual(res_fed.status_code, 200)
+        data_fed = res_fed.json()
+        self.assertIn("global_aggregated_loss", data_fed)
+        self.assertGreater(data_fed["bandwidth_efficiency"]["bandwidth_saved_pct"], 95.0)
+
+        # 2. Bandwidth Telemetry Scheduler
+        res_bw = self.client.post("/api/city-brain/bandwidth-schedule", json={
+            "event_type": "HIGH_SHOCK_ALERT",
+            "urgency": "CRITICAL"
+        })
+        self.assertEqual(res_bw.status_code, 200)
+        self.assertEqual(res_bw.json()["assigned_tier"], "TIER_1_REALTIME_CELLULAR")
+
+        # 3. Edge NPU Diagnostics
+        res_edge = self.client.get("/api/city-brain/edge-diagnostics")
+        self.assertEqual(res_edge.status_code, 200)
+        self.assertGreater(res_edge.json()["total_monitored_buses"], 0)
+
 if __name__ == "__main__":
     unittest.main()
 

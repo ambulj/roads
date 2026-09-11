@@ -629,3 +629,172 @@ export interface RoadMemorySummaryResponse {
   recent_audits: RoadMemoryAuditRecord[];
 }
 
+// ── City Brain Decision AI & Optimization Types (Points 51-90) ───────────────
+export interface BudgetInterventionItem {
+  cluster_code: string;
+  road_name: string;
+  defect_type: string;
+  defect_name: string;
+  severity: string;
+  rpi_score: number;
+  delta_rpi: number;
+  benefit_value: number;
+  cost_lakhs: number;
+  cost_thousands: number;
+  nearest_poi: string;
+  is_vulnerable_zone: boolean;
+  assigned_agency: string;
+}
+
+export interface ParetoPoint {
+  budget_lakhs: number;
+  benefit_points: number;
+  interventions_count: number;
+}
+
+export interface BudgetOptimizationResult {
+  budget_allocated_lakhs: number;
+  budget_utilized_lakhs: number;
+  budget_remaining_lakhs: number;
+  interventions_selected_count: number;
+  total_candidate_defects: number;
+  total_safety_benefit_points: number;
+  total_delta_rpi_reduction: number;
+  selected_interventions: BudgetInterventionItem[];
+  pareto_tradeoff_curve: ParetoPoint[];
+  optimization_algorithm: string;
+  statutory_mandate: string;
+}
+
+export interface ShiftTriageItem {
+  id: string;
+  code: string;
+  type: "ROAD_HAZARD" | "TRAFFIC_VIOLATION";
+  category: string;
+  severity: string;
+  corridor: string;
+  rpi_score: number;
+  urgency_score: number;
+  target_sla_hours: number;
+  status: string;
+  nearest_poi?: string;
+  assigned_agency: string;
+  action: string;
+  shift_priority: "P1_IMMEDIATE" | "P2_WITHIN_4H" | "P3_WITHIN_SHIFT";
+}
+
+export interface ShiftTriageResult {
+  active_shift: string;
+  triage_timestamp: string;
+  total_items_in_shift: number;
+  p1_immediate_count: number;
+  p2_four_hour_count: number;
+  p3_shift_sla_count: number;
+  alert_fatigue_suppressed_count: number;
+  top_interventions: ShiftTriageItem[];
+}
+
+export interface XAIContributingFactor {
+  factor: string;
+  weight: number;
+  score: number;
+  description: string;
+}
+
+export interface XAIReasoningTrace {
+  entity_id: string;
+  entity_code: string;
+  entity_type: string;
+  road_name: string;
+  defect_type?: string;
+  severity?: string;
+  rpi_score?: number;
+  contributing_factors: XAIContributingFactor[];
+  time_to_collision_sec?: number;
+  statutory_liability: {
+    clause: string;
+    mandate: string;
+    penalty_exposure_inr: number;
+    statutory_sla_hours: number;
+  };
+  xai_narrative_explanation: string;
+  recommended_intervention: string;
+}
+
+export interface ChronicCorridorHotspot {
+  corridor_name: string;
+  avg_lat: number;
+  avg_lng: number;
+  total_distress_clusters: number;
+  recurrent_failures_count: number;
+  penalties_recovered_inr: number;
+  structural_deterioration_score: number;
+  diagnosis: string;
+  statutory_mandate: string;
+  action_required: string;
+  estimated_rehab_budget_lakhs: number;
+}
+
+export interface ChronicFailuresResult {
+  evaluation_window_days: number;
+  recurrence_threshold: number;
+  total_corridors_analyzed: number;
+  chronic_structural_hotspots_count: number;
+  total_rehabilitation_budget_lakhs: number;
+  chronic_corridors: ChronicCorridorHotspot[];
+  monitored_corridors: ChronicCorridorHotspot[];
+  governing_statute: string;
+}
+
+export interface SSDRingBufferMetrics {
+  capacity_gb: number;
+  used_gb: number;
+  used_pct: number;
+  retention_buffer_hours: number;
+  locked_incident_clips: number;
+  eviction_policy: string;
+}
+
+export interface EdgeNPUDiagnostic {
+  bus_id: string;
+  route_name: string;
+  is_online: boolean;
+  npu_hardware: string;
+  edge_fps: number;
+  npu_temperature_c: number;
+  thermal_throttling: boolean;
+  ssd_ring_buffer: SSDRingBufferMetrics;
+  camera_sync_status: string;
+  firmware_version: string;
+  health_verdict: "NOMINAL_HEALTH" | "THERMAL_WARNING" | "STORAGE_WARNING";
+}
+
+export interface FleetEdgeDiagnosticsResult {
+  total_monitored_buses: number;
+  healthy_buses_count: number;
+  avg_npu_temperature_c: number;
+  canary_rollout_stage: string;
+  active_model_version: string;
+  bus_diagnostics: EdgeNPUDiagnostic[];
+}
+
+export interface FederatedRoundResult {
+  round_number: number;
+  aggregation_algorithm: string;
+  global_model_version: string;
+  participating_clients_count: number;
+  total_edge_samples_aggregated: number;
+  global_aggregated_loss: number;
+  model_mAP50_score: number;
+  bandwidth_efficiency: {
+    gradient_payload_transmitted_kb: number;
+    raw_video_avoided_mb: number;
+    bandwidth_saved_pct: number;
+    passenger_privacy_preserved: boolean;
+  };
+  convergence_status: string;
+  client_updates: any[];
+  server_aggregation_time_ms: number;
+}
+
+

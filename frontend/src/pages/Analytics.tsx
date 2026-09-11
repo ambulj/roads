@@ -9,6 +9,7 @@ import { CorridorRisk, MetricSummary, FleetNode, SafeCorridor, DarkSpotSegment }
 import { Card, Badge, Button } from '../components/ui';
 import { MonsoonInundationPredictor } from '../components/analytics/MonsoonInundationPredictor';
 import { SelfLearningStudio } from '../components/analytics/SelfLearningStudio';
+import { CityBrainHub } from '../components/analytics/CityBrainHub';
 import { api, INITIAL_SAFE_CORRIDORS, INITIAL_DARK_SPOTS } from '../services/api';
 import { useLanguage } from '../context/LanguageContext';
 import { useTheme } from '../context/ThemeContext';
@@ -368,6 +369,9 @@ export const Analytics: React.FC<AnalyticsProps> = ({ metrics, corridors, fleet 
           </div>
         </Card>
       </div>
+
+      {/* City Brain Decision AI, Knapsack Budget Optimizer, XAI & Edge MLOps (Points 51-90) */}
+      <CityBrainHub />
 
       {/* Continuous Self-Learning AI Engine & Closed-Loop Repair Studio */}
       <SelfLearningStudio />

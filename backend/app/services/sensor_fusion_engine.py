@@ -79,6 +79,86 @@ class SensorFusionEngine:
             self.visual_verified_count = 135
             self.false_alarms_filtered = 19
 
+    def compute_gps_uncertainty_ellipse(
+        self,
+        speed_kmh: float,
+        hdop: float = 1.1,
+        satellites: int = 14,
+        heading: float = 0.0
+    ) -> Dict[str, Any]:
+        """
+        Computes 2D Gaussian GPS uncertainty covariance ellipse (Point 62):
+        Semi-major axis a (longitudinal speed dilation) and semi-minor axis b (lateral dilution).
+        Defines the 95% confidence spatial boundary.
+        """
+        base_sigma = max(1.8, hdop * 2.2)
+        speed_mps = speed_kmh / 3.6
+        sigma_longitudinal = round(math.sqrt(base_sigma**2 + (speed_mps * 0.25)**2), 2)
+        sigma_lateral = round(base_sigma * 0.85, 2)
+        
+        semi_major_m = round(sigma_longitudinal * 2.447, 1)
+        semi_minor_m = round(sigma_lateral * 2.447, 1)
+        area_m2 = round(math.pi * semi_major_m * semi_minor_m, 1)
+
+        return {
+            "semi_major_axis_m": semi_major_m,
+            "semi_minor_axis_m": semi_minor_m,
+            "area_95_pct_m2": area_m2,
+            "orientation_deg": heading,
+            "hdop": hdop,
+            "satellites": satellites,
+            "fix_status": "NavIC_DGPS_HIGH_PRECISION" if hdop < 1.2 else "STANDARD_GPS_FIX"
+        }
+
+    def cross_validate_sensors(
+        self,
+        gps_speed_kmh: float,
+        imu_accel_x: float,
+        cam_fps: float = 24.0,
+        imu_jerk_gz: float = 1.0
+    ) -> Dict[str, Any]:
+        """
+        Multi-Sensor Cross-Validation (Point 83):
+        Checks consistency between GPS speed, IMU longitudinal acceleration, and Camera FPS.
+        Detects GPS dropouts under flyovers/tunnels, wheel slip, or frozen camera feeds.
+        """
+        is_consistent = True
+        flags = []
+
+        if gps_speed_kmh < 2.0 and abs(imu_accel_x) > 1.2:
+            is_consistent = False
+            flags.append("GPS_SPOOFED_OR_UNDERPASS_SIGNAL_LOSS")
+
+        if cam_fps < 10.0:
+            is_consistent = False
+            flags.append("CAMERA_FRAME_DROP_OR_STALL")
+
+        if imu_jerk_gz > 1.6 and gps_speed_kmh < 1.0:
+            flags.append("STATIONARY_IMPACT_OR_PARKING_COLLISION")
+
+        return {
+            "is_sensor_consistent": is_consistent,
+            "sensor_health_flags": flags if flags else ["ALL_SENSORS_CONCORDANT"],
+            "gps_validity_weight": 0.50 if not is_consistent else 1.0,
+            "imu_validity_weight": 1.0,
+            "camera_validity_weight": 0.40 if cam_fps < 10.0 else 1.0
+        }
+
+    def calibrate_confidence(
+        self,
+        raw_confidence: float,
+        temperature: float = 1.20
+    ) -> float:
+        """
+        Temperature scaling confidence calibration (Point 65):
+        Calibrates overconfident neural predictions using logistic temperature scaling.
+        """
+        p = max(0.01, min(0.99, raw_confidence))
+        logit = math.log(p / (1.0 - p))
+        calibrated_logit = logit / temperature
+        calibrated_p = 1.0 / (1.0 + math.exp(-calibrated_logit))
+        return round(calibrated_p, 3)
+
     def ingest_ais140_packet(self, packet: Dict[str, Any]) -> Dict[str, Any]:
         """
         Ingests real-time AIS-140 GPS & 3-Axis IMU telemetry packet.
@@ -119,6 +199,22 @@ class SensorFusionEngine:
 
         is_shock_anomaly = vertical_gz > 1.25
 
+        # 2D Gaussian GPS uncertainty covariance ellipse (Point 62)
+        gps_ellipse = self.compute_gps_uncertainty_ellipse(
+            speed_kmh=speed_kmh,
+            hdop=float(packet.get("hdop", 1.1)),
+            satellites=int(packet.get("satellites", 14)),
+            heading=heading
+        )
+
+        # Multi-Sensor Cross-Validation (Point 83)
+        sensor_cross_val = self.cross_validate_sensors(
+            gps_speed_kmh=speed_kmh,
+            imu_accel_x=float(packet.get("accel_x", 0.0)),
+            cam_fps=float(packet.get("cam_fps", 24.0)),
+            imu_jerk_gz=vertical_gz
+        )
+
         # Check against closed-loop repair verification audit
         audit_events = []
         try:
@@ -140,7 +236,9 @@ class SensorFusionEngine:
                 "vertical_gz": vertical_gz,
                 "latency_ms": total_elapsed_ms,
                 "is_live_measured": True,
-                "repair_audit_events": audit_events
+                "repair_audit_events": audit_events,
+                "gps_covariance_ellipse": gps_ellipse,
+                "sensor_cross_validation": sensor_cross_val
             }
 
         return self.execute_fusion_verification(
@@ -153,7 +251,9 @@ class SensorFusionEngine:
             speed_kmh=speed_kmh,
             t_start=t0,
             tcp_ingest_ms=tcp_ingest_ms,
-            spatial_hash_ms=spatial_hash_ms
+            spatial_hash_ms=spatial_hash_ms,
+            gps_ellipse=gps_ellipse,
+            sensor_cross_val=sensor_cross_val
         )
 
     def execute_fusion_verification(
@@ -167,7 +267,9 @@ class SensorFusionEngine:
         speed_kmh: float,
         t_start: float,
         tcp_ingest_ms: float,
-        spatial_hash_ms: float
+        spatial_hash_ms: float,
+        gps_ellipse: Optional[Dict[str, Any]] = None,
+        sensor_cross_val: Optional[Dict[str, Any]] = None
     ) -> Dict[str, Any]:
         """
         Executes real computer-vision verification on the frame buffer and applies
@@ -308,6 +410,7 @@ class SensorFusionEngine:
 
         joint_p = 1.0 - p_miss_prod
         joint_confidence = round(min(0.999, max(0.85, joint_p)), 3)
+        calibrated_conf = self.calibrate_confidence(joint_confidence, temperature=1.20)
 
         # Update reputation for confirmed detection
         if is_multi_bus_consensus:
@@ -331,9 +434,13 @@ class SensorFusionEngine:
             "defect_name": defect_name,
             "vertical_gz": vertical_gz,
             "optical_confidence": joint_confidence,
+            "calibrated_confidence": calibrated_conf,
+            "temperature_scaling_factor": 1.20,
             "multi_bus_consensus": is_multi_bus_consensus,
             "confirming_buses_count": consensus_count,
             "confirming_buses": [bus_id] + confirming_buses_list,
+            "gps_covariance_ellipse": gps_ellipse,
+            "sensor_cross_validation": sensor_cross_val,
             "consensus_details": {
                 "algorithm": "Haversine_Moore9_Weighted_Bayesian",
                 "gps_uncertainty_radius_m": gps_uncertainty_radius_m,
@@ -343,6 +450,9 @@ class SensorFusionEngine:
                 "primary_bus_reputation": primary_bus_rep,
                 "optical_evidence_weight": optical_weight,
                 "joint_bayesian_confidence": joint_confidence,
+                "calibrated_confidence": calibrated_conf,
+                "gps_covariance_ellipse": gps_ellipse,
+                "sensor_cross_validation": sensor_cross_val,
                 "status": "MULTI_BUS_VERIFIED" if is_multi_bus_consensus else "SINGLE_BUS_PROVISIONAL"
             },
             "is_live_measured": True,
