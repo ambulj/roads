@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { FleetNode, HazardCluster, MetricSummary, PerceptionLogEntry, TrafficIncident } from '../types';
-import { INITIAL_CLUSTERS, INITIAL_FLEET, INITIAL_METRICS, INITIAL_AUDIT_LOGS, INITIAL_INCIDENTS } from '../services/api';
+import { INITIAL_CLUSTERS, INITIAL_FLEET, INITIAL_METRICS, INITIAL_AUDIT_LOGS, INITIAL_INCIDENTS, api } from '../services/api';
 
 export function useTelemetrySocket() {
   const [isConnected, setIsConnected] = useState(false);
@@ -13,6 +13,21 @@ export function useTelemetrySocket() {
   const wsRef = useRef<WebSocket | null>(null);
   const reconnectTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isDestroyedRef = useRef(false);
+
+  const refreshIncidents = useCallback(async () => {
+    try {
+      const data = await api.getIncidents();
+      if (Array.isArray(data) && data.length > 0) {
+        setIncidents(data);
+      }
+    } catch {
+      // fallback
+    }
+  }, []);
+
+  useEffect(() => {
+    refreshIncidents();
+  }, [refreshIncidents]);
 
   const connect = useCallback(() => {
     if (isDestroyedRef.current) return;
@@ -72,6 +87,13 @@ export function useTelemetrySocket() {
               pushAuditLog(data.latest_log);
               setLatestLatency(data.latest_log.latency_ms || 75);
             }
+          } else if (data.type === 'FLEET_UPDATE') {
+            if (data.fleet) setFleet(data.fleet);
+            if (data.metrics) setMetrics(data.metrics);
+            if (data.latest_log) {
+              pushAuditLog(data.latest_log);
+              setLatestLatency(data.latest_log.latency_ms || 30);
+            }
           } else if (data.type === 'INGEST_BROADCAST') {
             if (data.metrics) setMetrics(data.metrics);
             if (data.clusters) setClusters(data.clusters);
@@ -80,7 +102,9 @@ export function useTelemetrySocket() {
               setLatestLatency(data.latest_log.latency_ms || 80);
             }
           } else if (data.type === 'INCIDENT_ALERT') {
-            if (data.incident) {
+            if (data.incidents && Array.isArray(data.incidents)) {
+              setIncidents(data.incidents);
+            } else if (data.incident) {
               setIncidents((prev) => [data.incident, ...prev.filter((i) => i.id !== data.incident.id)]);
             }
             if (data.metrics) setMetrics(data.metrics);
@@ -89,10 +113,42 @@ export function useTelemetrySocket() {
               setLatestLatency(data.latest_log.latency_ms || 70);
             }
           } else if (data.type === 'INCIDENT_UPDATE') {
-            if (data.incident_id && data.update) {
+            if (data.incidents && Array.isArray(data.incidents)) {
+              setIncidents(data.incidents);
+            } else if (data.incident_id && data.update) {
               setIncidents((prev) => prev.map((i) => (i.id === data.incident_id ? { ...i, ...data.update } : i)));
             }
             if (data.metrics) setMetrics(data.metrics);
+          } else if (data.type === 'INCIDENT_REVIEW_COMPLETED') {
+            if (data.incidents && Array.isArray(data.incidents)) {
+              setIncidents(data.incidents);
+            } else if (data.incident_id && data.review) {
+              setIncidents((prev) => prev.map((i) => (i.id === data.incident_id ? { ...i, ...data.review } : i)));
+            }
+            if (data.metrics) setMetrics(data.metrics);
+          } else if (data.type === 'INCIDENT_DISPATCHED') {
+            if (data.incidents && Array.isArray(data.incidents)) {
+              setIncidents(data.incidents);
+            } else if (data.dispatch) {
+              setIncidents((prev) => prev.map((i) => (i.id === data.dispatch.incident_id ? {
+                ...i,
+                status: data.dispatch.status,
+                pcr_unit_assigned: data.dispatch.target_pcr_unit,
+                echallan_id: data.dispatch.echallan_id || i.echallan_id,
+                fine_amount_inr: data.dispatch.fine_amount_inr || i.fine_amount_inr
+              } : i)));
+            }
+            if (data.metrics) setMetrics(data.metrics);
+          } else if (data.type === 'CLUSTER_UPDATE' || data.type === 'WORK_ORDER_UPDATE') {
+            if (data.cluster_id && data.update) {
+              setClusters((prev) => prev.map((c) => 
+                (c.id === data.cluster_id || c.cluster_code === data.cluster_id) 
+                  ? { ...c, ...data.update } 
+                  : c
+              ));
+            }
+            if (data.metrics) setMetrics(data.metrics);
+            if (data.latest_log) pushAuditLog(data.latest_log);
           } else if (data.type === 'SYNTHETIC_CYCLE_TICK') {
             if (data.metrics) setMetrics(data.metrics);
             if (data.clusters) setClusters(data.clusters);
@@ -314,8 +370,10 @@ export function useTelemetrySocket() {
     metrics,
     auditLogs,
     latestLatency,
+    setFleet,
     setClusters,
     setIncidents,
+    refreshIncidents,
     sendIngest,
     sendIncident
   };

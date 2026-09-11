@@ -1,4 +1,4 @@
-from typing import List, Optional
+from typing import List, Optional, Union, Dict, Any
 from pydantic import BaseModel, Field
 from enum import Enum
 from datetime import datetime
@@ -33,6 +33,9 @@ class WorkOrderStatus(str, Enum):
     ASSIGNED = "assigned"
     IN_PROGRESS = "in_progress"
     REINSPECTION_PENDING = "reinspection_pending"
+    REPAIRED = "repaired"
+    REPAIR_VERIFIED = "repair_verified"
+    RECURRENCE_PENALTY = "recurrence_penalty"
     RESOLVED = "resolved"
     VERIFIED_CLOSED = "verified_closed"
     DISPUTED = "disputed"
@@ -62,6 +65,12 @@ class IncidentStatus(str, Enum):
     RESOLVED = "RESOLVED"
     REJECTED = "REJECTED"
 
+class CameraPositionEnum(str, Enum):
+    FRONT_WINDSHIELD = "FRONT_WINDSHIELD"
+    REAR_OVERTAKE = "REAR_OVERTAKE"
+    LEFT_CURBSIDE = "LEFT_CURBSIDE"
+    DRIVER_CABIN = "DRIVER_CABIN"
+
 class TelemetryIngest(BaseModel):
     bus_id: str
     lat: float
@@ -72,6 +81,8 @@ class TelemetryIngest(BaseModel):
     confidence: float = Field(..., ge=0.0, le=1.0)
     vertical_g_force: float = 1.0
     snapshot_url: Optional[str] = None
+    camera_position: Optional[str] = "FRONT_WINDSHIELD"
+    channel: Optional[int] = 1
     captured_at: Optional[datetime] = None
 
 class HazardCluster(BaseModel):
@@ -84,19 +95,21 @@ class HazardCluster(BaseModel):
     pass_count: int
     road_name: str
     classification: str
-    nearest_poi: str
-    poi_distance_m: float
-    assigned_agency: str
-    agency_phone: str
-    sla_hours: int
-    status: WorkOrderStatus
+    nearest_poi: Optional[str] = None
+    poi_distance_m: Optional[float] = None
+    assigned_agency: Optional[str] = "Greater Chennai Corporation (GCC)"
+    agency_phone: Optional[str] = None
+    sla_hours: Optional[int] = 48
+    status: Union[WorkOrderStatus, str] = WorkOrderStatus.OPEN
     lat: float
     lng: float
     before_image_url: Optional[str] = None
     after_image_url: Optional[str] = None
     field_notes: Optional[str] = None
-    created_at: str
-    updated_at: str
+    detecting_camera_position: Optional[str] = "FRONT_WINDSHIELD"
+    detecting_channel: Optional[int] = 1
+    created_at: Optional[str] = None
+    updated_at: Optional[str] = None
 
 class TrafficIncidentCreate(BaseModel):
     reporting_bus_id: str = "MOBILE-DASHCAM-01"
@@ -113,6 +126,9 @@ class TrafficIncidentCreate(BaseModel):
     fine_amount_inr: Optional[float] = None
     mva_section: Optional[str] = None
     water_depth_cm: Optional[float] = None
+    camera_position: Optional[str] = "REAR_OVERTAKE"
+    channel: Optional[int] = 2
+
 
 class TrafficIncident(BaseModel):
     id: str
@@ -139,6 +155,9 @@ class TrafficIncident(BaseModel):
     description: Optional[str] = None
     intercepted_by_bus_id: Optional[str] = None
     snapshot_url: Optional[str] = None
+    camera_position: Optional[str] = "REAR_OVERTAKE"
+    channel: Optional[int] = 2
+    statutory_provenance: Optional[str] = "MVA_1988_RULE_ENGINE"
 
 class WorkOrderUpdate(BaseModel):
     status: WorkOrderStatus
@@ -164,6 +183,34 @@ class FleetNode(BaseModel):
     raw_ingests_count: int
     edge_fps: float = 24.0
     imu_jerk_gz: float = 0.98
+    dvr_channels: int = 4
+    dvr_ip: Optional[str] = None
+    camera_position: Optional[str] = "FRONT_WINDSHIELD"
+    cameras_config: Optional[str] = None
+
+class FleetNodeCreate(BaseModel):
+    id: str
+    route_name: str
+    route_code: str
+    vehicle_type: Optional[str] = "MTC Electric Low-Floor"
+    npu_hardware: Optional[str] = "Rockchip RK3588 (6 TOPS)"
+    camera_model: Optional[str] = "Sony IMX335 1080p HDR 4-CH MDVR"
+    speed_kmh: Optional[float] = 36.0
+    lat: Optional[float] = 12.9516
+    lng: Optional[float] = 80.1462
+    last_lat: Optional[float] = None
+    last_lng: Optional[float] = None
+    heading: Optional[float] = 45.0
+    edge_fps: Optional[float] = 30.0
+    imu_jerk_gz: Optional[float] = 0.98
+    dvr_channels: Optional[int] = 4
+    dvr_ip: Optional[str] = None
+    camera_position: Optional[str] = "FRONT_WINDSHIELD"
+    cameras_config: Optional[str] = None
+    rtsp_url: Optional[str] = None
+    rtsp_base_url: Optional[str] = None
+    corridor: Optional[str] = None
+    is_online: Optional[bool] = True
 
 class CorridorRisk(BaseModel):
     corridor_name: str
@@ -318,4 +365,133 @@ class AsphaltQualityAudit(BaseModel):
     compaction_score_pct: float
     qc_certification: str  # "PASSED_MORTH_SEC_500" | "REJECTED_REPAVE_ORDERED"
     audited_at: str
+
+# ── TRAFFIC DENSITY & BOTTLENECK SCHEMAS ─────────────────────────────────────
+
+class TrafficDensityRecord(BaseModel):
+    id: str
+    corridor_id: str
+    road_name: str
+    lat: float
+    lng: float
+    vehicle_count: int
+    density_pcu_per_km: float
+    average_speed_kmh: float
+    free_flow_speed_kmh: float = 50.0
+    congestion_level: str
+    is_bottleneck: bool
+    bottleneck_cause: Optional[str] = None
+    reported_by: Optional[str] = None
+    measured_at: str
+
+class TrafficDensityIngest(BaseModel):
+    corridor_id: str
+    road_name: str
+    lat: float
+    lng: float
+    counts_2w: int = 0
+    counts_3w: int = 0
+    counts_4w: int = 0
+    counts_bus: int = 0
+    counts_truck: int = 0
+    average_speed_kmh: float = 35.0
+    free_flow_speed_kmh: float = 50.0
+    reported_by: str = "EDGE-CAM-01"
+
+class BottleneckAlert(BaseModel):
+    id: str
+    corridor_id: str
+    road_name: str
+    lat: float
+    lng: float
+    congestion_level: str
+    density_pcu_per_km: float
+    average_speed_kmh: float
+    speed_drop_pct: float
+    cause: str
+    recommended_diversion: str
+    detected_at: str
+
+# ── INCIDENT REVIEW & DISPATCH SCHEMAS ───────────────────────────────────────
+
+class IncidentReviewAction(BaseModel):
+    action: str  # "ACCEPT" | "REJECT" | "CORRECT_PLATE"
+    corrected_plate: Optional[str] = None
+    officer_notes: Optional[str] = None
+
+class IncidentDispatchAction(BaseModel):
+    channel: str = "ALL"  # "PCR_INTERCEPTOR" | "ECHALLAN_MVA" | "ALL"
+    target_pcr_unit: Optional[str] = "PCR-14"
+    fine_amount_override: Optional[float] = None
+    priority: str = "P0_EMERGENCY"
+
+# ── EDGE SYNC & LOW-BANDWIDTH ARCHITECTURE SCHEMAS ──────────────────────────
+
+class EdgeTelemetryPacket(BaseModel):
+    packet_id: str
+    bus_id: str
+    priority: str = "P1_ROUTINE"  # "P0_CRITICAL" | "P1_ROUTINE" | "P2_INFO"
+    defect_type: Optional[str] = None
+    confidence: float = 0.0
+    speed_kmh: float = 40.0
+    vertical_g_force: float = 1.0
+    lat: float
+    lng: float
+    buffered_at: str
+
+class EdgeBufferSyncPayload(BaseModel):
+    bus_id: str
+    buffer_start_time: str
+    buffer_end_time: str
+    packets: List[EdgeTelemetryPacket]
+    total_uncompressed_bytes: int
+    compressed_bytes_sent: int
+
+class EdgeSyncResult(BaseModel):
+    status: str
+    bus_id: str
+    synced_records_count: int
+    p0_immediate_count: int
+    p1_batched_count: int
+    bandwidth_saved_pct: float
+    deduplication_clusters_updated: int
+    timestamp: str
+
+class EdgeNodeBufferStatus(BaseModel):
+    bus_id: str
+    connectivity_mode: str  # "ONLINE" | "DEGRADED" | "OFFLINE_BUFFERING"
+    buffer_queue_depth: int
+    p0_queue_depth: int
+    p1_queue_depth: int
+    last_sync_time: str
+    cumulative_bytes_saved_kb: float
+
+# ── DISPATCH GATEWAY SCHEMAS ─────────────────────────────────────────────────
+
+class WhatsAppDispatchPayload(BaseModel):
+    cluster_code: str
+    recipient_phone: str
+    recipient_name: str
+    agency_name: str
+    priority: str = "P0_EMERGENCY"
+    custom_notes: Optional[str] = None
+
+class WhatsAppDispatchResult(BaseModel):
+    success: bool
+    status: str
+    provider: str
+    delivery_receipt_id: str
+    recipient_phone: str
+    message_text: str
+    wa_deep_link: str
+    dispatched_at: str
+
+class RadioDispatchPayload(BaseModel):
+    channel: str = "CH-1 (GCC Central)"
+    priority: str = "P0_EMERGENCY"
+    hazard_type: str
+    location_name: str
+    text_en: str
+    text_ta: str
+
 

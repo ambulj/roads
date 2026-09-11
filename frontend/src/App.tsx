@@ -68,9 +68,9 @@ export const App: React.FC = () => {
   const [isSensorFusionModalOpen, setIsSensorFusionModalOpen] = useState(false);
   const [selectedIncident, setSelectedIncident] = useState<TrafficIncident | null>(null);
   const { toggleTheme } = useTheme();
-  const { info: showInfoToast, warning: showWarningToast } = useToast();
+  const { success: showSuccessToast, info: showInfoToast, warning: showWarningToast } = useToast();
 
-  const { isConnected, fleet, clusters, incidents, metrics, auditLogs, latestLatency, setClusters, setIncidents, sendIngest, sendIncident } = useTelemetrySocket();
+  const { isConnected, fleet, clusters, incidents, metrics, auditLogs, latestLatency, setFleet, setClusters, setIncidents, refreshIncidents, sendIngest, sendIncident } = useTelemetrySocket();
 
   const handleNavigate = useCallback((route: string) => {
     const target = route.replace(/^#\/?/, "").trim() as AppRoute;
@@ -217,7 +217,14 @@ export const App: React.FC = () => {
           } 
         : c
     )));
-    await api.updateClusterStatus(orderId, newStatus, beforeImg, afterImg, notes);
+    try {
+      const ok = await api.updateClusterStatus(orderId, newStatus, beforeImg, afterImg, notes);
+      if (ok) {
+        showSuccessToast("Work Order Updated", `Order #${orderId} marked as ${newStatus.replace('_', ' ').toUpperCase()}`);
+      }
+    } catch (err) {
+      console.warn("Work order status note:", err);
+    }
   };
 
   const handleTriggerDedup = async () => {
@@ -225,9 +232,17 @@ export const App: React.FC = () => {
     alert("15-meter DBSCAN Spatial Clustering executed. Redundant telemetry merged.");
   };
 
-  // Render Dedicated Municipal Login Portal if not authenticated
-  if (!isAuthenticated) {
-    return <LoginPortal onLoginSuccess={() => handleNavigate("command")} />;
+  // Render Dedicated Municipal Login Portal if not authenticated or on #login route
+  const isLoginHash = typeof window !== 'undefined' && (window.location.hash.includes('login') || window.location.hash.includes('auth'));
+  if (!isAuthenticated || isLoginHash) {
+    return (
+      <LoginPortal 
+        onLoginSuccess={() => {
+          window.location.hash = "#/command";
+          handleNavigate("command");
+        }} 
+      />
+    );
   }
 
   return (
@@ -300,9 +315,17 @@ export const App: React.FC = () => {
             {currentRoute === "incidents" && hasAccessToRoute("incidents") && (
               <IncidentList
                 incidents={incidents}
+                onRefresh={refreshIncidents}
                 onUpdateStatus={async (incId, newStatus) => {
                   setIncidents((prev) => prev.map((i) => (i.id === incId ? { ...i, status: newStatus } : i)));
-                  try { await api.updateIncident(incId, newStatus); } catch (err) { console.error("Failed to update incident:", err); }
+                  try { 
+                    const ok = await api.updateIncident(incId, newStatus); 
+                    if (ok) {
+                      showSuccessToast("Incident Updated", `Incident #${incId} status set to ${newStatus}`);
+                    }
+                  } catch (err) { 
+                    console.error("Failed to update incident:", err); 
+                  }
                 }}
               />
             )}
@@ -313,7 +336,7 @@ export const App: React.FC = () => {
               <WorkOrders clusters={clusters} onUpdateStatus={handleUpdateStatus} />
             )}
             {currentRoute === "fleet" && hasAccessToRoute("fleet") && (
-              <FleetNodes fleet={fleet} />
+              <FleetNodes fleet={fleet} onFleetChange={setFleet} />
             )}
             {currentRoute === "capture" && hasAccessToRoute("capture") && (
               <MobileDashcam
@@ -322,16 +345,7 @@ export const App: React.FC = () => {
                 onSendIngest={sendIngest}
                 onSendIncident={sendIncident}
                 onAddCluster={(newCl) => setClusters((prev) => [newCl, ...prev])}
-                onUpdateWorkOrder={async (orderId, newStatus, beforeImg, afterImg, notes) => {
-                  setClusters((prev) =>
-                    prev.map((c) =>
-                      c.id === orderId || c.cluster_code === orderId
-                        ? { ...c, status: newStatus, before_image_url: beforeImg || c.before_image_url, after_image_url: afterImg || c.after_image_url, field_notes: notes || c.field_notes }
-                        : c
-                    )
-                  );
-                  await api.updateClusterStatus(orderId, newStatus, beforeImg, afterImg, notes);
-                }}
+                onUpdateWorkOrder={handleUpdateStatus}
               />
             )}
           </React.Suspense>

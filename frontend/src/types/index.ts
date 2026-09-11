@@ -107,6 +107,11 @@ export interface FleetNode {
   vehicle_type: string;
   npu_hardware: string;
   camera_model: string;
+  dvr_channels?: number;
+  dvr_ip?: string;
+  rtsp_url?: string;
+  camera_position?: string;
+  cameras_config?: string;
   is_online: boolean;
   speed_kmh: number;
   lat: number;
@@ -120,6 +125,25 @@ export interface FleetNode {
   sensors?: SensorReading;
   // POI proximity tags
   nearby_pois?: Array<{ name: string; category: POICategory; distance_m: number }>;
+}
+
+export interface FleetNodeCreatePayload {
+  id: string;
+  route_name: string;
+  route_code: string;
+  vehicle_type: string;
+  npu_hardware?: string;
+  camera_model?: string;
+  dvr_channels?: number;
+  dvr_ip?: string;
+  rtsp_url?: string;
+  camera_position?: string;
+  cameras_config?: string;
+  is_online?: boolean;
+  edge_fps?: number;
+  last_lat?: number;
+  last_lng?: number;
+  corridor?: string;
 }
 
 // ── Hazard Cluster ───────────────────────────────────────────────────────────
@@ -152,6 +176,8 @@ export interface HazardCluster {
   before_image_url?: string;
   after_image_url?: string;
   field_notes?: string;
+  detecting_camera_position?: string;
+  detecting_channel?: number;
 }
 
 // ── Corridor Risk ─────────────────────────────────────────────────────────────
@@ -225,7 +251,17 @@ export interface TrafficIncident {
   pcr_dispatch_time?: string;
   work_order_id?: string;
   description?: string;
+  // Multi-camera and statutory provenance
+  camera_position?: string;
+  channel?: number;
+  statutory_provenance?: string;
+  review_status?: string;
+  reviewed_by?: string;
+  reviewed_at?: string;
+  rejection_reason?: string;
+  dispatch_status?: string;
 }
+
 
 // ── Other Types ───────────────────────────────────────────────────────────────
 export interface PerceptionLogEntry {
@@ -504,3 +540,92 @@ export interface InterventionScenario {
   baseline_roughness_iri: number;
   cost_estimate_inr: number;
 }
+
+// ── Self-Learning & Active Learning Pipeline ──────────────────────────────
+export interface LearningQueueItem {
+  id: string;
+  bus_id: string;
+  road_name: string;
+  lat: number;
+  lng: number;
+  captured_at: string;
+  defect_candidate: string;
+  candidate_name: string;
+  confidence: number;
+  uncertainty_reason: string;
+  bbox_normalized: { x: number; y: number; w: number; h: number };
+  status: string;
+}
+
+export interface ModelVersionRecord {
+  version: string;
+  release_date: string;
+  trained_samples: number;
+  precision: number;
+  recall: number;
+  f1_score: number;
+  map_50: number;
+  map_delta?: number;
+  training_loss: number;
+  training_time_seconds?: number;
+  description: string;
+  hot_reloaded: boolean;
+}
+
+export interface LearningStatusResponse {
+  current_model_version: string;
+  active_checkpoint: ModelVersionRecord;
+  dataset_statistics: {
+    total_curated_samples: number;
+    human_verified_samples: number;
+    multi_bus_consensus_samples: number;
+    pending_review_count: number;
+  };
+  performance_metrics: {
+    precision: number;
+    recall: number;
+    f1_score: number;
+    map_50: number;
+    training_loss: number;
+  };
+  version_history: ModelVersionRecord[];
+  active_learning_strategy: {
+    uncertainty_sampling_boundary: number[];
+    auto_promotion_threshold: number;
+    multi_bus_consensus_arbitration: string;
+    hot_reload_target: string;
+  };
+}
+
+export interface RoadMemoryAuditRecord {
+  id: string;
+  cluster_code: string;
+  contractor_name: string;
+  road_name: string;
+  verifying_bus_id: string;
+  vertical_gz: number;
+  optical_status: string;
+  audit_verdict: string;
+  penalty_debit_inr: number;
+  statutory_clause: string;
+  notes: string;
+  verified_at: string;
+}
+
+export interface RoadMemorySummaryResponse {
+  lifecycle_counts: {
+    open_defects: number;
+    dispatched_work_orders: number;
+    repaired_awaiting_verification: number;
+    repair_verified: number;
+    recurrence_penalties: number;
+  };
+  audit_scorecard: {
+    verification_rate_pct: number;
+    total_audited_repairs: number;
+    total_penalties_recovered_inr: number;
+    governing_code: string;
+  };
+  recent_audits: RoadMemoryAuditRecord[];
+}
+

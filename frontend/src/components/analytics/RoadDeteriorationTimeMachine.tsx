@@ -16,6 +16,7 @@ import {
 export const RoadDeteriorationTimeMachine: React.FC = () => {
   const [timeStep, setTimeStep] = useState<number>(0); // 0 = Day 0, 1 = +30 Days, 2 = +60 Days, 3 = +90 Days, 4 = +180 Days
   const [monsoonIntensity, setMonsoonIntensity] = useState<'normal' | 'heavy'>('heavy');
+  const [showMatrixSpec, setShowMatrixSpec] = useState<boolean>(false);
 
   const steps = [
     {
@@ -282,6 +283,97 @@ export const RoadDeteriorationTimeMachine: React.FC = () => {
             </p>
           </div>
         </div>
+      </div>
+
+      {/* Markov Chain Transition Probability Matrix (TPM) Deep-Dive Accordion */}
+      <div className="border-t border-slate-200 dark:border-slate-800/80 pt-4">
+        <button
+          type="button"
+          onClick={() => setShowMatrixSpec(!showMatrixSpec)}
+          className="w-full py-2.5 px-4 rounded-xl bg-slate-100 dark:bg-slate-900 hover:bg-slate-200 dark:hover:bg-slate-850 text-slate-700 dark:text-slate-200 font-semibold text-xs transition flex items-center justify-between border border-slate-200 dark:border-slate-800"
+        >
+          <div className="flex items-center gap-2">
+            <span className="font-mono text-purple-600 dark:text-purple-400 font-bold">P(S_{'{t+1}'}|S_{'{t}'})</span>
+            <span>Markov Transition Probability Matrix (IRC:37 Stochastic Engine)</span>
+          </div>
+          <span className="text-slate-400 text-[11px] font-mono">
+            {showMatrixSpec ? '▲ Collapse Matrix' : '▼ Inspect 5x5 TPM'}
+          </span>
+        </button>
+
+        {showMatrixSpec && (
+          <div className="mt-4 p-4 sm:p-5 rounded-2xl bg-slate-950 border border-slate-800 space-y-4 animate-fadeIn">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs font-mono">
+              <div className="text-slate-300">
+                <span className="text-purple-400 font-bold">Stochastic Law:</span> π(t) = π₀ · P^(t / 30)
+              </div>
+              <div className="text-slate-400">
+                Current Condition: <span className="text-amber-400 font-bold">{monsoonIntensity === 'heavy' ? '2.2x Monsoon Accelerated' : '1.0x Dry Baseline'}</span>
+              </div>
+            </div>
+
+            {/* 5x5 Matrix Table */}
+            <div className="overflow-x-auto">
+              <table className="w-full text-xs font-mono text-left border-collapse">
+                <thead>
+                  <tr className="border-b border-slate-800 text-slate-500 text-[10.5px]">
+                    <th className="p-2">From State (t) \ To (t+30d)</th>
+                    <th className="p-2 text-center text-amber-400">S1: Micro-Crack</th>
+                    <th className="p-2 text-center text-orange-400">S2: Alligator</th>
+                    <th className="p-2 text-center text-rose-400">S3: Ravelling</th>
+                    <th className="p-2 text-center text-red-500">S4: Pothole P0</th>
+                    <th className="p-2 text-center text-purple-400">S5: Failure</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-900 text-slate-300">
+                  {(monsoonIntensity === 'heavy' ? [
+                    [0.52, 0.48, 0.00, 0.00, 0.00],
+                    [0.00, 0.44, 0.56, 0.00, 0.00],
+                    [0.00, 0.00, 0.35, 0.65, 0.00],
+                    [0.00, 0.00, 0.00, 0.25, 0.75],
+                    [0.00, 0.00, 0.00, 0.00, 1.00]
+                  ] : [
+                    [0.78, 0.22, 0.00, 0.00, 0.00],
+                    [0.00, 0.72, 0.28, 0.00, 0.00],
+                    [0.00, 0.00, 0.65, 0.35, 0.00],
+                    [0.00, 0.00, 0.00, 0.58, 0.42],
+                    [0.00, 0.00, 0.00, 0.00, 1.00]
+                  ]).map((row, rIdx) => (
+                    <tr key={rIdx} className={rIdx === timeStep ? 'bg-purple-950/30' : ''}>
+                      <td className="p-2 font-bold text-slate-400">
+                        S{rIdx + 1}: {['Micro-Crack', 'Alligator Web', 'Ravelling', 'Pothole D40', 'Base Collapse'][rIdx]}
+                      </td>
+                      {row.map((val, cIdx) => (
+                        <td 
+                          key={cIdx} 
+                          className={`p-2 text-center font-bold ${
+                            val === 0 
+                              ? 'text-slate-700' 
+                              : val >= 0.5 
+                              ? 'text-purple-400 bg-purple-950/20' 
+                              : 'text-slate-200'
+                          }`}
+                        >
+                          {val.toFixed(2)}
+                        </td>
+                      ))}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Statutory Compliance Footer */}
+            <div className="pt-3 border-t border-slate-800 text-[11px] text-slate-500 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+              <span>
+                Standard: <strong className="text-slate-400 font-mono">IRC:37-2018 Clause 9.3</strong> &bull; Absorbing State: <span className="text-rose-400 font-mono">S5 (P_55 = 1.0)</span>
+              </span>
+              <span className="text-slate-500 font-mono">
+                API: <code className="text-purple-400">/api/analytics/deterioration-matrix</code>
+              </span>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

@@ -21,7 +21,8 @@ import {
   Siren,
   Box,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  CheckCircle2
 } from 'lucide-react';
 import { TrafficIncident, OpenManholeAlert, SubmergedPotholeAlert } from '../types';
 import { IncidentDossierModal } from '../components/modals/IncidentDossierModal';
@@ -37,11 +38,13 @@ import { INITIAL_OPEN_MANHOLES, INITIAL_SUBMERGED_POTHOLES, api } from '../servi
 interface IncidentListProps {
   incidents: TrafficIncident[];
   onUpdateStatus?: (incidentId: string, status: string) => void;
+  onRefresh?: () => Promise<void> | void;
 }
 
 export const IncidentList: React.FC<IncidentListProps> = ({
   incidents,
-  onUpdateStatus
+  onUpdateStatus,
+  onRefresh
 }) => {
   const [viewMode, setViewMode] = useState<'table' | 'grid'>('table');
   const [searchQuery, setSearchQuery] = useState('');
@@ -69,11 +72,33 @@ export const IncidentList: React.FC<IncidentListProps> = ({
   // Open Manholes & Submerged Potholes State
   const [openManholes, setOpenManholes] = useState<OpenManholeAlert[]>(INITIAL_OPEN_MANHOLES);
   const [submergedPotholes, setSubmergedPotholes] = useState<SubmergedPotholeAlert[]>(INITIAL_SUBMERGED_POTHOLES);
+  const [reviewQueue, setReviewQueue] = useState<any[]>([]);
+
+  const fetchReviewQueue = () => {
+    api.getReviewQueue().then(data => {
+      if (data?.pending_items) setReviewQueue(data.pending_items);
+    }).catch(() => {});
+  };
 
   useEffect(() => {
     api.getOpenManholes().then(data => { if (data?.length) setOpenManholes(data); }).catch(() => {});
     api.getSubmergedPotholes().then(data => { if (data?.length) setSubmergedPotholes(data); }).catch(() => {});
+    fetchReviewQueue();
   }, []);
+
+  const handleReviewAction = async (itemId: string, action: 'ACCEPT' | 'REJECT', notes?: string) => {
+    try {
+      const res = await api.reviewIncident(itemId, action, notes || (action === 'ACCEPT' ? 'Officer verified e-challan issued' : 'Rejected - insufficient evidence'));
+      if (res?.success) {
+        setToastMessage(`Incident ${itemId} review recorded: ${action}`);
+        setTimeout(() => setToastMessage(null), 3000);
+        setReviewQueue(prev => prev.filter(item => item.id !== itemId));
+        if (onRefresh) onRefresh();
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  };
 
   // Category counts — memoised so these don't recompute on every render
   const categories = useMemo(() => {
@@ -82,17 +107,26 @@ export const IncidentList: React.FC<IncidentListProps> = ({
     const rashDrivingCount = incidents.filter(i => i.incident_type === 'RASH_DRIVING').length;
     const waterlogCount = incidents.filter(i => i.incident_type === 'WATERLOGGING').length;
     const pedestrianCount = incidents.filter(i => i.incident_type === 'VULNERABLE_PEDESTRIAN').length;
-    const escalatedCount = incidents.filter(i => i.status?.toLowerCase().includes('escalat')).length;
+    const dispatchedCount = incidents.filter(i => {
+      const s = (i.status || '').toLowerCase();
+      return s.includes('escalat') || s.includes('dispatch');
+    }).length;
+    const resolvedCount = incidents.filter(i => {
+      const s = (i.status || '').toLowerCase();
+      return s.includes('resolv') || s.includes('closed') || s.includes('verifi') || s.includes('intercept');
+    }).length;
 
     return [
       { id: 'ALL', label: t('cat.all', 'All Incidents'), count: totalCount },
+      { id: 'REVIEW_QUEUE', label: 'ANPR Review Queue (<85%)', count: reviewQueue.length },
       { id: 'HIT_AND_RUN', label: t('defect.hitAndRun', 'Hit & Run'), count: hitAndRunCount },
       { id: 'RASH_DRIVING', label: t('cat.rashDriving', 'Rash Driving'), count: rashDrivingCount },
       { id: 'WATERLOGGING', label: t('defect.waterlog', 'Waterlogging'), count: waterlogCount },
       { id: 'VULNERABLE_PEDESTRIAN', label: t('cat.pedestrian', 'Pedestrian'), count: pedestrianCount },
-      { id: 'ESCALATED', label: t('incidents.pcrSent', 'PCR Dispatched'), count: escalatedCount }
+      { id: 'ESCALATED', label: t('incidents.pcrSent', 'Dispatched / PCR'), count: dispatchedCount },
+      { id: 'RESOLVED', label: 'Resolved / Intercepted', count: resolvedCount }
     ];
-  }, [incidents]);
+  }, [incidents, reviewQueue.length, t]);
 
   const filteredIncidents = useMemo(() => {
     return incidents.filter(item => {
@@ -106,7 +140,11 @@ export const IncidentList: React.FC<IncidentListProps> = ({
 
       let matchesCategory = true;
       if (activeCategory === 'ESCALATED') {
-        matchesCategory = Boolean(item.status?.toLowerCase().includes('escalat'));
+        const s = (item.status || '').toLowerCase();
+        matchesCategory = s.includes('escalat') || s.includes('dispatch');
+      } else if (activeCategory === 'RESOLVED') {
+        const s = (item.status || '').toLowerCase();
+        matchesCategory = s.includes('resolv') || s.includes('closed') || s.includes('verifi') || s.includes('intercept');
       } else if (activeCategory !== 'ALL') {
         matchesCategory = item.incident_type === activeCategory;
       }
@@ -164,12 +202,30 @@ export const IncidentList: React.FC<IncidentListProps> = ({
   };
 
   const getStatusBadge = (status: string) => {
-    const s = (status || '').toLowerCase();
-    if (s.includes('escalat')) {
-      return { label: 'PCR Dispatched', variant: 'purple' as const };
-    }
-    if (s.includes('verifi') || s.includes('closed') || s.includes('resolv')) {
+    const s = (status || '').toLowerCase().trim();
+    if (s.includes('resolv') || s.includes('closed') || s.includes('verifi')) {
       return { label: 'Resolved', variant: 'success' as const };
+    }
+    if (s.includes('intercept')) {
+      return { label: 'Intercepted', variant: 'purple' as const };
+    }
+    if (s.includes('pcr') || s.includes('escalat') || (s.includes('dispatch') && !s.includes('pump'))) {
+      return { label: 'PCR Dispatched', variant: 'critical' as const };
+    }
+    if (s.includes('pump')) {
+      return { label: 'Pump Dispatched', variant: 'info' as const };
+    }
+    if (s.includes('barricad')) {
+      return { label: 'Barricaded', variant: 'warning' as const };
+    }
+    if (s.includes('work_order') || s.includes('work order')) {
+      return { label: 'Work Order', variant: 'success' as const };
+    }
+    if (s.includes('echallan') || s.includes('challan')) {
+      return { label: 'e-Challan Issued', variant: 'purple' as const };
+    }
+    if (s.includes('reject')) {
+      return { label: 'Rejected', variant: 'neutral' as const };
     }
     return { label: 'Active Alert', variant: 'warning' as const };
   };
@@ -177,6 +233,15 @@ export const IncidentList: React.FC<IncidentListProps> = ({
   const handleOpenDossier = (incident: TrafficIncident) => {
     setSelectedIncident(incident);
     setIsDossierOpen(true);
+  };
+
+  const handleQuickStatus = (incident: TrafficIncident, newStatus: string, e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
+    if (onUpdateStatus) {
+      onUpdateStatus(incident.id, newStatus);
+    }
+    setToastMessage(`Incident #${incident.id} status updated to ${newStatus}`);
+    setTimeout(() => setToastMessage(null), 3000);
   };
 
   const handleQuickEscalate = (incident: TrafficIncident, e?: React.MouseEvent) => {
@@ -193,28 +258,12 @@ export const IncidentList: React.FC<IncidentListProps> = ({
   };
 
   const handleExportCSV = () => {
-    const headers = ['Incident ID', 'Type', 'Plate Number', 'OCR Confidence', 'Vehicle Class', 'Speed (km/h)', 'Road Name', 'Reporting Bus', 'Timestamp', 'Status'];
-    const rows = filteredIncidents.map(i => [
-      i.id,
-      i.incident_type,
-      i.plate_number || 'N/A',
-      i.plate_confidence ? `${(i.plate_confidence * 100).toFixed(0)}%` : 'N/A',
-      `"${i.vehicle_class || 'N/A'}"`,
-      i.target_speed_kmh || 0,
-      `"${i.road_name}"`,
-      i.reporting_bus_id,
-      `"${i.occurred_at}"`,
-      i.status
-    ]);
-    const csvContent = 'data:text/csv;charset=utf-8,' + [headers.join(','), ...rows.map(e => e.join(','))].join('\n');
-    const encodedUri = encodeURI(csvContent);
-    const link = document.createElement('a');
-    link.setAttribute('href', encodedUri);
-    link.setAttribute('download', `roadsaarthi_incidents_${Date.now()}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    // Directly download official statutory CSV from backend
+    window.open('/api/incidents/export/csv', '_blank');
+    setToastMessage("Downloading official GCTP statutory enforcement log CSV");
+    setTimeout(() => setToastMessage(null), 3000);
   };
+
 
   return (
     <div className="flex-1 flex flex-col min-h-0 overflow-y-auto custom-scrollbar p-5 md:p-6 lg:p-7 space-y-5 max-w-[1750px] mx-auto w-full select-none font-sans">
@@ -433,6 +482,29 @@ export const IncidentList: React.FC<IncidentListProps> = ({
             </button>
           </div>
 
+          {/* Realtime Telemetry Indicator */}
+          <div className="flex items-center gap-1.5 px-2.5 py-1 bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-200 dark:border-emerald-800/80 rounded-xl text-xs text-emerald-700 dark:text-emerald-300">
+            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shrink-0" />
+            <span className="hidden md:inline font-medium">Realtime Live</span>
+          </div>
+
+          {/* Sync Button */}
+          {onRefresh && (
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={() => {
+                onRefresh();
+                setToastMessage("Synchronized incidents from live database");
+                setTimeout(() => setToastMessage(null), 2000);
+              }}
+              icon={<RotateCcw className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />}
+              title="Synchronize live incidents from database"
+            >
+              <span className="hidden sm:inline">Sync</span>
+            </Button>
+          )}
+
           {/* Export CSV */}
           <Button
             variant="secondary"
@@ -446,8 +518,101 @@ export const IncidentList: React.FC<IncidentListProps> = ({
         </div>
       </div>
 
-      {/* Main Data View: Table or Cards */}
-      {viewMode === 'table' ? (
+      {/* Main Data View: Review Queue or Table or Cards */}
+      {activeCategory === 'REVIEW_QUEUE' ? (
+        <div className="space-y-4">
+          <div className="p-4 rounded-2xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900/60 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-xl bg-amber-600 text-white flex items-center justify-center font-bold shadow-xs">
+                <AlertTriangle className="w-5 h-5" />
+              </div>
+              <div>
+                <h3 className="text-xs font-bold text-slate-900 dark:text-white uppercase tracking-tight">
+                  Human-in-the-Loop ANPR Verification Queue
+                </h3>
+                <p className="text-[11px] text-slate-600 dark:text-slate-400">
+                  Mandatory under Central Motor Vehicles Rules (CMVR) Rule 50 &amp; BNS: Plates with confidence &lt; 85% require officer clearance before issuing automated notices.
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-mono font-bold text-amber-700 dark:text-amber-300">
+                {reviewQueue.length} Pending
+              </span>
+              <button
+                onClick={fetchReviewQueue}
+                className="px-2.5 py-1 rounded-lg border border-amber-300 dark:border-amber-800 text-xs text-amber-800 dark:text-amber-200 hover:bg-amber-100 dark:hover:bg-amber-900/50 cursor-pointer"
+              >
+                Refresh
+              </button>
+            </div>
+          </div>
+
+          {reviewQueue.length === 0 ? (
+            <div className="p-12 text-center bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl">
+              <CheckCircle2 className="w-10 h-10 text-emerald-500 mx-auto mb-2" />
+              <h4 className="text-sm font-bold text-slate-900 dark:text-white">Review Queue is Clear</h4>
+              <p className="text-xs text-slate-500">All high-speed camera captures have been processed or meet the 85% confidence threshold.</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {reviewQueue.map((item) => (
+                <div key={item.id} className="p-4 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-[#0E1424] space-y-3 shadow-xs">
+                  <div className="flex items-start justify-between gap-2">
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="font-mono font-bold text-xs text-slate-900 dark:text-white">{item.id}</span>
+                        <span className="text-[10.5px] font-mono px-2 py-0.5 rounded bg-amber-100 dark:bg-amber-950/80 text-amber-800 dark:text-amber-300 font-bold">
+                          {Math.round((item.plate_confidence || 0.74) * 100)}% Conf
+                        </span>
+                      </div>
+                      <p className="text-xs font-bold text-slate-800 dark:text-slate-200 mt-1">{item.road_name}</p>
+                      <p className="text-[11px] text-slate-400">Detected by {item.reporting_bus_id} &bull; {item.occurred_at}</p>
+                    </div>
+                    <span className="px-2 py-0.5 rounded-md font-mono text-[10px] font-bold bg-amber-50 dark:bg-amber-950 text-amber-600 dark:text-amber-400 border border-amber-300 dark:border-amber-800">
+                      PENDING REVIEW
+                    </span>
+                  </div>
+
+                  <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-950/60 border border-slate-100 dark:border-slate-800 space-y-1.5 text-xs">
+                    <div className="flex items-center justify-between">
+                      <span className="text-slate-500">Candidate Plate:</span>
+                      <span className="font-mono font-bold text-sm text-slate-900 dark:text-white">
+                        {item.plate_number || 'Plate Obscured / Pending Review'}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between text-[11px]">
+                      <span className="text-slate-500">Flag Reason:</span>
+                      <span className="text-amber-600 dark:text-amber-400 font-medium">{item.review_flag_reason}</span>
+                    </div>
+                    <div className="flex items-center justify-between text-[10px] text-slate-400 pt-1 border-t border-slate-200 dark:border-slate-800">
+                      <span>Mandate:</span>
+                      <span className="italic">{item.statutory_mandate}</span>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-end gap-2 pt-1">
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      onClick={() => handleReviewAction(item.id, 'REJECT')}
+                    >
+                      Reject Notice
+                    </Button>
+                    <Button
+                      variant="primary"
+                      size="sm"
+                      onClick={() => handleReviewAction(item.id, 'ACCEPT')}
+                    >
+                      Approve E-Challan
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      ) : viewMode === 'table' ? (
         /* ========================================================= */
         /* CLEAN, UNCLUTTERED HIGH-DENSITY CAD BOARD TABLE          */
         /* ========================================================= */
@@ -484,7 +649,10 @@ export const IncidentList: React.FC<IncidentListProps> = ({
                     const badge = getIncidentBadge(incident.incident_type);
                     const BadgeIcon = badge.icon;
                     const statusBadge = getStatusBadge(incident.status);
-                    const isEscalated = incident.status?.toLowerCase().includes('escalat');
+                    const statusLower = (incident.status || '').toLowerCase();
+                    const isEscalated = statusLower.includes('escalat') || statusLower.includes('dispatch');
+                    const isIntercepted = statusLower.includes('intercept');
+                    const isResolved = statusLower.includes('resolv') || statusLower.includes('closed') || statusLower.includes('verifi');
 
                     return (
                       <tr 
@@ -557,6 +725,9 @@ export const IncidentList: React.FC<IncidentListProps> = ({
                             <span className="text-slate-700 dark:text-slate-300 font-mono text-xs font-semibold">
                               {incident.reporting_bus_id}
                             </span>
+                            <span className="px-1.5 py-0.5 rounded bg-blue-50 dark:bg-blue-950/50 text-[10px] font-mono text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-900">
+                              CH {incident.channel || 2} • {incident.camera_position || 'REAR_OVERTAKE'}
+                            </span>
                             {isRoadSurfaceDefect(incident.incident_type) && (
                               <MultiBusTruthBadge
                                 passesCount={3}
@@ -578,6 +749,17 @@ export const IncidentList: React.FC<IncidentListProps> = ({
                         {/* Actions */}
                         <td className="py-2.5 px-3.5 text-right whitespace-nowrap">
                           <div className="flex items-center justify-end gap-1.5" onClick={e => e.stopPropagation()}>
+                            {/* Official Printable Legal Dossier */}
+                            <a
+                              href={`/api/incidents/${incident.id}/report`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="px-2 py-1 rounded bg-blue-50 dark:bg-blue-950/60 hover:bg-blue-100 dark:hover:bg-blue-900/80 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800 text-[11px] font-bold flex items-center gap-1 transition cursor-pointer"
+                              title="Print / Save Section 65B Official Legal Dossier"
+                            >
+                              <Eye className="w-3 h-3 text-blue-500" /> Dossier
+                            </a>
+
                             {/* Waterlogging: GCC Sump Pump */}
                             {incident.incident_type === 'WATERLOGGING' && (
                               <button
@@ -636,7 +818,7 @@ export const IncidentList: React.FC<IncidentListProps> = ({
                             )}
 
                             {/* Police Intercept: Strictly for Hit & Run and Rash Driving */}
-                            {(incident.incident_type === 'HIT_AND_RUN' || incident.incident_type === 'RASH_DRIVING') && !isEscalated && (
+                            {(incident.incident_type === 'HIT_AND_RUN' || incident.incident_type === 'RASH_DRIVING') && !isEscalated && !isResolved && (
                               <Button
                                 variant="danger"
                                 size="xs"
@@ -646,6 +828,28 @@ export const IncidentList: React.FC<IncidentListProps> = ({
                               >
                                 112 PCR
                               </Button>
+                            )}
+
+                            {/* Intercept Button: when dispatched and not yet intercepted */}
+                            {isEscalated && !isIntercepted && !isResolved && (
+                              <button
+                                onClick={(e) => handleQuickStatus(incident, 'INTERCEPTED', e)}
+                                className="px-2 py-1 rounded bg-purple-50 dark:bg-purple-950/60 hover:bg-purple-100 dark:hover:bg-purple-900/80 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-800 text-[11px] font-bold flex items-center gap-1 transition cursor-pointer"
+                                title="Mark target vehicle intercepted by PCR / Patrol"
+                              >
+                                <CheckCircle2 className="w-3 h-3 text-purple-600 dark:text-purple-400" /> Intercept
+                              </button>
+                            )}
+
+                            {/* Quick Resolve Button */}
+                            {!isResolved && (isEscalated || isIntercepted || incident.status?.includes('PUMP') || incident.status?.includes('BARRICAD') || incident.status?.includes('WORK_ORDER') || incident.status?.includes('ECHALLAN')) && (
+                              <button
+                                onClick={(e) => handleQuickStatus(incident, 'RESOLVED', e)}
+                                className="px-2 py-1 rounded bg-emerald-50 dark:bg-emerald-950/60 hover:bg-emerald-100 dark:hover:bg-emerald-900/80 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 text-[11px] font-bold flex items-center gap-1 transition cursor-pointer"
+                                title="Mark incident resolved"
+                              >
+                                <CheckCircle2 className="w-3 h-3 text-emerald-600 dark:text-emerald-400" /> Resolve
+                              </button>
                             )}
 
                             <Button
@@ -660,6 +864,7 @@ export const IncidentList: React.FC<IncidentListProps> = ({
                           </div>
                         </td>
                       </tr>
+
                     );
                   })
                 )}
@@ -720,7 +925,10 @@ export const IncidentList: React.FC<IncidentListProps> = ({
               const badge = getIncidentBadge(incident.incident_type);
               const BadgeIcon = badge.icon;
               const statusBadge = getStatusBadge(incident.status);
-              const isEscalated = incident.status?.toLowerCase().includes('escalat');
+              const statusLower = (incident.status || '').toLowerCase();
+              const isEscalated = statusLower.includes('escalat') || statusLower.includes('dispatch');
+              const isIntercepted = statusLower.includes('intercept');
+              const isResolved = statusLower.includes('resolv') || statusLower.includes('closed') || statusLower.includes('verifi');
 
               return (
                 <div
@@ -767,17 +975,31 @@ export const IncidentList: React.FC<IncidentListProps> = ({
                       </div>
                       <div className="flex items-center justify-between text-[10.5px] text-slate-500 dark:text-slate-400 pt-0.5 font-mono">
                         <span>{incident.occurred_at}</span>
-                        {incident.target_speed_kmh ? (
-                          <span className="text-amber-600 dark:text-amber-400 font-bold">{incident.target_speed_kmh} km/h</span>
-                        ) : (
-                          <span>Stationary</span>
-                        )}
+                        <span className="px-1.5 py-0.5 rounded bg-blue-50 dark:bg-blue-950/50 text-[10px] text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-900">
+                          CH {incident.channel || 2} • {incident.camera_position || 'REAR_OVERTAKE'}
+                        </span>
                       </div>
+                      {incident.mva_section && (
+                        <div className="text-[10px] text-slate-500 dark:text-slate-400 truncate pt-0.5">
+                          <span className="font-semibold text-rose-600 dark:text-rose-400">₹{incident.fine_amount_inr || 2000}</span> • {incident.mva_section}
+                        </div>
+                      )}
                     </div>
                   </div>
 
                   {/* Footer Actions */}
                   <div className="pt-2.5 border-t border-slate-100 dark:border-slate-800 flex items-center gap-2 flex-wrap" onClick={e => e.stopPropagation()}>
+                    {/* Official Printable Legal Dossier */}
+                    <a
+                      href={`/api/incidents/${incident.id}/report`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="px-2.5 py-1 rounded-lg bg-blue-50 dark:bg-blue-950/60 hover:bg-blue-100 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800 text-xs font-bold flex items-center gap-1 transition"
+                      title="Print / Save Section 65B Official Legal Dossier"
+                    >
+                      <Eye className="w-3.5 h-3.5 text-blue-500" /> Dossier
+                    </a>
+
                     {incident.incident_type === 'WATERLOGGING' && (
                       <button
                         onClick={() => handleOpenDossier(incident)}
@@ -786,6 +1008,7 @@ export const IncidentList: React.FC<IncidentListProps> = ({
                         <Droplets className="w-3.5 h-3.5" /> Sump Pump
                       </button>
                     )}
+
 
                     {incident.incident_type === 'OPEN_MANHOLE' && (
                       <button
@@ -805,7 +1028,7 @@ export const IncidentList: React.FC<IncidentListProps> = ({
                       </button>
                     )}
 
-                    {(incident.incident_type === 'HIT_AND_RUN' || incident.incident_type === 'RASH_DRIVING') && !isEscalated && (
+                    {(incident.incident_type === 'HIT_AND_RUN' || incident.incident_type === 'RASH_DRIVING') && !isEscalated && !isResolved && (
                       <Button
                         variant="danger"
                         size="sm"
@@ -815,6 +1038,28 @@ export const IncidentList: React.FC<IncidentListProps> = ({
                       >
                         112 PCR
                       </Button>
+                    )}
+
+                    {/* Quick Intercept Button */}
+                    {isEscalated && !isIntercepted && !isResolved && (
+                      <button
+                        onClick={(e) => handleQuickStatus(incident, 'INTERCEPTED', e)}
+                        className="px-2.5 py-1 rounded-lg bg-purple-50 dark:bg-purple-950/60 hover:bg-purple-100 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-800 text-xs font-bold flex items-center gap-1 transition cursor-pointer"
+                        title="Mark target vehicle intercepted"
+                      >
+                        <CheckCircle2 className="w-3.5 h-3.5 text-purple-600 dark:text-purple-400" /> Intercept
+                      </button>
+                    )}
+
+                    {/* Quick Resolve Button */}
+                    {!isResolved && (isEscalated || isIntercepted || incident.status?.includes('PUMP') || incident.status?.includes('BARRICAD') || incident.status?.includes('WORK_ORDER') || incident.status?.includes('ECHALLAN')) && (
+                      <button
+                        onClick={(e) => handleQuickStatus(incident, 'RESOLVED', e)}
+                        className="px-2.5 py-1 rounded-lg bg-emerald-50 dark:bg-emerald-950/60 hover:bg-emerald-100 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 text-xs font-bold flex items-center gap-1 transition cursor-pointer"
+                        title="Mark incident resolved"
+                      >
+                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" /> Resolve
+                      </button>
                     )}
 
                     <Button

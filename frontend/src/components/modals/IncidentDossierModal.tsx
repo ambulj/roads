@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   X, 
   ShieldAlert, 
@@ -35,6 +35,7 @@ import { TrafficIncident, ANPRInterceptSighting } from '../../types';
 import { RoadMeshVisualizerModal, isRoadSurfaceDefect } from './RoadMeshVisualizerModal';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
+import { Badge } from '../ui';
 
 interface IncidentDossierModalProps {
   isOpen: boolean;
@@ -54,13 +55,22 @@ export const IncidentDossierModal: React.FC<IncidentDossierModalProps> = ({
   const { canEscalatePCR, canDispatchWorkOrder, canIssueEChallan, canDeploySumpPump, user, getRoleBadgeLabel } = useAuth();
   const { success: showSuccessToast } = useToast();
 
-  if (!isOpen || !incident) return null;
-
   const [reviewNote, setReviewNote] = useState('');
-  const [currentStatus, setCurrentStatus] = useState(incident.status);
+  const [currentStatus, setCurrentStatus] = useState<string>(incident?.status || 'ACTIVE_ALERT');
   const [showEChallan, setShowEChallan] = useState(false);
   const [isMeshOpen, setIsMeshOpen] = useState(false);
   const [permissionNotice, setPermissionNotice] = useState('');
+
+  useEffect(() => {
+    if (incident) {
+      setCurrentStatus(incident.status || 'ACTIVE_ALERT');
+      setShowEChallan(false);
+      setReviewNote('');
+      setPermissionNotice('');
+    }
+  }, [incident?.id, incident?.status]);
+
+  if (!isOpen || !incident) return null;
 
   // Domain Classifications
   const isHitAndRun = incident.incident_type === 'HIT_AND_RUN';
@@ -182,6 +192,37 @@ export const IncidentDossierModal: React.FC<IncidentDossierModalProps> = ({
 
   const legalCode = getViolationMVA();
 
+  const getStatusBadge = (status: string) => {
+    const s = (status || '').toLowerCase().trim();
+    if (s.includes('resolv') || s.includes('closed') || s.includes('verifi')) {
+      return { label: 'Resolved', variant: 'success' as const };
+    }
+    if (s.includes('intercept')) {
+      return { label: 'Intercepted', variant: 'purple' as const };
+    }
+    if (s.includes('pcr') || s.includes('escalat') || (s.includes('dispatch') && !s.includes('pump'))) {
+      return { label: 'PCR Dispatched', variant: 'critical' as const };
+    }
+    if (s.includes('pump')) {
+      return { label: 'Pump Dispatched', variant: 'info' as const };
+    }
+    if (s.includes('barricad')) {
+      return { label: 'Barricaded', variant: 'warning' as const };
+    }
+    if (s.includes('work_order') || s.includes('work order')) {
+      return { label: 'Work Order', variant: 'success' as const };
+    }
+    if (s.includes('echallan') || s.includes('challan')) {
+      return { label: 'e-Challan Issued', variant: 'purple' as const };
+    }
+    if (s.includes('reject')) {
+      return { label: 'Rejected', variant: 'neutral' as const };
+    }
+    return { label: 'Active Alert', variant: 'warning' as const };
+  };
+
+  const statusBadge = getStatusBadge(currentStatus);
+
   const handleAction = (status: string) => {
     setPermissionNotice('');
     setCurrentStatus(status as any);
@@ -212,7 +253,7 @@ export const IncidentDossierModal: React.FC<IncidentDossierModalProps> = ({
               {isWaterlog ? <Droplets className="w-4 h-4" /> : isOpenManhole ? <AlertTriangle className="w-4 h-4" /> : <ShieldAlert className="w-4 h-4" />}
             </div>
             <div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 flex-wrap">
                 <span className="text-xs font-bold text-slate-900 dark:text-slate-100 uppercase tracking-wider">
                   {showEChallan 
                     ? 'Statutory E-Challan / Police FIR Packet'
@@ -227,6 +268,9 @@ export const IncidentDossierModal: React.FC<IncidentDossierModalProps> = ({
                 <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-blue-700 dark:text-blue-300 font-semibold border border-slate-200 dark:border-slate-700">
                   {incident.id}
                 </span>
+                <Badge variant={statusBadge.variant} size="sm">
+                  {statusBadge.label}
+                </Badge>
               </div>
               <p className="text-[11px] text-slate-500 dark:text-slate-400">
                 {isWaterlog 
@@ -794,21 +838,54 @@ export const IncidentDossierModal: React.FC<IncidentDossierModalProps> = ({
                     <span>Create PWD Work Order</span>
                   </button>
                 )}
+
+                {/* 5. Mark Intercepted (for dispatched cases) */}
+                {(currentStatus.includes('DISPATCH') || currentStatus.includes('ESCALAT')) && !currentStatus.includes('INTERCEPT') && !currentStatus.includes('RESOLV') && (
+                  <button
+                    onClick={() => handleAction('INTERCEPTED')}
+                    className="px-3.5 py-2 rounded-lg bg-purple-600 hover:bg-purple-700 text-white text-xs font-semibold flex items-center gap-1.5 transition active:scale-95 shadow-xs cursor-pointer"
+                  >
+                    <CheckCircle2 className="w-3.5 h-3.5" />
+                    <span>Mark Intercepted</span>
+                  </button>
+                )}
+
+                {/* 6. Resolve & Close Incident */}
+                {!currentStatus.includes('RESOLV') && !currentStatus.includes('REJECT') && (
+                  <button
+                    onClick={() => handleAction('RESOLVED')}
+                    className="px-3.5 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold flex items-center gap-1.5 transition active:scale-95 shadow-xs cursor-pointer"
+                  >
+                    <CheckCircle2 className="w-3.5 h-3.5" />
+                    <span>Resolve & Close</span>
+                  </button>
+                )}
               </div>
             </>
           )}
 
           {showEChallan && (
-            <div className="w-full flex items-center justify-between">
+            <div className="w-full flex items-center justify-between gap-3">
               <span className="text-xs text-slate-500 dark:text-slate-400">
                 Notice generated under Central Motor Vehicle Rules 1989 &amp; MVA 1988.
               </span>
-              <button
-                onClick={() => setShowEChallan(false)}
-                className="px-4 py-2 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-semibold transition cursor-pointer"
-              >
-                Back to Dossier
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setShowEChallan(false)}
+                  className="px-4 py-2 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-semibold transition cursor-pointer"
+                >
+                  Back to Dossier
+                </button>
+                {currentStatus !== 'ECHALLAN_ISSUED' && (
+                  <button
+                    onClick={() => handleAction('ECHALLAN_ISSUED')}
+                    className="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold flex items-center gap-1.5 transition active:scale-95 shadow-xs cursor-pointer"
+                  >
+                    <FileText className="w-3.5 h-3.5" />
+                    <span>Authorize & Issue E-Challan</span>
+                  </button>
+                )}
+              </div>
             </div>
           )}
         </div>

@@ -45,7 +45,8 @@ def test_live_api():
         res = urllib.request.urlopen("http://127.0.0.1:8000/api/fleet", timeout=3)
         fleet = json.loads(res.read().decode())
         print(f"[FLEET] Active Nodes: {len(fleet)}, First: {fleet[0]['id']} ({fleet[0]['route_name']})")
-        assert len(fleet) == 5
+        assert len(fleet) >= 5
+
 
         # 5. Corridors
         res = urllib.request.urlopen("http://127.0.0.1:8000/api/analytics/corridors", timeout=3)

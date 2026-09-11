@@ -1,7 +1,9 @@
 import uuid
 import random
+import math
 from datetime import datetime, timezone
 from typing import List, Dict, Any, Optional
+
 from sqlalchemy.orm import Session
 from app.models.schemas import DefectType, SeverityLevel
 from app.spatial.poi_database import find_nearest_poi
@@ -873,13 +875,92 @@ class PersistentStore:
         ]
 
     def get_dark_spots(self) -> List[Dict[str, Any]]:
-        return self.dark_spot_segments
+        db = self._get_db_session()
+        try:
+            from app.models.db_models import DBDarkSpot
+            rows = db.query(DBDarkSpot).all()
+            if rows:
+                return [
+                    {
+                        "id": r.id,
+                        "road_name": r.corridor_name,
+                        "zone": "Zone 8 / Zone 11 Arterial",
+                        "lat": r.lat,
+                        "lng": r.lng,
+                        "lux_reading": r.illuminance_lux,
+                        "dark_spot_length_m": int(r.dark_length_meters),
+                        "pedestrian_risk": r.pedestrian_risk,
+                        "surrounding_poi": "Maduravoyal Transit Core",
+                        "identified_at": r.detected_at,
+                        "status": r.status,
+                        "provenance": "NIGHT_PATROL_TELEMETRY"
+                    }
+                    for r in rows
+                ]
+            return self.dark_spot_segments
+        except Exception:
+            return self.dark_spot_segments
+        finally:
+            db.close()
 
     def get_contractor_penalties(self) -> List[Dict[str, Any]]:
-        return self.contractor_penalties
+        db = self._get_db_session()
+        try:
+            from app.models.db_models import DBContractorPenalty
+            rows = db.query(DBContractorPenalty).all()
+            if rows:
+                return [
+                    {
+                        "id": r.id,
+                        "contractor_name": r.contractor_name,
+                        "zone": "Zone 12 (Tambaram) / NHAI",
+                        "road_name": r.corridor_name,
+                        "cluster_code": r.cluster_code,
+                        "re_pothole_count": r.re_pothole_count,
+                        "penalty_debit_inr": int(r.penalty_amount_inr),
+                        "penalty_reason": f"Recurrent pothole after initial mastic repair ({r.statutory_clause})",
+                        "statutory_clause": r.statutory_clause,
+                        "issued_at": r.issued_at,
+                        "status": r.status,
+                        "provenance": r.provenance or "DERIVED_FROM_RECURRENT_DISTRESS"
+                    }
+                    for r in rows
+                ]
+            return self.contractor_penalties
+        except Exception:
+            return self.contractor_penalties
+        finally:
+            db.close()
 
     def get_open_manholes(self) -> List[Dict[str, Any]]:
-        return self.open_manholes
+        db = self._get_db_session()
+        try:
+            from app.models.db_models import DBOpenManholeAlert
+            rows = db.query(DBOpenManholeAlert).all()
+            if rows:
+                return [
+                    {
+                        "id": r.id,
+                        "road_name": r.location_name,
+                        "zone": "Zone 10 (Kodambakkam)",
+                        "lat": r.lat,
+                        "lng": r.lng,
+                        "void_diameter_cm": int(r.void_diameter_cm),
+                        "depth_meters": r.depth_meters,
+                        "sla_hours": 2,
+                        "jal_board_docket": r.docket_number,
+                        "police_cones_dispatched": r.is_barricaded,
+                        "detected_at": r.detected_at,
+                        "status": r.status,
+                        "statutory_standard": r.statutory_standard
+                    }
+                    for r in rows
+                ]
+            return self.open_manholes
+        except Exception:
+            return self.open_manholes
+        finally:
+            db.close()
 
     def get_submerged_potholes(self) -> List[Dict[str, Any]]:
         return self.submerged_potholes
@@ -888,10 +969,39 @@ class PersistentStore:
         return self.obscured_signs
 
     def get_contractor_debarments(self) -> List[Dict[str, Any]]:
-        return self.contractor_debarments
+        db = self._get_db_session()
+        try:
+            from app.models.db_models import DBContractorDebarment
+            rows = db.query(DBContractorDebarment).all()
+            if rows:
+                return [
+                    {
+                        "id": r.id,
+                        "agency_name": r.contractor_name,
+                        "legal_cin": "U45201TN2012PTC088219",
+                        "director_name": "K. R. Natarajan",
+                        "zone": "Greater Chennai Metropolitan",
+                        "durability_score_pct": 34.2,
+                        "total_recurrence_penalties_inr": 185000,
+                        "sla_breach_count": 8,
+                        "debarment_status": "STATUTORY_BARRED",
+                        "debarment_order_no": r.gem_portal_reference,
+                        "gem_portal_notified": True,
+                        "statutory_clause": "MoHUA Rule 151(iii) GFR 2017 & IRC:SP:20",
+                        "valid_until": "31 Dec 2026",
+                        "provenance": "STATUTORY_GFR_151_DOCKET"
+                    }
+                    for r in rows
+                ]
+            return self.contractor_debarments
+        except Exception:
+            return self.contractor_debarments
+        finally:
+            db.close()
 
     def get_asphalt_quality_audits(self) -> List[Dict[str, Any]]:
         return self.asphalt_quality_audits
+
 
     def get_road_memory_corridors(self) -> List[Dict[str, Any]]:
         return self.road_memory_corridors
@@ -995,6 +1105,8 @@ class PersistentStore:
                     "raw_ingests_count": r.raw_ingests_count,
                     "edge_fps": r.edge_fps,
                     "imu_jerk_gz": r.imu_jerk_gz,
+                    "dvr_channels": getattr(r, "dvr_channels", 4) or 4,
+                    "dvr_ip": getattr(r, "dvr_ip", None),
                 }
                 for r in rows
             ]
@@ -1029,10 +1141,29 @@ class PersistentStore:
                     raw_ingests_count=node_data.get("raw_ingests_count", 12),
                     edge_fps=node_data.get("edge_fps", 30.0),
                     imu_jerk_gz=node_data.get("imu_jerk_gz", 0.98),
+                    dvr_channels=node_data.get("dvr_channels", 4),
+                    dvr_ip=node_data.get("dvr_ip", None),
                 )
                 db.add(new_node)
             db.commit()
             return {"success": True, "bus_id": bus_id}
+        finally:
+            db.close()
+
+    def delete_fleet_node(self, bus_id: str) -> bool:
+        db = self._get_db_session()
+        try:
+            from app.models.db_models import DBFleetNode
+            node = db.query(DBFleetNode).filter(
+                (DBFleetNode.id == bus_id) | 
+                (DBFleetNode.id == bus_id.lower()) | 
+                (DBFleetNode.id == bus_id.upper())
+            ).first()
+            if node:
+                db.delete(node)
+                db.commit()
+                return True
+            return False
         finally:
             db.close()
 
@@ -1083,6 +1214,7 @@ class PersistentStore:
         db = self._get_db_session()
         try:
             from app.models.db_models import DBDistressCluster
+            now_str = datetime.now(timezone.utc).strftime("%d %b, %I:%M %p")
             cluster = db.query(DBDistressCluster).filter(
                 (DBDistressCluster.id == cluster_id) | (DBDistressCluster.cluster_code == cluster_id)
             ).first()
@@ -1094,7 +1226,7 @@ class PersistentStore:
                     cluster.after_image_url = after_image_url
                 if field_notes is not None:
                     cluster.field_notes = field_notes
-                cluster.updated_at = datetime.now(timezone.utc).strftime("%d %b, %I:%M %p")
+                cluster.updated_at = now_str
                 db.commit()
                 return {
                     "id": cluster.id,
@@ -1105,7 +1237,44 @@ class PersistentStore:
                     "field_notes": cluster.field_notes,
                     "updated_at": cluster.updated_at
                 }
-            return None
+            else:
+                # Upsert record if not previously in persistent storage (e.g. newly generated or drill)
+                code = cluster_id if cluster_id.startswith("WO-") else f"WO-{cluster_id[-4:].upper()}"
+                new_cluster = DBDistressCluster(
+                    id=cluster_id,
+                    cluster_code=code,
+                    defect_type="D40",
+                    defect_name="Pothole",
+                    severity_level="high",
+                    rpi_score=85.0,
+                    pass_count=2,
+                    road_name="GST Road, Tambaram (NH-32)",
+                    classification="National Highway (NH)",
+                    nearest_poi="MIOT Hospital Corridor",
+                    poi_distance_m=350.0,
+                    assigned_agency="L&T Highways Infra Ltd",
+                    agency_phone="+91 98401 22345",
+                    sla_hours=24,
+                    status=new_status,
+                    lat=12.9516,
+                    lng=80.1462,
+                    before_image_url=before_image_url or "https://images.unsplash.com/photo-1515162816999-a0c47dc192f7",
+                    after_image_url=after_image_url,
+                    field_notes=field_notes,
+                    created_at=now_str,
+                    updated_at=now_str
+                )
+                db.add(new_cluster)
+                db.commit()
+                return {
+                    "id": new_cluster.id,
+                    "cluster_code": new_cluster.cluster_code,
+                    "status": new_cluster.status,
+                    "before_image_url": new_cluster.before_image_url,
+                    "after_image_url": new_cluster.after_image_url,
+                    "field_notes": new_cluster.field_notes,
+                    "updated_at": new_cluster.updated_at
+                }
         finally:
             db.close()
 
@@ -1113,21 +1282,54 @@ class PersistentStore:
         db = self._get_db_session()
         try:
             from app.models.db_models import DBTrafficIncident
+            now_str = datetime.now(timezone.utc).strftime("%d %b, %I:%M %p")
             inc = db.query(DBTrafficIncident).filter(DBTrafficIncident.id == incident_id).first()
             if inc:
                 inc.status = new_status
                 if is_intercepted is not None:
                     inc.is_intercepted = is_intercepted
+                elif new_status == "INTERCEPTED":
+                    inc.is_intercepted = True
                 if intercepted_by is not None:
                     inc.intercepted_by_bus_id = intercepted_by
+                if new_status == "PUMP_DISPATCHED":
+                    inc.pump_deployed = True
+                if new_status == "ECHALLAN_ISSUED":
+                    inc.echallan_issued = True
+                    if not inc.echallan_id:
+                        inc.echallan_id = f"ECH-2026-{uuid.uuid4().hex[:6].upper()}"
                 db.commit()
                 return {
                     "id": inc.id,
                     "status": inc.status,
                     "is_intercepted": inc.is_intercepted,
-                    "intercepted_by_bus_id": inc.intercepted_by_bus_id
+                    "intercepted_by_bus_id": inc.intercepted_by_bus_id,
+                    "echallan_id": getattr(inc, "echallan_id", None),
+                    "pump_deployed": getattr(inc, "pump_deployed", None)
                 }
-            return None
+            else:
+                new_inc = DBTrafficIncident(
+                    id=incident_id,
+                    reporting_bus_id="BUS-TN01-1042",
+                    incident_type="HIT_AND_RUN",
+                    plate_number="TN09CA1234",
+                    plate_confidence=0.96,
+                    road_name="GST Road, Tambaram",
+                    lat=12.9516,
+                    lng=80.1462,
+                    occurred_at=now_str,
+                    status=new_status,
+                    is_intercepted=bool(is_intercepted) or (new_status == "INTERCEPTED"),
+                    intercepted_by_bus_id=intercepted_by
+                )
+                db.add(new_inc)
+                db.commit()
+                return {
+                    "id": new_inc.id,
+                    "status": new_inc.status,
+                    "is_intercepted": new_inc.is_intercepted,
+                    "intercepted_by_bus_id": new_inc.intercepted_by_bus_id
+                }
         finally:
             db.close()
 

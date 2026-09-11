@@ -310,31 +310,37 @@ async def synthetic_generator_loop(interval_seconds: int = 300):
     print(f"[SYNTHETIC GENERATOR] Service active. Running every {interval_seconds} seconds ({interval_seconds / 60:.1f} mins)...")
     await asyncio.sleep(5.0)
     
+    from app.services.simulation_controller import simulation_controller
     while True:
         try:
-            print("[SYNTHETIC GENERATOR] Generating scheduled 5-min urban telemetry cycle...")
-            summary = generate_synthetic_tick()
-            
-            try:
-                from app.api.websockets import manager
-                if manager.active_connections:
-                    await manager.broadcast({
-                        "type": "SYNTHETIC_CYCLE_TICK",
-                        "summary": summary,
-                        "metrics": store.get_metrics(),
-                        "clusters": store.get_clusters(),
-                        "incidents": store.get_incidents(),
-                        "fleet": store.fleet_nodes,
-                        "latest_log": store.audit_logs[0] if store.audit_logs else None
-                    })
-            except Exception as b_err:
-                print(f"[SYNTHETIC GENERATOR] Broadcast notice: {b_err}")
+            if simulation_controller.is_synthetic_generation_active():
+                print("[SYNTHETIC GENERATOR] Generating scheduled 5-min urban telemetry cycle...")
+                summary = generate_synthetic_tick()
+                
+                try:
+                    from app.api.websockets import manager
+                    if manager.active_connections:
+                        await manager.broadcast({
+                            "type": "SYNTHETIC_CYCLE_TICK",
+                            "summary": summary,
+                            "metrics": store.get_metrics(),
+                            "clusters": store.get_clusters(),
+                            "incidents": store.get_incidents(),
+                            "fleet": store.fleet_nodes,
+                            "latest_log": store.audit_logs[0] if store.audit_logs else None
+                        })
+                except Exception as b_err:
+                    print(f"[SYNTHETIC GENERATOR] Broadcast notice: {b_err}")
 
-            print(f"[SYNTHETIC GENERATOR] Cycle completed: {len(summary['ingests_generated'])} ingests, {len(summary['incidents_generated'])} incidents, {len(summary['work_orders_updated'])} work orders updated.")
+                print(f"[SYNTHETIC GENERATOR] Cycle completed: {len(summary['ingests_generated'])} ingests, {len(summary['incidents_generated'])} incidents, {len(summary['work_orders_updated'])} work orders updated.")
+            else:
+                # Simulation paused (e.g. during live demo of real detections)
+                pass
         except Exception as e:
             print(f"[SYNTHETIC GENERATOR] Error during generation cycle: {e}")
 
         await asyncio.sleep(interval_seconds)
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="RoadSaarthi 5-Minute Synthetic Data Generator")

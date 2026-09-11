@@ -1,10 +1,20 @@
-from fastapi import APIRouter, UploadFile, File, Form, HTTPException
+from fastapi import APIRouter, UploadFile, File, Form, HTTPException, Depends
 from typing import Dict, Any, List, Optional
 from pathlib import Path
 import base64
+import uuid
+import datetime
+from sqlalchemy.orm import Session
+
+from app.storage.database import get_db
 from app.storage.mock_database import store
-from app.models.schemas import TelemetryIngest, MetricSummary, PerceptionLogEntry, DefectType
+from app.models.schemas import (
+    TelemetryIngest, MetricSummary, PerceptionLogEntry, DefectType,
+    EdgeBufferSyncPayload, EdgeSyncResult, EdgeNodeBufferStatus
+)
+from app.models.db_models import DBRawIngest, DBAuditLog
 from app.services.yolo_inference import yolo_engine, WEIGHTS_DIR
+
 
 router = APIRouter()
 
@@ -13,13 +23,64 @@ def get_metrics():
     return store.get_metrics()
 
 @router.get("/audit-logs", response_model=List[PerceptionLogEntry])
-def get_audit_logs():
+def get_audit_logs(db: Session = Depends(get_db)):
+    """Retrieve edge perception audit logs from database."""
+    rows = db.query(DBAuditLog).order_by(DBAuditLog.created_at.desc()).limit(50).all()
+    if rows:
+        return [
+            PerceptionLogEntry(
+                id=r.id,
+                bus_id=r.bus_id or "BUS-TN01-1042",
+                corridor=r.corridor or "Arterial Transit Corridor",
+                message=r.message,
+                latency_ms=r.latency_ms or 42,
+                type=r.type or "PERCEPTION_AUDIT",
+                timestamp=r.timestamp or "Just now"
+            )
+            for r in rows
+        ]
     return store.audit_logs
 
 @router.post("/ingest")
-def ingest_telemetry(payload: TelemetryIngest):
-    result = store.add_ingest(payload.model_dump())
+def ingest_telemetry(payload: TelemetryIngest, db: Session = Depends(get_db)):
+    """Persists raw edge perception telemetry to database."""
+    data = payload.model_dump()
+    raw_id = f"raw-{uuid.uuid4().hex[:8]}"
+    now_str = datetime.datetime.now(datetime.timezone.utc).isoformat()
+    
+    # Save DBRawIngest
+    raw_record = DBRawIngest(
+        id=raw_id,
+        bus_id=data.get("bus_id", "BUS-TN01-1042"),
+        defect_type=data.get("defect_type", "D40"),
+        confidence=data.get("confidence", 0.95),
+        speed_kmh=data.get("speed_kmh", 40.0),
+        vertical_g_force=data.get("vertical_g_force", 1.0),
+        lat=data.get("lat", 12.9516),
+        lng=data.get("lng", 80.1462),
+        camera_position=data.get("camera_position", "FRONT_WINDSHIELD"),
+        channel=data.get("channel", 1),
+        captured_at=now_str
+    )
+    db.add(raw_record)
+    
+    # Save DBAuditLog
+    audit_rec = DBAuditLog(
+        id=f"aud-{uuid.uuid4().hex[:6]}",
+        bus_id=raw_record.bus_id,
+        corridor=data.get("defect_type", "D40"),
+        message=f"Defect {raw_record.defect_type} captured via {raw_record.camera_position} (CH {raw_record.channel}) with {int(raw_record.confidence * 100)}% confidence.",
+        latency_ms=38,
+        type="EDGE_INGEST",
+        timestamp="Just now",
+        created_at=now_str
+    )
+    db.add(audit_rec)
+    db.commit()
+    
+    result = store.add_ingest(data)
     return result
+
 
 @router.post("/deduplicate")
 def trigger_deduplication():
@@ -47,6 +108,26 @@ async def trigger_synthetic_generation():
         "message": "5-Minute Synthetic Data Cycle executed successfully",
         "summary": summary
     }
+
+# ── EDGE BUFFERING & LOW-BANDWIDTH ARCHITECTURE ──────────────────────────────
+
+@router.post("/edge/sync", response_model=EdgeSyncResult)
+def sync_edge_buffer(payload: EdgeBufferSyncPayload):
+    """
+    Receives compressed batch telemetry from vehicle edge nodes arriving at depot or 5G coverage.
+    Processes deferred P1 batch records while accounting for bandwidth savings.
+    """
+    from app.services.edge_sync_engine import edge_sync_engine
+    return edge_sync_engine.process_edge_buffer_sync(payload)
+
+@router.get("/edge/status/{bus_id}", response_model=EdgeNodeBufferStatus)
+def get_edge_node_status(bus_id: str):
+    """
+    Returns edge buffering health, offline queue depth, and cumulative bandwidth saved.
+    """
+    from app.services.edge_sync_engine import edge_sync_engine
+    return edge_sync_engine.get_node_status(bus_id)
+
 
 # ── YOLO INFERENCE & WEIGHTS MANAGEMENT ─────────────────────────────────────
 

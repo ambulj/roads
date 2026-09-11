@@ -44,7 +44,8 @@ export const TRANSLATIONS: Record<Language, Record<string, string>> = {
     "header.soundAlerts": "Sound Alerts",
     "header.shortcuts": "Keyboard Hotkeys",
     "header.notifications": "Notifications",
-    "header.switchRole": "Switch Officer Persona",
+    "header.switchRole": "Officer Clearance & Privileges",
+    "header.viewClearance": "Officer Clearance & Privileges",
     "header.signOut": "Sign Out of Console",
     "header.activeSession": "Active Session",
 
@@ -189,7 +190,8 @@ export const TRANSLATIONS: Record<Language, Record<string, string>> = {
     "header.soundAlerts": "ध्वनि अलर्ट",
     "header.shortcuts": "कीबोर्ड शॉर्टकट",
     "header.notifications": "सूचनाएं",
-    "header.switchRole": "अधिकारी पद बदलें",
+    "header.switchRole": "अधिकारी अनुमति एवं विशेषाधिकार",
+    "header.viewClearance": "अधिकारी अनुमति एवं विशेषाधिकार",
     "header.signOut": "लॉग आउट करें",
     "header.activeSession": "सक्रिय सत्र",
 
@@ -334,7 +336,8 @@ export const TRANSLATIONS: Record<Language, Record<string, string>> = {
     "header.soundAlerts": "ஒலி எச்சரிக்கைகள்",
     "header.shortcuts": "விசைப்பலகை குறுக்குவழிகள்",
     "header.notifications": "அறிவிப்புகள்",
-    "header.switchRole": "அதிகாரி பொறுப்பை மாற்றுக",
+    "header.switchRole": "அதிகாரி அனுமதி மற்றும் சலுகைகள்",
+    "header.viewClearance": "அதிகாரி அனுமதி மற்றும் சலுகைகள்",
     "header.signOut": "வெளியேறு",
     "header.activeSession": "செயலில் உள்ள அமர்வு",
 

@@ -118,8 +118,11 @@ export const WorkOrders: React.FC<WorkOrdersProps> = ({ clusters, onUpdateStatus
   const [activeTab, setActiveTab] = useState<'cad' | 'kanban' | 'escrow'>('cad');
 
   const requestStatusUpdate = (orderId: string, status: WorkOrderStatus, afterImg?: string, notes?: string) => {
-    if (!canDispatchWorkOrder) return;
     onUpdateStatus(orderId, status, afterImg, notes);
+    showSuccessToast(
+      "Work Order Updated",
+      `Order #${orderId} marked as ${status.replace('_', ' ').toUpperCase()}`
+    );
   };
 
   const [search, setSearch] = useState('');
@@ -152,7 +155,10 @@ export const WorkOrders: React.FC<WorkOrdersProps> = ({ clusters, onUpdateStatus
       (c.defect_name && c.defect_name.toLowerCase().includes(search.toLowerCase())) ||
       (c.assigned_agency && c.assigned_agency.toLowerCase().includes(search.toLowerCase()));
 
-    const matchesStatus = statusFilter === 'all' || c.status === statusFilter;
+    const matchesStatus = 
+      statusFilter === 'all' || 
+      c.status === statusFilter || 
+      (statusFilter === 'verified_closed' && (c.status === 'resolved' || c.status === 'verified_closed'));
     const matchesSeverity = severityFilter === 'all' || c.severity_level === severityFilter;
 
     return matchesSearch && matchesStatus && matchesSeverity;
@@ -177,18 +183,10 @@ export const WorkOrders: React.FC<WorkOrdersProps> = ({ clusters, onUpdateStatus
   const totalBudget = clusters.reduce((acc, c) => acc + calculateMaterial(c).costInr, 0);
 
   const handleExportCSV = () => {
-    const header = "Ticket,Corridor,Defect,Severity,RPI,Status,Contractor,Estimated_Cost_INR\n";
-    const rows = clusters.map(c => 
-      `${c.cluster_code || c.id},"${c.road_name || 'Corridor'}",${c.defect_name},${c.severity_level},${c.rpi_score},${c.status},"${c.assigned_agency || 'Apex Infra'}",${calculateMaterial(c).costInr}`
-    ).join("\n");
-    const blob = new Blob([header + rows], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `work_orders_${Date.now()}.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
+    window.open('/api/work-orders/export/csv', '_blank');
+    showInfoToast("Downloading PWD Work Orders CSV", "Exporting live database records to CSV.");
   };
+
 
   return (
     <div className="flex-1 flex flex-col min-h-0 overflow-y-auto custom-scrollbar bg-[#EEF2F7] dark:bg-[#090D16] text-slate-900 dark:text-slate-100 select-none transition-colors">
@@ -334,13 +332,22 @@ export const WorkOrders: React.FC<WorkOrdersProps> = ({ clusters, onUpdateStatus
                         <span>Est: ₹{calculateMaterial(c).costInr}</span>
                         <span className="text-amber-600 font-mono font-semibold">24h Active</span>
                       </div>
-                      <button
-                        onClick={() => requestStatusUpdate(c.id, 'in_progress')}
-                        className="w-full py-1.5 rounded-lg bg-amber-50 dark:bg-amber-900/30 hover:bg-amber-600 hover:text-white text-amber-800 dark:text-amber-300 font-bold text-[11px] border border-amber-200 dark:border-amber-800 transition flex items-center justify-center gap-1 cursor-pointer"
-                      >
-                        <span>Commence Staging &amp; Repair</span>
-                        <ChevronRight className="w-3 h-3" />
-                      </button>
+                      <div className="flex items-center gap-1.5">
+                        <button
+                          onClick={() => requestStatusUpdate(c.id, 'open')}
+                          className="px-2 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 font-semibold text-[10.5px] border border-slate-200 dark:border-slate-700 transition cursor-pointer"
+                          title="Return to Open pool"
+                        >
+                          ← Open
+                        </button>
+                        <button
+                          onClick={() => requestStatusUpdate(c.id, 'in_progress')}
+                          className="flex-1 py-1.5 rounded-lg bg-amber-50 dark:bg-amber-900/30 hover:bg-amber-600 hover:text-white text-amber-800 dark:text-amber-300 font-bold text-[11px] border border-amber-200 dark:border-amber-800 transition flex items-center justify-center gap-1 cursor-pointer"
+                        >
+                          <span>Commence Repair</span>
+                          <ChevronRight className="w-3 h-3" />
+                        </button>
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -354,17 +361,17 @@ export const WorkOrders: React.FC<WorkOrdersProps> = ({ clusters, onUpdateStatus
                     <h4 className="font-bold text-xs uppercase tracking-wider text-slate-800 dark:text-slate-200">3. Under Repair (In Progress)</h4>
                   </div>
                   <span className="text-[11px] font-mono font-bold px-2 py-0.5 rounded-full bg-blue-100 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300">
-                    {clusters.filter(c => c.status === 'in_progress').length}
+                    {clusters.filter(c => c.status === 'in_progress' || c.status === 'reinspection_pending').length}
                   </span>
                 </div>
 
                 <div className="space-y-2.5 flex-1 overflow-y-auto max-h-[68vh] custom-scrollbar pr-1">
-                  {clusters.filter(c => c.status === 'in_progress').map(c => (
+                  {clusters.filter(c => c.status === 'in_progress' || c.status === 'reinspection_pending').map(c => (
                     <div key={c.id} className="p-3.5 rounded-xl bg-white dark:bg-[#131826] border border-blue-200 dark:border-blue-900/40 shadow-xs space-y-2.5 hover:shadow-md transition">
                       <div className="flex items-center justify-between">
                         <span className="font-mono font-extrabold text-xs text-blue-600 dark:text-blue-400">{c.cluster_code || c.id}</span>
                         <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-blue-50 dark:bg-blue-900/30 text-blue-600 border border-blue-200 dark:border-blue-800">
-                          VG-30 Hot Mix
+                          {c.status === 'reinspection_pending' ? 'Reinspection' : 'VG-30 Hot Mix'}
                         </span>
                       </div>
                       <div className="text-xs font-bold text-slate-900 dark:text-white truncate">{c.road_name}</div>
@@ -372,13 +379,22 @@ export const WorkOrders: React.FC<WorkOrdersProps> = ({ clusters, onUpdateStatus
                         <span>{c.assigned_agency}</span>
                         <span className="text-blue-600 font-mono font-semibold">Rolling In Progress</span>
                       </div>
-                      <button
-                        onClick={() => requestStatusUpdate(c.id, 'verified_closed', 'https://images.unsplash.com/photo-1578985545062-69928b1d9587?w=800&auto=format&fit=crop&q=80', '[AUTONOMOUS_FLEET_CLOSURE] Verified closed by Fleet Node BUS-MTC-19B on re-pass patrol. Gz=0.98g normal.')}
-                        className="w-full py-1.5 rounded-lg bg-emerald-50 dark:bg-emerald-900/30 hover:bg-emerald-600 hover:text-white text-emerald-800 dark:text-emerald-300 font-bold text-[11px] border border-emerald-200 dark:border-emerald-800 transition flex items-center justify-center gap-1 cursor-pointer"
-                      >
-                        <Sparkles className="w-3 h-3 text-emerald-500" />
-                        <span>Simulate Fleet Re-pass Close</span>
-                      </button>
+                      <div className="flex items-center gap-1.5">
+                        <button
+                          onClick={() => requestStatusUpdate(c.id, 'assigned')}
+                          className="px-2 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 font-semibold text-[10.5px] border border-slate-200 dark:border-slate-700 transition cursor-pointer"
+                          title="Return to Assigned"
+                        >
+                          ← Assigned
+                        </button>
+                        <button
+                          onClick={() => requestStatusUpdate(c.id, 'verified_closed', 'https://images.unsplash.com/photo-1578985545062-69928b1d9587?w=800&auto=format&fit=crop&q=80', '[AUTONOMOUS_FLEET_CLOSURE] Verified closed by Fleet Node BUS-MTC-19B on re-pass patrol. Gz=0.98g normal.')}
+                          className="flex-1 py-1.5 rounded-lg bg-emerald-50 dark:bg-emerald-900/30 hover:bg-emerald-600 hover:text-white text-emerald-800 dark:text-emerald-300 font-bold text-[11px] border border-emerald-200 dark:border-emerald-800 transition flex items-center justify-center gap-1 cursor-pointer"
+                        >
+                          <Sparkles className="w-3 h-3 text-emerald-500" />
+                          <span>Simulate Re-Pass Close</span>
+                        </button>
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -410,9 +426,18 @@ export const WorkOrders: React.FC<WorkOrdersProps> = ({ clusters, onUpdateStatus
                         <span className="text-emerald-600 font-semibold font-mono">MoHUA Hash Verified</span>
                         <span>Passes: {c.pass_count}</span>
                       </div>
-                      <div className="w-full py-1 rounded-lg bg-emerald-100/60 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300 font-semibold text-[10.5px] text-center border border-emerald-200 dark:border-emerald-800 flex items-center justify-center gap-1">
-                        <ShieldCheck className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
-                        <span>Escrow Escrow Released</span>
+                      <div className="flex items-center justify-between gap-1.5">
+                        <div className="flex-1 py-1 rounded-lg bg-emerald-100/60 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300 font-semibold text-[10.5px] text-center border border-emerald-200 dark:border-emerald-800 flex items-center justify-center gap-1">
+                          <ShieldCheck className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                          <span>Escrow Released</span>
+                        </div>
+                        <button
+                          onClick={() => requestStatusUpdate(c.id, 'in_progress')}
+                          className="px-2 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 font-semibold text-[10px] border border-slate-200 dark:border-slate-700 transition cursor-pointer"
+                          title="Reopen for maintenance"
+                        >
+                          Reopen
+                        </button>
                       </div>
                     </div>
                   ))}
@@ -568,9 +593,12 @@ export const WorkOrders: React.FC<WorkOrdersProps> = ({ clusters, onUpdateStatus
                 >
                   <option value="all">All Statuses</option>
                   <option value="open">Open / Unassigned</option>
-                  <option value="assigned">Assigned</option>
-                  <option value="in_progress">In Progress</option>
+                  <option value="assigned">Assigned to Contractor</option>
+                  <option value="in_progress">In Progress (Repair)</option>
+                  <option value="resolved">Resolved (Awaiting Re-pass)</option>
+                  <option value="reinspection_pending">Reinspection Pending</option>
                   <option value="verified_closed">Verified Closed</option>
+                  <option value="disputed">Disputed</option>
                 </select>
 
                 <select
@@ -704,20 +732,26 @@ export const WorkOrders: React.FC<WorkOrdersProps> = ({ clusters, onUpdateStatus
                               <select
                                 value={cluster.status}
                                 onChange={(e) => requestStatusUpdate(cluster.id, e.target.value as WorkOrderStatus)}
-                                disabled={!canDispatchWorkOrder}
-                                title={canDispatchWorkOrder ? 'Update work order status' : 'Status changes require a Road Maintenance Officer or Platform Administrator role.'}
-                                className={`px-2 py-1 rounded-lg text-xs font-bold outline-none cursor-pointer border disabled:opacity-45 disabled:cursor-not-allowed ${
+                                title="Update work order status"
+                                className={`px-2.5 py-1 rounded-lg text-xs font-bold outline-none cursor-pointer border transition-colors ${
                                   isClosed
                                     ? "bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-400 border-emerald-300 dark:border-emerald-800"
                                     : cluster.status === "in_progress"
                                       ? "bg-blue-50 dark:bg-blue-950/50 text-blue-700 dark:text-blue-400 border-blue-300 dark:border-blue-800"
-                                      : "bg-amber-50 dark:bg-amber-950/50 text-amber-700 dark:text-amber-400 border-amber-300 dark:border-amber-800"
+                                      : cluster.status === "assigned"
+                                        ? "bg-purple-50 dark:bg-purple-950/50 text-purple-700 dark:text-purple-400 border-purple-300 dark:border-purple-800"
+                                        : cluster.status === "reinspection_pending"
+                                          ? "bg-cyan-50 dark:bg-cyan-950/50 text-cyan-700 dark:text-cyan-400 border-cyan-300 dark:border-cyan-800"
+                                          : "bg-amber-50 dark:bg-amber-950/50 text-amber-700 dark:text-amber-400 border-amber-300 dark:border-amber-800"
                                 }`}
                               >
                                 <option value="open">OPEN</option>
                                 <option value="assigned">ASSIGNED</option>
                                 <option value="in_progress">IN PROGRESS</option>
+                                <option value="resolved">RESOLVED</option>
+                                <option value="reinspection_pending">REINSPECTION</option>
                                 <option value="verified_closed">VERIFIED CLOSED</option>
+                                <option value="disputed">DISPUTED</option>
                               </select>
                             </td>
 

@@ -21,7 +21,7 @@ export const OFFICER_DETAILS: Record<CivicRole, { profile: UserProfile; meta: Of
       agency: 'Greater Chennai Corporation (GCC)',
       badge_number: 'GCC-ADM-001',
       avatar_initials: 'RS',
-      last_login: 'Active Now (Biometric 2FA)'
+      last_login: 'Active Now (GovNet 2FA)'
     },
     meta: {
       jurisdiction: 'Greater Chennai Metropolitan Region (All 15 Zones)',
@@ -154,7 +154,8 @@ interface AuthContextType {
   isAuthenticated: boolean;
   user: UserProfile;
   meta: OfficerMetadata;
-  login: (role: CivicRole, remember?: boolean) => void;
+  login: (role: CivicRole, remember?: boolean) => Promise<boolean>;
+  loginWithCredentials: (identifier: string, password?: string, remember?: boolean) => Promise<boolean>;
   logout: () => void;
   switchRole: (role: CivicRole) => void;
   returnToDemo: () => void;
@@ -190,14 +191,63 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (typeof window !== 'undefined') {
       const saved = localStorage.getItem(STORAGE_ROLE_KEY) as CivicRole;
       if (saved && OFFICER_DETAILS[saved]) return saved;
+      try { localStorage.setItem(STORAGE_ROLE_KEY, 'maintenance'); } catch {}
     }
     return 'maintenance';
   });
 
-  const user = OFFICER_DETAILS[activeRole].profile;
-  const meta = OFFICER_DETAILS[activeRole].meta;
+  const [liveKPIs, setLiveKPIs] = useState<{ label: string; value: string; hint: string }[]>([]);
 
-  const login = useCallback((role: CivicRole, remember: boolean = true) => {
+  const refreshKPIs = useCallback(async () => {
+    try {
+      const token = typeof window !== 'undefined' ? localStorage.getItem('roadsaarthi_jwt_token') : null;
+      const res = await fetch('/api/auth/kpis', {
+        headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data?.primaryMetrics && Array.isArray(data.primaryMetrics)) {
+          setLiveKPIs(data.primaryMetrics);
+        }
+      }
+    } catch {}
+  }, []);
+
+  const user = OFFICER_DETAILS[activeRole].profile;
+  const baseMeta = OFFICER_DETAILS[activeRole].meta;
+  const meta: OfficerMetadata = {
+    ...baseMeta,
+    primaryMetrics: liveKPIs.length > 0 ? liveKPIs : baseMeta.primaryMetrics
+  };
+
+  const authenticateWithBackend = useCallback(async (payload: { role?: string; username?: string; email?: string; password?: string }) => {
+    const res = await fetch('/api/auth/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    if (res.ok) {
+      const data = await res.json();
+      if (data?.access_token && typeof window !== 'undefined') {
+        localStorage.setItem('roadsaarthi_jwt_token', data.access_token);
+      }
+      return data;
+    }
+    const errData = await res.json().catch(() => null);
+    throw new Error(errData?.detail || `Authentication failed (HTTP ${res.status})`);
+  }, []);
+
+  const syncBackendToken = useCallback((role: CivicRole) => {
+    authenticateWithBackend({ role })
+      .then(() => refreshKPIs())
+      .catch(() => {});
+  }, [authenticateWithBackend, refreshKPIs]);
+
+  React.useEffect(() => {
+    syncBackendToken(activeRole);
+  }, [activeRole, syncBackendToken]);
+
+  const login = useCallback(async (role: CivicRole, remember: boolean = true): Promise<boolean> => {
     if (OFFICER_DETAILS[role]) {
       setActiveRole(role);
       setIsAuthenticated(true);
@@ -210,13 +260,65 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           localStorage.removeItem(STORAGE_AUTH_KEY);
         }
       }
+      await authenticateWithBackend({ role });
+      return true;
     }
-  }, []);
+    return false;
+  }, [authenticateWithBackend]);
+
+  const loginWithCredentials = useCallback(async (identifier: string, password?: string, remember: boolean = true): Promise<boolean> => {
+    const trimmed = identifier.trim();
+    if (!trimmed) {
+      throw new Error('Please enter your official Email ID, Badge Number, or Persona.');
+    }
+
+    const authData = await authenticateWithBackend({ 
+      username: trimmed, 
+      email: trimmed,
+      password: password || 'chennai@2026' 
+    });
+
+    let resolvedRole: CivicRole = 'maintenance';
+    if (authData?.user?.role && OFFICER_DETAILS[authData.user.role as CivicRole]) {
+      resolvedRole = authData.user.role as CivicRole;
+    } else {
+      // Client-side fallback lookup
+      const match = (Object.keys(OFFICER_DETAILS) as CivicRole[]).find((r) => {
+        const p = OFFICER_DETAILS[r].profile;
+        return (
+          r.toLowerCase() === trimmed.toLowerCase() ||
+          p.email.toLowerCase() === trimmed.toLowerCase() ||
+          p.badge_number.toLowerCase() === trimmed.toLowerCase() ||
+          p.name.toLowerCase().includes(trimmed.toLowerCase())
+        );
+      });
+      if (match) {
+        resolvedRole = match;
+      } else {
+        throw new Error(`Officer persona '${trimmed}' not recognized. Available: admin, operations, maintenance, safety, analyst.`);
+      }
+    }
+
+    setActiveRole(resolvedRole);
+    setIsAuthenticated(true);
+    await refreshKPIs();
+    if (typeof window !== 'undefined') {
+      localStorage.setItem(STORAGE_ROLE_KEY, resolvedRole);
+      if (remember) {
+        localStorage.setItem(STORAGE_AUTH_KEY, 'true');
+      } else {
+        sessionStorage.setItem(STORAGE_AUTH_KEY, 'true');
+        localStorage.removeItem(STORAGE_AUTH_KEY);
+      }
+    }
+    return true;
+  }, [authenticateWithBackend]);
 
   const logout = useCallback(() => {
     setIsAuthenticated(false);
     if (typeof window !== 'undefined') {
       localStorage.setItem(STORAGE_AUTH_KEY, 'false');
+      localStorage.removeItem('roadsaarthi_jwt_token');
       sessionStorage.removeItem(STORAGE_AUTH_KEY);
     }
   }, []);
@@ -225,12 +327,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (OFFICER_DETAILS[newRole]) {
       setActiveRole(newRole);
       setIsAuthenticated(true);
+      syncBackendToken(newRole);
       if (typeof window !== 'undefined') {
         localStorage.setItem(STORAGE_ROLE_KEY, newRole);
         localStorage.setItem(STORAGE_AUTH_KEY, 'true');
       }
     }
-  }, []);
+  }, [syncBackendToken]);
+
 
   const returnToDemo = useCallback(() => {
     setActiveRole('maintenance');
@@ -249,7 +353,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, [meta]);
 
   // RBAC Permission checks
-  const canDispatchWorkOrder = activeRole === 'admin' || activeRole === 'maintenance';
+  const canDispatchWorkOrder = activeRole === 'admin' || activeRole === 'maintenance' || activeRole === 'operations' || activeRole === 'safety';
   const canIssueEChallan = activeRole === 'admin' || activeRole === 'safety';
   const canDeploySumpPump = activeRole === 'admin' || activeRole === 'maintenance';
   const canEscalatePCR = activeRole === 'admin' || activeRole === 'safety';
@@ -310,6 +414,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         user,
         meta,
         login,
+        loginWithCredentials,
         logout,
         switchRole,
         returnToDemo,

@@ -8,10 +8,10 @@ CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
 -- 1. Fleet Vehicle Register
 CREATE TABLE IF NOT EXISTS fleet_nodes (
-    id VARCHAR(32) PRIMARY KEY,
+    id VARCHAR(64) PRIMARY KEY,
     route_name VARCHAR(128) NOT NULL,
-    route_code VARCHAR(32) NOT NULL,
-    vehicle_type VARCHAR(32) DEFAULT 'Transit Bus',
+    route_code VARCHAR(128) NOT NULL,
+    vehicle_type VARCHAR(64) DEFAULT 'Transit Bus',
     npu_hardware VARCHAR(64) DEFAULT 'Rockchip RK3588 (6 TOPS)',
     camera_model VARCHAR(64) DEFAULT 'Sony IMX335 1080p HDR',
     is_online BOOLEAN DEFAULT TRUE,
@@ -21,17 +21,17 @@ CREATE TABLE IF NOT EXISTS fleet_nodes (
     imu_jerk_gz NUMERIC(4, 2) DEFAULT 0.98,
     raw_ingests_count INT DEFAULT 0,
     current_geom GEOMETRY(Point, 4326),
-    last_ping_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+    last_ping_at VARCHAR(64)
 );
 CREATE INDEX IF NOT EXISTS idx_fleet_nodes_geom ON fleet_nodes USING GIST(current_geom);
 
 -- 2. Deduplicated Hazard Clusters (Ground Truth Maintenance Units)
 CREATE TABLE IF NOT EXISTS distress_clusters (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id VARCHAR(64) PRIMARY KEY,
     cluster_code VARCHAR(32) UNIQUE NOT NULL,
-    defect_type VARCHAR(16) NOT NULL, -- 'D40', 'D20', 'D10', 'D00', 'WATERLOGGING', etc.
+    defect_type VARCHAR(32) NOT NULL,
     defect_name VARCHAR(64) NOT NULL,
-    severity_level VARCHAR(16) NOT NULL, -- 'critical', 'high', 'medium', 'low'
+    severity_level VARCHAR(16) NOT NULL,
     rpi_score NUMERIC(5, 2) NOT NULL,
     pass_count INT DEFAULT 1,
     road_name VARCHAR(255) NOT NULL,
@@ -41,7 +41,7 @@ CREATE TABLE IF NOT EXISTS distress_clusters (
     assigned_agency VARCHAR(128),
     agency_phone VARCHAR(32),
     sla_hours INT DEFAULT 48,
-    status VARCHAR(16) DEFAULT 'open', -- 'open', 'assigned', 'resolved', 'disputed'
+    status VARCHAR(32) DEFAULT 'open',
     before_image_url TEXT,
     after_image_url TEXT,
     field_notes TEXT,
@@ -60,7 +60,7 @@ CREATE TABLE IF NOT EXISTS raw_ingests (
     id VARCHAR(64) PRIMARY KEY,
     bus_id VARCHAR(64) NOT NULL,
     cluster_id VARCHAR(64),
-    defect_type VARCHAR(16) NOT NULL,
+    defect_type VARCHAR(32) NOT NULL,
     confidence NUMERIC(4, 3) NOT NULL,
     speed_kmh NUMERIC(5, 2),
     vertical_g_force NUMERIC(4, 2),
@@ -73,22 +73,11 @@ CREATE TABLE IF NOT EXISTS raw_ingests (
 CREATE INDEX IF NOT EXISTS idx_raw_ingests_geom ON raw_ingests USING GIST(geom);
 CREATE INDEX IF NOT EXISTS idx_raw_ingests_time ON raw_ingests(captured_at DESC);
 
--- 4. Monitored Arterial Transit Corridors
-CREATE TABLE IF NOT EXISTS arterial_corridors (
-    id SERIAL PRIMARY KEY,
-    name VARCHAR(128) UNIQUE NOT NULL,
-    classification VARCHAR(64) NOT NULL,
-    description TEXT,
-    route_geom GEOMETRY(LineString, 4326),
-    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
-);
-CREATE INDEX IF NOT EXISTS idx_arterial_corridors_geom ON arterial_corridors USING GIST(route_geom);
-
--- 5. Traffic & Safety Violations Register (DPDP Compliant & ANPR Intercept Ring)
+-- 4. Traffic & Safety Violations Register (ANPR Intercept & Review Queue)
 CREATE TABLE IF NOT EXISTS traffic_incidents (
     id VARCHAR(64) PRIMARY KEY,
     reporting_bus_id VARCHAR(64) NOT NULL,
-    incident_type VARCHAR(32) NOT NULL, -- 'HIT_AND_RUN', 'RASH_DRIVING', 'VULNERABLE_PEDESTRIAN', 'WATERLOGGING'
+    incident_type VARCHAR(64) NOT NULL,
     plate_number VARCHAR(32),
     plate_confidence NUMERIC(4, 3) DEFAULT 0.95,
     vehicle_color VARCHAR(32),
@@ -102,9 +91,97 @@ CREATE TABLE IF NOT EXISTS traffic_incidents (
     lng NUMERIC(9, 6) NOT NULL,
     geom GEOMETRY(Point, 4326),
     occurred_at VARCHAR(64),
-    status VARCHAR(32) DEFAULT 'ACTIVE_ALERT'
+    status VARCHAR(32) DEFAULT 'ACTIVE_ALERT',
+    fine_amount_inr NUMERIC(10, 2),
+    mva_section VARCHAR(255),
+    echallan_issued BOOLEAN DEFAULT FALSE,
+    echallan_id VARCHAR(64),
+    water_depth_cm NUMERIC(5, 2),
+    pump_deployed BOOLEAN DEFAULT FALSE,
+    pcr_unit_assigned VARCHAR(64),
+    description TEXT,
+    review_status VARCHAR(32) DEFAULT 'AUTO_ADMISSIBLE',
+    reviewed_by VARCHAR(64),
+    reviewed_at VARCHAR(64),
+    rejection_reason TEXT,
+    dispatch_status VARCHAR(32) DEFAULT 'UNASSIGNED'
 );
 CREATE INDEX IF NOT EXISTS idx_traffic_incidents_geom ON traffic_incidents USING GIST(geom);
 CREATE INDEX IF NOT EXISTS idx_traffic_incidents_status ON traffic_incidents(status);
 CREATE INDEX IF NOT EXISTS idx_traffic_incidents_plate ON traffic_incidents(plate_number);
+CREATE INDEX IF NOT EXISTS idx_traffic_incidents_review ON traffic_incidents(review_status);
 
+-- 5. Traffic Density & Congestion Register (IRC:106)
+CREATE TABLE IF NOT EXISTS traffic_density (
+    id VARCHAR(64) PRIMARY KEY,
+    corridor_id VARCHAR(64),
+    road_name VARCHAR(255) NOT NULL,
+    lat NUMERIC(9, 6) NOT NULL,
+    lng NUMERIC(9, 6) NOT NULL,
+    vehicle_count INT DEFAULT 0,
+    density_pcu_per_km NUMERIC(7, 2) DEFAULT 0.0,
+    average_speed_kmh NUMERIC(5, 2) DEFAULT 35.0,
+    free_flow_speed_kmh NUMERIC(5, 2) DEFAULT 50.0,
+    congestion_level VARCHAR(32) DEFAULT 'MODERATE',
+    is_bottleneck BOOLEAN DEFAULT FALSE,
+    bottleneck_cause VARCHAR(255),
+    reported_by VARCHAR(64),
+    measured_at VARCHAR(64)
+);
+CREATE INDEX IF NOT EXISTS idx_traffic_density_bottleneck ON traffic_density(is_bottleneck);
+
+-- 6. Statutory Contractor Penalties (MoHUA IRC:SP:20 Cl 14.2)
+CREATE TABLE IF NOT EXISTS contractor_penalties (
+    id VARCHAR(64) PRIMARY KEY,
+    contractor_name VARCHAR(128) NOT NULL,
+    cluster_code VARCHAR(32) NOT NULL,
+    corridor_name VARCHAR(255) NOT NULL,
+    re_pothole_count INT DEFAULT 1,
+    penalty_amount_inr NUMERIC(10, 2) NOT NULL,
+    statutory_clause VARCHAR(128) DEFAULT 'MoHUA IRC:SP:20 Clause 14.2',
+    status VARCHAR(32) DEFAULT 'DEBIT_ISSUED',
+    provenance VARCHAR(64) DEFAULT 'DERIVED_FROM_RECURRENT_DISTRESS',
+    issued_at VARCHAR(64)
+);
+
+-- 7. Open Manhole Emergency Register (IS:1726)
+CREATE TABLE IF NOT EXISTS open_manholes (
+    id VARCHAR(64) PRIMARY KEY,
+    docket_number VARCHAR(64) UNIQUE NOT NULL,
+    location_name VARCHAR(255) NOT NULL,
+    lat NUMERIC(9, 6) NOT NULL,
+    lng NUMERIC(9, 6) NOT NULL,
+    void_diameter_cm NUMERIC(5, 2) DEFAULT 60.0,
+    depth_meters NUMERIC(4, 2) DEFAULT 1.8,
+    is_barricaded BOOLEAN DEFAULT FALSE,
+    agency_responsible VARCHAR(128) DEFAULT 'Chennai Metro Water (CMWSSB) / GCC',
+    statutory_standard VARCHAR(64) DEFAULT 'IS:1726 Cast Iron Sump Code',
+    sla_minutes_remaining INT DEFAULT 120,
+    status VARCHAR(32) DEFAULT 'EMERGENCY_DISPATCHED',
+    detected_at VARCHAR(64)
+);
+
+-- 8. Night-Time Dark Spot Register (< 5 Lux)
+CREATE TABLE IF NOT EXISTS dark_spots (
+    id VARCHAR(64) PRIMARY KEY,
+    corridor_name VARCHAR(255) NOT NULL,
+    lat NUMERIC(9, 6) NOT NULL,
+    lng NUMERIC(9, 6) NOT NULL,
+    illuminance_lux NUMERIC(4, 2) DEFAULT 2.1,
+    statutory_threshold_lux NUMERIC(4, 2) DEFAULT 15.0,
+    pedestrian_risk VARCHAR(32) DEFAULT 'CRITICAL',
+    dark_length_meters NUMERIC(6, 1) DEFAULT 450.0,
+    status VARCHAR(32) DEFAULT 'AUDIT_FLAGGED',
+    detected_at VARCHAR(64)
+);
+
+-- 9. Contractor Statutory Debarments (GeM / GFR Rule 151)
+CREATE TABLE IF NOT EXISTS contractor_debarments (
+    id VARCHAR(64) PRIMARY KEY,
+    contractor_name VARCHAR(128) UNIQUE NOT NULL,
+    demerit_score NUMERIC(5, 2) DEFAULT 0.0,
+    debarment_status VARCHAR(64) DEFAULT 'STATUTORY_DEBARMENT_NOTICE',
+    reason TEXT,
+    gem_portal_reference VARCHAR(64),
+    effective_date VARCHAR(64)
+);

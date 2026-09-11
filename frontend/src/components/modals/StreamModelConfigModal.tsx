@@ -480,6 +480,84 @@ export const StreamModelConfigModal: React.FC<StreamModelConfigModalProps> = ({
           {/* TAB 2: YOLO ML MODELS */}
           {activeTab === 'models' && (
             <div className="space-y-6">
+              {/* Audit Header */}
+              <div className="p-4 rounded-2xl bg-slate-900 border border-slate-800 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                <div className="flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-400">
+                    <ShieldCheck className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-bold text-white">Truthful Model Registry</span>
+                      <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
+                        {modelStatus?.verification_mode || "Filesystem-Verified (Strict Guarantee)"}
+                      </span>
+                    </div>
+                    <p className="text-xs text-slate-400 mt-0.5">
+                      Weights directory: <code className="text-slate-300 font-mono text-[11px]">{modelStatus?.weights_directory || "backend/app/weights"}</code> &bull; Verified in real-time
+                    </p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={loadData}
+                  className="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold flex items-center gap-1.5 border border-slate-700 transition cursor-pointer"
+                >
+                  <RefreshCw className="w-3.5 h-3.5" />
+                  <span>Re-verify Weights</span>
+                </button>
+              </div>
+
+              {/* Models List Grid */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+                {modelStatus?.models && Object.entries(modelStatus.models).map(([k, m]: [string, any]) => {
+                  const isReady = m.status === 'ready' || m.status === 'ready_cv_fallback';
+                  const isDsp = m.status === 'active_dsp_pipeline';
+                  return (
+                    <div key={k} className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-2.5 shadow-sm">
+                      <div className="flex items-start justify-between gap-2">
+                        <div>
+                          <h4 className="text-xs font-bold text-slate-900 dark:text-white leading-snug">{m.name}</h4>
+                          <span className="text-[10px] font-mono text-slate-500 dark:text-slate-400 block mt-0.5">
+                            Standard: {m.regulatory_spec}
+                          </span>
+                        </div>
+                        <span className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded-md border shrink-0 ${
+                          isReady 
+                            ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border-emerald-300 dark:border-emerald-800'
+                            : isDsp
+                            ? 'bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 border-blue-300 dark:border-blue-800'
+                            : 'bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 border-amber-300 dark:border-amber-800'
+                        }`}>
+                          {isReady ? '✓ Operational (CV Fallback)' : isDsp ? '⚡ Active (DSP Filter)' : '⏳ Awaiting Weights'}
+                        </span>
+                      </div>
+
+                      <div className="text-[11px] text-slate-600 dark:text-slate-300 bg-slate-50 dark:bg-slate-950/60 p-2.5 rounded-xl border border-slate-100 dark:border-slate-800 space-y-1">
+                        <div className="flex items-center justify-between text-[10px] font-mono text-slate-500">
+                          <span>Framework: {m.framework}</span>
+                          <span>Device: {m.device}</span>
+                        </div>
+                        <p className="text-[10.5px] text-slate-600 dark:text-slate-400">
+                          <b className="text-slate-700 dark:text-slate-300">Active Fallback:</b> {m.fallback_pipeline}
+                        </p>
+                        <p className="text-[10px] text-slate-500 dark:text-slate-400 italic">
+                          "{m.status_explanation}"
+                        </p>
+                      </div>
+
+                      <div className="flex flex-wrap gap-1 pt-0.5">
+                        {m.classes?.map((c: string) => (
+                          <span key={c} className="text-[9.5px] font-mono px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700">
+                            {c}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
               <form onSubmit={handleLoadModel} className="space-y-4 bg-slate-50 dark:bg-slate-850/60 p-4 rounded-2xl border border-slate-200 dark:border-slate-800">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>

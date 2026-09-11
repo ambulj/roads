@@ -26,6 +26,8 @@ class DBDistressCluster(Base):
     before_image_url = Column(Text, nullable=True)
     after_image_url = Column(Text, nullable=True)
     field_notes = Column(Text, nullable=True)
+    detecting_camera_position = Column(String(32), default="FRONT_WINDSHIELD")
+    detecting_channel = Column(Integer, default=1)
     created_at = Column(String(64))
     updated_at = Column(String(64))
 
@@ -56,6 +58,16 @@ class DBTrafficIncident(Base):
     pump_deployed = Column(Boolean, default=False)
     pcr_unit_assigned = Column(String(64), nullable=True)
     description = Column(Text, nullable=True)
+    # Camera Position & Multi-Channel Schema
+    camera_position = Column(String(32), default="REAR_OVERTAKE")
+    channel = Column(Integer, default=2)
+    statutory_provenance = Column(String(64), default="MVA_1988_RULE_ENGINE")
+    # Review Queue & Workflow Extensions
+    review_status = Column(String(32), default="AUTO_ADMISSIBLE", index=True) # PENDING_REVIEW, ACCEPTED, REJECTED, AUTO_ADMISSIBLE
+    reviewed_by = Column(String(64), nullable=True)
+    reviewed_at = Column(String(64), nullable=True)
+    rejection_reason = Column(Text, nullable=True)
+    dispatch_status = Column(String(32), default="UNASSIGNED") # UNASSIGNED, PCR_DISPATCHED, ECHALLAN_ISSUED
 
 class DBRawIngest(Base):
     __tablename__ = "raw_ingests"
@@ -69,6 +81,8 @@ class DBRawIngest(Base):
     vertical_g_force = Column(Float, default=1.0)
     lat = Column(Float, nullable=False)
     lng = Column(Float, nullable=False)
+    camera_position = Column(String(32), default="FRONT_WINDSHIELD")
+    channel = Column(Integer, default=1)
     captured_at = Column(String(64))
 
 class DBFleetNode(Base):
@@ -89,3 +103,133 @@ class DBFleetNode(Base):
     raw_ingests_count = Column(Integer, default=0)
     edge_fps = Column(Float, default=24.0)
     imu_jerk_gz = Column(Float, default=0.98)
+    dvr_channels = Column(Integer, default=4)
+    dvr_ip = Column(String(128), nullable=True)
+    camera_position = Column(String(32), default="FRONT_WINDSHIELD")
+    cameras_config = Column(Text, nullable=True)
+
+class DBAuditLog(Base):
+    __tablename__ = "audit_logs"
+
+    id = Column(String(64), primary_key=True, index=True)
+    bus_id = Column(String(64), nullable=True)
+    corridor = Column(String(255), nullable=True)
+    message = Column(Text, nullable=False)
+    latency_ms = Column(Integer, default=50)
+    type = Column(String(64), default="PERCEPTION_AUDIT")
+    timestamp = Column(String(64), default="Just now")
+    created_at = Column(String(64))
+
+# ── New Ground-Truth Compliance & Traffic Models ─────────────────────────────
+
+class DBTrafficDensity(Base):
+    __tablename__ = "traffic_density"
+
+    id = Column(String(64), primary_key=True, index=True)
+    corridor_id = Column(String(64), index=True)
+    road_name = Column(String(255), nullable=False)
+    lat = Column(Float, nullable=False)
+    lng = Column(Float, nullable=False)
+    vehicle_count = Column(Integer, default=0)
+    density_pcu_per_km = Column(Float, default=0.0)
+    average_speed_kmh = Column(Float, default=35.0)
+    free_flow_speed_kmh = Column(Float, default=50.0)
+    congestion_level = Column(String(32), default="MODERATE") # FREE_FLOW, MODERATE, CONGESTED, GRIDLOCK
+    is_bottleneck = Column(Boolean, default=False, index=True)
+    bottleneck_cause = Column(String(255), nullable=True)
+    reported_by = Column(String(64), nullable=True)
+    measured_at = Column(String(64))
+
+class DBContractorPenalty(Base):
+    __tablename__ = "contractor_penalties"
+
+    id = Column(String(64), primary_key=True, index=True)
+    contractor_name = Column(String(128), nullable=False, index=True)
+    cluster_code = Column(String(32), nullable=False)
+    corridor_name = Column(String(255), nullable=False)
+    re_pothole_count = Column(Integer, default=1)
+    penalty_amount_inr = Column(Float, nullable=False)
+    statutory_clause = Column(String(128), default="MoHUA IRC:SP:20 Clause 14.2")
+    status = Column(String(32), default="DEBIT_ISSUED") # DEBIT_ISSUED, CONTESTED, RECOVERED
+    provenance = Column(String(64), default="DERIVED_FROM_RECURRENT_DISTRESS")
+    issued_at = Column(String(64))
+
+class DBOpenManholeAlert(Base):
+    __tablename__ = "open_manholes"
+
+    id = Column(String(64), primary_key=True, index=True)
+    docket_number = Column(String(64), unique=True, index=True)
+    location_name = Column(String(255), nullable=False)
+    lat = Column(Float, nullable=False)
+    lng = Column(Float, nullable=False)
+    void_diameter_cm = Column(Float, default=60.0)
+    depth_meters = Column(Float, default=1.8)
+    is_barricaded = Column(Boolean, default=False)
+    agency_responsible = Column(String(128), default="Chennai Metro Water (CMWSSB) / GCC")
+    statutory_standard = Column(String(64), default="IS:1726 Cast Iron Sump Code")
+    sla_minutes_remaining = Column(Integer, default=120)
+    status = Column(String(32), default="EMERGENCY_DISPATCHED") # EMERGENCY_DISPATCHED, BARRICADED, REPAIRED
+    detected_at = Column(String(64))
+
+class DBDarkSpot(Base):
+    __tablename__ = "dark_spots"
+
+    id = Column(String(64), primary_key=True, index=True)
+    corridor_name = Column(String(255), nullable=False)
+    lat = Column(Float, nullable=False)
+    lng = Column(Float, nullable=False)
+    illuminance_lux = Column(Float, default=2.1)
+    statutory_threshold_lux = Column(Float, default=15.0)
+    pedestrian_risk = Column(String(32), default="CRITICAL")
+    dark_length_meters = Column(Float, default=450.0)
+    status = Column(String(32), default="AUDIT_FLAGGED")
+    detected_at = Column(String(64))
+
+class DBContractorDebarment(Base):
+    __tablename__ = "contractor_debarments"
+
+    id = Column(String(64), primary_key=True, index=True)
+    contractor_name = Column(String(128), unique=True, index=True)
+    demerit_score = Column(Float, default=0.0)
+    debarment_status = Column(String(64), default="STATUTORY_DEBARMENT_NOTICE")
+    reason = Column(Text)
+    gem_portal_reference = Column(String(64))
+    effective_date = Column(String(64))
+
+class DBUser(Base):
+    __tablename__ = "users"
+
+    id = Column(String(64), primary_key=True, index=True)
+    username = Column(String(64), unique=True, index=True, nullable=False)
+    email = Column(String(128), unique=True, index=True, nullable=False)
+    password_hash = Column(String(128), nullable=False)
+    salt = Column(String(64), nullable=False)
+    role = Column(String(32), nullable=False, index=True)
+    name = Column(String(128), nullable=False)
+    designation = Column(String(128), nullable=False)
+    department = Column(String(128), nullable=False)
+    agency = Column(String(128), nullable=False)
+    badge_number = Column(String(64), unique=True, index=True, nullable=False)
+    permissions = Column(Text, default="[]")
+    is_active = Column(Boolean, default=True)
+    last_login_at = Column(String(64), nullable=True)
+    created_at = Column(String(64), nullable=True)
+
+class DBRepairAudit(Base):
+    __tablename__ = "repair_audits"
+
+    id = Column(String(64), primary_key=True, index=True)
+    cluster_id = Column(String(64), index=True, nullable=False)
+    cluster_code = Column(String(32), index=True, nullable=False)
+    contractor_name = Column(String(128), nullable=True)
+    road_name = Column(String(255), nullable=False)
+    verifying_bus_id = Column(String(64), nullable=False)
+    vertical_gz = Column(Float, nullable=False)
+    optical_status = Column(String(64), default="SMOOTH_SURFACE")
+    audit_verdict = Column(String(32), nullable=False)  # REPAIR_VERIFIED, REPAIR_FAILED_RECURRENCE, AWAITING_PASS
+    penalty_debit_inr = Column(Float, default=0.0)
+    statutory_clause = Column(String(128), default="MoHUA IRC:SP:20 Clause 14.2")
+    notes = Column(Text, nullable=True)
+    verified_at = Column(String(64))
+
+

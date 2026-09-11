@@ -1,23 +1,37 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
-  Truck, Radio, Gauge, Camera, Cpu, Image as ImageIcon, SlidersVertical, Activity, CheckCircle2, Wifi
+  Truck, Radio, Gauge, Camera, Cpu, Image as ImageIcon, SlidersVertical, Activity, CheckCircle2, Wifi,
+  Plus, Trash2, AlertTriangle, Video
 } from 'lucide-react';
 import { FleetNode } from '../types';
 import { LiveCameraFeed } from '../components/fleet/LiveCameraFeed';
 import { VoiceRadioDispatcher } from '../components/fleet/VoiceRadioDispatcher';
 import { SensorDiagnosticsPanel } from '../components/fleet/SensorDiagnosticsPanel';
 import { Card, Badge } from '../components/ui';
+import { api } from '../services/api';
+import { AddBusModal } from '../components/modals/AddBusModal';
 
 interface FleetNodesProps {
   fleet: FleetNode[];
+  onFleetChange?: React.Dispatch<React.SetStateAction<FleetNode[]>>;
 }
 
-export const FleetNodes: React.FC<FleetNodesProps> = ({ fleet }) => {
+export const FleetNodes: React.FC<FleetNodesProps> = ({ fleet, onFleetChange }) => {
   const [selectedBusId, setSelectedBusId] = useState<string>(fleet[0]?.id || 'BUS-TN01-1042');
   const [viewMode, setViewMode] = useState<'camera' | 'sensors' | 'radio'>('camera');
   const [capturedSnapshots, setCapturedSnapshots] = useState<Array<{ id: string; url: string; time: string; busId: string }>>([]);
+  const [edgeStatus, setEdgeStatus] = useState<any>(null);
+  const [isAddBusModalOpen, setIsAddBusModalOpen] = useState(false);
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const activeBus = fleet.find((b) => b.id === selectedBusId) || fleet[0];
+
+  useEffect(() => {
+    if (selectedBusId) {
+      api.getEdgeBufferStatus(selectedBusId).then(setEdgeStatus).catch(() => {});
+    }
+  }, [selectedBusId]);
 
   const handleSnapshotCapture = (dataUrl: string) => {
     const newSnap = {
@@ -30,6 +44,34 @@ export const FleetNodes: React.FC<FleetNodesProps> = ({ fleet }) => {
   };
 
   const onlineCount = fleet.filter((b) => b.is_online).length;
+
+  const handleDeleteBus = async (busId: string) => {
+    setIsDeleting(true);
+    try {
+      await api.deleteFleetNode(busId);
+      if (onFleetChange) {
+        onFleetChange((prev) => prev.filter((b) => b.id !== busId));
+      }
+      setConfirmDeleteId(null);
+      if (selectedBusId === busId) {
+        const remaining = fleet.filter((b) => b.id !== busId);
+        if (remaining.length > 0) {
+          setSelectedBusId(remaining[0].id);
+        }
+      }
+    } catch (err) {
+      console.error("Failed to decommission bus:", err);
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  const handleSuccessAdd = (newBus: FleetNode) => {
+    if (onFleetChange) {
+      onFleetChange((prev) => [newBus, ...prev.filter((b) => b.id !== newBus.id)]);
+    }
+    setSelectedBusId(newBus.id);
+  };
 
   return (
     <div className="flex-1 flex flex-col min-h-0 overflow-y-auto custom-scrollbar p-4 md:p-6 space-y-4 max-w-[1750px] mx-auto w-full select-none">
@@ -72,9 +114,59 @@ export const FleetNodes: React.FC<FleetNodesProps> = ({ fleet }) => {
             <Badge variant="success" size="md" dot className="font-semibold">
               {onlineCount}/{fleet.length} Online
             </Badge>
+
+            <button
+              onClick={() => setIsAddBusModalOpen(true)}
+              className="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-xs flex items-center gap-1.5 shadow-sm transition-all active:scale-95 shrink-0"
+              title="Commission a new transit bus node with Mobile DVR"
+            >
+              <Plus className="w-3.5 h-3.5" />
+              <span>Register Bus</span>
+            </button>
+
+            {activeBus && (
+              <button
+                onClick={() => setConfirmDeleteId(activeBus.id)}
+                className="p-1.5 rounded-xl border border-rose-200 dark:border-rose-900/60 bg-rose-50/50 dark:bg-rose-950/40 text-rose-600 dark:text-rose-400 hover:bg-rose-100 dark:hover:bg-rose-900/80 transition-colors shrink-0"
+                title={`Decommission bus ${activeBus.id}`}
+              >
+                <Trash2 className="w-4 h-4" />
+              </button>
+            )}
           </div>
         </div>
       </Card>
+
+      {/* Edge Bandwidth & Depot Sync Architecture */}
+      <div className="p-3.5 rounded-2xl bg-gradient-to-r from-blue-50 to-indigo-50/60 dark:from-blue-950/30 dark:to-indigo-950/20 border border-blue-200 dark:border-blue-900/50 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs">
+        <div className="flex items-center gap-3">
+          <div className="w-8 h-8 rounded-xl bg-blue-600 text-white flex items-center justify-center font-bold shrink-0 shadow-xs">
+            <Wifi className="w-4 h-4" />
+          </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <span className="font-bold text-slate-900 dark:text-white">Dual-Path Edge Telemetry Architecture</span>
+              <span className="font-mono text-[10px] font-bold px-2 py-0.5 rounded bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800">
+                {edgeStatus?.connectivity_mode || "ONLINE (Depot WiFi)"}
+              </span>
+            </div>
+            <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
+              P0 Critical Hazards &rarr; Immediate Cellular Uplink &bull; P1 Routine Vibration Spectra &rarr; Local Flash Buffer (Depot Wi-Fi Sync)
+            </p>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-4 text-[11px] font-mono shrink-0">
+          <div>
+            <span className="text-slate-500">Local Buffer Depth:</span>
+            <span className="font-bold text-slate-800 dark:text-slate-200 ml-1.5">{edgeStatus?.buffer_queue_depth || 0} pkts</span>
+          </div>
+          <div>
+            <span className="text-slate-500">Cellular Data Saved:</span>
+            <span className="font-bold text-emerald-600 dark:text-emerald-400 ml-1.5">{edgeStatus?.cumulative_bytes_saved_kb || 1420.5} KB</span>
+          </div>
+        </div>
+      </div>
 
       {/* 2. Sleek 4-Metric Operational Stat Row */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
@@ -308,11 +400,26 @@ export const FleetNodes: React.FC<FleetNodesProps> = ({ fleet }) => {
                     <Badge variant="success" size="sm" dot>
                       ONLINE
                     </Badge>
+                    <span className="text-[10px] font-mono font-medium px-1.5 py-0.5 rounded bg-cyan-100 dark:bg-cyan-950/70 text-cyan-700 dark:text-cyan-300 border border-cyan-300 dark:border-cyan-800">
+                      {bus.dvr_channels || 4} CH
+                    </span>
                   </div>
                   <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">{bus.vehicle_type}</p>
                 </div>
-                <div className="p-1.5 rounded-lg bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-blue-600 dark:text-blue-400">
-                  <Radio className="w-3.5 h-3.5" />
+                <div className="flex items-center gap-1.5">
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setConfirmDeleteId(bus.id);
+                    }}
+                    title={`Decommission bus ${bus.id}`}
+                    className="p-1.5 rounded-lg hover:bg-rose-50 dark:hover:bg-rose-950/60 text-slate-400 hover:text-rose-500 border border-transparent hover:border-rose-200 dark:hover:border-rose-900 transition-colors"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
+                  <div className="p-1.5 rounded-lg bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-blue-600 dark:text-blue-400">
+                    <Radio className="w-3.5 h-3.5" />
+                  </div>
                 </div>
               </div>
 
@@ -329,6 +436,48 @@ export const FleetNodes: React.FC<FleetNodesProps> = ({ fleet }) => {
           ))}
         </div>
       </div>
+
+      {/* Decommission Confirmation Dialog */}
+      {confirmDeleteId && (
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-150">
+          <div className="bg-slate-900 border border-slate-700 rounded-2xl p-6 max-w-md w-full shadow-2xl space-y-4">
+            <div className="w-12 h-12 rounded-xl bg-rose-500/20 border border-rose-500/40 text-rose-400 flex items-center justify-center">
+              <AlertTriangle className="w-6 h-6" />
+            </div>
+            <div>
+              <h3 className="text-base font-bold text-white">Decommission Bus Node?</h3>
+              <p className="text-xs text-slate-400 mt-1 leading-relaxed">
+                Are you sure you want to decommission <b className="text-rose-300 font-mono">{confirmDeleteId}</b>? This will terminate all active RTSP background video workers, release channel buffers, and permanently remove the node from the fleet registry.
+              </p>
+            </div>
+            <div className="flex items-center justify-end gap-3 pt-2">
+              <button
+                type="button"
+                onClick={() => setConfirmDeleteId(null)}
+                disabled={isDeleting}
+                className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={() => handleDeleteBus(confirmDeleteId)}
+                disabled={isDeleting}
+                className="px-4 py-2 rounded-xl text-xs font-bold bg-rose-600 hover:bg-rose-500 text-white shadow-lg shadow-rose-600/20 flex items-center gap-2 transition-all disabled:opacity-50"
+              >
+                {isDeleting ? "Decommissioning..." : "Yes, Decommission Node"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Add Bus Modal */}
+      <AddBusModal
+        isOpen={isAddBusModalOpen}
+        onClose={() => setIsAddBusModalOpen(false)}
+        onSuccess={handleSuccessAdd}
+      />
     </div>
   );
 };

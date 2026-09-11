@@ -2,11 +2,13 @@ import React, { useState, useEffect } from 'react';
 import Chart from 'react-apexcharts';
 import { 
   ChartColumn, Eye, Layers, TriangleAlert, ShieldCheck, TrendingUp, 
-  Sparkles, MapPin, Truck, Moon, Sun, School, AlertOctagon, CheckCircle2, ShieldAlert 
+  Sparkles, MapPin, Truck, Moon, Sun, School, AlertOctagon, CheckCircle2, ShieldAlert,
+  Clock, BusFront, Gauge, ArrowRight, AlertTriangle, Scan, Car
 } from 'lucide-react';
 import { CorridorRisk, MetricSummary, FleetNode, SafeCorridor, DarkSpotSegment } from '../types';
 import { Card, Badge, Button } from '../components/ui';
 import { MonsoonInundationPredictor } from '../components/analytics/MonsoonInundationPredictor';
+import { SelfLearningStudio } from '../components/analytics/SelfLearningStudio';
 import { api, INITIAL_SAFE_CORRIDORS, INITIAL_DARK_SPOTS } from '../services/api';
 import { useLanguage } from '../context/LanguageContext';
 import { useTheme } from '../context/ThemeContext';
@@ -24,11 +26,29 @@ export const Analytics: React.FC<AnalyticsProps> = ({ metrics, corridors, fleet 
 
   const [safeCorridors, setSafeCorridors] = useState<SafeCorridor[]>(INITIAL_SAFE_CORRIDORS);
   const [darkSpots, setDarkSpots] = useState<DarkSpotSegment[]>(INITIAL_DARK_SPOTS);
+  const [transitDelays, setTransitDelays] = useState<any[]>([]);
+  const [bottlenecks, setBottlenecks] = useState<any[]>([]);
+  const [trafficDensity, setTrafficDensity] = useState<any[]>([]);
+  const [anprResult, setAnprResult] = useState<any | null>(null);
+  const [isScanningANPR, setIsScanningANPR] = useState(false);
 
   useEffect(() => {
     api.getSafeCorridors().then(setSafeCorridors);
     api.getDarkSpots().then(setDarkSpots);
+    api.getTransitDelays().then(data => { if (data?.length) setTransitDelays(data); }).catch(() => {});
+    api.getTrafficBottlenecks().then(data => { if (data?.length) setBottlenecks(data); }).catch(() => {});
+    api.getTrafficDensity().then(data => { if (data?.length) setTrafficDensity(data); }).catch(() => {});
   }, []);
+
+  const handleRunANPRTest = async () => {
+    setIsScanningANPR(true);
+    try {
+      const res = await api.getANPRSample();
+      setAnprResult(res);
+    } finally {
+      setIsScanningANPR(false);
+    }
+  };
 
   // Dual-spline ApexCharts configuration
   const splineOptions: any = {
@@ -349,6 +369,9 @@ export const Analytics: React.FC<AnalyticsProps> = ({ metrics, corridors, fleet 
         </Card>
       </div>
 
+      {/* Continuous Self-Learning AI Engine & Closed-Loop Repair Studio */}
+      <SelfLearningStudio />
+
       {/* Monsoon Elevation & Hydroplaning 30-Min Rush-Hour Predictor */}
       <MonsoonInundationPredictor />
 
@@ -460,6 +483,238 @@ export const Analytics: React.FC<AnalyticsProps> = ({ metrics, corridors, fleet 
             </div>
           ))}
         </div>
+      </Card>
+
+      {/* ── GTFS PUBLIC TRANSIT DELAY & ROAD DISTRESS ATTRIBUTION ────────── */}
+      {transitDelays.length > 0 && (
+        <Card className="p-4 lg:p-6 flex flex-col gap-4 shadow-xs">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-slate-100 dark:border-slate-800">
+            <div className="flex items-center gap-2.5">
+              <div className="w-8 h-8 rounded-xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-500">
+                <Clock className="w-4 h-4" />
+              </div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <h2 className="text-sm font-bold uppercase tracking-tight text-slate-900 dark:text-slate-100">
+                    GTFS Corridor Transit Delay &amp; Road Distress Attribution
+                  </h2>
+                  <Badge variant="medium" size="sm" className="font-mono font-bold">
+                    IRC:106 / GTFS Sync
+                  </Badge>
+                </div>
+                <p className="text-xs text-slate-500 dark:text-slate-400">
+                  Separating scheduling delays caused by surface road distress (potholes/cavities) vs background traffic saturation.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5">
+            {transitDelays.map((td, idx) => (
+              <div key={idx} className="p-4 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 flex flex-col justify-between gap-3 shadow-xs">
+                <div>
+                  <div className="flex items-start justify-between gap-2">
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="font-bold text-sm text-slate-900 dark:text-white">{td.route_name}</span>
+                        <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded bg-blue-100 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300">
+                          {td.monitored_bus_id}
+                        </span>
+                      </div>
+                      <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
+                        {td.origin} &rarr; {td.destination}
+                      </p>
+                    </div>
+                    <div className="text-right">
+                      <span className="font-mono text-sm font-extrabold text-rose-600 dark:text-rose-400">
+                        +{td.total_delay_mins}m
+                      </span>
+                      <span className="block text-[9.5px] text-slate-400 uppercase">Delay</span>
+                    </div>
+                  </div>
+
+                  <div className="mt-3 p-2.5 rounded-xl bg-slate-50 dark:bg-slate-950/60 border border-slate-100 dark:border-slate-800 space-y-1.5">
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="text-slate-500">Surface Distress Delay:</span>
+                      <span className="font-mono font-bold text-rose-600 dark:text-rose-400">
+                        ~{td.delay_breakdown?.surface_distress_attribution_mins} mins
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="text-slate-500">Traffic Congestion:</span>
+                      <span className="font-mono text-slate-700 dark:text-slate-300">
+                        {td.delay_breakdown?.traffic_congestion_delay_mins} mins
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="text-slate-500">Headway Regularity:</span>
+                      <span className={`font-mono font-bold ${td.headway_regularity_score_pct < 60 ? 'text-rose-500' : 'text-emerald-500'}`}>
+                        {td.headway_regularity_score_pct}%
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="pt-2 border-t border-slate-100 dark:border-slate-800 text-[10.5px] text-slate-600 dark:text-slate-400">
+                  <span className="text-blue-600 dark:text-blue-400 font-semibold">Advisory: </span>
+                  {td.mitigation_advisory}
+                </div>
+              </div>
+            ))}
+          </div>
+        </Card>
+      )}
+
+      {/* ── IRC:106 TRAFFIC BOTTLENECK CHOKE POINTS ───────────────────────── */}
+      {bottlenecks.length > 0 && (
+        <Card className="p-4 lg:p-6 flex flex-col gap-4 shadow-xs">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-slate-100 dark:border-slate-800">
+            <div className="flex items-center gap-2.5">
+              <div className="w-8 h-8 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-500">
+                <Gauge className="w-4 h-4" />
+              </div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <h2 className="text-sm font-bold uppercase tracking-tight text-slate-900 dark:text-slate-100">
+                    IRC:106 Road Bottlenecks &amp; Capacity Choke Points
+                  </h2>
+                  <Badge variant="warning" size="sm" className="font-mono font-bold">
+                    LoS E &amp; F Monitored
+                  </Badge>
+                </div>
+                <p className="text-xs text-slate-500 dark:text-slate-400">
+                  Real-time Passenger Car Unit (PCU) congestion correlated with road surface defect clusters.
+                </p>
+              </div>
+            </div>
+            <span className="text-xs font-mono text-slate-500">{bottlenecks.length} Critical Choke Points Active</span>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+            {bottlenecks.map((bn) => (
+              <div key={bn.id} className="p-4 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 space-y-2.5 shadow-xs">
+                <div className="flex items-start justify-between gap-2">
+                  <div>
+                    <h3 className="text-xs font-bold text-slate-900 dark:text-white leading-snug">{bn.road_name}</h3>
+                    <span className="text-[10px] font-mono text-slate-400">Detected: {bn.detected_at}</span>
+                  </div>
+                  <span className={`px-2 py-0.5 rounded-md font-mono text-[10px] font-bold border ${
+                    bn.congestion_level === 'GRIDLOCK'
+                      ? 'bg-rose-50 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400 border-rose-300 dark:border-rose-800'
+                      : 'bg-amber-50 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 border-amber-300 dark:border-amber-800'
+                  }`}>
+                    {bn.congestion_level}
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-3 gap-2 p-2.5 rounded-xl bg-slate-50 dark:bg-slate-950/60 border border-slate-100 dark:border-slate-800 text-center">
+                  <div>
+                    <span className="block text-[9.5px] text-slate-500 uppercase">PCU Density</span>
+                    <span className="font-mono text-xs font-bold text-slate-800 dark:text-slate-200">{bn.density_pcu_per_km} /km</span>
+                  </div>
+                  <div>
+                    <span className="block text-[9.5px] text-slate-500 uppercase">Avg Speed</span>
+                    <span className="font-mono text-xs font-bold text-blue-600 dark:text-blue-400">{bn.average_speed_kmh} km/h</span>
+                  </div>
+                  <div>
+                    <span className="block text-[9.5px] text-slate-500 uppercase">Speed Drop</span>
+                    <span className="font-mono text-xs font-bold text-rose-600 dark:text-rose-400">-{bn.speed_drop_pct}%</span>
+                  </div>
+                </div>
+
+                <div className="text-[11px] text-slate-600 dark:text-slate-400 space-y-1">
+                  <p><b className="text-slate-700 dark:text-slate-300">Root Cause:</b> {bn.cause}</p>
+                  <p className="text-[10.5px] text-blue-600 dark:text-blue-400"><b className="text-slate-700 dark:text-slate-300">Diversion:</b> {bn.recommended_diversion}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </Card>
+      )}
+
+      {/* ── ARTERIAL VEHICLE DENSITY & ANPR OCR ENGINE ─────────────────────── */}
+      <Card className="p-4 lg:p-6 flex flex-col gap-4 shadow-xs">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-slate-100 dark:border-slate-800">
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-500">
+              <Scan className="w-4 h-4" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <h2 className="text-sm font-bold uppercase tracking-tight text-slate-900 dark:text-slate-100">
+                  Arterial Vehicle Density (IRC:106 PCU) &amp; ANPR Engine
+                </h2>
+                <Badge variant="medium" size="sm" className="font-mono font-bold">
+                  HSRP / MoRTH CMVR 50
+                </Badge>
+              </div>
+              <p className="text-xs text-slate-500 dark:text-slate-400">
+                Edge Passenger Car Unit (PCU) volume metrics coupled with High Security Registration Plate (HSRP) automated reading.
+              </p>
+            </div>
+          </div>
+          <Button
+            size="sm"
+            onClick={handleRunANPRTest}
+            disabled={isScanningANPR}
+            className="flex items-center gap-1.5 font-mono text-xs font-bold shrink-0"
+          >
+            <Scan className="w-3.5 h-3.5" />
+            {isScanningANPR ? 'Scanning Plate...' : 'Run Live HSRP ANPR Test'}
+          </Button>
+        </div>
+
+        {/* Live ANPR Recognition Result Alert */}
+        {anprResult && (
+          <div className="p-3.5 rounded-xl border border-emerald-500/30 bg-emerald-500/10 text-emerald-300 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs font-mono">
+            <div className="flex items-center gap-3">
+              <div className="px-3 py-1 rounded-md bg-white text-slate-900 font-extrabold text-sm tracking-wider border-2 border-slate-900 shadow-sm flex items-center gap-1.5">
+                <span className="text-[10px] bg-blue-700 text-white px-1 py-0.2 rounded font-sans">IND</span>
+                {anprResult.formatted_plate || anprResult.plate_number}
+              </div>
+              <div>
+                <span className="text-white font-bold block">{anprResult.rto_location} &bull; {anprResult.state}</span>
+                <span className="text-[11px] text-emerald-400/90">
+                  HSRP Verified &bull; Conf: {Math.round(anprResult.confidence * 100)}% &bull; Latency: {anprResult.inference_time_ms}ms
+                </span>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <Badge variant="success" size="sm">HSRP Admissible (Sec 65B)</Badge>
+              <button onClick={() => setAnprResult(null)} className="text-slate-400 hover:text-white text-xs ml-2 cursor-pointer">&times;</button>
+            </div>
+          </div>
+        )}
+
+        {/* Traffic Density Corridors Grid */}
+        {trafficDensity.length > 0 && (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
+            {trafficDensity.map((td) => (
+              <div key={td.id} className="p-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-950/60 flex flex-col justify-between gap-2">
+                <div>
+                  <div className="flex items-center justify-between text-xs mb-1">
+                    <span className="font-bold text-slate-900 dark:text-white truncate max-w-[150px]">{td.road_name}</span>
+                    <Badge variant={td.congestion_level === 'FREE_FLOW' ? 'success' : td.congestion_level === 'MODERATE' ? 'medium' : 'critical'} size="sm">
+                      {td.congestion_level}
+                    </Badge>
+                  </div>
+                  <div className="flex items-baseline justify-between text-xs font-mono text-slate-500 mt-1">
+                    <span>Density:</span>
+                    <span className="font-bold text-slate-800 dark:text-slate-200">{td.density_pcu_per_km} PCU/km</span>
+                  </div>
+                  <div className="flex items-baseline justify-between text-xs font-mono text-slate-500">
+                    <span>Avg Speed:</span>
+                    <span className="font-bold text-blue-600 dark:text-blue-400">{td.average_speed_kmh} km/h</span>
+                  </div>
+                </div>
+                <div className="text-[10px] text-slate-400 font-mono pt-1.5 border-t border-slate-100 dark:border-slate-800 flex justify-between">
+                  <span>Vehicles: {td.vehicle_count}</span>
+                  <span>{td.measured_at}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </Card>
 
       {/* ── 1. VISION ZERO SAFE SCHOOL & HOSPITAL CORRIDORS ────────────────── */}

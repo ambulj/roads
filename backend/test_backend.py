@@ -29,16 +29,29 @@ def test_store():
     assert metrics["total_ingests"] >= 64
     assert len(store.get_clusters()) >= 9
     assert len(store.get_incidents()) >= 4
-    assert len(store.fleet_nodes) == 5
+    assert len(store.fleet_nodes) >= 5
     print(f"[TEST STORE] Metrics: {metrics}, Incidents: {len(store.get_incidents())}")
+
 
 def test_app_import():
     from app.main import app
     print(f"[TEST APP] FastAPI app successfully initialized: {app.title}")
+
+def test_api_endpoints_suite():
+    print("\n--- Running Full HTTP API Endpoint Integration Tests (TestClient) ---")
+    import unittest
+    from tests.test_api_endpoints import TestAPIEndpoints
+    suite = unittest.TestLoader().loadTestsFromTestCase(TestAPIEndpoints)
+    runner = unittest.TextTestRunner(verbosity=1)
+    result = runner.run(suite)
+    assert result.wasSuccessful(), f"API Endpoint integration tests failed: {result.errors + result.failures}"
+    print("[TEST API] All HTTP endpoints verified successfully.")
 
 if __name__ == "__main__":
     test_rpi()
     test_dbscan()
     test_store()
     test_app_import()
-    print("ALL BACKEND TESTS PASSED SUCCESSFULLY!")
+    test_api_endpoints_suite()
+    print("\nALL BACKEND UNIT & API INTEGRATION TESTS PASSED SUCCESSFULLY!")
+

@@ -10,21 +10,27 @@ from app.services.synthetic_generator import synthetic_generator_loop
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # 1. Start background fleet simulation loop (fast 2-second pings)
-    sim_task = asyncio.create_task(websockets.simulation_loop())
+    sim_task = None
+    synth_task = None
+
+    # 1. Start background fleet simulation loop if enabled
+    if settings.ENABLE_FLEET_SIMULATION and not settings.DEMO_MODE:
+        sim_task = asyncio.create_task(websockets.simulation_loop())
     
-    # 2. Start 5-minute (300s) synthetic data generation loop
-    synthetic_interval = int(os.getenv("SYNTHETIC_INTERVAL_SECONDS", "300"))
-    synth_task = asyncio.create_task(synthetic_generator_loop(interval_seconds=synthetic_interval))
+    # 2. Start 5-minute synthetic data generation loop if enabled
+    if settings.ENABLE_SYNTHETIC_GENERATION and not settings.DEMO_MODE:
+        synth_task = asyncio.create_task(synthetic_generator_loop(interval_seconds=settings.SYNTHETIC_INTERVAL_SECONDS))
     
     yield
     
-    sim_task.cancel()
-    synth_task.cancel()
-    try:
-        await asyncio.gather(sim_task, synth_task, return_exceptions=True)
-    except Exception:
-        pass
+    tasks_to_cancel = [t for t in (sim_task, synth_task) if t is not None]
+    for t in tasks_to_cancel:
+        t.cancel()
+    if tasks_to_cancel:
+        try:
+            await asyncio.gather(*tasks_to_cancel, return_exceptions=True)
+        except Exception:
+            pass
 
 
 app = FastAPI(
@@ -34,14 +40,19 @@ app = FastAPI(
     lifespan=lifespan
 )
 
-# CORS configuration
+# CORS configuration: Standard compliant (no wildcard with credentials)
+is_wildcard = settings.CORS_ORIGINS == ["*"]
+allow_creds = not is_wildcard
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=settings.CORS_ORIGINS,
-    allow_credentials=True,
+    allow_origins=settings.CORS_ORIGINS if not is_wildcard else ["*"],
+    allow_origin_regex=r"https?://(localhost|127\.0\.0\.1)(:\d+)?" if not is_wildcard else None,
+    allow_credentials=allow_creds,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
 
 # Mount REST API router
 app.include_router(api_router, prefix="/api")
@@ -49,6 +60,12 @@ app.include_router(api_router, prefix="/api/v1")
 
 # Mount WebSocket router
 app.include_router(websockets.router)
+
+# Mount uploaded media directory
+from fastapi.staticfiles import StaticFiles
+uploads_dir = os.path.join(os.path.dirname(__file__), "..", "uploads")
+os.makedirs(uploads_dir, exist_ok=True)
+app.mount("/uploads", StaticFiles(directory=uploads_dir), name="uploads")
 
 @app.get("/health", tags=["System"])
 def health_check():

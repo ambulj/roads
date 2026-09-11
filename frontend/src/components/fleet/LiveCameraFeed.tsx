@@ -2,9 +2,19 @@ import React, { useRef, useEffect, useState } from "react";
 import {
   Camera, Eye, EyeOff, Maximize2, Minimize2,
   RefreshCw, Sun, Moon, Radio, ShieldAlert, Zap,
-  AlertTriangle, Scan, Gauge, Play, Pause
+  AlertTriangle, Scan, Gauge, Play, Pause,
+  LayoutGrid, Video, UploadCloud, RotateCcw, FileVideo, Image as ImageIcon
 } from "lucide-react";
 import { FleetNode } from "../../types";
+import { api } from "../../services/api";
+import { UploadFootageModal } from "../modals/UploadFootageModal";
+
+export const DVR_CHANNELS = [
+  { id: 1, name: "CH 1", role: "Windshield Road", subtitle: "Road Distress & Roughness (IRC:SP:84 / YOLO11)" },
+  { id: 2, name: "CH 2", role: "Rear Overtake", subtitle: "Tailgating & Rash Overtaking (ANPR / MVA 184)" },
+  { id: 3, name: "CH 3", role: "Curbside Lane", subtitle: "Bus Lane Encroachment & Pedestrian Crossing (IRC:35)" },
+  { id: 4, name: "CH 4", role: "Driver Cabin", subtitle: "Driver DMS Attention & AIS-140 Occupancy Safety" },
+];
 
 interface LiveCameraFeedProps {
   bus: FleetNode;
@@ -41,6 +51,17 @@ export const LiveCameraFeed: React.FC<LiveCameraFeedProps> = ({
   const [feedMode, setFeedMode] = useState<'rtsp' | 'canvas'>('rtsp');
   const [frameTimestamp, setFrameTimestamp] = useState<number>(Date.now());
   const [rtspError, setRtspError] = useState<boolean>(false);
+  const [selectedChannel, setSelectedChannel] = useState<number>(1);
+  const [isQuadView, setIsQuadView] = useState<boolean>(false);
+  const [isUploadModalOpen, setIsUploadModalOpen] = useState<boolean>(false);
+  const [uploadedMediaInfo, setUploadedMediaInfo] = useState<{
+    active: boolean;
+    filename?: string;
+    mediaType?: string;
+    channel?: number;
+    count?: number;
+  }>({ active: false });
+  const [activeDetections, setActiveDetections] = useState<any[]>([]);
 
   // Poll live video frame snapshots
   useEffect(() => {
@@ -50,6 +71,33 @@ export const LiveCameraFeed: React.FC<LiveCameraFeedProps> = ({
     }, 200);
     return () => clearInterval(interval);
   }, [isPaused, feedMode]);
+
+  // Check real CV detections and uploaded media status
+  useEffect(() => {
+    if (feedMode !== 'rtsp') return;
+    let isMounted = true;
+    const checkDetections = async () => {
+      try {
+        const res = await api.getStreamDetections(bus.id, selectedChannel);
+        if (isMounted && res && res.success) {
+          setUploadedMediaInfo({
+            active: Boolean(res.is_uploaded),
+            filename: res.filename,
+            mediaType: res.media_type,
+            channel: res.channel,
+            count: res.count
+          });
+          setActiveDetections(res.detections || []);
+        }
+      } catch {}
+    };
+    checkDetections();
+    const interval = setInterval(checkDetections, 1200);
+    return () => {
+      isMounted = false;
+      clearInterval(interval);
+    };
+  }, [bus.id, selectedChannel, feedMode]);
 
   const animationFrameId = useRef<number>(0);
   const roadOffset = useRef<number>(0);
@@ -508,7 +556,7 @@ export const LiveCameraFeed: React.FC<LiveCameraFeedProps> = ({
       )}
 
       {/* Top Telemetry HUD Strip */}
-      <div className="absolute top-0 left-0 right-0 z-20 p-3 bg-gradient-to-b from-slate-950/90 via-slate-950/40 to-transparent flex items-center justify-between text-xs pointer-events-none">
+      <div className="relative z-20 p-3 bg-gradient-to-b from-slate-950/90 via-slate-950/40 to-transparent flex items-center justify-between text-xs">
         {/* Left HUD: Live Indicator + Optical Specs */}
         <div className="flex items-center gap-2 pointer-events-auto">
           <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-rose-600/90 text-white font-mono font-bold text-[11px] shadow-sm animate-pulse">
@@ -615,6 +663,39 @@ export const LiveCameraFeed: React.FC<LiveCameraFeedProps> = ({
             <span>Snap</span>
           </button>
 
+          {/* Upload Footage Button */}
+          <button
+            onClick={() => setIsUploadModalOpen(true)}
+            title="Upload Custom Video or Photo to Stream & Analyze"
+            className={`px-2.5 py-1 rounded-lg text-xs font-mono font-bold flex items-center gap-1.5 transition-all shadow-sm ${
+              uploadedMediaInfo.active
+                ? "bg-cyan-500 text-slate-950 shadow-cyan-500/30"
+                : "bg-slate-900/80 hover:bg-slate-800 border border-slate-700/80 text-cyan-400 hover:text-cyan-300"
+            }`}
+          >
+            <UploadCloud className="w-3.5 h-3.5" />
+            <span className="hidden sm:inline">
+              {uploadedMediaInfo.active ? "Footage Active" : "Upload Footage"}
+            </span>
+          </button>
+
+          {/* Reset RTSP button if custom media is active */}
+          {uploadedMediaInfo.active && (
+            <button
+              onClick={async () => {
+                await api.resetStreamSource(bus.id, selectedChannel);
+                setUploadedMediaInfo({ active: false });
+                setActiveDetections([]);
+                setFrameTimestamp(Date.now());
+              }}
+              title="Reset stream back to default RTSP camera"
+              className="px-2 py-1 rounded-lg text-[11px] font-mono text-slate-400 hover:text-white bg-slate-900/80 hover:bg-slate-800 border border-slate-700/80 flex items-center gap-1 transition-colors"
+            >
+              <RotateCcw className="w-3 h-3" />
+              <span className="hidden md:inline">Reset</span>
+            </button>
+          )}
+
           {/* Fullscreen Toggle */}
           <button
             onClick={toggleFullscreen}
@@ -626,40 +707,143 @@ export const LiveCameraFeed: React.FC<LiveCameraFeedProps> = ({
         </div>
       </div>
 
+      {/* Mobile DVR Multi-Channel Toolbar */}
+      <div className="z-20 px-3 py-2 bg-slate-900/95 border-y border-slate-800 flex flex-wrap items-center justify-between gap-2 text-xs">
+        <div className="flex items-center gap-1.5 overflow-x-auto py-0.5">
+          <div className="flex items-center gap-1 text-[11px] font-mono text-cyan-400 font-semibold mr-1">
+            <Video className="w-3.5 h-3.5" />
+            <span>MDVR CHANNELS:</span>
+          </div>
+          {DVR_CHANNELS.slice(0, Math.max(1, Math.min(4, bus.dvr_channels || 4))).map((ch) => (
+            <button
+              key={ch.id}
+              onClick={() => {
+                setSelectedChannel(ch.id);
+                setIsQuadView(false);
+              }}
+              className={`px-2 py-0.5 rounded text-[11px] font-mono font-medium transition-all ${
+                !isQuadView && selectedChannel === ch.id
+                  ? "bg-cyan-500 text-slate-950 font-bold shadow-sm shadow-cyan-500/30"
+                  : "bg-slate-800/80 hover:bg-slate-750 text-slate-300 border border-slate-700/60"
+              }`}
+            >
+              {ch.name}: {ch.role}
+            </button>
+          ))}
+          <button
+            onClick={() => setIsQuadView(true)}
+            className={`px-2.5 py-0.5 rounded text-[11px] font-mono font-bold flex items-center gap-1 transition-all ${
+              isQuadView
+                ? "bg-emerald-500 text-slate-950 shadow-sm shadow-emerald-500/30"
+                : "bg-slate-800/80 hover:bg-slate-750 text-emerald-400 border border-emerald-500/40"
+            }`}
+            title="View all 4 DVR cameras simultaneously in 2x2 split-screen"
+          >
+            <LayoutGrid className="w-3 h-3" />
+            <span>Quad-View (2×2)</span>
+          </button>
+        </div>
+
+        <div className="hidden sm:flex items-center gap-2 text-[10.5px] font-mono text-slate-400">
+          {uploadedMediaInfo.active ? (
+            <div className="flex items-center gap-1.5 px-2 py-0.5 rounded bg-cyan-500/10 border border-cyan-500/30 text-[10.5px] font-mono text-cyan-300 font-bold">
+              <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse" />
+              <span>CUSTOM {uploadedMediaInfo.mediaType?.toUpperCase()}: {uploadedMediaInfo.filename}</span>
+            </div>
+          ) : (
+            <>
+              <span>MDVR: {bus.dvr_ip || '192.168.10.12'}</span>
+              <span className="text-slate-600">|</span>
+              <span className="text-cyan-400 font-medium">
+                {isQuadView ? "4 CAMERAS SYNCHRONIZED" : DVR_CHANNELS[selectedChannel - 1]?.subtitle}
+              </span>
+            </>
+          )}
+        </div>
+      </div>
+
       {/* Speed Breaker Shock Alert Banner */}
       {currentJerk >= 1.6 && (
-        <div className="absolute top-14 left-1/2 -translate-x-1/2 z-30 bg-rose-600/95 text-white font-mono font-bold text-xs px-3.5 py-1.5 rounded-full shadow-2xl border border-rose-300 flex items-center gap-2 animate-bounce pointer-events-none">
+        <div className="absolute top-24 left-1/2 -translate-x-1/2 z-30 bg-rose-600/95 text-white font-mono font-bold text-xs px-3.5 py-1.5 rounded-full shadow-2xl border border-rose-300 flex items-center gap-2 animate-bounce pointer-events-none">
           <AlertTriangle className="w-4 h-4 text-amber-300" />
           <span>IRC:99 NON-COMPLIANT SPEED BREAKER (+{currentJerk}g SHOCK SPIKE)</span>
         </div>
       )}
 
-      {/* Main Viewport (Live RTSP / Digital Twin Canvas) */}
-      <div className="relative w-full aspect-video min-h-[300px] max-h-[520px] bg-slate-950 flex items-center justify-center overflow-hidden">
-        {feedMode === 'rtsp' ? (
-          <div className="relative w-full h-full">
-            <img
-              src={`/api/streams/snapshot/${bus.id}?t=${frameTimestamp}`}
-              onError={() => setRtspError(true)}
-              onLoad={() => setRtspError(false)}
-              alt={`Live Stream ${bus.id}`}
-              className="w-full h-full object-cover"
-            />
-            {/* Live AI Overlay Boxes */}
-            {showBoundingBoxes && (
-              <div className="absolute top-1/3 left-1/3 w-48 sm:w-60 h-24 sm:h-32 border-2 border-rose-500 rounded-xl bg-rose-500/10 flex flex-col justify-between p-2 animate-pulse pointer-events-none">
-                <div className="flex items-center justify-between text-[10.5px] font-mono font-bold bg-black/85 px-2 py-1 rounded text-rose-300">
-                  <span>POTHOLE D40 DETECTED</span>
-                  <span className="text-emerald-400">96.8%</span>
+      {/* Main Viewport (Live RTSP / Quad-View / Digital Twin Canvas) */}
+      <div className="relative w-full aspect-video min-h-[300px] max-h-[540px] bg-slate-950 flex items-center justify-center overflow-hidden">
+        {isQuadView ? (
+          <div className="w-full h-full grid grid-cols-2 grid-rows-2 gap-1 p-1 bg-slate-950">
+            {DVR_CHANNELS.slice(0, 4).map((ch) => (
+              <div
+                key={ch.id}
+                onClick={() => {
+                  setSelectedChannel(ch.id);
+                  setIsQuadView(false);
+                }}
+                className="relative group cursor-pointer bg-slate-900 rounded-lg overflow-hidden border border-slate-800 hover:border-cyan-400 transition-all flex flex-col"
+              >
+                <img
+                  src={`/api/streams/snapshot/${bus.id}?channel=${ch.id}&t=${frameTimestamp}`}
+                  alt={`${bus.id} CH${ch.id}`}
+                  className="w-full h-full object-cover"
+                />
+                <div className="absolute top-1.5 left-1.5 bg-slate-950/80 backdrop-blur-md px-2 py-0.5 rounded border border-slate-700/80 text-[10.5px] font-mono font-bold text-white flex items-center gap-1.5">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                  <span>{ch.name}: {ch.role}</span>
                 </div>
-                <div className="text-[10px] font-mono bg-black/85 px-2 py-0.5 rounded text-slate-300 self-start">
-                  GPS: {bus.lat.toFixed(4)}°N, {bus.lng.toFixed(4)}°E • Depth: 48mm
+                <div className="absolute bottom-1.5 left-1.5 bg-slate-950/80 px-2 py-0.5 rounded text-[9.5px] font-mono text-slate-400">
+                  {ch.subtitle.split('(')[0]}
+                </div>
+                <div className="absolute bottom-1.5 right-1.5 opacity-0 group-hover:opacity-100 transition-opacity bg-cyan-500 text-slate-950 text-[10px] font-mono font-bold px-2 py-0.5 rounded shadow flex items-center gap-1">
+                  <span>Maximize</span>
+                  <Maximize2 className="w-2.5 h-2.5" />
                 </div>
               </div>
+            ))}
+          </div>
+        ) : feedMode === 'rtsp' ? (
+          <div className="relative w-full h-full">
+            <img
+              src={`/api/streams/snapshot/${bus.id}?channel=${selectedChannel}&t=${frameTimestamp}`}
+              onError={() => setRtspError(true)}
+              onLoad={() => setRtspError(false)}
+              alt={`Live Stream ${bus.id} CH${selectedChannel}`}
+              className="w-full h-full object-cover"
+            />
+            {/* Real Computer Vision Perception HUD (Replaces static prototype boxes) */}
+            {showBoundingBoxes && (
+              <div className="absolute top-3 right-3 z-10 flex flex-col gap-1.5 items-end pointer-events-none">
+                <div className="bg-slate-950/90 backdrop-blur-md px-3 py-1.5 rounded-xl border border-slate-700/80 text-[11px] font-mono flex items-center gap-2 shadow-xl">
+                  <span className={`w-2 h-2 rounded-full ${activeDetections.length > 0 ? "bg-rose-500 animate-ping" : "bg-emerald-400"}`} />
+                  <span className="text-slate-200">
+                    CV ENGINE: <strong className={activeDetections.length > 0 ? "text-rose-400" : "text-emerald-400"}>
+                      {activeDetections.length > 0 ? `${activeDetections.length} HAZARD(S) IN FRAME` : "NO DISTRESS DETECTED"}
+                    </strong>
+                  </span>
+                </div>
+
+                {activeDetections.slice(0, 3).map((d, i) => (
+                  <div key={i} className="bg-slate-950/90 backdrop-blur-md px-2.5 py-1 rounded-lg border border-rose-500/50 text-[10px] font-mono text-rose-300 flex items-center gap-2 shadow-lg">
+                    <span className="font-bold text-white">{d.defect_name || d.label}</span>
+                    {d.depth_cm && <span className="text-amber-300">Depth: {d.depth_cm}cm</span>}
+                    {d.range_m && <span className="text-amber-300">Range: {d.range_m}m</span>}
+                    <span className="text-emerald-400 font-bold">{Math.round((d.confidence || 0.95) * 100)}%</span>
+                  </div>
+                ))}
+              </div>
             )}
-            <div className="absolute bottom-3 left-3 bg-slate-900/85 backdrop-blur-md px-2.5 py-1 rounded-xl border border-slate-700 text-emerald-400 font-mono text-xs flex items-center gap-2 shadow-lg pointer-events-none">
-              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping" />
-              <span>CCTV INGEST ● {bus.id} ({bus.route_code || 'LIVE'})</span>
+
+            {/* Bottom Stream Origin Badge */}
+            <div className="absolute bottom-3 left-3 bg-slate-900/90 backdrop-blur-md px-3 py-1.5 rounded-xl border border-slate-700 text-emerald-400 font-mono text-xs flex items-center gap-2 shadow-lg pointer-events-none">
+              <span className={`w-2 h-2 rounded-full ${uploadedMediaInfo.active ? "bg-cyan-400 animate-ping" : "bg-emerald-500 animate-ping"}`} />
+              <span>
+                {uploadedMediaInfo.active ? (
+                  <>USER FOOTAGE STREAM ● {uploadedMediaInfo.filename} ({uploadedMediaInfo.mediaType?.toUpperCase()})</>
+                ) : (
+                  <>CCTV INGEST ● {bus.id} ({DVR_CHANNELS[selectedChannel - 1]?.name}: {DVR_CHANNELS[selectedChannel - 1]?.role})</>
+                )}
+              </span>
             </div>
           </div>
         ) : (
@@ -672,10 +856,12 @@ export const LiveCameraFeed: React.FC<LiveCameraFeedProps> = ({
         )}
 
         {/* Center Screen Crosshairs (Windshield Optical Bore Sight) */}
-        <div className="absolute inset-0 pointer-events-none flex items-center justify-center opacity-30">
-          <div className="w-12 h-0.5 bg-blue-400" />
-          <div className="h-12 w-0.5 bg-blue-400 -ml-6" />
-        </div>
+        {!isQuadView && (
+          <div className="absolute inset-0 pointer-events-none flex items-center justify-center opacity-30">
+            <div className="w-12 h-0.5 bg-blue-400" />
+            <div className="h-12 w-0.5 bg-blue-400 -ml-6" />
+          </div>
+        )}
       </div>
 
       {/* Bottom Telemetry HUD Bar */}
@@ -731,6 +917,30 @@ export const LiveCameraFeed: React.FC<LiveCameraFeedProps> = ({
           <span>{bus.lat.toFixed(4)}°N, {bus.lng.toFixed(4)}°E (NavIC 5Hz)</span>
         </div>
       </div>
+
+      {/* Upload Footage Modal */}
+      <UploadFootageModal
+        isOpen={isUploadModalOpen}
+        onClose={() => setIsUploadModalOpen(false)}
+        busId={bus.id}
+        selectedChannel={selectedChannel}
+        onUploadSuccess={(res) => {
+          if (res?.reset) {
+            setUploadedMediaInfo({ active: false });
+            setActiveDetections([]);
+          } else if (res?.success) {
+            setUploadedMediaInfo({
+              active: true,
+              filename: res.filename,
+              mediaType: res.media_type,
+              channel: res.channel,
+              count: res.detections_count
+            });
+            setFeedMode('rtsp');
+          }
+          setFrameTimestamp(Date.now());
+        }}
+      />
     </div>
   );
 };
