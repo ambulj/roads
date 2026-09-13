@@ -81,10 +81,35 @@ export const NightSafetyRadarModal: React.FC<NightSafetyRadarModalProps> = ({
 }) => {
   const [selectedFilter, setSelectedFilter] = useState<string>("ALL");
   const [dispatchedId, setDispatchedId] = useState<string | null>(null);
+  const [hazards, setHazards] = useState<NightHazard[]>(NIGHT_HAZARDS);
+
+  React.useEffect(() => {
+    if (!isOpen) return;
+    fetch('/api/analytics/dark-spots')
+      ? fetch('/api/analytics/dark-spots')
+          .then((res) => res.json())
+          .then((data) => {
+            if (Array.isArray(data) && data.length > 0) {
+              const mapped: NightHazard[] = data.map((d: any, idx: number) => ({
+                id: d.id || `NZ-0${idx + 1}`,
+                type: "DARK_ZONE",
+                title: `Dark Corridor Audit: ${d.road_name || "Arterial Road"}`,
+                location: d.road_name || "Chennai Corridor",
+                severity: (d.pedestrian_risk || "CRITICAL") as any,
+                luxOrHeight: `${d.lux_reading || 1.8} lux (${d.dark_spot_length_m || 450}m unlit)`,
+                riskDescription: `Sub-standard illuminance below 15.0 lux threshold. Unlit pedestrian & bus corridor. Provenance: ${d.provenance || "NIGHT_PATROL_TELEMETRY"}.`,
+                department: "GCC City Electricity & Lighting Wing / GCTP"
+              }));
+              setHazards([...mapped, ...NIGHT_HAZARDS.slice(1)]);
+            }
+          })
+          .catch(() => {})
+      : null;
+  }, [isOpen]);
 
   if (!isOpen) return null;
 
-  const filtered = NIGHT_HAZARDS.filter((h) => {
+  const filtered = hazards.filter((h) => {
     if (selectedFilter === "ALL") return true;
     return h.type === selectedFilter;
   });

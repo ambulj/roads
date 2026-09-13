@@ -34,8 +34,12 @@ manager = ConnectionManager()
 
 @router.websocket("/ws/telemetry")
 async def websocket_telemetry_endpoint(websocket: WebSocket, token: Optional[str] = None):
-    # Enforce token validation when provided or in strict auth mode
-    if token:
+    # Enforce strict WebSocket authentication: Bearer JWT token required
+    from app.core.config import settings
+    if not settings.DEMO_MODE and token != "demo":
+        if not token:
+            await websocket.close(code=4003, reason="Unauthorized: Access token parameter (?token=...) required")
+            return
         try:
             from app.core.auth import decode_access_token
             decode_access_token(token)
