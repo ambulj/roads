@@ -188,29 +188,28 @@ def get_current_user(
     """
     if authorization and authorization.startswith("Bearer "):
         token = authorization[7:].strip()
-        try:
-            payload = decode_access_token(token)
-            username = payload.get("sub") or payload.get("username")
-            user = SEEDED_USERS.get(username)
-            if user:
-                return user
-            return {
-                "username": username,
-                "role": payload.get("role", "maintenance"),
-                "name": payload.get("name", username),
-                "agency": payload.get("agency", "GCC Engineering Wing"),
-                "permissions": payload.get("permissions", ["work_orders", "clusters", "analytics"])
-            }
-        except Exception:
-            # Stale or invalid bearer token: fall through gracefully to demo header or default
-            pass
+        payload = decode_access_token(token)
+        username = payload.get("sub") or payload.get("username")
+        user = SEEDED_USERS.get(username)
+        if user:
+            return user
+        return {
+            "username": username,
+            "role": payload.get("role", "maintenance"),
+            "name": payload.get("name", username),
+            "agency": payload.get("agency", "GCC Engineering Wing"),
+            "permissions": payload.get("permissions", ["work_orders", "clusters", "analytics"])
+        }
     
     # Fallback to demo persona if provided in header
     if x_demo_role and x_demo_role.lower() in SEEDED_USERS:
         return SEEDED_USERS[x_demo_role.lower()]
         
-    # Default sovereign demo evaluation fallback (Road Maintenance Officer)
-    return SEEDED_USERS["maintenance"]
+    raise HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Not authenticated. Bearer token required.",
+        headers={"WWW-Authenticate": "Bearer"}
+    )
 
 def get_optional_current_user(
     authorization: Optional[str] = Header(None),
