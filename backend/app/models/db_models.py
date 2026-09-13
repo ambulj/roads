@@ -232,4 +232,63 @@ class DBRepairAudit(Base):
     notes = Column(Text, nullable=True)
     verified_at = Column(String(64))
 
+class DBSubmergedPothole(Base):
+    __tablename__ = "submerged_potholes"
+
+    id = Column(String(64), primary_key=True, index=True)
+    road_name = Column(String(255), nullable=False)
+    lat = Column(Float, nullable=False)
+    lng = Column(Float, nullable=False)
+    water_depth_cm = Column(Float, default=15.0)
+    cavity_depth_cm = Column(Float, default=12.0)
+    acoustic_signature = Column(String(64), default="AXLE_SHOCK_HYDRO_CAVITY")
+    status = Column(String(32), default="FLOOD_HAZARD")
+    provenance = Column(String(64), default="HYDROLOGIC_FLOOD_OVERLAY_AUDIT")
+    detected_at = Column(String(64))
+
+class DBObscuredSign(Base):
+    __tablename__ = "obscured_signs"
+
+    id = Column(String(64), primary_key=True, index=True)
+    road_name = Column(String(255), nullable=False)
+    lat = Column(Float, nullable=False)
+    lng = Column(Float, nullable=False)
+    sign_type = Column(String(64), nullable=False) # SPEED_LIMIT_50, PEDESTRIAN_CROSSING, STOP_SIGN
+    obscuration_pct = Column(Float, default=75.0)
+    obscuration_cause = Column(String(128), default="OVERGROWN_TREE_CANOPY")
+    statutory_spec = Column(String(64), default="IRC:67:2022 Sign Visibility Code")
+    status = Column(String(32), default="CLEARANCE_ORDERED")
+    provenance = Column(String(64), default="IRC67_CLEARANCE_FIELD_AUDIT")
+    detected_at = Column(String(64))
+
+class DBAsphaltQualityAudit(Base):
+    __tablename__ = "asphalt_quality_audits"
+
+    id = Column(String(64), primary_key=True, index=True)
+    corridor_name = Column(String(255), nullable=False)
+    contractor_name = Column(String(128), nullable=False)
+    mix_type = Column(String(64), default="VG-30 Hot Mix Bituminous Concrete")
+    laydown_temp_c = Column(Float, default=142.0)
+    compaction_pct = Column(Float, default=97.5)
+    bitumen_content_pct = Column(Float, default=5.2)
+    compliance_status = Column(String(32), default="PASSED_MoRTH_SPEC")
+    statutory_spec = Column(String(64), default="MoRTH Section 500 / IRC:SP:20")
+    provenance = Column(String(64), default="IRC_SP20_LAB_CALIBRATED_BENCHMARK")
+    audited_at = Column(String(64))
+
+class DBRoadMemoryCorridor(Base):
+    __tablename__ = "road_memory_corridors"
+
+    id = Column(String(64), primary_key=True, index=True)
+    corridor_code = Column(String(32), unique=True, index=True)
+    corridor_name = Column(String(255), nullable=False)
+    first_detected_at = Column(String(64))
+    total_passes = Column(Integer, default=1)
+    buses_agreed_count = Column(Integer, default=1)
+    consensus_confidence = Column(Float, default=0.98)
+    lifecycle_stage = Column(String(32), default="ACTIVE_MONITORING")
+    provenance = Column(String(64), default="CORRIDOR_MAINTENANCE_LIFECYCLE_LOG")
+    updated_at = Column(String(64))
+
+
 

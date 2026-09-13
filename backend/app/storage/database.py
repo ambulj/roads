@@ -369,6 +369,68 @@ def init_db():
             for deb in debarments:
                 db.add(DBContractorDebarment(**deb))
 
+        # ── Seed submerged potholes ───────────────────────────────────────────
+        from app.models.db_models import (
+            DBSubmergedPothole, DBObscuredSign, DBAsphaltQualityAudit, DBRoadMemoryCorridor
+        )
+        if db.query(DBSubmergedPothole).count() == 0:
+            db.add(DBSubmergedPothole(
+                id="sub-01",
+                road_name="Velachery Main Road (Near Railway Station Underpass)",
+                lat=12.9790, lng=80.2190,
+                water_depth_cm=22.0, cavity_depth_cm=16.5,
+                acoustic_signature="AXLE_SHOCK_HYDRO_CAVITY_ALERT",
+                status="FLOOD_HAZARD",
+                provenance="HYDROLOGIC_FLOOD_OVERLAY_AUDIT",
+                detected_at="Today, 07:10 AM"
+            ))
+
+        # ── Seed obscured signs ───────────────────────────────────────────────
+        if db.query(DBObscuredSign).count() == 0:
+            db.add(DBObscuredSign(
+                id="obs-01",
+                road_name="Anna Salai near Gemini Flyover Approach",
+                lat=13.0515, lng=80.2500,
+                sign_type="SPEED_LIMIT_50",
+                obscuration_pct=82.0,
+                obscuration_cause="OVERGROWN_TREE_CANOPY",
+                statutory_spec="IRC:67:2022 Sign Visibility Code",
+                status="CLEARANCE_ORDERED",
+                provenance="IRC67_CLEARANCE_FIELD_AUDIT",
+                detected_at="Yesterday, 04:30 PM"
+            ))
+
+        # ── Seed asphalt quality audits ────────────────────────────────────────
+        if db.query(DBAsphaltQualityAudit).count() == 0:
+            db.add(DBAsphaltQualityAudit(
+                id="asph-01",
+                corridor_name="GST Road Airport Link Corridor",
+                contractor_name="L&T Highways Infra Ltd",
+                mix_type="VG-40 Hot Mix Bituminous Concrete",
+                laydown_temp_c=148.5,
+                compaction_pct=98.2,
+                bitumen_content_pct=5.4,
+                compliance_status="PASSED_MoRTH_SPEC",
+                statutory_spec="MoRTH Section 500 / IRC:SP:20",
+                provenance="IRC_SP20_LAB_CALIBRATED_BENCHMARK",
+                audited_at="02 Sept 2026"
+            ))
+
+        # ── Seed road memory corridors ─────────────────────────────────────────
+        if db.query(DBRoadMemoryCorridor).count() == 0:
+            db.add(DBRoadMemoryCorridor(
+                id="mem-01",
+                corridor_code="CORR-GST-01",
+                corridor_name="GST Road (NH-32) Airport Segment",
+                first_detected_at="15 Aug 2026",
+                total_passes=142,
+                buses_agreed_count=18,
+                consensus_confidence=0.99,
+                lifecycle_stage="ACTIVE_PATROL",
+                provenance="CORRIDOR_MAINTENANCE_LIFECYCLE_LOG",
+                updated_at="Just now"
+            ))
+
         # ── Seed government users ────────────────────────────────────────────
         from app.models.db_models import DBUser
         from app.core.auth import SEEDED_USERS

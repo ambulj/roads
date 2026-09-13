@@ -169,16 +169,53 @@ def get_open_manholes(db: Session = Depends(get_db)):
     return store.get_open_manholes()
 
 @router.get("/submerged-potholes")
-def get_submerged_potholes():
+def get_submerged_potholes(db: Session = Depends(get_db)):
     """Returns hydro-dynamic acoustic submerged pothole hazards under standing floodwater."""
+    from app.models.db_models import DBSubmergedPothole
+    rows = db.query(DBSubmergedPothole).all()
+    if rows:
+        return [
+            {
+                "id": r.id,
+                "road_name": r.road_name,
+                "lat": r.lat,
+                "lng": r.lng,
+                "water_depth_cm": r.water_depth_cm,
+                "cavity_depth_cm": r.cavity_depth_cm,
+                "acoustic_signature": r.acoustic_signature,
+                "status": r.status,
+                "provenance": r.provenance or "HYDROLOGIC_FLOOD_OVERLAY_AUDIT",
+                "detected_at": r.detected_at
+            }
+            for r in rows
+        ]
     records = store.get_submerged_potholes()
     for rec in records:
         rec["provenance"] = "HYDROLOGIC_FLOOD_OVERLAY_AUDIT"
     return records
 
 @router.get("/obscured-signs")
-def get_obscured_signs():
+def get_obscured_signs(db: Session = Depends(get_db)):
     """Returns IRC:67 regulatory road signs obscured by overgrown foliage or political banners."""
+    from app.models.db_models import DBObscuredSign
+    rows = db.query(DBObscuredSign).all()
+    if rows:
+        return [
+            {
+                "id": r.id,
+                "road_name": r.road_name,
+                "lat": r.lat,
+                "lng": r.lng,
+                "sign_type": r.sign_type,
+                "obscuration_pct": r.obscuration_pct,
+                "obscuration_cause": r.obscuration_cause,
+                "statutory_spec": r.statutory_spec,
+                "status": r.status,
+                "provenance": r.provenance or "IRC67_CLEARANCE_FIELD_AUDIT",
+                "detected_at": r.detected_at
+            }
+            for r in rows
+        ]
     records = store.get_obscured_signs()
     for rec in records:
         rec["provenance"] = "IRC67_CLEARANCE_FIELD_AUDIT"
@@ -206,16 +243,53 @@ def get_contractor_debarments(db: Session = Depends(get_db)):
     return store.get_contractor_debarments()
 
 @router.get("/asphalt-quality")
-def get_asphalt_quality():
+def get_asphalt_quality(db: Session = Depends(get_db)):
     """Returns IRC:SP:20 cold-mix & hot-mix asphalt temperature and geometric milling audits."""
+    from app.models.db_models import DBAsphaltQualityAudit
+    rows = db.query(DBAsphaltQualityAudit).all()
+    if rows:
+        return [
+            {
+                "id": r.id,
+                "corridor_name": r.corridor_name,
+                "contractor_name": r.contractor_name,
+                "mix_type": r.mix_type,
+                "laydown_temp_c": r.laydown_temp_c,
+                "compaction_pct": r.compaction_pct,
+                "bitumen_content_pct": r.bitumen_content_pct,
+                "compliance_status": r.compliance_status,
+                "statutory_spec": r.statutory_spec,
+                "provenance": r.provenance or "IRC_SP20_LAB_CALIBRATED_BENCHMARK",
+                "audited_at": r.audited_at
+            }
+            for r in rows
+        ]
     records = store.get_asphalt_quality_audits()
     for rec in records:
         rec["provenance"] = "IRC_SP20_LAB_CALIBRATED_BENCHMARK"
     return records
 
 @router.get("/road-memory-corridors")
-def get_road_memory_corridors():
+def get_road_memory_corridors(db: Session = Depends(get_db)):
     """Returns historical corridor maintenance records and multi-bus consensus timeline."""
+    from app.models.db_models import DBRoadMemoryCorridor
+    rows = db.query(DBRoadMemoryCorridor).all()
+    if rows:
+        return [
+            {
+                "id": r.id,
+                "corridor_code": r.corridor_code,
+                "corridor_name": r.corridor_name,
+                "first_detected_at": r.first_detected_at,
+                "total_passes": r.total_passes,
+                "buses_agreed_count": r.buses_agreed_count,
+                "consensus_confidence": r.consensus_confidence,
+                "lifecycle_stage": r.lifecycle_stage,
+                "provenance": r.provenance or "CORRIDOR_MAINTENANCE_LIFECYCLE_LOG",
+                "updated_at": r.updated_at
+            }
+            for r in rows
+        ]
     records = store.get_road_memory_corridors()
     for rec in records:
         rec["provenance"] = "CORRIDOR_MAINTENANCE_LIFECYCLE_LOG"

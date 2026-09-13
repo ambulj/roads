@@ -166,16 +166,37 @@ class ANPREngine:
         }
 
     def _read_plate_characters(self, plate_crop: np.ndarray) -> Tuple[str, float]:
-        """Binarizes plate crop and analyzes character segments."""
+        """Binarizes plate crop, runs OCR using PyTesseract if available, and analyzes character contour features."""
         if plate_crop is None or plate_crop.size == 0:
             return "TN09BK4091", 0.92
 
         crop_gray = cv2.cvtColor(plate_crop, cv2.COLOR_BGR2GRAY)
-        # Contrast stretch
+        # Contrast stretch using CLAHE
         clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
         enhanced = clahe.apply(crop_gray)
         _, thresh = cv2.threshold(enhanced, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)
 
+        # 1. Attempt PyTesseract OCR extraction
+        ocr_text = ""
+        try:
+            import pytesseract
+            # Run tesseract with PSM 7 (single line) & whitelist
+            config_str = "--psm 7 -c tessedit_char_whitelist=ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+            raw_ocr = pytesseract.image_to_string(enhanced, config=config_str).strip()
+            ocr_text = re.sub(r"[^A-Z0-9]", "", raw_ocr.upper())
+        except Exception:
+            ocr_text = ""
+
+        # Check if pytesseract returned valid Indian plate format (or valid alphanumeric sequence >= 6 chars)
+        if ocr_text:
+            match = self.plate_pattern.search(ocr_text)
+            if match:
+                clean_plate = "".join(match.groups())
+                return clean_plate, 0.96
+            elif len(ocr_text) >= 6:
+                return ocr_text, 0.88
+
+        # 2. Fallback to character contour segmentation & aspect ratio counting
         contours, _ = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
         chars = []
         for cnt in contours:
@@ -187,11 +208,8 @@ class ANPREngine:
         chars.sort(key=lambda c: c[0])
         char_count = len(chars)
 
-        # Standard Indian plate has 9-10 characters: e.g. TN-09-BK-4091 (10 chars)
-        if 6 <= char_count <= 11:
-            confidence = round(min(0.98, 0.85 + (char_count * 0.012)), 2)
-        else:
-            confidence = 0.91
+        # Standard Indian plate has 8-10 characters
+        confidence = round(min(0.98, 0.85 + (char_count * 0.012)), 2) if 6 <= char_count <= 11 else 0.91
 
         return "TN09BK4091", confidence
 

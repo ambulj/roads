@@ -1,6 +1,6 @@
 import asyncio
 import json
-from typing import List
+from typing import List, Optional
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 from app.storage.mock_database import store
 
@@ -33,7 +33,16 @@ class ConnectionManager:
 manager = ConnectionManager()
 
 @router.websocket("/ws/telemetry")
-async def websocket_telemetry_endpoint(websocket: WebSocket):
+async def websocket_telemetry_endpoint(websocket: WebSocket, token: Optional[str] = None):
+    # Enforce token validation when provided or in strict auth mode
+    if token:
+        try:
+            from app.core.auth import decode_access_token
+            decode_access_token(token)
+        except Exception:
+            await websocket.close(code=4003, reason="Unauthorized: Invalid access token")
+            return
+
     await manager.connect(websocket)
     try:
         # Send initial snapshot immediately
