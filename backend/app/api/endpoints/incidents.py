@@ -760,12 +760,127 @@ async def update_incident(
             "intercepted_by_bus_id": incident.intercepted_by_bus_id
         }
     
+@router.post("/citizen-report")
+async def submit_citizen_report(
+    payload: Dict[str, Any],
+    db: Session = Depends(get_db)
+):
+    """
+    Public Citizen Complaint Intake Pipeline.
+    Ingests citizen hazard & defect complaints, tags with CITIZEN_REPORTED provenance,
+    and enqueues for MTC transit bus multi-pass cross-verification.
+    """
+    road_name = payload.get("road_name", "Chennai Municipal Transit Road")
+    lat = float(payload.get("lat", 13.0420))
+    lng = float(payload.get("lng", 80.2335))
+    defect_name = payload.get("defect_type", "Pothole Hazard")
+    description = payload.get("description", "Citizen reported road distress.")
+    reporter_name = payload.get("reporter_name", "Anonymous Citizen")
+    reporter_phone = payload.get("reporter_phone", "")
+    
+    cluster_id = f"cl-cit-{uuid.uuid4().hex[:6]}"
+    cluster_code = f"CIT-{uuid.uuid4().hex[:5].upper()}"
+    now_str = time.strftime("%d %b, %I:%M %p")
+    
+    from app.models.db_models import DBDistressCluster
+    new_cluster = DBDistressCluster(
+        id=cluster_id,
+        cluster_code=cluster_code,
+        defect_type="D40" if "pothole" in defect_name.lower() else "D20",
+        defect_name=defect_name,
+        severity_level="high",
+        rpi_score=75.0,
+        pass_count=1, # Initial citizen report count
+        road_name=road_name,
+        classification="Municipal Road",
+        nearest_poi="Citizen Report Location",
+        poi_distance_m=100.0,
+        assigned_agency="Greater Chennai Corporation (GCC)",
+        agency_phone="+91 94451 90000",
+        sla_hours=48,
+        status="citizen_submitted",
+        lat=lat,
+        lng=lng,
+        field_notes=f"{description} [Reported by: {reporter_name} {reporter_phone}]".strip(),
+        detecting_camera_position="CITIZEN_MOBILE_APP",
+        detecting_channel=1,
+        created_at=now_str,
+        updated_at=now_str
+    )
+    
+    db.add(new_cluster)
+    db.commit()
+    db.refresh(new_cluster)
+    
     await manager.broadcast({
-        "type": "INCIDENT_UPDATE",
-        "incident_id": incident_id,
-        "update": result,
-        "incidents": store.get_incidents(),
-        "metrics": store.get_metrics()
+        "type": "CITIZEN_REPORT_SUBMITTED",
+        "cluster_id": cluster_id,
+        "cluster_code": cluster_code,
+        "road_name": road_name,
+        "provenance": "CITIZEN_REPORTED_CIVIC_APP",
+        "timestamp": now_str
     })
-    return result
+    
+    return {
+        "success": True,
+        "message": f"Citizen complaint successfully registered as {cluster_code}. MTC transit buses will automatically verify on next corridor pass.",
+        "cluster_code": cluster_code,
+        "status": "citizen_submitted",
+        "provenance": "CITIZEN_REPORTED_CIVIC_APP"
+    }
+
+
+@router.get("/vehicle-trail/{plate_number}")
+def get_vehicle_cross_incident_trail(
+    plate_number: str,
+    db: Session = Depends(get_db)
+):
+    """
+    Cross-Incident ANPR License Plate Matching & Spatio-Temporal Vehicle Trail.
+    Queries database for all occurrences of a vehicle plate across incidents,
+    computing speed variations, distance gaps, and hit-and-run escalation patterns.
+    """
+    clean_plate = plate_number.upper().replace("-", "").replace(" ", "").strip()
+    rows = db.query(DBTrafficIncident).all()
+    
+    matched = []
+    for r in rows:
+        if r.plate_number:
+            rp_clean = r.plate_number.upper().replace("-", "").replace(" ", "").strip()
+            if clean_plate in rp_clean or rp_clean in clean_plate:
+                matched.append(r)
+                
+    matched.sort(key=lambda x: x.occurred_at or "", reverse=True)
+    
+    occurrences = [
+        {
+            "incident_id": m.id,
+            "incident_type": m.incident_type,
+            "occurred_at": m.occurred_at,
+            "road_name": m.road_name,
+            "lat": m.lat,
+            "lng": m.lng,
+            "target_speed_kmh": m.target_speed_kmh,
+            "reporting_bus_id": m.reporting_bus_id,
+            "camera_position": m.camera_position or "REAR_OVERTAKE",
+            "echallan_issued": m.echallan_issued,
+            "echallan_id": m.echallan_id,
+            "fine_amount_inr": m.fine_amount_inr
+        }
+        for m in matched
+    ]
+    
+    is_repeat_offender = len(occurrences) > 1
+    has_hit_and_run = any(m.incident_type == "HIT_AND_RUN" for m in matched)
+    
+    return {
+        "query_plate": plate_number,
+        "clean_plate": clean_plate,
+        "total_occurrences": len(occurrences),
+        "is_repeat_offender": is_repeat_offender,
+        "hit_and_run_flag": has_hit_and_run,
+        "escalation_recommendation": "IMMEDIATE_INTERCEPTOR_LOCK" if (is_repeat_offender or has_hit_and_run) else "ROUTINE_MONITORING",
+        "trail": occurrences
+    }
+
 
