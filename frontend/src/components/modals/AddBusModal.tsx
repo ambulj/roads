@@ -72,6 +72,16 @@ export const AddBusModal: React.FC<AddBusModalProps> = ({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
+  // Stream & Footage State
+  const [streamProtocol, setStreamProtocol] = useState<'SRT' | 'RTSP' | 'WEBCAM' | 'UPLOAD'>('SRT');
+  const [uploadedFile, setUploadedFile] = useState<File | null>(null);
+
+  // Sensor Telematics Insertion State
+  const [initialImuGz, setInitialImuGz] = useState<number>(1.25);
+  const [initialSpeedKmh, setInitialSpeedKmh] = useState<number>(42.5);
+  const [ais140MqttUrl, setAis140MqttUrl] = useState<string>('mqtt://ais140.transport.tn.gov.in:1883/MTC');
+  const [injectInitialSensorPacket, setInjectInitialSensorPacket] = useState<boolean>(true);
+
   if (!isOpen) return null;
 
   const handleCorridorChange = (idx: number) => {
@@ -89,7 +99,11 @@ export const AddBusModal: React.FC<AddBusModalProps> = ({
     const generated = `BUS-${rto}-${num}`;
     setBusId(generated);
     if (!rtspUrl) {
-      setRtspUrl(`rtsp://mtc-fleet.chennai.gov.in:554/bus${num}/ch{channel}/main`);
+      if (streamProtocol === 'SRT') {
+        setRtspUrl(`srt://0.0.0.0:${9000 + Math.floor(Math.random() * 100)}?mode=listener`);
+      } else {
+        setRtspUrl(`rtsp://mtc-fleet.chennai.gov.in:554/bus${num}/ch{channel}/main`);
+      }
     }
   };
 
@@ -105,16 +119,25 @@ export const AddBusModal: React.FC<AddBusModalProps> = ({
 
     const corridor = CORRIDOR_PRESETS[selectedCorridorIdx];
 
+    let finalRtsp = rtspUrl.trim();
+    if (!finalRtsp) {
+      if (streamProtocol === 'SRT') {
+        finalRtsp = `srt://0.0.0.0:9000?mode=listener`;
+      } else if (streamProtocol === 'WEBCAM') {
+        finalRtsp = '0';
+      }
+    }
+
     const payload: FleetNodeCreatePayload = {
       id: cleanBusId,
       route_name: routeName.trim() || `${corridor.name} Active Patrol`,
       route_code: routeCode.trim() || corridor.routeCode,
       vehicle_type: vehicleType,
       npu_hardware: npuHardware,
-      camera_model: cameraModel,
+      camera_model: streamProtocol === 'SRT' ? 'SRT 4G/5G Cellular Stream' : cameraModel,
       dvr_channels: dvrChannels,
       dvr_ip: dvrIp.trim() || '192.168.1.100',
-      rtsp_url: rtspUrl.trim() || undefined,
+      rtsp_url: finalRtsp || undefined,
       edge_fps: Number(edgeFps) || 30.0,
       is_online: true,
       last_lat: corridor.lat + (Math.random() - 0.5) * 0.005,
@@ -124,8 +147,35 @@ export const AddBusModal: React.FC<AddBusModalProps> = ({
 
     setIsSubmitting(true);
     try {
+      // 1. Commission Fleet Node in Database
       const res = await api.createFleetNode(payload);
       if (res.success && res.node) {
+        
+        // 2. Insert Footage Media File (if uploaded)
+        if (uploadedFile) {
+          const formData = new FormData();
+          formData.append('file', uploadedFile);
+          formData.append('bus_id', cleanBusId);
+          formData.append('channel', '1');
+          formData.append('auto_ingest', 'true');
+          await api.uploadStreamMedia(formData).catch(() => {});
+        }
+
+        // 3. Inject Initial Sensor Packet (if checked)
+        if (injectInitialSensorPacket) {
+          await api.ingestTelemetry({
+            bus_id: cleanBusId,
+            defect_type: 'D40',
+            confidence: 0.96,
+            speed_kmh: Number(initialSpeedKmh) || 42.5,
+            vertical_g_force: Number(initialImuGz) || 1.25,
+            lat: corridor.lat,
+            lng: corridor.lng,
+            camera_position: 'FRONT_WINDSHIELD',
+            channel: 1
+          }).catch(() => {});
+        }
+
         onSuccess(res.node);
         onClose();
       } else {
@@ -152,11 +202,11 @@ export const AddBusModal: React.FC<AddBusModalProps> = ({
               <h2 className="text-lg font-bold text-white tracking-wide flex items-center gap-2">
                 Register Transit Bus Node
                 <span className="px-2 py-0.5 rounded text-[10px] font-mono font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-                  MULTI-CHANNEL MDVR
+                  FOOTAGE &amp; TELEMETRY READY
                 </span>
               </h2>
               <p className="text-xs text-slate-400">
-                Commission a public transit bus with Mobile DVR cameras & AIS-140 edge telematics
+                Commission bus node with SRT/RTSP video footage stream and AIS-140 6-axis sensor insertion
               </p>
             </div>
           </div>
@@ -248,144 +298,146 @@ export const AddBusModal: React.FC<AddBusModalProps> = ({
             </div>
           </div>
 
-          {/* Vehicle & Edge AI Configuration */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <label className="text-xs font-semibold text-slate-300 block mb-1.5">
-                Vehicle Transit Class
-              </label>
-              <select
-                value={vehicleType}
-                onChange={(e) => setVehicleType(e.target.value)}
-                className="w-full bg-slate-950/80 border border-slate-700/80 focus:border-emerald-500 rounded-xl px-3 py-2 text-xs text-white focus:outline-none"
-              >
-                {VEHICLE_TYPES.map((v) => (
-                  <option key={v} value={v}>
-                    {v}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div>
-              <label className="text-xs font-semibold text-slate-300 block mb-1.5">
-                Edge NPU Hardware
-              </label>
-              <select
-                value={npuHardware}
-                onChange={(e) => setNpuHardware(e.target.value)}
-                className="w-full bg-slate-950/80 border border-slate-700/80 focus:border-emerald-500 rounded-xl px-3 py-2 text-xs text-white focus:outline-none"
-              >
-                {NPU_OPTIONS.map((n) => (
-                  <option key={n} value={n}>
-                    {n}
-                  </option>
-                ))}
-              </select>
-            </div>
-          </div>
-
-          {/* Mobile DVR & Channel Multiplexing Box */}
-          <div className="p-4 bg-slate-950/60 border border-slate-800 rounded-xl space-y-4">
+          {/* ── SECTION 1: FOOTAGE STREAM & FILE INSERTION ──────────────────── */}
+          <div className="p-4 bg-slate-950/60 border border-slate-800 rounded-xl space-y-3.5">
             <div className="flex items-center justify-between border-b border-slate-800/80 pb-2">
               <div className="flex items-center gap-2">
                 <Video className="w-4 h-4 text-cyan-400" />
                 <span className="text-xs font-bold text-slate-200 uppercase tracking-wider">
-                  Mobile DVR (MDVR) Multi-Camera Rig
+                  1. Video Footage Stream &amp; File Insertion
                 </span>
               </div>
-              <span className="text-[11px] text-cyan-400 font-medium">
-                {dvrChannels} Cameras Integrated
+              <span className="text-[11px] text-cyan-400 font-medium font-mono">
+                {streamProtocol} MODE
+              </span>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label className="text-[11px] font-semibold text-slate-400 block mb-1">
+                  Video Transmission Protocol
+                </label>
+                <select
+                  value={streamProtocol}
+                  onChange={(e: any) => {
+                    const p = e.target.value;
+                    setStreamProtocol(p);
+                    if (p === 'SRT') setRtspUrl('srt://0.0.0.0:9000?mode=listener');
+                    else if (p === 'WEBCAM') setRtspUrl('0');
+                  }}
+                  className="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-2 text-xs text-white focus:outline-none font-medium"
+                >
+                  <option value="SRT">⚡ 1. SRT 4G/5G Cellular Stream (Reliable ARQ)</option>
+                  <option value="RTSP">2. Direct RTSP Stream (CP Plus / IP Camera)</option>
+                  <option value="WEBCAM">3. Local USB Webcam / Dashcam (0)</option>
+                  <option value="UPLOAD">4. Upload Recorded MP4/JPG Video File</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="text-[11px] font-semibold text-slate-400 block mb-1">
+                  Stream Endpoint / Device Path
+                </label>
+                <input
+                  type="text"
+                  placeholder={streamProtocol === 'SRT' ? 'srt://0.0.0.0:9000?mode=listener' : 'rtsp://...'}
+                  value={rtspUrl}
+                  onChange={(e) => setRtspUrl(e.target.value)}
+                  className="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-2 text-xs text-white placeholder-slate-600 font-mono focus:outline-none"
+                />
+              </div>
+            </div>
+
+            {streamProtocol === 'UPLOAD' && (
+              <div className="p-3 bg-slate-900/90 border border-dashed border-cyan-500/40 rounded-xl space-y-1">
+                <label className="text-xs font-bold text-cyan-300 block">
+                  Select Footage File (MP4, MOV, WEBM or JPG)
+                </label>
+                <input
+                  type="file"
+                  accept="video/*,image/*"
+                  onChange={(e) => {
+                    const f = e.target.files?.[0];
+                    if (f) setUploadedFile(f);
+                  }}
+                  className="text-xs text-slate-300 file:mr-3 file:py-1 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-cyan-500/20 file:text-cyan-300 hover:file:bg-cyan-500/30"
+                />
+                <p className="text-[10px] text-slate-400">
+                  The system will run real-time YOLOv8 AI hazard perception frame-by-frame on your uploaded video file.
+                </p>
+              </div>
+            )}
+          </div>
+
+          {/* ── SECTION 2: SENSOR & TELEMETRY INSERTION ───────────────────── */}
+          <div className="p-4 bg-slate-950/60 border border-slate-800 rounded-xl space-y-3.5">
+            <div className="flex items-center justify-between border-b border-slate-800/80 pb-2">
+              <div className="flex items-center gap-2">
+                <Cpu className="w-4 h-4 text-emerald-400" />
+                <span className="text-xs font-bold text-slate-200 uppercase tracking-wider">
+                  2. Sensor &amp; Telematics Calibration (AIS-140 &amp; IMU)
+                </span>
+              </div>
+              <span className="text-[11px] text-emerald-400 font-medium font-mono">
+                5Hz TELEMETRY
               </span>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <div>
                 <label className="text-[11px] font-semibold text-slate-400 block mb-1">
-                  DVR Hardware Model
+                  Initial IMU G-Force Shock ({initialImuGz}g)
                 </label>
-                <select
-                  value={cameraModel}
-                  onChange={(e) => setCameraModel(e.target.value)}
-                  className="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none"
-                >
-                  {DVR_MODELS.map((d) => (
-                    <option key={d} value={d}>
-                      {d}
-                    </option>
-                  ))}
-                </select>
+                <input
+                  type="number"
+                  step="0.05"
+                  min="0.5"
+                  max="3.0"
+                  value={initialImuGz}
+                  onChange={(e) => setInitialImuGz(Number(e.target.value))}
+                  className="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white font-mono focus:outline-none"
+                />
               </div>
 
               <div>
                 <label className="text-[11px] font-semibold text-slate-400 block mb-1">
-                  Active Channels
+                  Initial Transit Speed
                 </label>
-                <div className="grid grid-cols-4 gap-1">
-                  {[1, 2, 4, 8].map((ch) => (
-                    <button
-                      key={ch}
-                      type="button"
-                      onClick={() => setDvrChannels(ch)}
-                      className={`py-1 rounded text-xs font-bold transition-all ${
-                        dvrChannels === ch
-                          ? 'bg-cyan-500 text-slate-950 shadow-md shadow-cyan-500/20'
-                          : 'bg-slate-900 text-slate-400 hover:text-white border border-slate-800'
-                      }`}
-                    >
-                      {ch} CH
-                    </button>
-                  ))}
+                <div className="flex items-center gap-1">
+                  <input
+                    type="number"
+                    value={initialSpeedKmh}
+                    onChange={(e) => setInitialSpeedKmh(Number(e.target.value))}
+                    className="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white font-mono focus:outline-none"
+                  />
+                  <span className="text-[11px] text-slate-400 font-mono">km/h</span>
                 </div>
               </div>
 
               <div>
                 <label className="text-[11px] font-semibold text-slate-400 block mb-1">
-                  MDVR Local IP Address
+                  AIS-140 MQTT Endpoint
                 </label>
                 <input
                   type="text"
-                  placeholder="192.168.10.88"
-                  value={dvrIp}
-                  onChange={(e) => setDvrIp(e.target.value)}
-                  className="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white placeholder-slate-600 font-mono focus:outline-none"
+                  value={ais140MqttUrl}
+                  onChange={(e) => setAis140MqttUrl(e.target.value)}
+                  className="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white font-mono focus:outline-none"
                 />
               </div>
             </div>
 
-            <div>
-              <div className="flex items-center justify-between mb-1">
-                <label className="text-[11px] font-semibold text-slate-400">
-                  RTSP Stream Template (Optional)
-                </label>
-                <span className="text-[10px] text-slate-500 font-mono">
-                  Use &#123;channel&#125; placeholder for multi-camera multiplexing
-                </span>
-              </div>
+            <div className="flex items-center gap-2 pt-1">
               <input
-                type="text"
-                placeholder="rtsp://mtc-fleet.chennai.gov.in:554/bus8921/ch{channel}/main"
-                value={rtspUrl}
-                onChange={(e) => setRtspUrl(e.target.value)}
-                className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-white placeholder-slate-600 font-mono focus:outline-none"
+                type="checkbox"
+                id="inject-sensor-cb"
+                checked={injectInitialSensorPacket}
+                onChange={(e) => setInjectInitialSensorPacket(e.target.checked)}
+                className="w-4 h-4 accent-emerald-500 rounded cursor-pointer"
               />
-            </div>
-
-            {/* Camera Channel Preview Tags */}
-            <div className="pt-1 flex flex-wrap gap-1.5">
-              {[
-                { ch: 1, label: 'CH1: Windshield Road' },
-                { ch: 2, label: 'CH2: Rear Tailgate' },
-                { ch: 3, label: 'CH3: Curbside / Lane' },
-                { ch: 4, label: 'CH4: Driver Cabin DMS' }
-              ].slice(0, dvrChannels).map((c) => (
-                <span
-                  key={c.ch}
-                  className="px-2 py-0.5 rounded bg-slate-900 border border-cyan-500/30 text-[10px] text-cyan-300 font-mono"
-                >
-                  ● {c.label}
-                </span>
-              ))}
+              <label htmlFor="inject-sensor-cb" className="text-xs text-slate-300 cursor-pointer select-none">
+                Inject Initial AIS-140 Telemetry Packet ({initialImuGz}g shock, {initialSpeedKmh} km/h) into Database on Commissioning
+              </label>
             </div>
           </div>
 
@@ -393,7 +445,7 @@ export const AddBusModal: React.FC<AddBusModalProps> = ({
           <div className="pt-2 flex items-center justify-between border-t border-slate-800">
             <div className="flex items-center gap-2 text-xs text-slate-400">
               <ShieldCheck className="w-4 h-4 text-emerald-400" />
-              <span>AIS-140 eSIM & SQLite Store-and-Forward Active</span>
+              <span>AIS-140 eSIM Telematics &amp; SQLite Store-and-Forward Active</span>
             </div>
 
             <div className="flex items-center gap-3">
@@ -413,7 +465,7 @@ export const AddBusModal: React.FC<AddBusModalProps> = ({
                 {isSubmitting ? (
                   <>
                     <div className="w-3.5 h-3.5 border-2 border-slate-950 border-t-transparent rounded-full animate-spin" />
-                    <span>Registering Node...</span>
+                    <span>Commissioning Node...</span>
                   </>
                 ) : (
                   <>
