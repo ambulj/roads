@@ -82,6 +82,10 @@ export const AddBusModal: React.FC<AddBusModalProps> = ({
   const [ais140MqttUrl, setAis140MqttUrl] = useState<string>('mqtt://ais140.transport.tn.gov.in:1883/MTC');
   const [injectInitialSensorPacket, setInjectInitialSensorPacket] = useState<boolean>(true);
 
+  // Diagnostic Probe State
+  const [isProbing, setIsProbing] = useState<boolean>(false);
+  const [probeResult, setProbeResult] = useState<{ status: 'success' | 'warning' | 'error'; title: string; message: string } | null>(null);
+
   if (!isOpen) return null;
 
   const handleCorridorChange = (idx: number) => {
@@ -107,6 +111,80 @@ export const AddBusModal: React.FC<AddBusModalProps> = ({
     }
   };
 
+  const handleProbeEndpoints = async () => {
+    setProbeResult(null);
+    let targetUrl = rtspUrl.trim();
+    if (!targetUrl) {
+      if (streamProtocol === 'SRT') targetUrl = 'srt://0.0.0.0:9000?mode=listener';
+      else if (streamProtocol === 'WEBCAM') targetUrl = '0';
+    }
+
+    // 1. SRT Syntax Check
+    if (streamProtocol === 'SRT' && targetUrl && !targetUrl.startsWith('srt://')) {
+      setProbeResult({
+        status: 'error',
+        title: 'Invalid SRT Stream Syntax',
+        message: 'SRT stream URL must start with srt:// (e.g. srt://0.0.0.0:9000?mode=listener or srt://10.8.0.42:9000?mode=caller).'
+      });
+      return;
+    }
+
+    // 2. RTSP Syntax Check
+    if (streamProtocol === 'RTSP' && targetUrl && !targetUrl.startsWith('rtsp://')) {
+      setProbeResult({
+        status: 'error',
+        title: 'Invalid RTSP Stream Syntax',
+        message: 'RTSP stream URL must start with rtsp:// (e.g. rtsp://192.168.1.100:554/ch1/main).'
+      });
+      return;
+    }
+
+    // 3. MQTT Syntax Check
+    if (ais140MqttUrl.trim() && !ais140MqttUrl.startsWith('mqtt://') && !ais140MqttUrl.startsWith('mqtts://')) {
+      setProbeResult({
+        status: 'error',
+        title: 'Invalid AIS-140 MQTT Syntax',
+        message: 'MQTT Broker endpoint must start with mqtt:// or mqtts:// (e.g. mqtt://ais140.transport.tn.gov.in:1883/MTC).'
+      });
+      return;
+    }
+
+    if (streamProtocol === 'UPLOAD' || !targetUrl) {
+      setProbeResult({
+        status: 'success',
+        title: 'Validation Successful',
+        message: 'Footage Media File / Standby Mode ready for commissioning.'
+      });
+      return;
+    }
+
+    setIsProbing(true);
+    try {
+      const res = await api.probeStream(targetUrl);
+      if (res.reachable) {
+        setProbeResult({
+          status: 'success',
+          title: 'Endpoint Signal Verified',
+          message: res.message || 'Stream socket connected successfully.'
+        });
+      } else {
+        setProbeResult({
+          status: 'warning',
+          title: 'Endpoint Currently Offline',
+          message: res.message || 'Stream signal unreachable right now. The bus node will commission in Store-and-Forward Standby Mode without failing.'
+        });
+      }
+    } catch {
+      setProbeResult({
+        status: 'warning',
+        title: 'Offline Store-and-Forward Standby',
+        message: 'Network connection to stream URL timed out. Bus node will be registered safely in Standby Mode.'
+      });
+    } finally {
+      setIsProbing(false);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMsg(null);
@@ -126,6 +204,20 @@ export const AddBusModal: React.FC<AddBusModalProps> = ({
       } else if (streamProtocol === 'WEBCAM') {
         finalRtsp = '0';
       }
+    }
+
+    // Pre-submit validation
+    if (streamProtocol === 'SRT' && finalRtsp && !finalRtsp.startsWith('srt://')) {
+      setErrorMsg('SRT stream URL format invalid. Must start with srt:// (e.g. srt://0.0.0.0:9000?mode=listener)');
+      return;
+    }
+    if (streamProtocol === 'RTSP' && finalRtsp && !finalRtsp.startsWith('rtsp://')) {
+      setErrorMsg('RTSP stream URL format invalid. Must start with rtsp:// (e.g. rtsp://192.168.1.100:554/ch1/main)');
+      return;
+    }
+    if (ais140MqttUrl.trim() && !ais140MqttUrl.startsWith('mqtt://') && !ais140MqttUrl.startsWith('mqtts://')) {
+      setErrorMsg('MQTT endpoint format invalid. Must start with mqtt:// or mqtts://');
+      return;
     }
 
     const payload: FleetNodeCreatePayload = {
@@ -335,18 +427,54 @@ export const AddBusModal: React.FC<AddBusModalProps> = ({
               </div>
 
               <div>
-                <label className="text-[11px] font-semibold text-slate-400 block mb-1">
-                  Stream Endpoint / Device Path
-                </label>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="text-[11px] font-semibold text-slate-400">
+                    Stream Endpoint / Device Path
+                  </label>
+                  <button
+                    type="button"
+                    onClick={handleProbeEndpoints}
+                    disabled={isProbing}
+                    className="text-[10px] text-cyan-400 hover:text-cyan-300 font-mono font-bold hover:underline flex items-center gap-1 cursor-pointer disabled:opacity-50"
+                  >
+                    <span>{isProbing ? 'Testing Signal...' : '⚡ Test Signal Reachability'}</span>
+                  </button>
+                </div>
                 <input
                   type="text"
                   placeholder={streamProtocol === 'SRT' ? 'srt://0.0.0.0:9000?mode=listener' : 'rtsp://...'}
                   value={rtspUrl}
-                  onChange={(e) => setRtspUrl(e.target.value)}
+                  onChange={(e) => {
+                    setRtspUrl(e.target.value);
+                    setProbeResult(null);
+                  }}
                   className="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-2 text-xs text-white placeholder-slate-600 font-mono focus:outline-none"
                 />
               </div>
             </div>
+
+            {/* Diagnostic Reachability Feedback Box */}
+            {probeResult && (
+              <div className={`p-3 rounded-xl border text-xs flex items-start gap-2.5 transition-all ${
+                probeResult.status === 'success'
+                  ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-300'
+                  : probeResult.status === 'warning'
+                  ? 'bg-amber-500/10 border-amber-500/30 text-amber-300'
+                  : 'bg-rose-500/10 border-rose-500/30 text-rose-300'
+              }`}>
+                {probeResult.status === 'success' ? (
+                  <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
+                ) : probeResult.status === 'warning' ? (
+                  <Zap className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
+                ) : (
+                  <AlertCircle className="w-4 h-4 text-rose-400 shrink-0 mt-0.5" />
+                )}
+                <div className="space-y-0.5">
+                  <div className="font-bold text-xs">{probeResult.title}</div>
+                  <div className="text-[11px] leading-relaxed opacity-90">{probeResult.message}</div>
+                </div>
+              </div>
+            )}
 
             {streamProtocol === 'UPLOAD' && (
               <div className="p-3 bg-slate-900/90 border border-dashed border-cyan-500/40 rounded-xl space-y-1">

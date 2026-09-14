@@ -1113,6 +1113,10 @@ class PersistentStore:
         finally:
             db.close()
 
+    def get_fleet_node_by_id(self, bus_id: str) -> Optional[Dict[str, Any]]:
+        nodes = self.get_fleet_nodes()
+        return next((n for n in nodes if n.get("id") == bus_id or str(n.get("id")).lower() == bus_id.lower()), None)
+
     def upsert_fleet_node(self, node_data: Dict[str, Any]) -> Dict[str, Any]:
         db = self._get_db_session()
         try:

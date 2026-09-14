@@ -371,9 +371,10 @@ class ZeroHardwareStreamManager:
         cfg = self.stream_configs.get(bus_id)
         if not cfg:
             from app.storage.mock_database import store
-            node = store.fleet_nodes.get(bus_id)
-            if node and getattr(node, 'camera_model', None):
-                rtsp_cand = f"rtsp://{node.dvr_ip or '192.168.1.100'}:554/ch{channel}/main"
+            fleet_nodes = store.fleet_nodes or []
+            node = next((n for n in fleet_nodes if isinstance(n, dict) and (n.get("id") == bus_id or str(n.get("id")).lower() == bus_id.lower())), None)
+            if node and node.get("camera_model"):
+                rtsp_cand = f"rtsp://{node.get('dvr_ip') or '192.168.1.100'}:554/ch{channel}/main"
             else:
                 rtsp_cand = "0"
             url = rtsp_cand
@@ -461,16 +462,33 @@ class ZeroHardwareStreamManager:
         }
 
     def generate_mjpeg_stream(self, bus_id: str, channel: int = 1) -> Generator[bytes, None, None]:
-        worker = self.get_worker(bus_id, channel=channel)
-        while True:
-            frame_bytes = worker.get_latest_jpeg()
+        try:
+            worker = self.get_worker(bus_id, channel=channel)
+            while True:
+                frame_bytes = worker.get_latest_jpeg()
+                yield (b'--frame\r\n'
+                       b'Content-Type: image/jpeg\r\n\r\n' + frame_bytes + b'\r\n')
+                time.sleep(0.04)
+        except Exception:
+            dummy_worker = RealRTSPWorker(bus_id, "0", channel=channel)
+            frame = dummy_worker._create_standby_frame("STREAM OFFLINE — STANDBY MODE")
+            _, jpeg = cv2.imencode('.jpg', frame, [cv2.IMWRITE_JPEG_QUALITY, 85])
+            frame_bytes = jpeg.tobytes()
             yield (b'--frame\r\n'
                    b'Content-Type: image/jpeg\r\n\r\n' + frame_bytes + b'\r\n')
-            time.sleep(0.04)
 
     def get_snapshot(self, bus_id: str, channel: int = 1) -> bytes:
-        worker = self.get_worker(bus_id, channel=channel)
-        return worker.get_latest_jpeg()
+        try:
+            worker = self.get_worker(bus_id, channel=channel)
+            if worker:
+                return worker.get_latest_jpeg()
+        except Exception:
+            pass
+
+        dummy_worker = RealRTSPWorker(bus_id, "0", channel=channel)
+        frame = dummy_worker._create_standby_frame("STANDBY MODE — SEARCHING SIGNAL")
+        _, jpeg = cv2.imencode('.jpg', frame, [cv2.IMWRITE_JPEG_QUALITY, 85])
+        return jpeg.tobytes()
 
     def get_latest_frame(self, bus_id: str, channel: int = 1) -> Optional[np.ndarray]:
         try:

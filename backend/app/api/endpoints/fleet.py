@@ -143,15 +143,21 @@ async def create_fleet_node(payload: FleetNodeCreate, db: Session = Depends(get_
     }
 
     rtsp = payload.rtsp_url or payload.rtsp_base_url
+    stream_warning = None
     if rtsp:
-        stream_manager.configure_stream(
-            bus_id=bus_id,
-            stream_type=payload.camera_model or "RTSP_IP_CAMERA",
-            video_url=rtsp,
-            sampling_fps=payload.edge_fps or 30.0,
-            dvr_channels=payload.dvr_channels or 4,
-            dvr_ip=payload.dvr_ip
-        )
+        try:
+            stream_res = stream_manager.configure_stream(
+                bus_id=bus_id,
+                stream_type=payload.camera_model or "RTSP_IP_CAMERA",
+                video_url=rtsp,
+                sampling_fps=payload.edge_fps or 30.0,
+                dvr_channels=payload.dvr_channels or 4,
+                dvr_ip=payload.dvr_ip
+            )
+            if not stream_res.get("success"):
+                stream_warning = stream_res.get("message", "Stream connector initialized in standby mode.")
+        except Exception as err:
+            stream_warning = f"Stream endpoint ({rtsp}) unreachable or offline. Bus registered in Store-and-Forward Standby Mode."
 
     new_node = DBFleetNode(
         id=bus_id,
@@ -201,7 +207,8 @@ async def create_fleet_node(payload: FleetNodeCreate, db: Session = Depends(get_
 
     return {
         "success": True,
-        "message": f"Bus node {bus_id} registered successfully in persistent storage.",
+        "message": f"Bus node {bus_id} registered successfully in persistent storage." + (f" Note: {stream_warning}" if stream_warning else ""),
+        "warning": stream_warning,
         "node": node_data
     }
 
