@@ -52,7 +52,7 @@ export const RoadMemory: React.FC = () => {
 
   const activeCorridor = corridors.find(c => c.id === selectedCorridorId) || corridors[0] || INITIAL_ROAD_MEMORY_CORRIDORS[0];
 
-  const filteredTimeline = activeCorridor.timeline.filter(ev => {
+  const filteredTimeline = (activeCorridor?.timeline || []).filter(ev => {
     if (timelineFilter === 'ALL') return true;
     if (timelineFilter === 'CONFIRMATIONS') return ev.type === 'MULTI_BUS_CONFIRM' || ev.type === 'DETECTION';
     if (timelineFilter === 'REPAIRS') return ev.type === 'REPAIR_DONE' || ev.type === 'WORK_ORDER';

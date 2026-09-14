@@ -41,13 +41,16 @@ export function useTelemetrySocket() {
       // Resolve localhost to 127.0.0.1 on Windows to bypass IPv6 [::1] proxy trap
       const safeHost = rawHost === 'localhost' ? '127.0.0.1' : rawHost;
 
-      // Prefer explicit env var override; fall back to smart host detection
-      // In production (port 80/443): route through reverse proxy; in dev: direct to backend
-      const wsUrl: string =
+      const authToken = localStorage.getItem('auth_token') || 'demo';
+      let wsUrl: string =
         (import.meta.env.VITE_WS_URL as string | undefined) ??
         ((!window.location.port || window.location.port === '80' || window.location.port === '443')
           ? `${protocol}//${window.location.host}/ws/telemetry`
           : `${protocol}//127.0.0.1:8000/ws/telemetry`);
+
+      if (!wsUrl.includes('token=')) {
+        wsUrl += (wsUrl.includes('?') ? '&' : '?') + `token=${encodeURIComponent(authToken)}`;
+      }
 
       const ws = new WebSocket(wsUrl);
       wsRef.current = ws;

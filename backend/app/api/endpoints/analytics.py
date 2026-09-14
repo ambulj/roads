@@ -273,26 +273,18 @@ def get_asphalt_quality(db: Session = Depends(get_db)):
 def get_road_memory_corridors(db: Session = Depends(get_db)):
     """Returns historical corridor maintenance records and multi-bus consensus timeline."""
     from app.models.db_models import DBRoadMemoryCorridor
-    rows = db.query(DBRoadMemoryCorridor).all()
-    if rows:
-        return [
-            {
-                "id": r.id,
-                "corridor_code": r.corridor_code,
-                "corridor_name": r.corridor_name,
-                "first_detected_at": r.first_detected_at,
-                "total_passes": r.total_passes,
-                "buses_agreed_count": r.buses_agreed_count,
-                "consensus_confidence": r.consensus_confidence,
-                "lifecycle_stage": r.lifecycle_stage,
-                "provenance": r.provenance or "CORRIDOR_MAINTENANCE_LIFECYCLE_LOG",
-                "updated_at": r.updated_at
-            }
-            for r in rows
-        ]
+    db_rows = {r.id: r for r in db.query(DBRoadMemoryCorridor).all()}
     records = store.get_road_memory_corridors()
     for rec in records:
         rec["provenance"] = "CORRIDOR_MAINTENANCE_LIFECYCLE_LOG"
+        if rec["id"] in db_rows:
+            r = db_rows[rec["id"]]
+            rec["total_passes"] = r.total_passes
+            rec["buses_agreed_count"] = r.buses_agreed_count
+            rec["consensus_confidence"] = r.consensus_confidence
+            rec["lifecycle_stage"] = r.lifecycle_stage
+            if r.updated_at:
+                rec["last_updated"] = r.updated_at
     return records
 
 @router.get("/deterioration-matrix")
