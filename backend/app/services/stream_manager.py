@@ -173,19 +173,24 @@ class RealRTSPWorker:
         while self.is_running:
             if cap is None or not cap.isOpened():
                 try:
-                    if isinstance(source, str) and source.startswith("rtsp://"):
+                    if isinstance(source, str) and source.startswith("srt://"):
+                        os.environ["OPENCV_FFMPEG_CAPTURE_OPTIONS"] = "timeout;5000000|transtype;live"
+                        cap = cv2.VideoCapture(source, cv2.CAP_FFMPEG)
+                    elif isinstance(source, str) and source.startswith("rtsp://"):
                         os.environ["OPENCV_FFMPEG_CAPTURE_OPTIONS"] = "rtsp_transport;tcp|analyzeduration;1000000|max_delay;500000"
-                    
-                    cap = cv2.VideoCapture(source)
+                        cap = cv2.VideoCapture(source)
+                    else:
+                        cap = cv2.VideoCapture(source)
+
                     if cap.isOpened():
                         self.is_connected = True
                         w = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
                         h = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
-                        self.resolution = f"{w}x{h}" if w > 0 else "1080p Live Stream"
+                        self.resolution = f"{w}x{h}" if w > 0 else "1080p SRT/IP Stream"
                         self.last_error = ""
                     else:
                         self.is_connected = False
-                        self.last_error = f"Awaiting video/RTSP signal from: {self.rtsp_url}"
+                        self.last_error = f"Awaiting video/SRT/RTSP signal from: {self.rtsp_url}"
                 except Exception as e:
                     self.is_connected = False
                     self.last_error = str(e)
@@ -221,6 +226,9 @@ class RealRTSPWorker:
                     if self.is_uploaded or is_local_video:
                         hud_text = f"USER UPLOADED VIDEO: {fname} | {w}x{h} | {self.fps_measured} FPS"
                         sub_text = f"AI REAL-FRAME HAZARD DETECTION: {len(self.latest_detections)} FOUND | {time.strftime('%H:%M:%S')}"
+                    elif isinstance(source, str) and source.startswith("srt://"):
+                        hud_text = f"LIVE SRT (4G/5G CELLULAR): {self.bus_id} | CH{self.channel} | {w}x{h} | {self.fps_measured} FPS"
+                        sub_text = f"RELIABLE UDP ARQ ACTIVE | AI PERCEPTION ACTIVE | {time.strftime('%H:%M:%S')}"
                     else:
                         hud_text = f"LIVE RTSP: {self.bus_id} | CH{self.channel} | {w}x{h} | {self.fps_measured} FPS"
                         sub_text = f"AI PERCEPTION ACTIVE (REAL-FRAME CV) | {time.strftime('%H:%M:%S')}"
@@ -291,6 +299,19 @@ class ZeroHardwareStreamManager:
                 "current_fps": 28.5,
                 "latency_ms": 42,
                 "hardware_mode": "Zero-Hardware (Existing Nirbhaya IP Cam + AIS-140 eSIM)"
+            },
+            "BUS-TN01-SRT01": {
+                "bus_id": "BUS-TN01-SRT01",
+                "stream_type": "SRT_CELLULAR_STREAM",
+                "rtsp_url": "srt://0.0.0.0:9000?mode=listener",
+                "dvr_channels": 1,
+                "dvr_ip": "10.8.0.42",
+                "ais140_endpoint": "mqtt://ais140.transport.tn.gov.in:1883/MTC-SRT",
+                "status": "LISTENING_FOR_SRT_CALLER",
+                "resolution": "1920x1080 (SRT H.264)",
+                "current_fps": 30.0,
+                "latency_ms": 18,
+                "hardware_mode": "⚡ SRT 4G/5G Cellular Stream (Reliable ARQ Packet Recovery)"
             }
         }
         for bus_id, cfg in list(self.stream_configs.items()):

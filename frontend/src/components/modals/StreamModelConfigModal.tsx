@@ -332,8 +332,20 @@ export const StreamModelConfigModal: React.FC<StreamModelConfigModalProps> = ({
                     <Zap className="w-4 h-4 text-emerald-500" />
                     Configure Real RTSP / IP Camera Stream
                   </h3>
-                  <div className="flex items-center gap-1 text-[11px] text-slate-500">
+                  <div className="flex items-center gap-1 text-[11px] text-slate-500 flex-wrap">
                     <span>Quick presets:</span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setVideoUrl('srt://0.0.0.0:9000?mode=listener');
+                        setBusId('BUS-TN01-SRT01');
+                        setStreamType('SRT_CELLULAR_STREAM');
+                        setProbeResult(null);
+                      }}
+                      className="px-2 py-0.5 rounded bg-emerald-100 dark:bg-emerald-950/80 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-200 dark:hover:bg-emerald-900 font-mono font-bold border border-emerald-300 dark:border-emerald-800"
+                    >
+                      ⚡ SRT 4G/5G Cellular
+                    </button>
                     <button
                       type="button"
                       onClick={() => {
@@ -382,7 +394,7 @@ export const StreamModelConfigModal: React.FC<StreamModelConfigModalProps> = ({
                       type="text"
                       value={busId}
                       onChange={(e) => setBusId(e.target.value)}
-                      placeholder="BUS-CPPLUS-01"
+                      placeholder="BUS-TN01-SRT01"
                       className="w-full text-xs font-mono rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-500"
                     />
                   </div>
@@ -394,19 +406,20 @@ export const StreamModelConfigModal: React.FC<StreamModelConfigModalProps> = ({
                     <select
                       value={streamType}
                       onChange={(e) => setStreamType(e.target.value)}
-                      className="w-full text-xs rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                      className="w-full text-xs rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-500 font-medium"
                     >
-                      <option value="RTSP_IP_CAMERA">1. RTSP Live Stream (CP Plus DVR / Hikvision / Dahua / Nirbhaya)</option>
-                      <option value="HTTP_DASHCAM_FEED">2. Smartphone / Tablet In-Cabin Dashcam (Webcam / USB)</option>
-                      <option value="AIS140_TELEMATICS_ONLY">3. AIS-140 eSIM Telematics Only (GPS + Accelerometer Gz)</option>
-                      <option value="DEPOT_WIFI_OFFLOAD">4. Depot Automated Wi-Fi Offload (Nightly HLS Sync)</option>
+                      <option value="SRT_CELLULAR_STREAM">⚡ 1. SRT 4G/5G Cellular Stream (Reliable ARQ Packet Recovery)</option>
+                      <option value="RTSP_IP_CAMERA">2. RTSP Live Stream (CP Plus DVR / Hikvision / Dahua / Nirbhaya)</option>
+                      <option value="HTTP_DASHCAM_FEED">3. Smartphone / Tablet In-Cabin Dashcam (Webcam / USB)</option>
+                      <option value="AIS140_TELEMATICS_ONLY">4. AIS-140 eSIM Telematics Only (GPS + Accelerometer Gz)</option>
+                      <option value="DEPOT_WIFI_OFFLOAD">5. Depot Automated Wi-Fi Offload (Nightly HLS Sync)</option>
                     </select>
                   </div>
                 </div>
 
                 <div>
                   <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
-                    RTSP Stream URL or Video Device (e.g. <code>rtsp://user:pass@ip:554/cam/realmonitor?channel=1&amp;subtype=1</code> or <code>0</code>)
+                    SRT / RTSP Stream URL or Video Device (e.g. <code>srt://0.0.0.0:9000?mode=listener</code> or <code>rtsp://...</code> or <code>0</code>)
                   </label>
                   <div className="flex gap-2">
                     <input
