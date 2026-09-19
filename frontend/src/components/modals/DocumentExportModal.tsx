@@ -167,7 +167,7 @@ export const DocumentExportModal: React.FC<DocumentExportModalProps> = ({
                   </p>
                 </div>
 
-                {/* Escrow Debit Calculation Table */}
+                {/* SLA Liquidated Damages Calculation Table */}
                 <table className="w-full border-collapse border border-slate-400 font-mono text-[10.5px]">
                   <thead>
                     <tr className="bg-slate-100">
@@ -317,7 +317,7 @@ export const DocumentExportModal: React.FC<DocumentExportModalProps> = ({
                     <strong className="text-sm font-bold text-emerald-700">83.8%</strong>
                   </div>
                   <div className="p-2.5 bg-slate-50 border border-slate-300 rounded-xl">
-                    <span className="text-[10px] text-slate-500 block">Escrow Penalties</span>
+                    <span className="text-[10px] text-slate-500 block">SLA Penalties</span>
                     <strong className="text-sm font-bold text-rose-700">₹70,000</strong>
                   </div>
                 </div>

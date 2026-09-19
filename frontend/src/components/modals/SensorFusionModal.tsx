@@ -63,7 +63,7 @@ export const SensorFusionModal: React.FC<SensorFusionModalProps> = ({ isOpen, on
       // Step 2: H3 Spatial Hash & RTSP Keyframe Fetch
       setTimeout(() => {
         setActiveStep(3);
-        // Step 3: YOLO TensorRT Inference (< 6ms)
+        // Step 3: YOLO Edge AI Inference
         setTimeout(async () => {
           setActiveStep(4);
           const res = await api.triggerSensorFusion(selectedBus, selectedGz);
@@ -72,11 +72,11 @@ export const SensorFusionModal: React.FC<SensorFusionModalProps> = ({ isOpen, on
 
           if (res.status === "DEFECT_CONFIRMED") {
             showSuccessToast(
-              "Defect Confirmed in 39.9ms!",
-              `Visual AI confirmed ${res.defect_name} with 98.4% confidence. Multi-bus consensus verified.`
+              "Defect Confirmed On-Edge!",
+              `Visual AI confirmed ${res.defect_name}. Multi-bus consensus verified.`
             );
           } else {
-            showInfoToast("Speed Breaker Filtered", "Legal speed breaker detected. False alarm filtered out in 38ms.");
+            showInfoToast("Speed Breaker Filtered", "Legal speed breaker detected. False alarm filtered out by road profile check.");
           }
         }, 500);
       }, 400);

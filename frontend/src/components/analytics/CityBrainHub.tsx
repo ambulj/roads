@@ -799,7 +799,7 @@ export const CityBrainHub: React.FC = () => {
                     </div>
                     <div>
                       <span className="text-slate-400 block text-[10px]">Camera PTP Sync</span>
-                      <span className="font-black text-indigo-400 text-xs mt-1 block">33.3ms LOCKED</span>
+                      <span className="font-black text-indigo-400 text-xs mt-1 block">Frame-Sync Locked</span>
                     </div>
                   </div>
 

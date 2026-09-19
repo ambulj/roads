@@ -19,116 +19,128 @@ interface ContractorAgency {
   director: string;
   assignedCorridor: string;
   zone: string;
-  escrowDepositInr: number;
+  securityDepositInr: number;
   penaltiesDeductedInr: number;
-  pendingInvoicesInr: number;
-  qualityScorePct: number;
-  onTimeSlaPct: number;
   activeWorkOrders: number;
+  resolvedWorkOrders: number;
   breachedWorkOrders: number;
-  contactPhone: string;
+  onTimeSlaPct: number;
+  qualityScorePct: number;
+  compactionDensityGcm3: number;
+  warrantyExpiry: string;
+  debarmentRisk: 'Low' | 'Medium' | 'Critical Debarment Warning';
 }
 
 const INITIAL_CONTRACTORS: ContractorAgency[] = [
   {
-    id: 'ctr-01',
+    id: 'CTR-01',
     name: 'L&T Highways Infra Ltd',
     cin: 'U45203TN2008PLC069812',
-    director: 'K. Rajasekaran, VP Infra',
-    assignedCorridor: 'GST Road, Tambaram (NH-32)',
-    zone: 'Zone 12 & 14 (Southern Radials)',
-    escrowDepositInr: 5000000,
+    director: 'K. Rajasekaran (VP Infra)',
+    assignedCorridor: 'GST Road Arterial (Airport to Tambaram, NH-32)',
+    zone: 'Zone 12 (Alandur / Pallavaram)',
+    securityDepositInr: 5000000,
     penaltiesDeductedInr: 45000,
-    pendingInvoicesInr: 485000,
-    qualityScorePct: 94.2,
-    onTimeSlaPct: 91.5,
     activeWorkOrders: 4,
+    resolvedWorkOrders: 42,
     breachedWorkOrders: 1,
-    contactPhone: '+91 98401 22345'
+    onTimeSlaPct: 94.2,
+    qualityScorePct: 96.5,
+    compactionDensityGcm3: 2.38,
+    warrantyExpiry: 'March 2028',
+    debarmentRisk: 'Low',
   },
   {
-    id: 'ctr-02',
+    id: 'CTR-02',
     name: 'GMR Urban Highways Ltd',
     cin: 'U45201DL1996PLC077890',
-    director: 'S. Narayanan, Project Dir',
-    assignedCorridor: 'Anna Salai (Mount Road) CBD',
+    director: 'S. Narayanan (Project Director)',
+    assignedCorridor: 'Anna Salai (Mount Road) CBD Corridor',
     zone: 'Zone 09 (Teynampet Central)',
-    escrowDepositInr: 5000000,
+    securityDepositInr: 5000000,
     penaltiesDeductedInr: 125000,
-    pendingInvoicesInr: 320000,
-    qualityScorePct: 88.0,
-    onTimeSlaPct: 82.4,
-    activeWorkOrders: 3,
-    breachedWorkOrders: 2,
-    contactPhone: '+91 98840 77890'
+    activeWorkOrders: 7,
+    resolvedWorkOrders: 28,
+    breachedWorkOrders: 3,
+    onTimeSlaPct: 78.4,
+    qualityScorePct: 84.0,
+    compactionDensityGcm3: 2.18,
+    warrantyExpiry: 'November 2026',
+    debarmentRisk: 'Medium',
   },
   {
-    id: 'ctr-03',
+    id: 'CTR-03',
     name: 'Tamil Nadu Road Dev Corp (TNRDC)',
     cin: 'U45203TN1998SGC040441',
-    director: 'Er. V. Murugesan, CE',
+    director: 'Er. V. Murugesan (Chief Engineer)',
     assignedCorridor: 'Old Mahabalipuram Road (OMR IT Expressway)',
     zone: 'TNRDC Special IT Corridor',
-    escrowDepositInr: 4000000,
+    securityDepositInr: 4000000,
     penaltiesDeductedInr: 20000,
-    pendingInvoicesInr: 610000,
-    qualityScorePct: 96.5,
-    onTimeSlaPct: 95.8,
     activeWorkOrders: 2,
+    resolvedWorkOrders: 36,
     breachedWorkOrders: 0,
-    contactPhone: '+91 94440 99881'
+    onTimeSlaPct: 98.6,
+    qualityScorePct: 98.1,
+    compactionDensityGcm3: 2.42,
+    warrantyExpiry: 'August 2029',
+    debarmentRisk: 'Low',
   },
   {
-    id: 'ctr-04',
-    name: 'Chettinad Road Infra Pvt Ltd',
-    cin: 'U45200TN2012PTC085112',
-    director: 'M. Annamalai, Managing Partner',
-    assignedCorridor: 'Guindy Kathipara Grade Junction',
-    zone: 'Zone 13 (Adyar/Guindy)',
-    escrowDepositInr: 3000000,
-    penaltiesDeductedInr: 85000,
-    pendingInvoicesInr: 195000,
-    qualityScorePct: 83.5,
-    onTimeSlaPct: 78.0,
-    activeWorkOrders: 5,
-    breachedWorkOrders: 2,
-    contactPhone: '+91 97900 88990'
+    id: 'CTR-04',
+    name: 'HCC - Hindustan Construction Co.',
+    cin: 'L45200MH1926PLC001228',
+    director: 'Ajit Gulabchand',
+    assignedCorridor: 'Inner Ring Road / Jawaharlal Nehru Salai (Koyambedu to Guindy)',
+    zone: 'Zone 10 (Kodambakkam)',
+    securityDepositInr: 3000000,
+    penaltiesDeductedInr: 280000,
+    activeWorkOrders: 9,
+    resolvedWorkOrders: 19,
+    breachedWorkOrders: 5,
+    onTimeSlaPct: 62.1,
+    qualityScorePct: 71.5,
+    compactionDensityGcm3: 2.05,
+    warrantyExpiry: 'Expired / Review Pending',
+    debarmentRisk: 'Critical Debarment Warning',
   },
   {
-    id: 'ctr-05',
-    name: 'Chennai Corp Zone 10 (Kodambakkam)',
-    cin: 'GCC-MUNICIPAL-DIRECT-2025',
-    director: 'Er. T. Gomathy, Executive Engineer',
-    assignedCorridor: 'T. Nagar Usman Road Commercial Link',
-    zone: 'Zone 10 (Kodambakkam / T.Nagar)',
-    escrowDepositInr: 2500000,
-    penaltiesDeductedInr: 0,
-    pendingInvoicesInr: 140000,
-    qualityScorePct: 92.0,
-    onTimeSlaPct: 94.0,
-    activeWorkOrders: 2,
+    id: 'CTR-05',
+    name: 'Chettinad Road Buildtech JV',
+    cin: 'U45201TN2012PTC085431',
+    director: 'M. Annamalai (Chief Engineer)',
+    assignedCorridor: 'Mount-Poonamallee High Road (Kathipara to Porur)',
+    zone: 'Zone 12 (Alandur)',
+    securityDepositInr: 2500000,
+    penaltiesDeductedInr: 15000,
+    activeWorkOrders: 3,
+    resolvedWorkOrders: 25,
     breachedWorkOrders: 0,
-    contactPhone: '+91 94451 90010'
-  }
+    onTimeSlaPct: 92.0,
+    qualityScorePct: 93.8,
+    compactionDensityGcm3: 2.34,
+    warrantyExpiry: 'January 2028',
+    debarmentRisk: 'Low',
+  },
 ];
 
-interface ContractorEscrowLedgerProps {
+interface ContractorSlaLedgerProps {
   clusters: HazardCluster[];
 }
 
-export const ContractorEscrowLedger: React.FC<ContractorEscrowLedgerProps> = ({ clusters }) => {
+export const ContractorSlaLedger: React.FC<ContractorSlaLedgerProps> = ({ clusters }) => {
   const [contractors] = useState<ContractorAgency[]>(INITIAL_CONTRACTORS);
   const [selectedContractor, setSelectedContractor] = useState<ContractorAgency | null>(null);
-  const [activeModal, setActiveModal] = useState<'penalty_summons' | 'completion_cert' | null>(null);
+  const [activeModal, setActiveModal] = useState<'penalty_notice' | 'completion_cert' | null>(null);
   const [selectedClusterForCert, setSelectedClusterForCert] = useState<HazardCluster | null>(clusters[0] || null);
 
-  const totalEscrowHeld = contractors.reduce((acc, c) => acc + (c.escrowDepositInr - c.penaltiesDeductedInr), 0);
+  const totalSecurityDeposits = contractors.reduce((acc, c) => acc + (c.securityDepositInr - c.penaltiesDeductedInr), 0);
   const totalPenaltiesCollected = contractors.reduce((acc, c) => acc + c.penaltiesDeductedInr, 0);
   const totalBreaches = contractors.reduce((acc, c) => acc + c.breachedWorkOrders, 0);
 
-  const handleOpenPenaltySummons = (ctr: ContractorAgency) => {
+  const handleOpenPenaltyNotice = (ctr: ContractorAgency) => {
     setSelectedContractor(ctr);
-    setActiveModal('penalty_summons');
+    setActiveModal('penalty_notice');
   };
 
   const handleOpenCert = (ctr: ContractorAgency) => {
@@ -144,11 +156,11 @@ export const ContractorEscrowLedger: React.FC<ContractorEscrowLedgerProps> = ({ 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="p-4 rounded-2xl bg-white dark:bg-[#0B101D] border border-slate-200 dark:border-slate-800 shadow-xs">
           <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 font-medium mb-1">
-            <span>Contractor Retention Vault</span>
+            <span>Tracked Security Deposits</span>
             <Scale className="w-4 h-4 text-blue-500" />
           </div>
           <div className="text-2xl font-extrabold text-slate-900 dark:text-white font-mono">
-            ₹{(totalEscrowHeld / 100000).toFixed(1)}L
+            ₹{(totalSecurityDeposits / 100000).toFixed(1)}L
           </div>
           <div className="text-[11px] text-emerald-600 dark:text-emerald-400 font-medium mt-1 flex items-center gap-1">
             <CheckCircle2 className="w-3 h-3" />
@@ -221,7 +233,7 @@ export const ContractorEscrowLedger: React.FC<ContractorEscrowLedgerProps> = ({ 
               <tr className="bg-slate-50/80 dark:bg-slate-900/60 border-b border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400 font-semibold">
                 <th className="py-3 px-4">Contractor / Agency</th>
                 <th className="py-3 px-4">Assigned Corridor &amp; Zone</th>
-                <th className="py-3 px-4 text-right">Retention Balance</th>
+                <th className="py-3 px-4 text-right">Deposit Balance (Tracked)</th>
                 <th className="py-3 px-4 text-right">Penalties Deducted</th>
                 <th className="py-3 px-4 text-center">On-Time SLA</th>
                 <th className="py-3 px-4 text-center">Quality Index</th>
@@ -231,7 +243,7 @@ export const ContractorEscrowLedger: React.FC<ContractorEscrowLedgerProps> = ({ 
             </thead>
             <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
               {contractors.map((ctr) => {
-                const currentBalance = ctr.escrowDepositInr - ctr.penaltiesDeductedInr;
+                const currentBalance = ctr.securityDepositInr - ctr.penaltiesDeductedInr;
                 const isBreached = ctr.breachedWorkOrders > 0;
 
                 return (
@@ -252,7 +264,7 @@ export const ContractorEscrowLedger: React.FC<ContractorEscrowLedgerProps> = ({ 
                         ₹{currentBalance.toLocaleString('en-IN')}
                       </div>
                       <div className="text-[10px] text-slate-400">
-                        Deposit: ₹{(ctr.escrowDepositInr / 100000).toFixed(0)}L
+                        Deposit: ₹{(ctr.securityDepositInr / 100000).toFixed(0)}L
                       </div>
                     </td>
 
@@ -297,7 +309,7 @@ export const ContractorEscrowLedger: React.FC<ContractorEscrowLedgerProps> = ({ 
                       <div className="flex items-center justify-end gap-1.5">
                         {isBreached && (
                           <button
-                            onClick={() => handleOpenPenaltySummons(ctr)}
+                            onClick={() => handleOpenPenaltyNotice(ctr)}
                             className="px-2.5 py-1 rounded-lg font-bold text-[11px] bg-rose-600 hover:bg-rose-500 text-white transition shadow-xs flex items-center gap-1"
                             title="Generate and print Liquidated Damages Notice Draft"
                           >
@@ -324,7 +336,7 @@ export const ContractorEscrowLedger: React.FC<ContractorEscrowLedgerProps> = ({ 
       </div>
 
       {/* MODAL 1: CONTRACTOR PENALTY NOTICE (PRINTABLE NOTICE DRAFT) */}
-      {activeModal === 'penalty_summons' && selectedContractor && (
+      {activeModal === 'penalty_notice' && selectedContractor && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm animate-fadeIn">
           <div className="relative w-full max-w-2xl rounded-2xl bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-800 shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
             <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 px-5 py-3.5 bg-rose-50 dark:bg-rose-950/60">
@@ -472,7 +484,7 @@ export const ContractorEscrowLedger: React.FC<ContractorEscrowLedgerProps> = ({ 
 
               <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 grid grid-cols-2 gap-3 text-[11px]">
                 <div>
-                  <span className="text-slate-400 block text-[10px] font-semibold">CERTIFIED CONTRACTOR:</span>
+                  <span className="text-slate-400 block text-[10px] font-semibold">ASSIGNED CONTRACTOR:</span>
                   <strong className="text-slate-900 dark:text-white">{selectedContractor.name}</strong>
                   <div className="text-[10px] font-mono text-slate-500">CIN: {selectedContractor.cin}</div>
                 </div>
@@ -547,7 +559,7 @@ export const ContractorEscrowLedger: React.FC<ContractorEscrowLedgerProps> = ({ 
                 className="px-3.5 py-1.5 rounded-lg bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 font-semibold text-xs flex items-center gap-1.5 transition"
               >
                 <Printer className="w-3.5 h-3.5" />
-                <span>Print Official Certificate</span>
+                <span>Print Completion Certificate</span>
               </button>
               <button
                 onClick={() => setActiveModal(null)}

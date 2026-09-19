@@ -33,8 +33,8 @@ import { FleetRepassModal } from '../components/modals/FleetRepassModal';
 import { RoadMeshVisualizerModal, isRoadSurfaceDefect } from '../components/modals/RoadMeshVisualizerModal';
 import { EmptyState } from '../components/common/EmptyState';
 import { MultiBusTruthBadge } from '../components/triage/MultiBusTruthBadge';
+import { ContractorSlaLedger } from '../components/workorders/ContractorSlaLedger';
 import { useAuth } from '../context/AuthContext';
-import { ContractorEscrowLedger } from '../components/workorders/ContractorEscrowLedger';
 import { api } from '../services/api';
 import { useToast } from '../context/ToastContext';
 
@@ -115,7 +115,7 @@ export const WorkOrders: React.FC<WorkOrdersProps> = ({ clusters, onUpdateStatus
     }, 1200);
   };
 
-  const [activeTab, setActiveTab] = useState<'cad' | 'kanban' | 'escrow'>('cad');
+  const [activeTab, setActiveTab] = useState<'cad' | 'kanban' | 'sla'>('cad');
 
   const requestStatusUpdate = (orderId: string, status: WorkOrderStatus, afterImg?: string, notes?: string) => {
     onUpdateStatus(orderId, status, afterImg, notes);
@@ -232,9 +232,9 @@ export const WorkOrders: React.FC<WorkOrdersProps> = ({ clusters, onUpdateStatus
                 <span className="w-2 h-2 rounded-full bg-emerald-500" />
               </button>
               <button
-                onClick={() => setActiveTab('escrow')}
+                onClick={() => setActiveTab('sla')}
                 className={`px-3 py-1.5 rounded-lg transition flex items-center gap-1.5 ${
-                  activeTab === 'escrow'
+                  activeTab === 'sla'
                     ? 'bg-blue-600 text-white shadow-xs font-bold'
                     : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white'
                 }`}
@@ -262,8 +262,8 @@ export const WorkOrders: React.FC<WorkOrdersProps> = ({ clusters, onUpdateStatus
           </div>
         </div>
 
-        {activeTab === 'escrow' ? (
-          <ContractorEscrowLedger clusters={clusters} />
+        {activeTab === 'sla' ? (
+          <ContractorSlaLedger clusters={clusters} />
         ) : activeTab === 'kanban' ? (
           /* KANBAN BOARD 4-SWIMLANE VIEW */
           <div className="space-y-4">

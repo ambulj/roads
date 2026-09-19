@@ -419,7 +419,7 @@ export const FullLifecycleSimulationModal: React.FC<FullLifecycleSimulationModal
           `[AUTONOMOUS_FLEET_CLOSURE] Verified closed by Fleet Node BUS-MTC-21G on re-pass patrol. ${activeDefect.verificationPassText}`
         );
       }
-      showSuccessToast('Simulation: Auto-Verified Closed', `Re-pass patrol verified ${activeDefect.name}. Escrow released!`);
+      showSuccessToast('Simulation: Auto-Verified Closed', `Re-pass patrol verified ${activeDefect.name}. SLA verified & work order closed!`);
     }
   };
 
@@ -659,7 +659,7 @@ export const FullLifecycleSimulationModal: React.FC<FullLifecycleSimulationModal
               </div>
             )}
 
-            {/* STAGE 3 VISUAL: Official Municipal CAD Work Order & WhatsApp Routing */}
+            {/* STAGE 3 VISUAL: Municipal CAD Work Order & Dispatch Routing */}
             {currentStep === 3 && (
               <div className="w-full h-full p-5 bg-gradient-to-br from-slate-950 via-[#131320] to-slate-950 flex flex-col justify-between">
                 <div className="flex items-center justify-between border-b border-slate-800 pb-2">
@@ -690,7 +690,7 @@ export const FullLifecycleSimulationModal: React.FC<FullLifecycleSimulationModal
                       <span>CAD Dispatch Confirmed</span>
                     </div>
                     <p className="text-[11px] text-slate-300">
-                      "Official Work Order {activeDefect.docketCode} routed to {activeDefect.agency}. Required Material: {activeDefect.repairMaterial}."
+                      "Work Order {activeDefect.docketCode} routed to {activeDefect.agency}. Required Material: {activeDefect.repairMaterial}."
                     </p>
                     <div className="text-emerald-400 text-[10px] font-bold">✓ Delivered to Chief Engineer (+91 98401 22345)</div>
                   </div>
@@ -745,7 +745,7 @@ export const FullLifecycleSimulationModal: React.FC<FullLifecycleSimulationModal
               </div>
             )}
 
-            {/* STAGE 5 VISUAL: Autonomous Re-Pass Verification & Escrow Release */}
+            {/* STAGE 5 VISUAL: Autonomous Re-Pass Verification & SLA Clearance */}
             {currentStep === 5 && (
               <div className="w-full h-full p-5 bg-gradient-to-br from-slate-950 via-[#0B1A1E] to-slate-950 flex flex-col justify-between">
                 <div className="flex items-center justify-between border-b border-slate-800 pb-2">
@@ -754,7 +754,7 @@ export const FullLifecycleSimulationModal: React.FC<FullLifecycleSimulationModal
                     <span>Fleet Patrol Node BUS-MTC-21G Autonomous Re-Pass Verification</span>
                   </div>
                   <span className="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 font-mono text-[10px] border border-emerald-500/40">
-                    MoHUA Verified Closed
+                    SLA Verified Closed
                   </span>
                 </div>
 
@@ -769,7 +769,7 @@ export const FullLifecycleSimulationModal: React.FC<FullLifecycleSimulationModal
                     </div>
                     <div className="flex justify-between p-2 rounded bg-slate-950 text-[11px]">
                       <span>Autonomous Confidence:</span>
-                      <span className="text-emerald-400 font-bold">99.4% Verified</span>
+                      <span className="text-emerald-400 font-bold">Consensus Confirmed</span>
                     </div>
                   </div>
 
@@ -778,9 +778,9 @@ export const FullLifecycleSimulationModal: React.FC<FullLifecycleSimulationModal
                       <Award className="w-5 h-5" />
                     </div>
                     <div className="text-white font-extrabold text-sm uppercase tracking-wider">
-                      ESCROW FUNDS RELEASED
+                      SLA COMPLIANCE VERIFIED
                     </div>
-                    <div className="text-emerald-400 font-bold text-xs">₹{activeDefect.costInr.toLocaleString()} Credited to {activeDefect.agency.split(' ')[0]}</div>
+                    <div className="text-emerald-400 font-bold text-xs">Milestone Payment Authorized for {activeDefect.agency.split(' ')[0]}</div>
                     <div className="text-slate-400 text-[10px]">Cryptographic SHA-256 Audit Hash Verified</div>
                   </div>
                 </div>

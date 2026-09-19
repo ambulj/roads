@@ -137,7 +137,7 @@ export const IncidentDossierModal: React.FC<IncidentDossierModalProps> = ({
     if (isHitAndRun) {
       return {
         section: 'MVA 1988 Sec 134(a)(b) & Sec 184 (Hit & Run causing peril)',
-        fine: '₹10,000 / Court Summons',
+        fine: '₹10,000 / Notice Draft',
         penalty: '3-Month DL Suspension, Vehicle Impoundment under CrPC Sec 102',
         title: 'NON-BAILABLE SERIOUS MOTOR VEHICLE ACCIDENT CONTRIVANCE'
       };
@@ -297,10 +297,10 @@ export const IncidentDossierModal: React.FC<IncidentDossierModalProps> = ({
                 <button
                   onClick={() => setShowEChallan(true)}
                   className="px-2.5 py-1 rounded-lg bg-blue-50 dark:bg-blue-950 hover:bg-blue-100 dark:hover:bg-blue-900 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800 text-xs font-semibold flex items-center gap-1 transition cursor-pointer"
-                  title="Generate Court-Admissible E-Challan / Police Notice"
+                  title="Generate E-Challan / Police Notice Draft"
                 >
                   <FileText className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
-                  <span className="hidden sm:inline">E-Challan Summons</span>
+                  <span className="hidden sm:inline">E-Challan Notice</span>
                   <span className="sm:hidden">E-Challan</span>
                 </button>
               )
@@ -442,7 +442,7 @@ export const IncidentDossierModal: React.FC<IncidentDossierModalProps> = ({
                 className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-semibold flex items-center gap-2 shadow-xs transition active:scale-95 cursor-pointer"
               >
                 <Printer className="w-4 h-4" />
-                <span>Print Official Summons Notice</span>
+                <span>Print E-Challan Notice Draft</span>
               </button>
             </div>
           </div>
