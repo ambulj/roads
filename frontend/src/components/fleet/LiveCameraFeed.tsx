@@ -1,10 +1,11 @@
 import React, { useRef, useEffect, useState } from "react";
 import {
   Camera, Eye, EyeOff, Maximize2, Minimize2,
-  RefreshCw, Sun, Moon, Radio, ShieldAlert, Zap,
-  AlertTriangle, Scan, Gauge, Play, Pause,
-  LayoutGrid, Video, UploadCloud, RotateCcw, FileVideo, Image as ImageIcon,
-  ShieldCheck, Sliders, Lock, Settings, Filter
+  Sun, Moon, Radio, ShieldAlert, Zap,
+  Scan, Gauge, Play, Pause,
+  LayoutGrid, Video, UploadCloud, RotateCcw,
+  ShieldCheck, Sliders, Settings, Activity, Compass,
+  Sparkles, CheckCircle2, AlertTriangle, Layers
 } from "lucide-react";
 import { FleetNode, PrivacyStatus } from "../../types";
 import { api } from "../../services/api";
@@ -13,7 +14,7 @@ import { UploadFootageModal } from "../modals/UploadFootageModal";
 export const DVR_CHANNELS = [
   { id: 1, name: "CH 1", role: "Windshield Road", subtitle: "Road Distress & Roughness (IRC:SP:84 / YOLO11)" },
   { id: 2, name: "CH 2", role: "Rear Overtake", subtitle: "Tailgating & Rash Overtaking (ANPR / MVA 184)" },
-  { id: 3, name: "CH 3", role: "Curbside Lane", subtitle: "Bus Lane Encroachment & Pedestrian Crossing (IRC:35)" },
+  { id: 3, name: "CH 3", role: "Curbside Lane", subtitle: "Bus Lane Encroachment & Pedestrians (IRC:35)" },
   { id: 4, name: "CH 4", role: "Driver Cabin", subtitle: "Driver DMS Attention & AIS-140 Occupancy Safety" },
 ];
 
@@ -28,8 +29,8 @@ interface SimulatedHazard {
   type: "D40" | "D20" | "WATERLOGGING" | "UNMARKED_SPEED_BREAKER" | "OPEN_MANHOLE" | "FOLIAGE_OBSCURED_SIGN";
   label: string;
   color: string;
-  z: number; // 0 (horizon) to 1.0 (passed under bus)
-  lane: number; // -0.5 (left lane) to 0.5 (right lane)
+  z: number;
+  lane: number;
   confidence: number;
 }
 
@@ -45,9 +46,8 @@ export const LiveCameraFeed: React.FC<LiveCameraFeedProps> = ({
   const [isNightMode, setIsNightMode] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [flashEffect, setFlashEffect] = useState(false);
-  const [lastCapturedUrl, setLastCapturedUrl] = useState<string | null>(null);
   const [currentJerk, setCurrentJerk] = useState(bus.imu_jerk_gz || 0.98);
-  const [simPace, setSimPace] = useState<number>(1.0); // 0.5x, 1.0x (realistic), 1.5x
+  const [simPace, setSimPace] = useState<number>(1.0);
   const [isPaused, setIsPaused] = useState<boolean>(false);
   const [feedMode, setFeedMode] = useState<'rtsp' | 'canvas' | 'webcam'>('rtsp');
   const [frameTimestamp, setFrameTimestamp] = useState<number>(Date.now());
@@ -67,7 +67,6 @@ export const LiveCameraFeed: React.FC<LiveCameraFeedProps> = ({
   }>({ active: false });
   const [activeDetections, setActiveDetections] = useState<any[]>([]);
   const [privacyStatus, setPrivacyStatus] = useState<PrivacyStatus | null>(null);
-  const [isPrivacyMenuOpen, setIsPrivacyMenuOpen] = useState<boolean>(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState<boolean>(false);
 
   // Fetch real DPDP 2023 privacy status
@@ -117,7 +116,7 @@ export const LiveCameraFeed: React.FC<LiveCameraFeedProps> = ({
   const roadOffset = useRef<number>(0);
   const lastTimeRef = useRef<number>(0);
 
-  // Staggered hazards queue so only one hazard approaches at a time in realistic succession
+  // Staggered hazards queue for realistic succession
   const hazardsRef = useRef<SimulatedHazard[]>([
     {
       id: "hz-1",
@@ -166,7 +165,6 @@ export const LiveCameraFeed: React.FC<LiveCameraFeedProps> = ({
     },
   ]);
 
-  // Handle Fullscreen toggle
   const toggleFullscreen = () => {
     if (!containerRef.current) return;
     if (!document.fullscreenElement) {
@@ -209,18 +207,16 @@ export const LiveCameraFeed: React.FC<LiveCameraFeedProps> = ({
         return;
       }
 
-      // ── 1. Background (Sky & Horizon) ──────────────────────────────────
+      // Sky & Horizon
       const horizonY = height * 0.44;
 
       if (isNightMode) {
-        // Night sky gradient
         const skyGrad = ctx.createLinearGradient(0, 0, 0, horizonY);
         skyGrad.addColorStop(0, "#050813");
         skyGrad.addColorStop(1, "#111827");
         ctx.fillStyle = skyGrad;
         ctx.fillRect(0, 0, width, horizonY);
 
-        // Distant stars & city glow
         ctx.fillStyle = "rgba(255, 235, 180, 0.6)";
         for (let i = 0; i < 20; i++) {
           const sx = (i * 47) % width;
@@ -228,7 +224,6 @@ export const LiveCameraFeed: React.FC<LiveCameraFeedProps> = ({
           ctx.fillRect(sx, sy, 1.5, 1.5);
         }
       } else {
-        // Daytime sky with Chennai haze
         const skyGrad = ctx.createLinearGradient(0, 0, 0, horizonY);
         skyGrad.addColorStop(0, "#7DD3FC");
         skyGrad.addColorStop(0.7, "#BAE6FD");
@@ -236,14 +231,13 @@ export const LiveCameraFeed: React.FC<LiveCameraFeedProps> = ({
         ctx.fillStyle = skyGrad;
         ctx.fillRect(0, 0, width, horizonY);
 
-        // Sun
         ctx.fillStyle = "rgba(254, 240, 138, 0.4)";
         ctx.beginPath();
         ctx.arc(width * 0.78, horizonY * 0.4, 28, 0, Math.PI * 2);
         ctx.fill();
       }
 
-      // Distant City / Flyover Silhouette
+      // Distant City Skyline
       ctx.fillStyle = isNightMode ? "#090D16" : "#94A3B8";
       ctx.beginPath();
       ctx.moveTo(0, horizonY);
@@ -259,7 +253,7 @@ export const LiveCameraFeed: React.FC<LiveCameraFeedProps> = ({
       ctx.closePath();
       ctx.fill();
 
-      // ── 2. Terrain & Roadside (Greenery / Shoulders) ────────────────────
+      // Ground Terrain
       const groundGrad = ctx.createLinearGradient(0, horizonY, 0, height);
       if (isNightMode) {
         groundGrad.addColorStop(0, "#0F172A");
@@ -271,7 +265,7 @@ export const LiveCameraFeed: React.FC<LiveCameraFeedProps> = ({
       ctx.fillStyle = groundGrad;
       ctx.fillRect(0, horizonY, width, height - horizonY);
 
-      // ── 3. Perspective Asphalt Roadway ─────────────────────────────────
+      // Perspective Asphalt Road
       const vanishingX = width * 0.5;
       const roadTopWidth = width * 0.16;
       const roadBottomWidth = width * 0.92;
@@ -298,7 +292,7 @@ export const LiveCameraFeed: React.FC<LiveCameraFeedProps> = ({
       ctx.closePath();
       ctx.fill();
 
-      // Road Shoulders / Curbs
+      // Road Shoulders
       ctx.strokeStyle = isNightMode ? "#334155" : "#FACC15";
       ctx.lineWidth = 2.5;
       ctx.beginPath();
@@ -311,11 +305,10 @@ export const LiveCameraFeed: React.FC<LiveCameraFeedProps> = ({
       ctx.lineTo(roadBottomRight, height);
       ctx.stroke();
 
-      // ── 4. Animated Broken Lane Markings (Calibrated Realistic Speed) ───
+      // Lane Markings
       const rawSpeed = Math.max(15, bus.speed_kmh || 35);
       const effectiveSpeed = isPaused ? 0 : rawSpeed * simPace;
 
-      // Smooth realistic scrolling: ~0.45 loops per second at 35 km/h
       roadOffset.current = (roadOffset.current + (effectiveSpeed / 35) * 0.45 * dt) % 1;
 
       const totalDashes = 10;
@@ -338,7 +331,7 @@ export const LiveCameraFeed: React.FC<LiveCameraFeedProps> = ({
         ctx.globalAlpha = Math.min(1, z * 1.5);
         ctx.fillRect(vanishingX - dashWidth / 2, curY, dashWidth, dashHeight);
 
-        // Left lane divider (3-lane arterial)
+        // Left lane divider
         const leftLaneX = vanishingX - currentRoadW * 0.28;
         ctx.fillRect(leftLaneX - dashWidth / 2, curY, dashWidth, dashHeight);
 
@@ -348,51 +341,17 @@ export const LiveCameraFeed: React.FC<LiveCameraFeedProps> = ({
         ctx.globalAlpha = 1.0;
       }
 
-      // ── 5. Moving Oncoming Vehicles (Smooth realistic passing) ─────────
-      const autoProgress = ((roadOffset.current * 0.25) + 0.5) % 1;
-      const autoZ = Math.pow(autoProgress, 2.4);
-      if (autoZ > 0.05 && autoZ < 0.95) {
-        const autoY = horizonY + (height - horizonY) * autoZ;
-        const roadWAtAuto = roadTopWidth + (roadBottomWidth - roadTopWidth) * autoZ;
-        const autoX = vanishingX - roadWAtAuto * 0.38;
-        const autoW = roadWAtAuto * 0.12;
-        const autoH = autoW * 0.95;
-
-        // Auto-rickshaw yellow & green body
-        ctx.fillStyle = "#FACC15";
-        ctx.fillRect(autoX - autoW / 2, autoY - autoH, autoW, autoH * 0.5);
-        ctx.fillStyle = "#15803D";
-        ctx.fillRect(autoX - autoW / 2, autoY - autoH * 0.5, autoW, autoH * 0.5);
-
-        // Windshield
-        ctx.fillStyle = isNightMode ? "#0F172A" : "#60A5FA";
-        ctx.fillRect(autoX - autoW * 0.4, autoY - autoH * 0.85, autoW * 0.8, autoH * 0.32);
-
-        // Headlights
-        if (isNightMode) {
-          ctx.fillStyle = "#FEF08A";
-          ctx.beginPath();
-          ctx.arc(autoX - autoW * 0.3, autoY - autoH * 0.2, autoW * 0.1, 0, Math.PI * 2);
-          ctx.arc(autoX + autoW * 0.3, autoY - autoH * 0.2, autoW * 0.1, 0, Math.PI * 2);
-          ctx.fill();
-        }
-      }
-
-      // ── 6. Road Defects & Hazards with Calibrated Inspection Pace ──────
-      // Realistic speed: takes ~5.5s from horizon (0.0) to bus bumper (1.0)
+      // Hazards Animation
       const hazardAdvanceRate = (effectiveSpeed / 35) * 0.18 * dt;
 
       hazardsRef.current.forEach((hazard) => {
         hazard.z += hazardAdvanceRate;
 
-        // When hazard passes behind the bus, recycle it to the back of the queue
         if (hazard.z > 1.08) {
-          // Find the minimum z in the queue to maintain an orderly sequence
           const minZ = Math.min(...hazardsRef.current.map(h => h.z));
-          hazard.z = Math.min(-0.5, minZ - 0.75); // Place safely back in queue
+          hazard.z = Math.min(-0.5, minZ - 0.75);
           hazard.lane = (Math.random() - 0.5) * 0.55;
 
-          // Trigger realistic shock on pothole/speedbreaker contact
           if (hazard.type === "UNMARKED_SPEED_BREAKER") {
             const shock = 1.68 + Math.random() * 0.22;
             setCurrentJerk(Number(shock.toFixed(2)));
@@ -404,7 +363,6 @@ export const LiveCameraFeed: React.FC<LiveCameraFeedProps> = ({
           }
         }
 
-        // Only draw when visible on screen (z > 0 and z <= 1.05)
         if (hazard.z > 0.02 && hazard.z <= 1.05) {
           const z = Math.pow(hazard.z, 2.3);
           const y = horizonY + (height - horizonY) * z;
@@ -414,7 +372,6 @@ export const LiveCameraFeed: React.FC<LiveCameraFeedProps> = ({
           const defectSizeW = Math.max(14, currentRoadW * (hazard.type === "D40" ? 0.14 : hazard.type === "UNMARKED_SPEED_BREAKER" ? 0.32 : 0.22));
           const defectSizeH = defectSizeW * 0.55;
 
-          // Render Road Defect Texture
           ctx.save();
           if (hazard.type === "D40") {
             ctx.fillStyle = "#0A0D14";
@@ -441,9 +398,7 @@ export const LiveCameraFeed: React.FC<LiveCameraFeedProps> = ({
             ctx.fill();
             ctx.strokeStyle = "#F97316";
             ctx.lineWidth = Math.max(1.5, 2.5 * z);
-            ctx.setLineDash([4, 4]);
             ctx.stroke();
-            ctx.setLineDash([]);
           } else if (hazard.type === "OPEN_MANHOLE") {
             ctx.fillStyle = "#000000";
             ctx.beginPath();
@@ -452,34 +407,10 @@ export const LiveCameraFeed: React.FC<LiveCameraFeedProps> = ({
             ctx.strokeStyle = "#DC2626";
             ctx.lineWidth = Math.max(2, 3.5 * z);
             ctx.stroke();
-            ctx.strokeStyle = "#7F1D1D";
-            ctx.lineWidth = Math.max(1, 2 * z);
-            ctx.stroke();
-          } else if (hazard.type === "FOLIAGE_OBSCURED_SIGN") {
-            const signH = defectSizeH * 1.6;
-            ctx.fillStyle = "#DC2626";
-            ctx.beginPath();
-            ctx.moveTo(x, y - signH);
-            ctx.lineTo(x - defectSizeW * 0.4, y);
-            ctx.lineTo(x + defectSizeW * 0.4, y);
-            ctx.closePath();
-            ctx.fill();
-            ctx.fillStyle = "#FEF08A";
-            ctx.beginPath();
-            ctx.moveTo(x, y - signH * 0.8);
-            ctx.lineTo(x - defectSizeW * 0.28, y - signH * 0.1);
-            ctx.lineTo(x + defectSizeW * 0.28, y - signH * 0.1);
-            ctx.closePath();
-            ctx.fill();
-            ctx.fillStyle = "#15803D";
-            ctx.beginPath();
-            ctx.arc(x + defectSizeW * 0.15, y - signH * 0.5, defectSizeW * 0.28, 0, Math.PI * 2);
-            ctx.arc(x + defectSizeW * 0.25, y - signH * 0.3, defectSizeW * 0.22, 0, Math.PI * 2);
-            ctx.fill();
           }
           ctx.restore();
 
-          // YOLO AI Bounding Box Overlay
+          // YOLO AI Bounding Box
           if (showBoundingBoxes && z > 0.12) {
             const pad = Math.max(4, 12 * z);
             const boxX = x - defectSizeW / 2 - pad;
@@ -488,9 +419,9 @@ export const LiveCameraFeed: React.FC<LiveCameraFeedProps> = ({
             const boxH = defectSizeH + pad * 2;
 
             ctx.strokeStyle = hazard.color;
-            ctx.lineWidth = 1.8;
+            ctx.lineWidth = 2.0;
 
-            const bracketLen = Math.max(5, boxW * 0.2);
+            const bracketLen = Math.max(6, boxW * 0.22);
             ctx.beginPath();
             ctx.moveTo(boxX, boxY + bracketLen); ctx.lineTo(boxX, boxY); ctx.lineTo(boxX + bracketLen, boxY);
             ctx.moveTo(boxX + boxW - bracketLen, boxY); ctx.lineTo(boxX + boxW, boxY); ctx.lineTo(boxX + boxW, boxY + bracketLen);
@@ -499,7 +430,7 @@ export const LiveCameraFeed: React.FC<LiveCameraFeedProps> = ({
             ctx.stroke();
 
             const labelText = `${hazard.label} [${(hazard.confidence * 100).toFixed(1)}%]`;
-            ctx.font = "bold 10px 'JetBrains Mono', monospace";
+            ctx.font = "bold 10.5px 'JetBrains Mono', monospace";
             const textMetrics = ctx.measureText(labelText);
             const tagW = textMetrics.width + 10;
             const tagH = 16;
@@ -513,7 +444,7 @@ export const LiveCameraFeed: React.FC<LiveCameraFeedProps> = ({
         }
       });
 
-      // ── 7. Windshield Vignette & Reflection ────────────────────────────
+      // Vignette & Timestamp Watermark
       const vignette = ctx.createRadialGradient(
         width / 2, height / 2, width * 0.35,
         width / 2, height / 2, width * 0.75
@@ -523,7 +454,6 @@ export const LiveCameraFeed: React.FC<LiveCameraFeedProps> = ({
       ctx.fillStyle = vignette;
       ctx.fillRect(0, 0, width, height);
 
-      // Dashcam timestamp watermarks
       const now = new Date();
       const dateStr = now.toISOString().slice(0, 10);
       const timeStr = now.toTimeString().slice(0, 8);
@@ -545,7 +475,6 @@ export const LiveCameraFeed: React.FC<LiveCameraFeedProps> = ({
     };
   }, [bus, isNightMode, showBoundingBoxes, simPace, isPaused]);
 
-  // Clean up webcam stream on unmount
   useEffect(() => {
     return () => {
       if (webcamStreamRef.current) {
@@ -570,8 +499,7 @@ export const LiveCameraFeed: React.FC<LiveCameraFeedProps> = ({
           webcamVideoRef.current.play().catch(() => {});
         }
       }, 100);
-    } catch (err) {
-      console.warn("Retrying with fallback video constraint:", err);
+    } catch {
       try {
         const fallbackStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
         webcamStreamRef.current = fallbackStream;
@@ -584,7 +512,7 @@ export const LiveCameraFeed: React.FC<LiveCameraFeedProps> = ({
             webcamVideoRef.current.play().catch(() => {});
           }
         }, 100);
-      } catch (e) {
+      } catch {
         alert("Camera permission denied or camera not found on this device.");
       }
     }
@@ -599,7 +527,6 @@ export const LiveCameraFeed: React.FC<LiveCameraFeedProps> = ({
     setFeedMode("rtsp");
   };
 
-  // Capture Snapshot
   const handleCaptureSnapshot = () => {
     setFlashEffect(true);
     setTimeout(() => setFlashEffect(false), 200);
@@ -613,7 +540,6 @@ export const LiveCameraFeed: React.FC<LiveCameraFeedProps> = ({
       if (ctx) {
         ctx.drawImage(video, 0, 0, offscreen.width, offscreen.height);
         const dataUrl = offscreen.toDataURL("image/jpeg", 0.9);
-        setLastCapturedUrl(dataUrl);
         if (onSnapshot) onSnapshot(dataUrl);
         return;
       }
@@ -623,7 +549,6 @@ export const LiveCameraFeed: React.FC<LiveCameraFeedProps> = ({
     if (!canvas) return;
 
     const dataUrl = canvas.toDataURL("image/jpeg", 0.85);
-    setLastCapturedUrl(dataUrl);
     if (onSnapshot) {
       onSnapshot(dataUrl);
     }
@@ -632,35 +557,35 @@ export const LiveCameraFeed: React.FC<LiveCameraFeedProps> = ({
   return (
     <div
       ref={containerRef}
-      className={`relative flex flex-col bg-slate-950 rounded-2xl overflow-hidden border border-slate-800 shadow-float select-none ${className}`}
+      className={`relative flex flex-col bg-slate-950 rounded-2xl overflow-hidden border border-slate-800 shadow-2xl select-none ${className}`}
     >
-      {/* Flash Effect on Capture */}
+      {/* Visual Flash Feedback on Snapshot */}
       {flashEffect && (
         <div className="absolute inset-0 bg-white z-50 animate-fadeOut pointer-events-none transition-opacity duration-150" />
       )}
 
-      {/* Top Telemetry HUD Strip */}
-      <div className="relative z-20 px-3.5 py-2.5 bg-gradient-to-b from-slate-950/95 via-slate-950/80 to-transparent flex items-center justify-between text-xs border-b border-slate-800/60">
-        {/* Left HUD: Live Indicator + Optical Specs + Channel Tag */}
-        <div className="flex items-center gap-2 pointer-events-auto">
-          <div className={`flex items-center gap-1.5 px-2 py-0.5 rounded-md font-mono font-bold text-[11px] shadow-sm ${
-            isPaused ? "bg-amber-600/90 text-white" : "bg-rose-600/90 text-white animate-pulse"
+      {/* ── 1. SLEEK TOP TELEMETRY HUD BAR ─────────────────────────────────── */}
+      <div className="relative z-20 px-4 py-2.5 bg-slate-950/90 backdrop-blur-md flex items-center justify-between border-b border-slate-800/80 text-xs">
+        {/* Left: Live Status + Optical Sensor Tag */}
+        <div className="flex items-center gap-2.5">
+          <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg font-mono font-bold text-[11px] shadow-sm ${
+            isPaused ? "bg-amber-500/20 text-amber-300 border border-amber-500/40" : "bg-rose-500/20 text-rose-300 border border-rose-500/40"
           }`}>
-            <span className="w-2 h-2 rounded-full bg-white" />
-            <span>{isPaused ? "PAUSED" : "REC ● LIVE"}</span>
+            <span className={`w-2 h-2 rounded-full ${isPaused ? "bg-amber-400" : "bg-rose-500 animate-pulse"}`} />
+            <span>{isPaused ? "STREAM PAUSED" : "LIVE 5Hz"}</span>
           </div>
 
-          <div className="hidden sm:flex items-center gap-2 px-2.5 py-1 rounded-lg bg-slate-900/80 backdrop-blur-md border border-slate-700/60 text-[11px] text-slate-200 font-mono">
+          <div className="hidden sm:flex items-center gap-2 px-2.5 py-1 rounded-lg bg-slate-900 border border-slate-800 text-[11px] font-mono text-slate-300">
             <Camera className="w-3.5 h-3.5 text-blue-400" />
-            <span className="hidden md:inline">Sony IMX335 (1080p HDR)</span>
-            <span className="text-slate-500 hidden md:inline">|</span>
+            <span className="font-semibold text-white">{bus.id}</span>
+            <span className="text-slate-600">|</span>
             <span className="text-emerald-400 font-bold">{bus.edge_fps || 28.4} FPS</span>
           </div>
 
           {uploadedMediaInfo.active && (
-            <div className="flex items-center gap-1.5 px-2 py-0.5 rounded bg-cyan-500/15 border border-cyan-500/40 text-[11px] font-mono text-cyan-300 font-semibold">
+            <div className="flex items-center gap-1.5 px-2 py-0.5 rounded bg-cyan-500/15 border border-cyan-500/40 text-[11px] font-mono text-cyan-300">
               <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse" />
-              <span className="truncate max-w-[120px]">{uploadedMediaInfo.filename}</span>
+              <span className="truncate max-w-[130px] font-medium">{uploadedMediaInfo.filename}</span>
               <button
                 onClick={async () => {
                   await api.resetStreamSource(bus.id, selectedChannel);
@@ -669,7 +594,7 @@ export const LiveCameraFeed: React.FC<LiveCameraFeedProps> = ({
                   setFrameTimestamp(Date.now());
                 }}
                 title="Reset to default stream"
-                className="hover:text-white ml-0.5"
+                className="hover:text-white ml-0.5 cursor-pointer"
               >
                 <RotateCcw className="w-3 h-3 text-cyan-400 hover:text-white" />
               </button>
@@ -677,110 +602,104 @@ export const LiveCameraFeed: React.FC<LiveCameraFeedProps> = ({
           )}
         </div>
 
-        {/* Right HUD: Quick Action Floating Dock */}
-        <div className="flex items-center gap-1.5 pointer-events-auto">
-          {/* Pause / Play Toggle */}
+        {/* Right: Quick Action Controls */}
+        <div className="flex items-center gap-1.5">
+          {/* Pause / Play */}
           <button
             onClick={() => setIsPaused(p => !p)}
-            title={isPaused ? "Resume Live Simulation" : "Freeze Frame"}
-            className={`p-1.5 rounded-lg border text-xs font-mono transition-colors ${
+            title={isPaused ? "Resume Live Stream" : "Freeze Stream"}
+            className={`p-1.5 rounded-lg border text-xs transition cursor-pointer ${
               isPaused 
-                ? "bg-amber-600 border-amber-500 text-white font-bold" 
-                : "bg-slate-900/80 hover:bg-slate-800 border-slate-700/80 text-slate-300"
+                ? "bg-amber-500/20 border-amber-500/40 text-amber-300 font-bold" 
+                : "bg-slate-900 hover:bg-slate-800 border-slate-800 text-slate-300"
             }`}
           >
             {isPaused ? <Play className="w-3.5 h-3.5" /> : <Pause className="w-3.5 h-3.5" />}
           </button>
 
-          {/* YOLO AI Toggle */}
+          {/* AI Bounding Box Overlay Toggle */}
           <button
             onClick={() => setShowBoundingBoxes(p => !p)}
-            title={showBoundingBoxes ? "Hide YOLO Defect Boxes" : "Show YOLO Defect Boxes"}
-            className={`px-2 py-1 rounded-lg border text-xs font-mono flex items-center gap-1.5 transition-colors ${
+            title={showBoundingBoxes ? "Hide AI Bounding Boxes" : "Show AI Bounding Boxes"}
+            className={`px-2 py-1 rounded-lg border text-xs font-mono flex items-center gap-1.5 transition cursor-pointer ${
               showBoundingBoxes
-                ? "bg-blue-600/90 border-blue-500 text-white font-bold"
-                : "bg-slate-900/80 border-slate-700 text-slate-400 hover:text-white"
+                ? "bg-blue-600 border-blue-500 text-white font-bold shadow-xs"
+                : "bg-slate-900 border-slate-800 text-slate-400 hover:text-slate-200"
             }`}
           >
             {showBoundingBoxes ? <Eye className="w-3.5 h-3.5" /> : <EyeOff className="w-3.5 h-3.5 text-slate-500" />}
             <span className="hidden sm:inline">AI Overlay</span>
           </button>
 
-          {/* Snapshot Evidence */}
+          {/* 1-Click Snapshot */}
           <button
             onClick={handleCaptureSnapshot}
-            title="Capture Defect Snapshot Evidence"
-            className="px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-500 border border-emerald-500 text-white font-bold text-xs flex items-center gap-1.5 shadow-sm transition-all active:scale-95"
+            title="Capture Forensic Snapshot Evidence"
+            className="px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs flex items-center gap-1.5 shadow-xs transition active:scale-95 cursor-pointer"
           >
             <Scan className="w-3.5 h-3.5" />
             <span>Snap</span>
           </button>
 
-          {/* Upload Custom Footage */}
+          {/* Upload Custom Video / Footage */}
           <button
             onClick={() => setIsUploadModalOpen(true)}
             title="Upload Custom Video or Photo to Stream & Analyze"
-            className={`px-2 py-1 rounded-lg text-xs font-mono font-medium flex items-center gap-1.5 transition-all shadow-sm ${
-              uploadedMediaInfo.active
-                ? "bg-cyan-500 text-slate-950 font-bold shadow-cyan-500/30"
-                : "bg-slate-900/80 hover:bg-slate-800 border border-slate-700/80 text-cyan-400 hover:text-cyan-300"
-            }`}
+            className="px-2 py-1 rounded-lg bg-slate-900 hover:bg-slate-800 border border-slate-800 text-cyan-400 hover:text-cyan-300 text-xs font-mono font-medium flex items-center gap-1.5 transition cursor-pointer"
           >
             <UploadCloud className="w-3.5 h-3.5" />
             <span className="hidden md:inline">Upload</span>
           </button>
 
-          {/* Connect Live Camera / WebCam */}
+          {/* Hardware Webcam Toggle */}
           <button
             onClick={feedMode === 'webcam' ? stopWebcam : startWebcam}
-            title={feedMode === 'webcam' ? "Disconnect WebCam" : "Connect Live WebCam / Phone Camera"}
-            className={`px-2 py-1 rounded-lg text-xs font-mono font-bold flex items-center gap-1.5 transition-all shadow-sm cursor-pointer ${
+            title={feedMode === 'webcam' ? "Disconnect WebCam" : "Connect Local Camera / WebCam"}
+            className={`px-2 py-1 rounded-lg text-xs font-mono font-bold flex items-center gap-1.5 transition cursor-pointer ${
               feedMode === 'webcam'
-                ? "bg-emerald-500 text-slate-950 shadow-emerald-500/30 animate-pulse"
-                : "bg-slate-900/80 hover:bg-slate-800 border border-slate-700/80 text-emerald-400 hover:text-emerald-300"
+                ? "bg-emerald-500 text-slate-950 shadow-xs animate-pulse"
+                : "bg-slate-900 hover:bg-slate-800 border border-slate-800 text-emerald-400 hover:text-emerald-300"
             }`}
           >
             <Camera className="w-3.5 h-3.5" />
             <span className="hidden md:inline">{feedMode === 'webcam' ? "Cam Active" : "Connect Cam"}</span>
           </button>
 
-          {/* Unified Stream Settings & AI Filters Popover */}
+          {/* Settings / Diagnostics Popover */}
           <div className="relative">
             <button
               onClick={() => setIsSettingsOpen(p => !p)}
-              title="Stream Settings, AI Pace & Privacy Filters"
-              className={`p-1.5 rounded-lg border text-xs font-mono flex items-center gap-1.5 transition-colors ${
+              title="Stream Diagnostics & DPDP Privacy Filters"
+              className={`p-1.5 rounded-lg border text-xs transition cursor-pointer ${
                 isSettingsOpen
                   ? "bg-blue-600 border-blue-500 text-white"
-                  : "bg-slate-900/80 hover:bg-slate-800 border-slate-700 text-slate-300"
+                  : "bg-slate-900 hover:bg-slate-800 border-slate-800 text-slate-300"
               }`}
             >
               <Settings className="w-3.5 h-3.5" />
-              <span className="hidden lg:inline">Filters & Opts</span>
             </button>
 
             {isSettingsOpen && (
               <div className="absolute right-0 top-full mt-2 w-72 bg-slate-900/98 backdrop-blur-xl border border-slate-700/90 rounded-2xl p-4 shadow-2xl z-50 text-xs font-mono space-y-3.5">
-                {/* Header */}
                 <div className="flex items-center justify-between border-b border-slate-800 pb-2">
                   <div className="flex items-center gap-1.5 text-blue-400 font-bold">
                     <Sliders className="w-4 h-4" />
-                    <span>Stream Diagnostics & Filters</span>
+                    <span>Stream Diagnostics &amp; Filters</span>
                   </div>
                   <button
                     onClick={() => setIsSettingsOpen(false)}
-                    className="text-slate-400 hover:text-white text-xs px-1"
+                    className="text-slate-400 hover:text-white text-xs px-1 cursor-pointer"
                   >
                     ✕
                   </button>
                 </div>
 
-                {/* DPDP Act 2023 Face Blurring Section */}
+                {/* DPDP Act 2023 Blur Configuration */}
                 <div className="p-2.5 rounded-xl bg-slate-950/60 border border-slate-800 space-y-2">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-1 text-emerald-400 font-bold text-[11px]">
                       <ShieldCheck className="w-3.5 h-3.5" />
-                      <span>DPDP Act 2023 Face Blur</span>
+                      <span>DPDP Act 2023 Privacy Blur</span>
                     </div>
                     <span className="text-[9.5px] px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 font-bold">
                       ACTIVE
@@ -795,7 +714,7 @@ export const LiveCameraFeed: React.FC<LiveCameraFeedProps> = ({
                           const updated = await api.updatePrivacyConfig({ blur_mode: mode });
                           if (updated) setPrivacyStatus(updated);
                         }}
-                        className={`py-1 px-1 rounded text-[10px] text-center font-bold transition border ${
+                        className={`py-1 px-1 rounded text-[10px] text-center font-bold transition border cursor-pointer ${
                           privacyStatus?.blur_mode === mode
                             ? "bg-emerald-600/30 text-emerald-300 border-emerald-500/50"
                             : "bg-slate-900 text-slate-400 hover:text-slate-200 border-slate-800"
@@ -812,7 +731,7 @@ export const LiveCameraFeed: React.FC<LiveCameraFeedProps> = ({
                   </div>
                 </div>
 
-                {/* Simulation Pace Selector */}
+                {/* Simulation Pace */}
                 <div>
                   <div className="text-[10.5px] text-slate-400 font-semibold mb-1.5">Simulation Patrol Pace:</div>
                   <div className="grid grid-cols-3 gap-1 bg-slate-950/60 p-1 rounded-xl border border-slate-800">
@@ -824,7 +743,7 @@ export const LiveCameraFeed: React.FC<LiveCameraFeedProps> = ({
                       <button
                         key={pace}
                         onClick={() => setSimPace(pace)}
-                        className={`py-1 text-center rounded-lg text-[10px] font-bold transition ${
+                        className={`py-1 text-center rounded-lg text-[10px] font-bold transition cursor-pointer ${
                           simPace === pace
                             ? "bg-blue-600 text-white"
                             : "text-slate-400 hover:text-slate-200"
@@ -838,10 +757,10 @@ export const LiveCameraFeed: React.FC<LiveCameraFeedProps> = ({
 
                 {/* Day / Night Vision Mode */}
                 <div className="flex items-center justify-between pt-1 border-t border-slate-800">
-                  <span className="text-slate-300 text-[11px]">Night / Low-Light Starlight:</span>
+                  <span className="text-slate-300 text-[11px]">Night Starlight Mode:</span>
                   <button
                     onClick={() => setIsNightMode(p => !p)}
-                    className={`px-2.5 py-1 rounded-lg border flex items-center gap-1 text-[10.5px] font-bold transition ${
+                    className={`px-2.5 py-1 rounded-lg border flex items-center gap-1 text-[10.5px] font-bold transition cursor-pointer ${
                       isNightMode
                         ? "bg-amber-500/20 border-amber-500/40 text-amber-300"
                         : "bg-slate-900 border-slate-700 text-slate-400 hover:text-white"
@@ -858,7 +777,7 @@ export const LiveCameraFeed: React.FC<LiveCameraFeedProps> = ({
                   <div className="flex gap-1 bg-slate-950 p-0.5 rounded-lg border border-slate-800">
                     <button
                       onClick={() => setFeedMode('rtsp')}
-                      className={`px-2 py-0.5 rounded text-[10px] font-bold transition ${
+                      className={`px-2 py-0.5 rounded text-[10px] font-bold transition cursor-pointer ${
                         feedMode === 'rtsp' ? 'bg-emerald-600 text-white' : 'text-slate-400 hover:text-slate-200'
                       }`}
                     >
@@ -866,7 +785,7 @@ export const LiveCameraFeed: React.FC<LiveCameraFeedProps> = ({
                     </button>
                     <button
                       onClick={() => setFeedMode('canvas')}
-                      className={`px-2 py-0.5 rounded text-[10px] font-bold transition ${
+                      className={`px-2 py-0.5 rounded text-[10px] font-bold transition cursor-pointer ${
                         feedMode === 'canvas' ? 'bg-blue-600 text-white' : 'text-slate-400 hover:text-slate-200'
                       }`}
                     >
@@ -878,20 +797,20 @@ export const LiveCameraFeed: React.FC<LiveCameraFeedProps> = ({
             )}
           </div>
 
-          {/* Fullscreen Toggle */}
+          {/* Fullscreen */}
           <button
             onClick={toggleFullscreen}
             title={isFullscreen ? "Exit Fullscreen" : "Fullscreen Live View"}
-            className="p-1.5 rounded-lg bg-slate-900/80 hover:bg-slate-800 border border-slate-700/80 text-slate-300 transition-colors"
+            className="p-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-300 transition cursor-pointer"
           >
             {isFullscreen ? <Minimize2 className="w-3.5 h-3.5" /> : <Maximize2 className="w-3.5 h-3.5" />}
           </button>
         </div>
       </div>
 
-      {/* Mobile DVR Multi-Channel Strip */}
-      <div className="z-20 px-3.5 py-1.5 bg-slate-900/90 border-b border-slate-800/80 flex flex-wrap items-center justify-between gap-2 text-xs backdrop-blur-md">
-        <div className="flex items-center gap-1.5 overflow-x-auto py-0.5 scrollbar-none">
+      {/* ── 2. MOBILE DVR CHANNEL SELECTOR STRIP ───────────────────────────── */}
+      <div className="z-20 px-4 py-2 bg-slate-900/90 border-b border-slate-800 flex flex-wrap items-center justify-between gap-2 text-xs">
+        <div className="flex items-center gap-1.5 overflow-x-auto py-0.5 custom-scrollbar">
           <div className="flex items-center gap-1 text-[11px] font-mono text-cyan-400 font-semibold mr-1">
             <Video className="w-3.5 h-3.5" />
             <span>MDVR:</span>
@@ -903,10 +822,10 @@ export const LiveCameraFeed: React.FC<LiveCameraFeedProps> = ({
                 setSelectedChannel(ch.id);
                 setIsQuadView(false);
               }}
-              className={`px-2 py-0.5 rounded-md text-[11px] font-mono transition-all ${
+              className={`px-2.5 py-1 rounded-lg text-[11px] font-mono transition-all cursor-pointer ${
                 !isQuadView && selectedChannel === ch.id
                   ? "bg-cyan-500 text-slate-950 font-bold shadow-sm shadow-cyan-500/30"
-                  : "bg-slate-800/70 hover:bg-slate-750 text-slate-300 border border-slate-700/50"
+                  : "bg-slate-800/80 hover:bg-slate-750 text-slate-300 border border-slate-700/60"
               }`}
             >
               {ch.name}: {ch.role}
@@ -914,31 +833,29 @@ export const LiveCameraFeed: React.FC<LiveCameraFeedProps> = ({
           ))}
           <button
             onClick={() => setIsQuadView(true)}
-            className={`px-2.5 py-0.5 rounded-md text-[11px] font-mono font-bold flex items-center gap-1 transition-all ${
+            className={`px-3 py-1 rounded-lg text-[11px] font-mono font-bold flex items-center gap-1 transition-all cursor-pointer ${
               isQuadView
                 ? "bg-emerald-500 text-slate-950 shadow-sm shadow-emerald-500/30"
-                : "bg-slate-800/70 hover:bg-slate-750 text-emerald-400 border border-emerald-500/40"
+                : "bg-slate-800/80 hover:bg-slate-750 text-emerald-400 border border-emerald-500/40"
             }`}
             title="View all 4 DVR cameras simultaneously in 2x2 split-screen"
           >
-            <LayoutGrid className="w-3 h-3" />
+            <LayoutGrid className="w-3.5 h-3.5" />
             <span>Quad (2×2)</span>
           </button>
         </div>
 
         <div className="hidden sm:flex items-center gap-2 text-[10.5px] font-mono text-slate-400">
-          <span>IP: {bus.dvr_ip || '192.168.10.12'}</span>
-          <span className="text-slate-600">|</span>
-          <span className="text-cyan-400 font-medium truncate max-w-[200px]">
+          <span className="text-cyan-400 font-medium truncate max-w-[280px]">
             {isQuadView ? "4 CAMERAS SYNCHRONIZED" : DVR_CHANNELS[selectedChannel - 1]?.subtitle}
           </span>
         </div>
       </div>
 
-      {/* Main Viewport (Live RTSP / Quad-View / Digital Twin Canvas) */}
-      <div className="relative w-full aspect-video min-h-[300px] max-h-[540px] bg-slate-950 flex items-center justify-center overflow-hidden">
+      {/* ── 3. MAIN VIDEO VIEWPORT ────────────────────────────────────────── */}
+      <div className="relative w-full aspect-video min-h-[320px] max-h-[560px] bg-slate-950 flex items-center justify-center overflow-hidden">
         {isQuadView ? (
-          <div className="w-full h-full grid grid-cols-2 grid-rows-2 gap-1 p-1 bg-slate-950">
+          <div className="w-full h-full grid grid-cols-2 grid-rows-2 gap-1.5 p-1.5 bg-slate-950">
             {DVR_CHANNELS.slice(0, 4).map((ch) => (
               <div
                 key={ch.id}
@@ -946,22 +863,22 @@ export const LiveCameraFeed: React.FC<LiveCameraFeedProps> = ({
                   setSelectedChannel(ch.id);
                   setIsQuadView(false);
                 }}
-                className="relative group cursor-pointer bg-slate-900 rounded-lg overflow-hidden border border-slate-800 hover:border-cyan-400 transition-all flex flex-col"
+                className="relative group cursor-pointer bg-slate-900 rounded-xl overflow-hidden border border-slate-800 hover:border-cyan-400 transition-all flex flex-col"
               >
                 <img
                   src={`/api/streams/snapshot/${bus.id}?channel=${ch.id}&t=${frameTimestamp}`}
                   alt={`${bus.id} CH${ch.id}`}
                   className="w-full h-full object-cover"
                 />
-                <div className="absolute top-1.5 left-1.5 bg-slate-950/80 backdrop-blur-md px-2 py-0.5 rounded border border-slate-700/80 text-[10.5px] font-mono font-bold text-white flex items-center gap-1.5">
+                <div className="absolute top-2 left-2 bg-slate-950/85 backdrop-blur-md px-2 py-0.5 rounded-lg border border-slate-700/80 text-[10.5px] font-mono font-bold text-white flex items-center gap-1.5">
                   <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
                   <span>{ch.name}: {ch.role}</span>
                 </div>
-                <div className="absolute bottom-1.5 left-1.5 bg-slate-950/80 px-2 py-0.5 rounded text-[9.5px] font-mono text-slate-400">
+                <div className="absolute bottom-2 left-2 bg-slate-950/80 px-2 py-0.5 rounded text-[9.5px] font-mono text-slate-400">
                   {ch.subtitle.split('(')[0]}
                 </div>
-                <div className="absolute bottom-1.5 right-1.5 opacity-0 group-hover:opacity-100 transition-opacity bg-cyan-500 text-slate-950 text-[10px] font-mono font-bold px-2 py-0.5 rounded shadow flex items-center gap-1">
-                  <span>Maximize</span>
+                <div className="absolute bottom-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity bg-cyan-500 text-slate-950 text-[10px] font-mono font-bold px-2 py-0.5 rounded shadow flex items-center gap-1">
+                  <span>Focus</span>
                   <Maximize2 className="w-2.5 h-2.5" />
                 </div>
               </div>
@@ -976,14 +893,14 @@ export const LiveCameraFeed: React.FC<LiveCameraFeedProps> = ({
               alt={`Live Stream ${bus.id} CH${selectedChannel}`}
               className="w-full h-full object-cover"
             />
-            {/* Streamlined Perception HUD */}
+            {/* Live AI Perception Overlay Card */}
             {showBoundingBoxes && (
               <div className="absolute top-3 right-3 z-10 flex items-center gap-2 pointer-events-none">
-                <div className="bg-slate-950/85 backdrop-blur-md px-2.5 py-1 rounded-lg border border-slate-700/80 text-[11px] font-mono flex items-center gap-2 shadow-lg">
+                <div className="bg-slate-950/85 backdrop-blur-md px-3 py-1.5 rounded-xl border border-slate-700/80 text-[11px] font-mono flex items-center gap-2 shadow-xl">
                   <span className={`w-2 h-2 rounded-full ${activeDetections.length > 0 ? "bg-rose-500 animate-pulse" : "bg-emerald-400"}`} />
                   <span className="text-slate-200">
                     AI CV: <strong className={activeDetections.length > 0 ? "text-rose-400 font-bold" : "text-emerald-400"}>
-                      {activeDetections.length > 0 ? `${activeDetections.length} HAZARD${activeDetections.length > 1 ? 'S' : ''}` : "MONITORING"}
+                      {activeDetections.length > 0 ? `${activeDetections.length} HAZARD DETECTED` : "ALL CLEAR"}
                     </strong>
                   </span>
                   {activeDetections.length > 0 && (
@@ -992,29 +909,6 @@ export const LiveCameraFeed: React.FC<LiveCameraFeedProps> = ({
                     </span>
                   )}
                 </div>
-              </div>
-            )}
-
-            {/* Stream Origin Badge & Quick Revert */}
-            {uploadedMediaInfo.active && (
-              <div className="absolute top-3 left-3 z-20 bg-slate-900/90 backdrop-blur-md px-2.5 py-1 rounded-lg border border-cyan-500/40 text-cyan-300 font-mono text-[11px] flex items-center gap-2 shadow-lg">
-                <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-ping" />
-                <span className="truncate max-w-[200px]">{uploadedMediaInfo.filename}</span>
-                <button
-                  onClick={async (e) => {
-                    e.stopPropagation();
-                    try {
-                      await api.resetStreamSource(bus.id, selectedChannel);
-                      setUploadedMediaInfo({ active: false });
-                      setActiveDetections([]);
-                      setFrameTimestamp(Date.now());
-                    } catch {}
-                  }}
-                  className="px-1.5 py-0.5 rounded bg-rose-600 hover:bg-rose-500 text-white font-bold text-[9.5px] transition cursor-pointer"
-                  title="Revert back to standard live CCTV camera feed"
-                >
-                  Revert
-                </button>
               </div>
             )}
           </div>
@@ -1027,37 +921,16 @@ export const LiveCameraFeed: React.FC<LiveCameraFeedProps> = ({
               muted
               className="w-full h-full object-cover"
             />
-            {/* Real Computer Vision Perception HUD for Webcam */}
             {showBoundingBoxes && (
               <div className="absolute top-3 right-3 z-10 flex flex-col gap-1.5 items-end pointer-events-none">
                 <div className="bg-slate-950/90 backdrop-blur-md px-3 py-1.5 rounded-xl border border-slate-700/80 text-[11px] font-mono flex items-center gap-2 shadow-xl">
                   <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
-                  <span className="text-slate-200">
-                    LIVE DEVICE WEBCAM: <strong className="text-emerald-400">REAL-TIME INGEST (30 FPS)</strong>
+                  <span className="text-slate-200 font-semibold">
+                    LOCAL WEBCAM INGEST (30 FPS)
                   </span>
-                </div>
-                <div className="bg-slate-950/90 backdrop-blur-md px-2.5 py-1 rounded-lg border border-emerald-500/50 text-[10px] font-mono text-emerald-300 flex items-center gap-2 shadow-lg">
-                  <span className="font-bold text-white">YOLO11 Live Edge Model Active</span>
-                  <span className="text-amber-300">Lat: {bus.lat.toFixed(4)}°N</span>
-                  <span className="text-emerald-400 font-bold">98% Match</span>
                 </div>
               </div>
             )}
-
-            {/* Bottom Stream Origin Badge */}
-            <div className="absolute bottom-3 left-3 z-20 bg-slate-900/90 backdrop-blur-md px-3 py-1.5 rounded-xl border border-slate-700 text-emerald-400 font-mono text-xs flex items-center gap-2 shadow-lg">
-              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
-              <span className="font-bold">
-                LIVE HARDWARE WEBCAM STREAM ● {bus.id}
-              </span>
-              <button
-                onClick={stopWebcam}
-                className="ml-2 px-2 py-0.5 rounded bg-rose-600 hover:bg-rose-500 text-white font-bold text-[10px] transition cursor-pointer shadow-xs"
-                title="Disconnect live webcam and revert to simulated feed"
-              >
-                Disconnect Cam
-              </button>
-            </div>
           </div>
         ) : (
           <canvas
@@ -1068,66 +941,70 @@ export const LiveCameraFeed: React.FC<LiveCameraFeedProps> = ({
           />
         )}
 
-        {/* Center Screen Crosshairs (Windshield Optical Bore Sight) */}
+        {/* Minimal Optical Reticle */}
         {!isQuadView && (
-          <div className="absolute inset-0 pointer-events-none flex items-center justify-center opacity-30">
-            <div className="w-12 h-0.5 bg-blue-400" />
-            <div className="h-12 w-0.5 bg-blue-400 -ml-6" />
+          <div className="absolute inset-0 pointer-events-none flex items-center justify-center opacity-25">
+            <div className="w-10 h-0.5 bg-cyan-400" />
+            <div className="h-10 w-0.5 bg-cyan-400 -ml-5" />
           </div>
         )}
       </div>
 
-      {/* Bottom Telemetry HUD Bar */}
-      <div className="absolute bottom-0 left-0 right-0 z-20 p-3 bg-gradient-to-t from-slate-950/95 via-slate-950/70 to-transparent flex flex-wrap items-center justify-between gap-3 text-xs pointer-events-none">
-        {/* Left: Transit Node & Corridor Identity */}
-        <div className="flex items-center gap-2 pointer-events-auto">
-          <div className="px-2 py-1 rounded-md bg-blue-600 text-white font-mono font-bold text-xs shadow-sm">
+      {/* ── 4. MODERN GLASS BOTTOM TELEMETRY RIBBON ───────────────────────── */}
+      <div className="px-4 py-3 bg-slate-950/95 border-t border-slate-800/80 flex flex-wrap items-center justify-between gap-3 text-xs">
+        {/* Left: Node Identity & Corridor */}
+        <div className="flex items-center gap-2.5">
+          <div className="px-2.5 py-1 rounded-lg bg-blue-600 text-white font-mono font-bold text-xs shadow-xs">
             {bus.id}
           </div>
-          <div className="text-slate-300 font-medium text-[11px] truncate max-w-[200px] sm:max-w-[320px]">
-            {bus.route_name}
+          <div>
+            <div className="text-white font-semibold text-xs truncate max-w-[200px] sm:max-w-[300px]">
+              {bus.route_name}
+            </div>
+            <div className="text-[10px] text-slate-400 font-mono">
+              Vehicle Class: {bus.vehicle_type || 'Tata Ultra EV 12M'}
+            </div>
           </div>
         </div>
 
-        {/* Middle: Live Vehicle Dynamics (Speed + IMU Jerk + Lux) */}
-        <div className="flex items-center gap-2 pointer-events-auto font-mono text-[11px]">
-          {/* Speed Indicator */}
-          <div className="px-2 py-0.5 rounded-md bg-slate-900/80 border border-slate-700/80 text-slate-200 flex items-center gap-1.5">
-            <span className="text-slate-400">SPEED:</span>
-            <span className="text-amber-400 font-bold">{(bus.speed_kmh || 38) * (isPaused ? 0 : simPace)} km/h</span>
+        {/* Center: Live Dynamic Gauges */}
+        <div className="flex flex-wrap items-center gap-2 font-mono text-[11px]">
+          {/* Speed Card */}
+          <div className="px-3 py-1.5 rounded-xl bg-slate-900 border border-slate-800 flex items-center gap-2">
+            <Gauge className="w-3.5 h-3.5 text-amber-400" />
+            <span className="text-slate-400 text-[10px]">SPEED</span>
+            <span className="text-amber-400 font-bold text-xs">{((bus.speed_kmh || 38) * (isPaused ? 0 : simPace)).toFixed(0)} km/h</span>
           </div>
 
-          {/* Ambient Luminescence (Lux) Meter */}
-          <div className={`px-2 py-0.5 rounded-md border flex items-center gap-1.5 ${
-            isNightMode ? "bg-rose-950/80 border-rose-700 text-rose-300" : "bg-slate-900/80 border-slate-700 text-slate-200"
+          {/* Vertical IMU Jerk (G_z) Card with Dynamic Severity Color */}
+          <div className={`px-3 py-1.5 rounded-xl border flex items-center gap-2 transition-colors ${
+            currentJerk >= 1.30 
+              ? "bg-rose-950/70 border-rose-600 text-rose-300 animate-pulse"
+              : currentJerk > 1.08 
+                ? "bg-amber-950/60 border-amber-600 text-amber-300"
+                : "bg-slate-900 border-slate-800 text-slate-200"
           }`}>
-            <Sun className={`w-3 h-3 ${isNightMode ? "text-rose-400" : "text-amber-400"}`} />
-            <span className="text-slate-400">LUX:</span>
-            <span className={`font-bold ${isNightMode ? "text-rose-400" : "text-emerald-400"}`}>
-              {isNightMode ? "2.4 lx (DARK SPOT)" : "480 lx"}
+            <Zap className={`w-3.5 h-3.5 ${currentJerk >= 1.30 ? "text-rose-400" : currentJerk > 1.08 ? "text-amber-400" : "text-emerald-400"}`} />
+            <span className="text-slate-400 text-[10px]">IMU G_z</span>
+            <span className={`font-bold text-xs ${currentJerk >= 1.30 ? "text-rose-400" : currentJerk > 1.08 ? "text-amber-400" : "text-emerald-400"}`}>
+              {currentJerk.toFixed(2)}g
             </span>
           </div>
 
-          {/* Vertical IMU Shock Meter */}
-          <div
-            className={`px-2 py-0.5 rounded-md border flex items-center gap-1.5 transition-colors ${
-              currentJerk > 1.3
-                ? "bg-rose-950/90 border-rose-600 text-rose-300 animate-bounce"
-                : "bg-slate-900/80 border-slate-700/80 text-slate-200"
-            }`}
-          >
-            <Zap className={`w-3 h-3 ${currentJerk > 1.3 ? "text-rose-400 animate-pulse" : "text-emerald-400"}`} />
-            <span className="text-slate-400">G_z:</span>
-            <span className={`font-bold ${currentJerk > 1.3 ? "text-rose-400" : "text-emerald-400"}`}>
-              {currentJerk}g
-            </span>
+          {/* Lux Ambient Meter */}
+          <div className={`px-3 py-1.5 rounded-xl border flex items-center gap-2 ${
+            isNightMode ? "bg-slate-900 border-slate-800 text-rose-400" : "bg-slate-900 border-slate-800 text-slate-200"
+          }`}>
+            <Sun className={`w-3.5 h-3.5 ${isNightMode ? "text-rose-400" : "text-amber-400"}`} />
+            <span className="text-slate-400 text-[10px]">LUX</span>
+            <span className="font-bold text-xs">{isNightMode ? "2.4 lx" : "480 lx"}</span>
           </div>
         </div>
 
-        {/* Right: GPS Coordinates */}
-        <div className="hidden md:flex items-center gap-1.5 text-slate-400 font-mono text-[10.5px]">
-          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping" />
-          <span>{bus.lat.toFixed(4)}°N, {bus.lng.toFixed(4)}°E (NavIC 5Hz)</span>
+        {/* Right: GPS Telemetry & NavIC Status */}
+        <div className="hidden md:flex items-center gap-2 text-[11px] font-mono text-slate-400">
+          <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
+          <span>NavIC: <b>{bus.lat.toFixed(4)}°N, {bus.lng.toFixed(4)}°E</b></span>
         </div>
       </div>
 
