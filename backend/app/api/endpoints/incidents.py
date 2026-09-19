@@ -831,6 +831,7 @@ async def submit_citizen_report(
 
 
 @router.get("/vehicle-trail/{plate_number}")
+@router.get("/plate-trail/{plate_number}")
 def get_vehicle_cross_incident_trail(
     plate_number: str,
     db: Session = Depends(get_db)
@@ -882,5 +883,46 @@ def get_vehicle_cross_incident_trail(
         "escalation_recommendation": "IMMEDIATE_INTERCEPTOR_LOCK" if (is_repeat_offender or has_hit_and_run) else "ROUTINE_MONITORING",
         "trail": occurrences
     }
+
+class HitAndRunAnalysisRequest(BaseModel):
+    track_id: str
+    plate_number: Optional[str] = None
+    plate_confidence: float = 0.95
+    current_speed_kmh: float
+    bbox: List[int]
+    nearby_targets: List[Dict[str, Any]] = []
+    sensor_gz_jerk: float = 0.98
+    road_name: str = "Anna Salai Arterial"
+    lat: float = 13.0604
+    lng: float = 80.2496
+    bus_id: str = "BUS-TN01-1042"
+
+@router.post("/hit-and-run/analyze")
+def analyze_hit_and_run(payload: HitAndRunAnalysisRequest, db: Session = Depends(get_db)):
+    """
+    Evaluates tracking sequence for abrupt acceleration spikes following
+    pedestrian/vehicle proximity collisions.
+    """
+    from app.services.hit_and_run_engine import hit_and_run_engine
+    
+    result = hit_and_run_engine.analyze_vehicle_behavior(
+        track_id=payload.track_id,
+        plate_number=payload.plate_number,
+        plate_confidence=payload.plate_confidence,
+        current_speed_kmh=payload.current_speed_kmh,
+        bbox=payload.bbox,
+        nearby_pedestrians_or_vehicles=payload.nearby_targets,
+        sensor_gz_jerk=payload.sensor_gz_jerk,
+        road_name=payload.road_name,
+        lat=payload.lat,
+        lng=payload.lng,
+        bus_id=payload.bus_id
+    )
+    
+    if not result:
+        return {"detected": False, "status": "NORMAL_TRAJECTORY"}
+        
+    return result
+
 
 

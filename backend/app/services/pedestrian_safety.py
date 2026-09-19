@@ -1,6 +1,9 @@
 import math
-from typing import List, Dict, Any
+import time
+import numpy as np
+from typing import List, Dict, Any, Optional
 from app.models.schemas import SafeCorridorScore
+from app.spatial.poi_database import CRITICAL_POIS
 
 CHENNAI_SAFE_CORRIDORS: List[SafeCorridorScore] = [
     SafeCorridorScore(
@@ -134,3 +137,164 @@ def compute_corridor_grade(score: float) -> str:
     elif score >= 50.0:
         return "D"
     return "F"
+
+class PedestrianCrossingFusionEngine:
+    """
+    Two-Model Spatial Zone-Overlap & Pedestrian Fusion Engine:
+    - Model 1: Standard YOLOv8 Person Detector (COCO class 0)
+    - Model 2: Zebra Crossing Detector (zebra_crossing.pt / Morphological Stripe Analyzer)
+    - Zone Logic: Evaluates Intersection-over-Area (IoA) between persons and crossing zones,
+      approaching vehicle velocity vectors, and student height clustering heuristics.
+    """
+
+    @staticmethod
+    def compute_box_ioa(box_a: List[int], box_b: List[int]) -> float:
+        """
+        Computes Intersection-over-Area (IoA) of box_a inside box_b.
+        box = [x1, y1, x2, y2]
+        """
+        xa1, ya1, xa2, ya2 = box_a
+        xb1, yb1, xb2, yb2 = box_b
+
+        ix1 = max(xa1, xb1)
+        iy1 = max(ya1, yb1)
+        ix2 = min(xa2, xb2)
+        iy2 = min(ya2, yb2)
+
+        if ix2 <= ix1 or iy2 <= iy1:
+            return 0.0
+
+        inter_area = (ix2 - ix1) * (iy2 - iy1)
+        area_a = max(1, (xa2 - xa1) * (ya2 - ya1))
+        return float(inter_area / area_a)
+
+    def fuse_detections(
+        self,
+        frame_width: int,
+        frame_height: int,
+        persons: List[Dict[str, Any]],
+        crosswalks: List[Dict[str, Any]],
+        vehicles: Optional[List[Dict[str, Any]]] = None,
+        approaching_speed_kmh: float = 0.0,
+        is_near_school_poi: bool = False,
+        poi_name: Optional[str] = None
+    ) -> List[Dict[str, Any]]:
+        """
+        Core fusion logic:
+        1. Person in Crosswalk + Vehicle Approaching (>20 km/h) -> CROSSWALK_PEDESTRIAN_RISK
+        2. Person Crossing without Crosswalk detected -> UNSAFE_MIDBLOCK_CROSSING
+        3. Multiple small persons (bbox height < 0.65 of avg adult) -> SCHOOL_CHILDREN_CROSSING_RISK
+        4. Vehicle stopped/encroaching in crosswalk -> ZEBRA_CROSSING_ENCROACHMENT
+        """
+        events = []
+        vehicles = vehicles or []
+        
+        if not persons:
+            return events
+
+        # Analyze person heights and clusters
+        person_heights = [p.get("bbox_pixels", [0, 0, 0, 0])[3] - p.get("bbox_pixels", [0, 0, 0, 0])[1] for p in persons]
+        avg_height = np.mean(person_heights) if person_heights else frame_height * 0.25
+
+        # Check for children cluster heuristic
+        small_persons = []
+        standard_persons = []
+        for p in persons:
+            h = p.get("bbox_pixels", [0, 0, 0, 0])[3] - p.get("bbox_pixels", [0, 0, 0, 0])[1]
+            if h < (avg_height * 0.70) or is_near_school_poi:
+                small_persons.append(p)
+            else:
+                standard_persons.append(p)
+
+        is_school_cluster = len(small_persons) >= 2 or (len(persons) >= 2 and is_near_school_poi)
+
+        # For each person, evaluate spatial relationship with crosswalks
+        for idx, person in enumerate(persons):
+            p_box = person.get("bbox_pixels", [0, 0, 0, 0])
+            p_conf = person.get("confidence", 0.90)
+
+            # Check overlap with any crosswalk
+            in_crosswalk = False
+            best_overlap = 0.0
+            matched_crosswalk = None
+
+            for cw in crosswalks:
+                cw_box = cw.get("bbox_pixels", [0, 0, 0, 0])
+                overlap = self.compute_box_ioa(p_box, cw_box)
+                if overlap > 0.15 and overlap > best_overlap:
+                    best_overlap = overlap
+                    in_crosswalk = True
+                    matched_crosswalk = cw
+
+            # Determine scenario
+            if is_school_cluster and (in_crosswalk or is_near_school_poi):
+                # 1. School Children Crossing Scenario
+                events.append({
+                    "event_type": "SCHOOL_CHILDREN_CROSSING_RISK",
+                    "severity": "critical" if approaching_speed_kmh > 25.0 else "high",
+                    "title": "School Children Crossing Zone - Mandatory Yield",
+                    "description": f"Group of students detected crossing roadway near {poi_name or 'designated school zone'}. Vehicles mandated to stop.",
+                    "mva_section": "IRC:35 & CMVR Rule 138 (Vision Zero School Pedestrian Corridor Protection)",
+                    "fine_amount_inr": 2000,
+                    "student_count": max(len(small_persons), 2),
+                    "confidence": round(min(0.98, p_conf + 0.05), 2),
+                    "bbox_pixels": p_box,
+                    "approaching_speed_kmh": approaching_speed_kmh,
+                    "school_poi": poi_name or "School Safety Zone",
+                    "requires_pcr_dispatch": approaching_speed_kmh > 40.0
+                })
+            elif in_crosswalk:
+                # 2. Person in Crosswalk + Vehicle Approaching
+                if approaching_speed_kmh > 20.0:
+                    events.append({
+                        "event_type": "CROSSWALK_PEDESTRIAN_RISK",
+                        "severity": "high",
+                        "title": "Pedestrian Crosswalk Active - Vehicle Approaching at Speed",
+                        "description": f"Pedestrian detected inside zebra crossing zone. Approaching bus/vehicle clocked at {approaching_speed_kmh:.1f} km/h.",
+                        "mva_section": "MVA 1988 Sec 184 & CMVR Rule 138 (Failure to Yield Pedestrian Right-of-Way)",
+                        "fine_amount_inr": 1500,
+                        "confidence": round(p_conf, 2),
+                        "bbox_pixels": p_box,
+                        "approaching_speed_kmh": approaching_speed_kmh,
+                        "requires_pcr_dispatch": False
+                    })
+            else:
+                # 3. Person crossing without crosswalk detected (Unsafe midblock crossing)
+                # Check if person is in lower 60% of frame (on roadway)
+                py2 = p_box[3]
+                if py2 > (frame_height * 0.40):
+                    events.append({
+                        "event_type": "UNSAFE_MIDBLOCK_CROSSING",
+                        "severity": "high" if approaching_speed_kmh > 35.0 else "medium",
+                        "title": "Unsafe Informal Midblock Road Crossing",
+                        "description": "Pedestrian traversing multi-lane arterial road with no designated zebra crossing within safe stopping distance.",
+                        "mva_section": "MoRTH Urban Road Safety Guidelines (Midblock Pedestrian Hazard)",
+                        "fine_amount_inr": 500,
+                        "confidence": round(p_conf, 2),
+                        "bbox_pixels": p_box,
+                        "approaching_speed_kmh": approaching_speed_kmh,
+                        "recommended_action": "Evaluate need for midblock pedestrian refuge island / pelican signal"
+                    })
+
+        # Check vehicles encroaching on crosswalks
+        for veh in vehicles:
+            v_box = veh.get("bbox_pixels", [0, 0, 0, 0])
+            for cw in crosswalks:
+                cw_box = cw.get("bbox_pixels", [0, 0, 0, 0])
+                overlap = self.compute_box_ioa(v_box, cw_box)
+                if overlap > 0.20:
+                    events.append({
+                        "event_type": "ZEBRA_CROSSING_ENCROACHMENT",
+                        "severity": "medium",
+                        "title": "Vehicle Encroachment on Pedestrian Crosswalk",
+                        "description": "Vehicle halted directly on top of zebra crossing markings, obstructing pedestrian crossing corridor.",
+                        "mva_section": "MVA 1988 Sec 177 & CMVR 138 (Crosswalk Encroachment)",
+                        "fine_amount_inr": 1000,
+                        "plate_number": veh.get("plate_number", "TN-01-AX-8732"),
+                        "confidence": veh.get("confidence", 0.94),
+                        "bbox_pixels": v_box
+                    })
+
+        return events
+
+pedestrian_engine = PedestrianCrossingFusionEngine()

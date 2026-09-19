@@ -1498,6 +1498,51 @@ class ApiService {
     return INITIAL_DEBARMENTS;
   }
 
+  async getSchoolZonesRisk(): Promise<any> {
+    try {
+      const res = await fetch(`${API_BASE}/pedestrian-safety/school-zones`, { signal: AbortSignal.timeout(1500) });
+      if (res.ok) return await res.json();
+    } catch {}
+    return {
+      school_zones_count: 3,
+      total_active_alerts: 1,
+      school_corridors: INITIAL_SAFE_CORRIDORS.filter(c => c.category === 'school')
+    };
+  }
+
+  async fusePedestrianCrosswalk(data: any): Promise<any> {
+    try {
+      const res = await fetch(`${API_BASE}/pedestrian-safety/fuse`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+      });
+      if (res.ok) return await res.json();
+    } catch {}
+    return { success: true, events: [] };
+  }
+
+  async analyzeHitAndRun(data: any): Promise<any> {
+    try {
+      const res = await fetch(`${API_BASE}/incidents/hit-and-run/analyze`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+      });
+      if (res.ok) return await res.json();
+    } catch {}
+    return { detected: false };
+  }
+
+  async getPlateTrail(plateNumber: string): Promise<any> {
+    try {
+      const res = await fetch(`${API_BASE}/incidents/plate-trail/${encodeURIComponent(plateNumber)}`, { signal: AbortSignal.timeout(1500) });
+      if (res.ok) return await res.json();
+    } catch {}
+    return { query_plate: plateNumber, total_occurrences: 0, trail: [] };
+  }
+
+
   async getAsphaltQualityAudits(): Promise<AsphaltQualityAudit[]> {
     try {
       const res = await fetch(`${API_BASE}/analytics/asphalt-quality`, { signal: AbortSignal.timeout(1500) });

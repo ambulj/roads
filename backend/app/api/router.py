@@ -1,7 +1,8 @@
 from fastapi import APIRouter
 from app.api.endpoints import (
     telemetry, clusters, work_orders, fleet, analytics, incidents,
-    models, streams, auth, traffic, dispatch, simulation, learning, road_memory, city_brain, privacy, evidence
+    models, streams, auth, traffic, dispatch, simulation, learning, road_memory, city_brain, privacy, evidence,
+    pedestrian
 )
 from app.api import websockets
 
@@ -12,6 +13,7 @@ api_router.include_router(telemetry.router, prefix="/telemetry", tags=["Telemetr
 api_router.include_router(traffic.router, prefix="/traffic", tags=["Vehicle Density & Bottlenecks"])
 api_router.include_router(clusters.router, prefix="/clusters", tags=["Hazard Clusters"])
 api_router.include_router(incidents.router, prefix="/incidents", tags=["Traffic & Safety Incidents"])
+api_router.include_router(pedestrian.router, prefix="/pedestrian-safety", tags=["Pedestrian & School Zone Safety"])
 api_router.include_router(work_orders.router, prefix="/work-orders", tags=["Work Orders & PWD"])
 api_router.include_router(fleet.router, prefix="/fleet", tags=["Fleet Nodes & BOM"])
 api_router.include_router(analytics.router, prefix="/analytics", tags=["Corridor Analytics"])

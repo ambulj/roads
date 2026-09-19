@@ -1653,8 +1653,16 @@ class PersistentStore:
                         f"YOLOv8n-Road edge perception inference @ {sample_bus.edge_fps} FPS on {sample_bus.id} • 0 critical anomalies detected • Privacy mask active."
                     ),
                     (
-                        "SPATIAL DEDUP",
-                        f"DBSCAN 15m radius filter confirmed route pass for {sample_bus.id} along {sample_bus.route_id or 'Corridor'}."
+                        "PEDESTRIAN SAFETY",
+                        f"Zone-overlap fusion: Crosswalk detected near school corridor for {sample_bus.id} • 0 student crossing hazards clocked."
+                    ),
+                    (
+                        "HIT & RUN RADAR",
+                        f"Behavioral sequence tracker: 0 vehicle evasion spikes on corridor • ANPR OCR ready @ 30 FPS."
+                    ),
+                    (
+                        "SPATIAL CONSENSUS",
+                        f"Multi-bus pass consensus verified route segment for {sample_bus.id} along {sample_bus.route_id or 'Corridor'}."
                     ),
                     (
                         "ACTIVE LEARNING",

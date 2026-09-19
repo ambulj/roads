@@ -517,7 +517,68 @@ class TestAPIEndpoints(unittest.TestCase):
         self.assertEqual(res_edge.status_code, 200)
         self.assertGreater(res_edge.json()["total_monitored_buses"], 0)
 
+    def test_27_pedestrian_fusion_and_school_zone_safety(self):
+        """Verify spatial zone-overlap fusion for school children and pedestrian crossings."""
+        # 1. Get safe corridors and school zones
+        res_corr = self.client.get("/api/pedestrian-safety/corridors")
+        self.assertEqual(res_corr.status_code, 200)
+        corrs = res_corr.json()
+        self.assertGreater(len(corrs), 0)
+
+        res_sz = self.client.get("/api/pedestrian-safety/school-zones")
+        self.assertEqual(res_sz.status_code, 200)
+        data_sz = res_sz.json()
+        self.assertIn("school_zones_count", data_sz)
+
+        # 2. Zone-Overlap Crosswalk & Person Fusion
+        res_fuse = self.client.post("/api/pedestrian-safety/fuse", json={
+            "frame_width": 1280,
+            "frame_height": 720,
+            "persons": [
+                {"bbox_pixels": [320, 420, 360, 520], "confidence": 0.94},
+                {"bbox_pixels": [370, 425, 410, 515], "confidence": 0.92}
+            ],
+            "crosswalks": [
+                {"bbox_pixels": [280, 400, 600, 600], "confidence": 0.96}
+            ],
+            "approaching_speed_kmh": 32.5,
+            "is_near_school_poi": True,
+            "poi_name": "D.A.V. Senior Secondary School"
+        })
+        self.assertEqual(res_fuse.status_code, 200)
+        data_fuse = res_fuse.json()
+        self.assertTrue(data_fuse["success"])
+        self.assertGreater(data_fuse["fused_events_count"], 0)
+        first_event = data_fuse["events"][0]
+        self.assertIn("SCHOOL_CHILDREN_CROSSING_RISK", first_event["event_type"])
+
+    def test_28_hit_and_run_behavioral_anomaly_and_plate_trail(self):
+        """Verify behavioral trajectory anomaly analysis and multi-node plate trail lookup."""
+        # 1. Hit and Run sequence check
+        res_hnr = self.client.post("/api/incidents/hit-and-run/analyze", json={
+            "track_id": "trk-veh-409",
+            "plate_number": "TN-01-AX-8732",
+            "plate_confidence": 0.96,
+            "current_speed_kmh": 76.5,
+            "bbox": [500, 300, 750, 550],
+            "nearby_targets": [{"bbox_pixels": [480, 400, 520, 500]}],
+            "sensor_gz_jerk": 2.6,
+            "road_name": "Anna Salai Arterial",
+            "lat": 13.0604,
+            "lng": 80.2496,
+            "bus_id": "BUS-TN01-1042"
+        })
+        self.assertEqual(res_hnr.status_code, 200)
+
+        # 2. Multi-Node Plate Trail SQL Query
+        res_trail = self.client.get("/api/incidents/plate-trail/TN-01-AX-8732")
+        self.assertEqual(res_trail.status_code, 200)
+        trail_data = res_trail.json()
+        self.assertIn("query_plate", trail_data)
+        self.assertIn("trail", trail_data)
+
 if __name__ == "__main__":
     unittest.main()
+
 
 

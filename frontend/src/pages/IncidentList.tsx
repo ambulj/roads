@@ -188,10 +188,21 @@ export const IncidentList: React.FC<IncidentListProps> = ({
   // Category counts
   const categories = useMemo(() => {
     const totalCount = incidents.length;
+    const schoolCount = incidents.filter(i => 
+      i.incident_type === 'SCHOOL_CHILDREN_CROSSING_RISK' ||
+      i.incident_type === 'ZEBRA_CROSSING_ENCROACHMENT' ||
+      (i.road_name || '').toLowerCase().includes('school') ||
+      (i.description || '').toLowerCase().includes('school')
+    ).length;
     const hitAndRunCount = incidents.filter(i => i.incident_type === 'HIT_AND_RUN').length;
-    const rashDrivingCount = incidents.filter(i => i.incident_type === 'RASH_DRIVING').length;
+    const rashDrivingCount = incidents.filter(i => i.incident_type === 'RASH_DRIVING' || i.incident_type === 'UNSAFE_OVERTAKE').length;
     const waterlogCount = incidents.filter(i => i.incident_type === 'WATERLOGGING').length;
-    const pedestrianCount = incidents.filter(i => i.incident_type === 'VULNERABLE_PEDESTRIAN').length;
+    const pedestrianCount = incidents.filter(i => 
+      i.incident_type === 'VULNERABLE_PEDESTRIAN' || 
+      i.incident_type === 'CROSSWALK_PEDESTRIAN_RISK' ||
+      i.incident_type === 'UNSAFE_MIDBLOCK_CROSSING' ||
+      i.incident_type === 'SCHOOL_CHILDREN_CROSSING_RISK'
+    ).length;
     const dispatchedCount = incidents.filter(i => {
       const s = (i.status || '').toLowerCase();
       return s.includes('escalat') || s.includes('dispatch');
@@ -204,10 +215,11 @@ export const IncidentList: React.FC<IncidentListProps> = ({
     return [
       { id: 'ALL', label: t('cat.all', 'All Incidents'), count: totalCount },
       { id: 'REVIEW_QUEUE', label: 'Unclear Plate Review (<85%)', count: reviewQueue.length },
-      { id: 'HIT_AND_RUN', label: 'Hit & Run', count: hitAndRunCount },
-      { id: 'RASH_DRIVING', label: 'Rash Driving', count: rashDrivingCount },
+      { id: 'SCHOOL_ZONE_RISK', label: 'School Zone Risk', count: schoolCount },
+      { id: 'HIT_AND_RUN', label: 'Hit & Run Intercept', count: hitAndRunCount },
+      { id: 'PEDESTRIAN', label: 'Pedestrian Crossings', count: pedestrianCount },
+      { id: 'RASH_DRIVING', label: 'Rash Driving / Speed', count: rashDrivingCount },
       { id: 'WATERLOGGING', label: 'Waterlogging', count: waterlogCount },
-      { id: 'VULNERABLE_PEDESTRIAN', label: 'Pedestrian Crossing', count: pedestrianCount },
       { id: 'ESCALATED', label: 'Dispatched / PCR', count: dispatchedCount },
       { id: 'RESOLVED', label: 'Resolved', count: resolvedCount }
     ];
@@ -231,6 +243,19 @@ export const IncidentList: React.FC<IncidentListProps> = ({
       } else if (activeCategory === 'RESOLVED') {
         const s = (item.status || '').toLowerCase();
         matchesCategory = s.includes('resolv') || s.includes('closed') || s.includes('verifi') || s.includes('intercept');
+      } else if (activeCategory === 'SCHOOL_ZONE_RISK') {
+        matchesCategory = 
+          item.incident_type === 'SCHOOL_CHILDREN_CROSSING_RISK' ||
+          item.incident_type === 'ZEBRA_CROSSING_ENCROACHMENT' ||
+          (item.road_name || '').toLowerCase().includes('school') ||
+          (item.description || '').toLowerCase().includes('school');
+      } else if (activeCategory === 'PEDESTRIAN') {
+        matchesCategory = 
+          item.incident_type === 'VULNERABLE_PEDESTRIAN' ||
+          item.incident_type === 'CROSSWALK_PEDESTRIAN_RISK' ||
+          item.incident_type === 'UNSAFE_MIDBLOCK_CROSSING' ||
+          item.incident_type === 'SCHOOL_CHILDREN_CROSSING_RISK' ||
+          item.incident_type === 'ZEBRA_CROSSING_ENCROACHMENT';
       } else if (activeCategory !== 'ALL') {
         matchesCategory = item.incident_type === activeCategory;
       }
@@ -254,6 +279,14 @@ export const IncidentList: React.FC<IncidentListProps> = ({
 
   const getIncidentBadge = (type: string) => {
     switch (type) {
+      case 'SCHOOL_CHILDREN_CROSSING_RISK':
+        return { label: 'School Children Crossing', variant: 'critical' as const, icon: AlertTriangle };
+      case 'CROSSWALK_PEDESTRIAN_RISK':
+        return { label: 'Crosswalk Pedestrian Risk', variant: 'warning' as const, icon: AlertTriangle };
+      case 'UNSAFE_MIDBLOCK_CROSSING':
+        return { label: 'Unsafe Midblock Crossing', variant: 'purple' as const, icon: AlertTriangle };
+      case 'ZEBRA_CROSSING_ENCROACHMENT':
+        return { label: 'Crosswalk Encroachment', variant: 'warning' as const, icon: Car };
       case 'HIT_AND_RUN':
         return { label: 'Hit & Run', variant: 'critical' as const, icon: ShieldAlert };
       case 'RASH_DRIVING':
