@@ -1129,6 +1129,22 @@ class ApiService {
     return { success: false };
   }
 
+  async resetBaseline(): Promise<any> {
+    try {
+      const res = await fetch(`${API_BASE}/simulation/reset-baseline`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...this.getAuthHeaders()
+        }
+      });
+      if (res.ok) return await res.json();
+    } catch (e) {
+      console.warn("Failed to reset baseline:", e);
+    }
+    return { success: false };
+  }
+
   async getTrafficBottlenecks(): Promise<any[]> {
 
     try {

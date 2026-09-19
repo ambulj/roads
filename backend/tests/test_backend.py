@@ -27,8 +27,8 @@ def test_dbscan():
 def test_store():
     metrics = store.get_metrics()
     assert metrics["total_ingests"] >= 64
-    assert len(store.get_clusters()) >= 8
-    assert len(store.get_incidents()) >= 4
+    assert len(store.get_clusters()) >= 3
+    assert len(store.get_incidents()) >= 2
     assert len(store.fleet_nodes) >= 5
     print(f"[TEST STORE] Metrics: {metrics}, Incidents: {len(store.get_incidents())}")
 

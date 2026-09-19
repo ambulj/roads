@@ -60,6 +60,26 @@ export const SyntheticGeneratorControl: React.FC<SyntheticGeneratorControlProps>
     }
   };
 
+  const handleResetBaseline = async () => {
+    setIsGenerating(true);
+    setIsOpen(false);
+    try {
+      const res = await api.resetBaseline();
+      if (res?.success) {
+        setLastMessage(res.message || "Platform reset to minimal clean baseline.");
+        onGenerated?.(res);
+      }
+    } catch (err) {
+      console.error("Reset baseline failed:", err);
+      setLastMessage("Reset error. Check server logs.");
+    } finally {
+      setIsGenerating(false);
+      setTimeout(() => {
+        setLastMessage(null);
+      }, 4500);
+    }
+  };
+
   return (
     <div className={`relative inline-block ${className}`} ref={menuRef}>
       {/* Toast Notification */}
@@ -205,14 +225,23 @@ export const SyntheticGeneratorControl: React.FC<SyntheticGeneratorControlProps>
             </div>
           </button>
 
-          <div className="pt-1 border-t border-slate-100 dark:border-slate-800">
+          <div className="pt-1 border-t border-slate-100 dark:border-slate-800 space-y-1">
             {/* Quick Option 5: Full Cycle */}
             <button
               onClick={() => handleGenerate("all")}
               className="w-full px-3 py-2 text-left rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center gap-2 transition text-slate-900 dark:text-white font-semibold cursor-pointer"
             >
               <RefreshCw className="w-3.5 h-3.5 text-blue-500" />
-              <span>Generate Full Urban Demo Cycle (5 Items)</span>
+              <span>Generate Full Urban Demo Cycle</span>
+            </button>
+
+            {/* Reset to Clean Minimal Baseline */}
+            <button
+              onClick={handleResetBaseline}
+              className="w-full px-3 py-1.5 text-left rounded-lg hover:bg-rose-50 dark:hover:bg-rose-950/40 flex items-center gap-2 transition text-rose-600 dark:text-rose-400 font-semibold cursor-pointer text-[11px]"
+            >
+              <span className="text-xs">🧹</span>
+              <span>Minimize Issues to Clean Baseline</span>
             </button>
           </div>
         </div>
