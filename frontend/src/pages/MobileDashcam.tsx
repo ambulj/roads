@@ -75,7 +75,7 @@ const CHANNELS: CameraChannel[] = [
     previewUrl: 'https://images.unsplash.com/photo-1577495508048-b635879837f1?w=1200&auto=format&fit=crop&q=80',
     detection: {
       title: 'School Children Crossing Zone',
-      description: '3 Pedestrians detected on marked crosswalk. Vehicle yielding mandate active (IRC:35 & Vision Zero).',
+      description: '3 Pedestrians detected on marked crosswalk. Mandatory vehicle yield active (IRC:35 & Vision Zero).',
       confidence: 96,
       badgeText: 'Pedestrian Safety',
       badgeColor: 'amber',
@@ -398,28 +398,28 @@ export const MobileDashcam: React.FC<MobileDashcamProps> = ({
   };
 
   return (
-    <div className="flex-1 flex flex-col min-h-0 overflow-y-auto custom-scrollbar bg-slate-900 text-slate-100 select-none">
+    <div className="flex-1 flex flex-col min-h-0 overflow-y-auto custom-scrollbar bg-[#f8f7f4] dark:bg-[#0c1017] text-slate-900 dark:text-slate-100 select-none transition-colors">
       
       {/* ── 1. Clean Minimal Header ── */}
-      <div className="bg-slate-950 border-b border-slate-800 px-5 py-3.5 flex items-center justify-between">
+      <div className="bg-white dark:bg-[#111722] border-b border-slate-200 dark:border-slate-800 px-5 py-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs">
         <div className="flex items-center gap-3">
           <button 
             onClick={onBackToDashboard}
-            className="p-2 rounded-xl bg-slate-800 border border-slate-700 hover:bg-slate-700 text-slate-300 transition cursor-pointer"
+            className="p-2 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 transition cursor-pointer"
             title="Back to Dashboard"
           >
             <ArrowLeft className="w-4 h-4" />
           </button>
           <div>
             <div className="flex items-center gap-2">
-              <h1 className="text-base sm:text-lg font-bold text-white tracking-tight">
+              <h1 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white tracking-tight">
                 Edge Dashcam Ingest
               </h1>
-              <span className="px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 text-[10px] font-mono font-bold">
+              <span className="px-2 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800 text-[10px] font-mono font-bold">
                 LIVE INFERENCE
               </span>
             </div>
-            <p className="text-xs text-slate-400">
+            <p className="text-xs text-slate-500 dark:text-slate-400">
               Select a camera channel to monitor road safety &amp; infrastructure distress in real time.
             </p>
           </div>
@@ -431,8 +431,8 @@ export const MobileDashcam: React.FC<MobileDashcamProps> = ({
             onClick={toggleDeviceCamera}
             className={`px-3 py-1.5 rounded-xl text-xs font-semibold border transition cursor-pointer flex items-center gap-1.5 ${
               useDeviceWebcam 
-                ? 'bg-amber-500/20 border-amber-500/60 text-amber-300' 
-                : 'bg-slate-800 border-slate-700 text-slate-300 hover:bg-slate-700'
+                ? 'bg-amber-50 dark:bg-amber-950/60 border-amber-300 dark:border-amber-800 text-amber-800 dark:text-amber-300' 
+                : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700'
             }`}
           >
             <Camera className="w-3.5 h-3.5" />
@@ -472,25 +472,25 @@ export const MobileDashcam: React.FC<MobileDashcamProps> = ({
                 onClick={() => setActiveChannelId(ch.id)}
                 className={`p-3 rounded-2xl border text-left transition cursor-pointer flex items-center gap-3 ${
                   isActive
-                    ? 'bg-blue-600/20 border-blue-500 text-white shadow-lg shadow-blue-500/10'
-                    : 'bg-slate-950/60 border-slate-800 text-slate-400 hover:bg-slate-800/80 hover:text-slate-200'
+                    ? 'bg-blue-50/80 dark:bg-blue-950/40 border-blue-500 dark:border-blue-500 text-slate-900 dark:text-white shadow-xs'
+                    : 'bg-white dark:bg-[#111722] border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800/80 hover:text-slate-900 dark:hover:text-slate-200 shadow-xs'
                 }`}
               >
                 <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${
-                  isActive ? 'bg-blue-600 text-white' : 'bg-slate-800 text-slate-400'
+                  isActive ? 'bg-blue-600 text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400'
                 }`}>
                   <Icon className="w-4 h-4" />
                 </div>
                 <div className="min-w-0">
                   <div className="flex items-center gap-1.5">
-                    <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-slate-800 text-slate-300 font-bold">
+                    <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold border border-slate-200 dark:border-slate-700">
                       {ch.tag}
                     </span>
-                    <span className="font-bold text-xs truncate text-white">
+                    <span className="font-bold text-xs truncate text-slate-900 dark:text-white">
                       {ch.name}
                     </span>
                   </div>
-                  <div className="text-[11px] text-slate-400 truncate mt-0.5">
+                  <div className="text-[11px] text-slate-500 dark:text-slate-400 truncate mt-0.5">
                     {ch.detection.title}
                   </div>
                 </div>
@@ -500,15 +500,15 @@ export const MobileDashcam: React.FC<MobileDashcamProps> = ({
         </div>
 
         {/* ── 3. Main Live Video Stage ── */}
-        <div className="bg-slate-950 border border-slate-800 rounded-3xl overflow-hidden shadow-2xl">
+        <div className="bg-white dark:bg-[#111722] border border-slate-200 dark:border-slate-800 rounded-3xl overflow-hidden shadow-xs">
           
           {/* Top Stage Bar */}
-          <div className="px-4 py-2.5 bg-slate-900/90 border-b border-slate-800 flex items-center justify-between text-xs">
+          <div className="px-4 py-2.5 bg-slate-50 dark:bg-slate-900/90 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between text-xs">
             <div className="flex items-center gap-2 font-mono">
-              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-              <span className="font-bold text-white">{activeChannel.name}</span>
-              <span className="text-slate-500">&bull;</span>
-              <span className="text-slate-400">{activeChannel.resolution}</span>
+              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+              <span className="font-bold text-slate-900 dark:text-white">{activeChannel.name}</span>
+              <span className="text-slate-400 dark:text-slate-500">&bull;</span>
+              <span className="text-slate-600 dark:text-slate-400">{activeChannel.resolution}</span>
             </div>
 
             <div className="flex items-center gap-2">
@@ -516,8 +516,8 @@ export const MobileDashcam: React.FC<MobileDashcamProps> = ({
                 onClick={() => setShowAiBoxes(!showAiBoxes)}
                 className={`px-2.5 py-1 rounded-lg text-xs font-medium border transition cursor-pointer flex items-center gap-1 ${
                   showAiBoxes 
-                    ? 'bg-emerald-500/20 border-emerald-500/40 text-emerald-300' 
-                    : 'bg-slate-800 border-slate-700 text-slate-400'
+                    ? 'bg-emerald-50 dark:bg-emerald-950/60 border-emerald-300 dark:border-emerald-800 text-emerald-800 dark:text-emerald-300' 
+                    : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-500'
                 }`}
               >
                 {showAiBoxes ? <Eye className="w-3.5 h-3.5" /> : <EyeOff className="w-3.5 h-3.5" />}
@@ -528,8 +528,8 @@ export const MobileDashcam: React.FC<MobileDashcamProps> = ({
                 onClick={() => setShowPrivacyBlur(!showPrivacyBlur)}
                 className={`px-2.5 py-1 rounded-lg text-xs font-medium border transition cursor-pointer flex items-center gap-1 ${
                   showPrivacyBlur 
-                    ? 'bg-blue-500/20 border-blue-500/40 text-blue-300' 
-                    : 'bg-slate-800 border-slate-700 text-slate-400'
+                    ? 'bg-blue-50 dark:bg-blue-950/60 border-blue-300 dark:border-blue-800 text-blue-800 dark:text-blue-300' 
+                    : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-500'
                 }`}
               >
                 <ShieldCheck className="w-3.5 h-3.5" />
@@ -573,21 +573,21 @@ export const MobileDashcam: React.FC<MobileDashcamProps> = ({
           </div>
 
           {/* ── 4. Bottom Active Detection & Action Ribbon ── */}
-          <div className="p-4 sm:p-5 bg-slate-900/80 border-t border-slate-800 flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div className="p-4 sm:p-5 bg-slate-50 dark:bg-slate-900/80 border-t border-slate-200 dark:border-slate-800 flex flex-col md:flex-row md:items-center justify-between gap-4">
             
             <div className="space-y-1">
               <div className="flex items-center gap-2">
-                <span className="px-2 py-0.5 rounded-full bg-blue-500/20 text-blue-400 border border-blue-500/40 text-[10px] font-mono font-bold">
+                <span className="px-2 py-0.5 rounded-full bg-blue-50 dark:bg-blue-950 text-blue-700 dark:text-blue-400 border border-blue-200 dark:border-blue-900 text-[10px] font-mono font-bold">
                   {activeChannel.detection.badgeText}
                 </span>
-                <h3 className="font-extrabold text-sm sm:text-base text-white">
+                <h3 className="font-extrabold text-sm sm:text-base text-slate-900 dark:text-white">
                   {activeChannel.detection.title}
                 </h3>
-                <span className="text-xs font-mono font-bold text-emerald-400">
+                <span className="text-xs font-mono font-bold text-emerald-600 dark:text-emerald-400">
                   [{activeChannel.detection.confidence}% Confidence]
                 </span>
               </div>
-              <p className="text-xs text-slate-400 max-w-2xl leading-relaxed">
+              <p className="text-xs text-slate-600 dark:text-slate-400 max-w-2xl leading-relaxed">
                 {activeChannel.detection.description}
               </p>
             </div>
@@ -608,47 +608,47 @@ export const MobileDashcam: React.FC<MobileDashcamProps> = ({
 
         {/* ── 5. Quick Scenario Presets ── */}
         <div className="space-y-2">
-          <span className="text-xs font-bold text-slate-400 uppercase tracking-wider block">
+          <span className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider block">
             One-Click Scenarios:
           </span>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             
             <button
               onClick={() => setActiveChannelId('front')}
-              className="p-3.5 rounded-2xl bg-slate-950 border border-slate-800 hover:border-amber-500/50 text-left transition cursor-pointer flex items-center gap-3"
+              className="p-3.5 rounded-2xl bg-white dark:bg-[#111722] border border-slate-200 dark:border-slate-800 hover:border-amber-400 dark:hover:border-amber-500/50 text-left transition cursor-pointer flex items-center gap-3 shadow-xs"
             >
-              <div className="w-9 h-9 rounded-xl bg-amber-500/20 text-amber-400 flex items-center justify-center shrink-0">
+              <div className="w-9 h-9 rounded-xl bg-amber-50 dark:bg-amber-500/20 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0 border border-amber-200 dark:border-transparent">
                 <School className="w-5 h-5" />
               </div>
               <div>
-                <div className="font-bold text-xs text-white">School Crossing Zone</div>
-                <div className="text-[11px] text-slate-400">Vision Zero Pedestrian Yield Mandate</div>
+                <div className="font-bold text-xs text-slate-900 dark:text-white">School Crossing Zone</div>
+                <div className="text-[11px] text-slate-500 dark:text-slate-400">Vision Zero Pedestrian Yield Mandate</div>
               </div>
             </button>
 
             <button
               onClick={() => setActiveChannelId('rear')}
-              className="p-3.5 rounded-2xl bg-slate-950 border border-slate-800 hover:border-rose-500/50 text-left transition cursor-pointer flex items-center gap-3"
+              className="p-3.5 rounded-2xl bg-white dark:bg-[#111722] border border-slate-200 dark:border-slate-800 hover:border-rose-400 dark:hover:border-rose-500/50 text-left transition cursor-pointer flex items-center gap-3 shadow-xs"
             >
-              <div className="w-9 h-9 rounded-xl bg-rose-500/20 text-rose-400 flex items-center justify-center shrink-0">
+              <div className="w-9 h-9 rounded-xl bg-rose-50 dark:bg-rose-500/20 text-rose-600 dark:text-rose-400 flex items-center justify-center shrink-0 border border-rose-200 dark:border-transparent">
                 <ShieldAlert className="w-5 h-5" />
               </div>
               <div>
-                <div className="font-bold text-xs text-white">Hit &amp; Run Evasion</div>
-                <div className="text-[11px] text-slate-400">High-Speed Evasion Radar &amp; ANPR</div>
+                <div className="font-bold text-xs text-slate-900 dark:text-white">Hit &amp; Run Evasion</div>
+                <div className="text-[11px] text-slate-500 dark:text-slate-400">High-Speed Evasion Radar &amp; ANPR</div>
               </div>
             </button>
 
             <button
               onClick={() => setActiveChannelId('curbside')}
-              className="p-3.5 rounded-2xl bg-slate-950 border border-slate-800 hover:border-cyan-500/50 text-left transition cursor-pointer flex items-center gap-3"
+              className="p-3.5 rounded-2xl bg-white dark:bg-[#111722] border border-slate-200 dark:border-slate-800 hover:border-cyan-400 dark:hover:border-cyan-500/50 text-left transition cursor-pointer flex items-center gap-3 shadow-xs"
             >
-              <div className="w-9 h-9 rounded-xl bg-cyan-500/20 text-cyan-400 flex items-center justify-center shrink-0">
+              <div className="w-9 h-9 rounded-xl bg-cyan-50 dark:bg-cyan-500/20 text-cyan-600 dark:text-cyan-400 flex items-center justify-center shrink-0 border border-cyan-200 dark:border-transparent">
                 <Droplets className="w-5 h-5" />
               </div>
               <div>
-                <div className="font-bold text-xs text-white">Open Manhole Cavity</div>
-                <div className="text-[11px] text-slate-400">Uncovered Sewer Hazard (IS:1726)</div>
+                <div className="font-bold text-xs text-slate-900 dark:text-white">Open Manhole Cavity</div>
+                <div className="text-[11px] text-slate-500 dark:text-slate-400">Uncovered Sewer Hazard (IS:1726)</div>
               </div>
             </button>
 

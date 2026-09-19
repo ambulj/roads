@@ -298,7 +298,7 @@ export const CommandCenter: React.FC<CommandCenterProps> = ({
         {/* 3. OPERATIONAL 3-PANE COCKPIT: ACTION QUEUE -> LIVE GIS MAP -> OPERATOR INSPECTOR */}
         <section className="grid grid-cols-1 lg:grid-cols-[280px_minmax(0,1fr)] xl:grid-cols-[280px_minmax(0,1fr)_340px] gap-3 items-stretch">
           {/* Left: Autonomous Action Queue */}
-          <aside className="border border-slate-200 dark:border-slate-800 bg-[#fbfcfb] dark:bg-[#101827] flex flex-col shadow-sm min-h-[560px] max-h-[660px] rounded-xl overflow-hidden">
+          <aside className="border border-slate-200 dark:border-slate-800 bg-[#fbfcfb] dark:bg-[#101827] flex flex-col shadow-sm h-[580px] xl:h-[680px] rounded-xl overflow-hidden min-h-0">
             <PriorityQueue
               clusters={filteredClusters}
               incidents={filteredIncidents}

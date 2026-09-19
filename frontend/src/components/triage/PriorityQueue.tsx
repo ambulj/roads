@@ -52,7 +52,7 @@ export const PriorityQueue: React.FC<PriorityQueueProps> = ({
   }, [clusters, poiFilter]);
 
   return (
-    <div className="flex-1 flex flex-col min-h-0 select-none bg-white dark:bg-slate-900">
+    <div className="flex-1 flex flex-col min-h-0 h-full select-none bg-white dark:bg-slate-900 overflow-hidden">
       {/* Header Tabs */}
       <div className="flex items-center border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950">
         <button
@@ -131,7 +131,7 @@ export const PriorityQueue: React.FC<PriorityQueueProps> = ({
       )}
 
       {/* Items List */}
-      <div className="flex-1 overflow-y-auto divide-y divide-slate-100 dark:divide-slate-800/80 custom-scrollbar">
+      <div className="flex-1 min-h-0 overflow-y-auto divide-y divide-slate-100 dark:divide-slate-800/80 custom-scrollbar">
         {queueTab === 'defects' ? (
           sortedAndFilteredClusters.length === 0 ? (
             <div className="p-6 text-center text-xs text-slate-400">
