@@ -19,13 +19,19 @@ import {
   ChevronLeft,
   ChevronRight,
   CheckCircle2,
-  Sliders
+  Sliders,
+  CheckCircle,
+  FileText,
+  AlertCircle,
+  HelpCircle,
+  RefreshCw
 } from 'lucide-react';
 import { TrafficIncident, OpenManholeAlert, SubmergedPotholeAlert } from '../types';
 import { IncidentDossierModal } from '../components/modals/IncidentDossierModal';
-import { RoadMeshVisualizerModal, isRoadSurfaceDefect } from '../components/modals/RoadMeshVisualizerModal';
+import { RoadMeshVisualizerModal } from '../components/modals/RoadMeshVisualizerModal';
 import { Button, Badge, Input } from '../components/ui';
 import { EmptyState } from '../components/common/EmptyState';
+import { ConfirmationModal, ConfirmationModalProps } from '../components/common/ConfirmationModal';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
 import { useToast } from '../context/ToastContext';
@@ -35,12 +41,14 @@ interface IncidentListProps {
   incidents: TrafficIncident[];
   onUpdateStatus?: (incidentId: string, status: string) => void;
   onRefresh?: () => Promise<void> | void;
+  isLoading?: boolean;
 }
 
 export const IncidentList: React.FC<IncidentListProps> = ({
   incidents,
   onUpdateStatus,
-  onRefresh
+  onRefresh,
+  isLoading = false
 }) => {
   const [viewMode, setViewMode] = useState<'table' | 'grid'>('table');
   const [searchQuery, setSearchQuery] = useState('');
@@ -59,14 +67,17 @@ export const IncidentList: React.FC<IncidentListProps> = ({
     cameraConfidence: number;
     defectType: string;
   } | null>(null);
-  const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [isSyncing, setIsSyncing] = useState(false);
   const { canEscalatePCR } = useAuth();
   const { t } = useLanguage();
-  const { warning: showWarningToast } = useToast();
+  const { warning: showWarningToast, success: showSuccessToast } = useToast();
 
   const [openManholes, setOpenManholes] = useState<OpenManholeAlert[]>(INITIAL_OPEN_MANHOLES);
   const [submergedPotholes, setSubmergedPotholes] = useState<SubmergedPotholeAlert[]>(INITIAL_SUBMERGED_POTHOLES);
   const [reviewQueue, setReviewQueue] = useState<any[]>([]);
+
+  // Confirmation dialog state
+  const [confirmConfig, setConfirmConfig] = useState<ConfirmationModalProps | null>(null);
 
   const fetchReviewQueue = () => {
     api.getReviewQueue().then(data => {
@@ -84,14 +95,94 @@ export const IncidentList: React.FC<IncidentListProps> = ({
     try {
       const res = await api.reviewIncident(itemId, action, notes || (action === 'ACCEPT' ? 'Officer verified e-challan issued' : 'Rejected - insufficient evidence'));
       if (res?.success) {
-        setToastMessage(`Incident #${itemId} ${action === 'ACCEPT' ? 'approved' : 'rejected'}`);
-        setTimeout(() => setToastMessage(null), 3000);
+        showSuccessToast('Action Completed', `Incident #${itemId} ${action === 'ACCEPT' ? 'authorized for e-challan notice' : 'dismissed'}`);
         setReviewQueue(prev => prev.filter(item => item.id !== itemId));
         if (onRefresh) onRefresh();
       }
     } catch (e) {
       console.error(e);
     }
+  };
+
+  // Trigger confirmation for Review Queue Approve
+  const promptApproveReview = (item: any) => {
+    setConfirmConfig({
+      isOpen: true,
+      onClose: () => setConfirmConfig(null),
+      onConfirm: async (notes) => {
+        await handleReviewAction(item.id, 'ACCEPT', notes || 'Officer verified license plate record and authorized e-challan');
+      },
+      title: 'Authorize Statutory E-Challan Notice',
+      description: 'You are issuing a legally enforceable motor vehicle contravention notice to the registered owner.',
+      variant: 'primary',
+      icon: 'challan',
+      confirmLabel: 'Authorize & Dispatch E-Challan',
+      details: [
+        { label: 'License Plate', value: item.plate_number || 'TN-01-AX-8732', highlight: true },
+        { label: 'Location', value: item.road_name || 'Corridor Junction' },
+        { label: 'Camera Match', value: `${Math.round((item.plate_confidence || 0.74) * 100)}% Match` },
+        { label: 'Statutory Action', value: 'MVA 1988 Notice Draft' }
+      ]
+    });
+  };
+
+  // Trigger confirmation for Review Queue Reject
+  const promptRejectReview = (item: any) => {
+    setConfirmConfig({
+      isOpen: true,
+      onClose: () => setConfirmConfig(null),
+      onConfirm: async (notes) => {
+        await handleReviewAction(item.id, 'REJECT', notes);
+      },
+      title: 'Dismiss Capture from Review Queue',
+      description: 'Mark this automated camera detection as invalid or unresolvable. Please select a reason for audit records.',
+      variant: 'warning',
+      icon: 'reject',
+      confirmLabel: 'Confirm Dismissal',
+      requireReason: true,
+      reasonPlaceholder: 'Enter reason or select a preset below...',
+      reasonOptions: [
+        'License plate obscured / unreadable',
+        'False trigger / Non-infraction',
+        'Emergency response vehicle',
+        'Duplicate sighting'
+      ],
+      details: [
+        { label: 'Incident Reference', value: item.id },
+        { label: 'Plate Candidate', value: item.plate_number || 'Obscured' }
+      ]
+    });
+  };
+
+  // Trigger confirmation for Quick Escalate (112 PCR)
+  const promptQuickEscalate = (incident: TrafficIncident, e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
+    if (!canEscalatePCR) {
+      showWarningToast('Clearance Required', 'Emergency 112 PCR dispatch is restricted to authorized Traffic Police controllers.');
+      return;
+    }
+
+    setConfirmConfig({
+      isOpen: true,
+      onClose: () => setConfirmConfig(null),
+      onConfirm: async () => {
+        if (onUpdateStatus) {
+          onUpdateStatus(incident.id, 'ESCALATED_POLICE');
+        }
+        showSuccessToast('112 Interceptor Dispatched', `Emergency intercept patrol notified for ${incident.plate_number || incident.road_name}`);
+      },
+      title: 'Dispatch 112 Emergency Police Patrol',
+      description: 'Broadcast high-priority intercept alert to Chennai Police Control Room (112) with real-time GPS telemetry.',
+      variant: 'danger',
+      icon: 'pcr',
+      confirmLabel: 'Confirm 112 Patrol Dispatch',
+      details: [
+        { label: 'Incident Type', value: incident.incident_type.replace(/_/g, ' '), highlight: true },
+        { label: 'Target Vehicle', value: incident.plate_number || incident.vehicle_class || 'Vehicle' },
+        { label: 'Corridor Location', value: incident.road_name },
+        { label: 'Clocked Speed', value: incident.target_speed_kmh ? `${incident.target_speed_kmh} km/h` : 'N/A' }
+      ]
+    });
   };
 
   // Category counts
@@ -112,11 +203,11 @@ export const IncidentList: React.FC<IncidentListProps> = ({
 
     return [
       { id: 'ALL', label: t('cat.all', 'All Incidents'), count: totalCount },
-      { id: 'REVIEW_QUEUE', label: 'Review Queue (<85%)', count: reviewQueue.length },
+      { id: 'REVIEW_QUEUE', label: 'Unclear Plate Review (<85%)', count: reviewQueue.length },
       { id: 'HIT_AND_RUN', label: 'Hit & Run', count: hitAndRunCount },
       { id: 'RASH_DRIVING', label: 'Rash Driving', count: rashDrivingCount },
       { id: 'WATERLOGGING', label: 'Waterlogging', count: waterlogCount },
-      { id: 'VULNERABLE_PEDESTRIAN', label: 'Pedestrian', count: pedestrianCount },
+      { id: 'VULNERABLE_PEDESTRIAN', label: 'Pedestrian Crossing', count: pedestrianCount },
       { id: 'ESCALATED', label: 'Dispatched / PCR', count: dispatchedCount },
       { id: 'RESOLVED', label: 'Resolved', count: resolvedCount }
     ];
@@ -168,9 +259,9 @@ export const IncidentList: React.FC<IncidentListProps> = ({
       case 'RASH_DRIVING':
         return { label: 'Rash Driving', variant: 'warning' as const, icon: Gauge };
       case 'VULNERABLE_PEDESTRIAN':
-        return { label: 'Pedestrian', variant: 'purple' as const, icon: AlertTriangle };
+        return { label: 'Pedestrian Crossing', variant: 'purple' as const, icon: AlertTriangle };
       case 'WATERLOGGING':
-        return { label: 'Waterlog', variant: 'info' as const, icon: Droplets };
+        return { label: 'Waterlogging', variant: 'info' as const, icon: Droplets };
       default:
         return { label: type.replace(/_/g, ' '), variant: 'neutral' as const, icon: Car };
     }
@@ -179,27 +270,27 @@ export const IncidentList: React.FC<IncidentListProps> = ({
   const getStatusBadge = (status: string) => {
     const s = (status || '').toLowerCase().trim();
     if (s.includes('resolv') || s.includes('closed') || s.includes('verifi')) {
-      return { label: 'Resolved', variant: 'success' as const };
+      return { label: 'Resolved', variant: 'success' as const, icon: CheckCircle2 };
     }
     if (s.includes('intercept')) {
-      return { label: 'Intercepted', variant: 'purple' as const };
+      return { label: 'Intercepted', variant: 'purple' as const, icon: CheckCircle };
     }
     if (s.includes('pcr') || s.includes('escalat') || (s.includes('dispatch') && !s.includes('pump'))) {
-      return { label: 'PCR Dispatched', variant: 'critical' as const };
+      return { label: 'PCR Dispatched', variant: 'critical' as const, icon: Send };
     }
     if (s.includes('pump')) {
-      return { label: 'Pump Dispatched', variant: 'info' as const };
+      return { label: 'Pump Dispatched', variant: 'info' as const, icon: Droplets };
     }
     if (s.includes('barricad')) {
-      return { label: 'Barricaded', variant: 'warning' as const };
+      return { label: 'Barricaded', variant: 'warning' as const, icon: AlertTriangle };
     }
     if (s.includes('work_order') || s.includes('work order')) {
-      return { label: 'Work Order', variant: 'success' as const };
+      return { label: 'Work Order Created', variant: 'success' as const, icon: CheckCircle2 };
     }
     if (s.includes('echallan') || s.includes('challan')) {
-      return { label: 'e-Challan Issued', variant: 'purple' as const };
+      return { label: 'e-Challan Issued', variant: 'purple' as const, icon: FileText };
     }
-    return { label: 'Active Alert', variant: 'warning' as const };
+    return { label: 'Active Alert', variant: 'warning' as const, icon: AlertCircle };
   };
 
   const handleOpenDossier = (incident: TrafficIncident) => {
@@ -207,48 +298,65 @@ export const IncidentList: React.FC<IncidentListProps> = ({
     setIsDossierOpen(true);
   };
 
-  const handleQuickEscalate = (incident: TrafficIncident, e?: React.MouseEvent) => {
-    if (e) e.stopPropagation();
-    if (!canEscalatePCR) {
-      showWarningToast('Insufficient Clearance', 'PCR / 112 emergency interceptor dispatch is restricted to Traffic Police.');
-      return;
+  const handleSync = async () => {
+    if (onRefresh) {
+      setIsSyncing(true);
+      try {
+        await onRefresh();
+        fetchReviewQueue();
+        showSuccessToast('Sync Complete', 'Incident registry updated with live edge observations');
+      } finally {
+        setIsSyncing(false);
+      }
     }
-    if (onUpdateStatus) {
-      onUpdateStatus(incident.id, 'ESCALATED_POLICE');
-    }
-    setToastMessage(`Incident #${incident.id} dispatched to 112 PCR`);
-    setTimeout(() => setToastMessage(null), 3000);
   };
 
   const handleExportCSV = () => {
     window.open('/api/incidents/export/csv', '_blank');
-    setToastMessage("Downloading statutory enforcement CSV log");
-    setTimeout(() => setToastMessage(null), 3000);
+    showSuccessToast('Exporting Data', 'Downloading statutory enforcement and incident log CSV');
+  };
+
+  const getEmptyStateMessage = () => {
+    if (searchQuery) {
+      return {
+        title: 'No matching incidents',
+        desc: `No incident records match "${searchQuery}". Try clearing search or changing filters.`
+      };
+    }
+    switch (activeCategory) {
+      case 'HIT_AND_RUN':
+        return { title: 'No Hit & Run Incidents', desc: 'No active hit & run emergency cases logged across the transit network.' };
+      case 'RASH_DRIVING':
+        return { title: 'No Rash Driving Incidents', desc: 'All vehicle speed telemetry is within statutory corridor thresholds.' };
+      case 'WATERLOGGING':
+        return { title: 'No Waterlogging Hazards', desc: 'No critical road stormwater pooling detected on transit routes.' };
+      case 'VULNERABLE_PEDESTRIAN':
+        return { title: 'No Pedestrian Crosswalk Blockages', desc: 'Pedestrian crossings and zebra markers are clear.' };
+      case 'ESCALATED':
+        return { title: 'No Active Dispatches', desc: 'No incidents currently assigned to emergency 112 police intercept.' };
+      case 'RESOLVED':
+        return { title: 'No Resolved Incidents Yet', desc: 'Resolved and closed cases will appear in this audit log.' };
+      default:
+        return { title: 'No incidents found', desc: 'No active traffic safety incidents recorded.' };
+    }
   };
 
   return (
-    <div className="flex-1 flex flex-col min-h-0 overflow-y-auto custom-scrollbar p-5 md:p-6 lg:p-8 space-y-4 max-w-[1600px] mx-auto w-full select-none font-sans">
-      {/* Toast Notification */}
-      {toastMessage && (
-        <div className="fixed top-5 right-5 z-50 flex items-center gap-2 px-3.5 py-2 bg-slate-900 border border-slate-700 rounded-xl text-white text-xs shadow-2xl backdrop-blur-xl animate-in fade-in slide-in-from-top-2">
-          <Send className="w-3.5 h-3.5 text-blue-400 animate-pulse" />
-          <span>{toastMessage}</span>
-        </div>
-      )}
-
-      {/* 1. CLEAN HEADER & CONTROLS */}
+    <div className="flex-1 flex flex-col min-h-0 overflow-y-auto custom-scrollbar p-4 md:p-6 lg:p-8 space-y-4 max-w-[1600px] mx-auto w-full select-none font-sans">
+      
+      {/* 1. CLEAN OPERATIONAL HEADER */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-2">
         <div>
           <div className="flex items-center gap-2.5">
-            <h1 className="text-xl font-bold text-slate-900 dark:text-white tracking-tight">
+            <h1 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white tracking-tight">
               Safety &amp; Traffic Incidents
             </h1>
-            <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-blue-50 dark:bg-blue-950 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-900 font-mono">
-              {incidents.length} total
+            <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-blue-50 dark:bg-blue-950 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-900 font-mono">
+              {incidents.length} Records
             </span>
           </div>
-          <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-            Live edge camera detections, ANPR infractions, and emergency incident triage
+          <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1">
+            Real-time edge camera detections, license plate contraventions, and emergency incident triage
           </p>
         </div>
 
@@ -258,7 +366,7 @@ export const IncidentList: React.FC<IncidentListProps> = ({
             <button
               onClick={() => setViewMode('table')}
               className={`p-1.5 rounded-md transition cursor-pointer ${
-                viewMode === 'table' ? 'bg-white dark:bg-slate-700 text-blue-600 dark:text-blue-400 shadow-xs' : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
+                viewMode === 'table' ? 'bg-white dark:bg-slate-700 text-blue-600 dark:text-blue-400 shadow-xs font-medium' : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
               }`}
               title="Table View"
             >
@@ -267,7 +375,7 @@ export const IncidentList: React.FC<IncidentListProps> = ({
             <button
               onClick={() => setViewMode('grid')}
               className={`p-1.5 rounded-md transition cursor-pointer ${
-                viewMode === 'grid' ? 'bg-white dark:bg-slate-700 text-blue-600 dark:text-blue-400 shadow-xs' : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
+                viewMode === 'grid' ? 'bg-white dark:bg-slate-700 text-blue-600 dark:text-blue-400 shadow-xs font-medium' : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
               }`}
               title="Cards View"
             >
@@ -279,14 +387,11 @@ export const IncidentList: React.FC<IncidentListProps> = ({
             <Button
               variant="secondary"
               size="sm"
-              onClick={() => {
-                onRefresh();
-                setToastMessage("Synchronized incidents");
-                setTimeout(() => setToastMessage(null), 2000);
-              }}
-              icon={<RotateCcw className="w-3.5 h-3.5" />}
+              onClick={handleSync}
+              disabled={isSyncing}
+              icon={<RefreshCw className={`w-3.5 h-3.5 ${isSyncing ? 'animate-spin' : ''}`} />}
             >
-              Sync
+              {isSyncing ? 'Syncing...' : 'Sync'}
             </Button>
           )}
 
@@ -296,20 +401,20 @@ export const IncidentList: React.FC<IncidentListProps> = ({
             onClick={handleExportCSV}
             icon={<Download className="w-3.5 h-3.5" />}
           >
-            Export
+            Export CSV
           </Button>
         </div>
       </div>
 
-      {/* 2. SIMPLE FILTER & SEARCH BAR */}
-      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 bg-white dark:bg-slate-900 p-2 rounded-xl border border-slate-200 dark:border-slate-800 shadow-xs">
+      {/* 2. FILTER & SEARCH BAR */}
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 bg-white dark:bg-slate-900 p-2.5 rounded-xl border border-slate-200 dark:border-slate-800 shadow-xs">
         {/* Search */}
-        <div className="w-full lg:w-72 shrink-0">
+        <div className="w-full lg:w-80 shrink-0">
           <Input
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search plate, road, bus..."
-            leftIcon={<Search className="w-3.5 h-3.5 text-slate-400" />}
+            placeholder="Search by plate, corridor, bus node..."
+            leftIcon={<Search className="w-4 h-4 text-slate-400" />}
             rightElement={
               searchQuery ? (
                 <button
@@ -324,22 +429,22 @@ export const IncidentList: React.FC<IncidentListProps> = ({
         </div>
 
         {/* Category Pills */}
-        <div className="flex items-center gap-1 overflow-x-auto custom-scrollbar p-0.5">
+        <div className="flex items-center gap-1.5 overflow-x-auto custom-scrollbar p-0.5">
           {categories.map(cat => {
             const isActive = activeCategory === cat.id;
             return (
               <button
                 key={cat.id}
                 onClick={() => setActiveCategory(cat.id)}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition cursor-pointer ${
+                className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition cursor-pointer ${
                   isActive
                     ? 'bg-blue-600 text-white font-semibold shadow-xs'
                     : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
                 }`}
               >
                 <span>{cat.label}</span>
-                <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-mono ${
-                  isActive ? 'bg-white/20 text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-500'
+                <span className={`text-xs px-2 py-0.2 rounded-full font-mono ${
+                  isActive ? 'bg-white/20 text-white font-bold' : 'bg-slate-100 dark:bg-slate-800 text-slate-500 font-semibold'
                 }`}>
                   {cat.count}
                 </span>
@@ -349,49 +454,68 @@ export const IncidentList: React.FC<IncidentListProps> = ({
         </div>
       </div>
 
-      {/* 3. MAIN CONTENT: REVIEW QUEUE, TABLE, OR CARDS */}
-      {activeCategory === 'REVIEW_QUEUE' ? (
-        /* Simple Review Queue */
+      {/* 3. MAIN CONTENT */}
+      {isLoading ? (
+        <div className="p-16 flex flex-col items-center justify-center bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-xs space-y-3">
+          <RefreshCw className="w-8 h-8 text-blue-600 dark:text-blue-400 animate-spin" />
+          <div className="text-sm font-semibold text-slate-900 dark:text-slate-100">
+            Syncing live incident registry...
+          </div>
+          <p className="text-xs text-slate-500 dark:text-slate-400">
+            Connecting to high-speed edge perception nodes and ANPR streams.
+          </p>
+        </div>
+      ) : activeCategory === 'REVIEW_QUEUE' ? (
+        /* Manual Plate Review Queue */
         <div className="space-y-3">
           {reviewQueue.length === 0 ? (
-            <div className="p-12 text-center bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl">
-              <CheckCircle2 className="w-8 h-8 text-emerald-500 mx-auto mb-2" />
-              <div className="text-sm font-semibold text-slate-900 dark:text-white">Review Queue is Clear</div>
-              <p className="text-xs text-slate-500 mt-0.5">All camera captures meet the 85% confidence threshold.</p>
+            <div className="p-12 text-center bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-xs">
+              <CheckCircle2 className="w-10 h-10 text-emerald-500 mx-auto mb-3" />
+              <div className="text-base font-bold text-slate-900 dark:text-white">
+                Manual Verification Queue is Clear
+              </div>
+              <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1 max-w-md mx-auto">
+                All edge camera detections meet the 85% automated confidence threshold. No plates currently pending manual verification.
+              </p>
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
               {reviewQueue.map((item) => (
-                <div key={item.id} className="p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 flex flex-col justify-between gap-3 shadow-xs">
+                <div key={item.id} className="p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 flex flex-col justify-between gap-3 shadow-xs hover:border-slate-300 dark:hover:border-slate-700 transition">
                   <div>
                     <div className="flex items-center justify-between">
-                      <span className="font-mono font-bold text-xs text-slate-900 dark:text-white">{item.id}</span>
-                      <span className="text-[11px] font-mono px-2 py-0.5 rounded bg-amber-50 dark:bg-amber-950 text-amber-700 dark:text-amber-300 font-bold border border-amber-200 dark:border-amber-800">
-                        {Math.round((item.plate_confidence || 0.74) * 100)}% OCR
+                      <span className="font-mono font-bold text-xs text-slate-900 dark:text-white">
+                        ID: {item.id}
+                      </span>
+                      <span className="text-xs font-mono px-2.5 py-0.5 rounded bg-amber-50 dark:bg-amber-950 text-amber-700 dark:text-amber-300 font-bold border border-amber-200 dark:border-amber-800">
+                        {Math.round((item.plate_confidence || 0.74) * 100)}% Match
                       </span>
                     </div>
-                    <div className="text-sm font-bold text-slate-900 dark:text-white mt-1">
-                      {item.plate_number || 'Plate Obscured'}
+
+                    <div className="text-base font-bold text-slate-900 dark:text-white font-mono mt-1.5">
+                      {item.plate_number || 'Plate Obscured / Unclear'}
                     </div>
-                    <div className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                      {item.road_name} &bull; {item.reporting_bus_id}
+
+                    <div className="text-xs text-slate-500 dark:text-slate-400 mt-1 flex items-center gap-1.5">
+                      <MapPin className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                      <span>{item.road_name} &bull; Sensor Node: {item.reporting_bus_id}</span>
                     </div>
                   </div>
 
-                  <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100 dark:border-slate-800">
+                  <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100 dark:border-slate-800">
                     <Button
                       variant="secondary"
                       size="sm"
-                      onClick={() => handleReviewAction(item.id, 'REJECT')}
+                      onClick={() => promptRejectReview(item)}
                     >
-                      Reject
+                      Dismiss Record
                     </Button>
                     <Button
                       variant="primary"
                       size="sm"
-                      onClick={() => handleReviewAction(item.id, 'ACCEPT')}
+                      onClick={() => promptApproveReview(item)}
                     >
-                      Approve e-Challan
+                      Authorize E-Challan
                     </Button>
                   </div>
                 </div>
@@ -400,19 +524,19 @@ export const IncidentList: React.FC<IncidentListProps> = ({
           )}
         </div>
       ) : viewMode === 'table' ? (
-        /* Simple Clean Table */
-        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden shadow-xs">
+        /* Operational Clean Table */
+        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden shadow-xs">
           <div className="overflow-x-auto custom-scrollbar">
             <table className="w-full text-left font-sans text-xs">
               <thead>
-                <tr className="border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950/80 text-slate-600 dark:text-slate-400 font-medium text-[11px]">
-                  <th className="py-2.5 px-4">Time</th>
-                  <th className="py-2.5 px-4">Violation Type</th>
-                  <th className="py-2.5 px-4">Plate / Vehicle</th>
-                  <th className="py-2.5 px-4">Location</th>
-                  <th className="py-2.5 px-4 text-center">Speed</th>
-                  <th className="py-2.5 px-4">Status</th>
-                  <th className="py-2.5 px-4 text-right">Action</th>
+                <tr className="border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950/80 text-slate-700 dark:text-slate-300 font-semibold text-xs">
+                  <th className="py-3 px-4">Time Logged</th>
+                  <th className="py-3 px-4">Violation / Incident</th>
+                  <th className="py-3 px-4">Plate / Vehicle Class</th>
+                  <th className="py-3 px-4">Corridor Location</th>
+                  <th className="py-3 px-4 text-center">Clocked Speed</th>
+                  <th className="py-3 px-4">Operational Status</th>
+                  <th className="py-3 px-4 text-right">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
@@ -421,9 +545,9 @@ export const IncidentList: React.FC<IncidentListProps> = ({
                     <td colSpan={7}>
                       <EmptyState
                         icon={ShieldAlert}
-                        title="No incidents found"
-                        description="Try adjusting your search query or selected filter."
-                        actionLabel="Clear Filters"
+                        title={getEmptyStateMessage().title}
+                        description={getEmptyStateMessage().desc}
+                        actionLabel="Reset Filters"
                         onAction={() => { setSearchQuery(''); setActiveCategory('ALL'); }}
                       />
                     </td>
@@ -433,6 +557,7 @@ export const IncidentList: React.FC<IncidentListProps> = ({
                     const badge = getIncidentBadge(incident.incident_type);
                     const BadgeIcon = badge.icon;
                     const statusBadge = getStatusBadge(incident.status);
+                    const StatusIcon = statusBadge.icon;
 
                     return (
                       <tr 
@@ -441,72 +566,72 @@ export const IncidentList: React.FC<IncidentListProps> = ({
                         className="hover:bg-slate-50 dark:hover:bg-slate-850/50 transition-colors cursor-pointer"
                       >
                         {/* Time */}
-                        <td className="py-3 px-4 text-slate-500 dark:text-slate-400 whitespace-nowrap font-mono text-[11px]">
+                        <td className="py-3.5 px-4 text-slate-600 dark:text-slate-400 whitespace-nowrap font-mono text-xs">
                           {incident.occurred_at}
                         </td>
 
                         {/* Type */}
-                        <td className="py-3 px-4 whitespace-nowrap">
-                          <Badge variant={badge.variant} dot size="sm" icon={<BadgeIcon className="w-3 h-3" />}>
+                        <td className="py-3.5 px-4 whitespace-nowrap">
+                          <Badge variant={badge.variant} dot size="sm" icon={<BadgeIcon className="w-3.5 h-3.5" />}>
                             {badge.label}
                           </Badge>
                         </td>
 
                         {/* Plate / Vehicle */}
-                        <td className="py-3 px-4 whitespace-nowrap">
+                        <td className="py-3.5 px-4 whitespace-nowrap">
                           {incident.plate_number ? (
                             <div className="flex items-center gap-2">
-                              <span className="font-mono font-bold text-slate-900 dark:text-white text-xs">
+                              <span className="font-mono font-bold text-slate-900 dark:text-white text-xs bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded border border-slate-200 dark:border-slate-700">
                                 {incident.plate_number}
                               </span>
                               {incident.vehicle_class && (
-                                <span className="text-[11px] text-slate-400">
+                                <span className="text-xs text-slate-500 dark:text-slate-400">
                                   ({incident.vehicle_class})
                                 </span>
                               )}
                             </div>
                           ) : (
-                            <span className="text-slate-500 dark:text-slate-400 text-xs">
-                              {incident.vehicle_class || 'Non-Vehicular'}
+                            <span className="text-slate-600 dark:text-slate-400 text-xs font-medium">
+                              {incident.vehicle_class || 'Non-Vehicular Incident'}
                             </span>
                           )}
                         </td>
 
                         {/* Location */}
-                        <td className="py-3 px-4 text-slate-700 dark:text-slate-300 max-w-xs truncate">
-                          <div className="flex items-center gap-1.5 truncate">
-                            <MapPin className="w-3 h-3 text-slate-400 shrink-0" />
+                        <td className="py-3.5 px-4 text-slate-700 dark:text-slate-300 max-w-xs truncate">
+                          <div className="flex items-center gap-1.5 truncate text-xs">
+                            <MapPin className="w-3.5 h-3.5 text-slate-400 shrink-0" />
                             <span className="truncate">{incident.road_name}</span>
                           </div>
                         </td>
 
                         {/* Speed */}
-                        <td className="py-3 px-4 text-center whitespace-nowrap font-mono">
+                        <td className="py-3.5 px-4 text-center whitespace-nowrap font-mono">
                           {incident.target_speed_kmh ? (
-                            <span className="font-semibold text-slate-800 dark:text-slate-200">
+                            <span className="font-bold text-rose-600 dark:text-rose-400 text-xs">
                               {incident.target_speed_kmh} km/h
                             </span>
                           ) : (
-                            <span className="text-slate-400">&mdash;</span>
+                            <span className="text-slate-400 text-xs">&mdash;</span>
                           )}
                         </td>
 
                         {/* Status */}
-                        <td className="py-3 px-4 whitespace-nowrap">
-                          <Badge variant={statusBadge.variant} size="sm">
+                        <td className="py-3.5 px-4 whitespace-nowrap">
+                          <Badge variant={statusBadge.variant} size="sm" icon={<StatusIcon className="w-3.5 h-3.5" />}>
                             {statusBadge.label}
                           </Badge>
                         </td>
 
                         {/* Action */}
-                        <td className="py-3 px-4 text-right whitespace-nowrap">
+                        <td className="py-3.5 px-4 text-right whitespace-nowrap">
                           <div className="flex items-center justify-end gap-1.5" onClick={e => e.stopPropagation()}>
                             {(incident.incident_type === 'HIT_AND_RUN' || incident.incident_type === 'RASH_DRIVING') && !incident.status?.includes('ESCALAT') && !incident.status?.includes('RESOLV') && (
                               <Button
                                 variant="danger"
                                 size="xs"
-                                onClick={(e) => handleQuickEscalate(incident, e)}
-                                icon={<Send className="w-3 h-3" />}
+                                onClick={(e) => promptQuickEscalate(incident, e)}
+                                icon={<Send className="w-3.5 h-3.5" />}
                               >
                                 112 PCR
                               </Button>
@@ -516,7 +641,7 @@ export const IncidentList: React.FC<IncidentListProps> = ({
                               variant="secondary"
                               size="xs"
                               onClick={() => handleOpenDossier(incident)}
-                              icon={<Eye className="w-3 h-3" />}
+                              icon={<Eye className="w-3.5 h-3.5" />}
                             >
                               Inspect
                             </Button>
@@ -532,40 +657,42 @@ export const IncidentList: React.FC<IncidentListProps> = ({
 
           {/* Pagination */}
           {filteredIncidents.length > PAGE_SIZE && (
-            <div className="flex items-center justify-between px-4 py-2.5 border-t border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950/60 text-xs text-slate-500 dark:text-slate-400">
+            <div className="flex items-center justify-between px-4 py-3 border-t border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950/60 text-xs text-slate-600 dark:text-slate-400">
               <div>
-                Showing {(currentPage - 1) * PAGE_SIZE + 1}–{Math.min(currentPage * PAGE_SIZE, filteredIncidents.length)} of {filteredIncidents.length}
+                Showing {(currentPage - 1) * PAGE_SIZE + 1}–{Math.min(currentPage * PAGE_SIZE, filteredIncidents.length)} of {filteredIncidents.length} records
               </div>
-              <div className="flex items-center gap-1">
+              <div className="flex items-center gap-1.5">
                 <button
                   onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
                   disabled={currentPage === 1}
-                  className="p-1 rounded border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 disabled:opacity-40 hover:bg-slate-50 cursor-pointer"
+                  className="p-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 disabled:opacity-40 hover:bg-slate-50 dark:hover:bg-slate-750 cursor-pointer transition"
                 >
-                  <ChevronLeft className="w-3.5 h-3.5" />
+                  <ChevronLeft className="w-4 h-4" />
                 </button>
-                <span className="px-2 font-medium">Page {currentPage} of {totalPages}</span>
+                <span className="px-2.5 font-semibold text-slate-800 dark:text-slate-200">
+                  Page {currentPage} of {totalPages}
+                </span>
                 <button
                   onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
                   disabled={currentPage === totalPages}
-                  className="p-1 rounded border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 disabled:opacity-40 hover:bg-slate-50 cursor-pointer"
+                  className="p-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 disabled:opacity-40 hover:bg-slate-50 dark:hover:bg-slate-750 cursor-pointer transition"
                 >
-                  <ChevronRight className="w-3.5 h-3.5" />
+                  <ChevronRight className="w-4 h-4" />
                 </button>
               </div>
             </div>
           )}
         </div>
       ) : (
-        /* Simple Clean Cards Grid */
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+        /* Operational Clean Cards Grid */
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5">
           {filteredIncidents.length === 0 ? (
             <div className="col-span-full">
               <EmptyState
                 icon={ShieldAlert}
-                title="No incidents found"
-                description="Try adjusting your search query or selected filter."
-                actionLabel="Clear Filters"
+                title={getEmptyStateMessage().title}
+                description={getEmptyStateMessage().desc}
+                actionLabel="Reset Filters"
                 onAction={() => { setSearchQuery(''); setActiveCategory('ALL'); }}
               />
             </div>
@@ -574,58 +701,76 @@ export const IncidentList: React.FC<IncidentListProps> = ({
               const badge = getIncidentBadge(incident.incident_type);
               const BadgeIcon = badge.icon;
               const statusBadge = getStatusBadge(incident.status);
+              const StatusIcon = statusBadge.icon;
 
               return (
                 <div
                   key={incident.id}
                   onClick={() => handleOpenDossier(incident)}
-                  className="p-4 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 transition cursor-pointer shadow-xs flex flex-col justify-between gap-3"
+                  className="p-4 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 transition cursor-pointer shadow-xs flex flex-col justify-between gap-3.5"
                 >
                   <div>
-                    <div className="flex items-center justify-between gap-2 mb-2">
-                      <Badge variant={badge.variant} dot size="sm" icon={<BadgeIcon className="w-3 h-3" />}>
+                    <div className="flex items-center justify-between gap-2 mb-2.5">
+                      <Badge variant={badge.variant} dot size="sm" icon={<BadgeIcon className="w-3.5 h-3.5" />}>
                         {badge.label}
                       </Badge>
-                      <Badge variant={statusBadge.variant} size="sm">
+                      <Badge variant={statusBadge.variant} size="sm" icon={<StatusIcon className="w-3.5 h-3.5" />}>
                         {statusBadge.label}
                       </Badge>
                     </div>
 
-                    <div className="text-sm font-bold text-slate-900 dark:text-white font-mono">
-                      {incident.plate_number || incident.vehicle_class || 'Hazard Alert'}
+                    <div className="text-base font-bold text-slate-900 dark:text-white font-mono">
+                      {incident.plate_number || incident.vehicle_class || 'Safety Hazard Alert'}
                     </div>
 
-                    <div className="text-xs text-slate-500 dark:text-slate-400 mt-1 flex items-center gap-1 truncate">
-                      <MapPin className="w-3 h-3 shrink-0 text-slate-400" />
+                    <div className="text-xs text-slate-500 dark:text-slate-400 mt-1.5 flex items-center gap-1.5 truncate">
+                      <MapPin className="w-3.5 h-3.5 shrink-0 text-slate-400" />
                       <span className="truncate">{incident.road_name}</span>
                     </div>
 
-                    <div className="text-[11px] text-slate-400 font-mono mt-1.5 flex items-center justify-between">
+                    <div className="text-xs text-slate-500 dark:text-slate-400 font-mono mt-2 flex items-center justify-between pt-1 border-t border-slate-100 dark:border-slate-800">
                       <span>{incident.occurred_at}</span>
                       {incident.target_speed_kmh ? (
-                        <span>{incident.target_speed_kmh} km/h</span>
+                        <span className="text-rose-600 dark:text-rose-400 font-bold">{incident.target_speed_kmh} km/h</span>
                       ) : null}
                     </div>
                   </div>
 
                   <div className="pt-2.5 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between gap-2" onClick={e => e.stopPropagation()}>
-                    <span className="text-[11px] text-slate-400 font-mono">
-                      {incident.reporting_bus_id}
+                    <span className="text-xs text-slate-500 dark:text-slate-400 font-mono">
+                      Node: {incident.reporting_bus_id}
                     </span>
-                    <Button
-                      variant="secondary"
-                      size="xs"
-                      onClick={() => handleOpenDossier(incident)}
-                      icon={<Eye className="w-3 h-3" />}
-                    >
-                      Inspect
-                    </Button>
+                    <div className="flex items-center gap-1.5">
+                      {(incident.incident_type === 'HIT_AND_RUN' || incident.incident_type === 'RASH_DRIVING') && !incident.status?.includes('ESCALAT') && !incident.status?.includes('RESOLV') && (
+                        <Button
+                          variant="danger"
+                          size="xs"
+                          onClick={(e) => promptQuickEscalate(incident, e)}
+                          icon={<Send className="w-3.5 h-3.5" />}
+                        >
+                          112 PCR
+                        </Button>
+                      )}
+                      <Button
+                        variant="secondary"
+                        size="xs"
+                        onClick={() => handleOpenDossier(incident)}
+                        icon={<Eye className="w-3.5 h-3.5" />}
+                      >
+                        Inspect
+                      </Button>
+                    </div>
                   </div>
                 </div>
               );
             })
           )}
         </div>
+      )}
+
+      {/* Confirmation Modal */}
+      {confirmConfig && (
+        <ConfirmationModal {...confirmConfig} />
       )}
 
       {/* Incident Dossier Modal */}
