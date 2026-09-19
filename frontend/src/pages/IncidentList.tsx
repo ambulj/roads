@@ -267,7 +267,8 @@ export const IncidentList: React.FC<IncidentListProps> = ({
 
   // Pagination State
   const [currentPage, setCurrentPage] = useState(1);
-  const PAGE_SIZE = 10;
+  const [pageSize, setPageSize] = useState<number>(25);
+  const PAGE_SIZE = pageSize;
 
   useEffect(() => {
     setCurrentPage(1);
@@ -376,7 +377,8 @@ export const IncidentList: React.FC<IncidentListProps> = ({
   };
 
   return (
-    <div className="flex-1 flex flex-col min-h-0 overflow-y-auto custom-scrollbar p-4 md:p-6 lg:p-8 space-y-4 max-w-[1600px] mx-auto w-full select-none font-sans">
+    <div className="flex-1 flex flex-col min-h-0 overflow-y-auto custom-scrollbar w-full select-none font-sans bg-[#edf1f3] dark:bg-[#090e18] text-slate-900 dark:text-slate-100 transition-colors">
+      <div className="p-4 md:p-6 lg:p-8 space-y-4 max-w-[1600px] mx-auto w-full">
       
       {/* 1. CLEAN OPERATIONAL HEADER */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-2">
@@ -692,11 +694,29 @@ export const IncidentList: React.FC<IncidentListProps> = ({
           </div>
 
           {/* Pagination */}
-          {filteredIncidents.length > PAGE_SIZE && (
-            <div className="flex items-center justify-between px-4 py-3 border-t border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950/60 text-xs text-slate-600 dark:text-slate-400">
-              <div>
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 px-4 py-3 border-t border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950/60 text-xs text-slate-600 dark:text-slate-400">
+            <div className="flex items-center gap-3">
+              <span>
                 Showing {(currentPage - 1) * PAGE_SIZE + 1}–{Math.min(currentPage * PAGE_SIZE, filteredIncidents.length)} of {filteredIncidents.length} records
+              </span>
+              <div className="flex items-center gap-1 text-[11px] font-mono">
+                <span className="text-slate-400">Rows:</span>
+                <select
+                  value={pageSize}
+                  onChange={(e) => {
+                    setPageSize(Number(e.target.value));
+                    setCurrentPage(1);
+                  }}
+                  className="px-2 py-0.5 rounded border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-semibold focus:outline-hidden cursor-pointer"
+                >
+                  <option value={10}>10</option>
+                  <option value={25}>25</option>
+                  <option value={50}>50</option>
+                  <option value={100}>100</option>
+                </select>
               </div>
+            </div>
+            {filteredIncidents.length > PAGE_SIZE && (
               <div className="flex items-center gap-1.5">
                 <button
                   onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
@@ -716,8 +736,8 @@ export const IncidentList: React.FC<IncidentListProps> = ({
                   <ChevronRight className="w-4 h-4" />
                 </button>
               </div>
-            </div>
-          )}
+            )}
+          </div>
         </div>
       ) : (
         /* Operational Clean Cards Grid */
@@ -803,6 +823,8 @@ export const IncidentList: React.FC<IncidentListProps> = ({
           )}
         </div>
       )}
+
+      </div>
 
       {/* Confirmation Modal */}
       {confirmConfig && (
