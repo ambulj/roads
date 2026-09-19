@@ -61,13 +61,16 @@ export const CommandCenter: React.FC<CommandCenterProps> = ({
 
   const activeSelectedIncident = externalSelectedIncident !== undefined ? externalSelectedIncident : localSelectedIncident;
 
-  const handleSelectIncident = (inc: TrafficIncident | null) => {
+  const handleSelectIncident = (inc: TrafficIncident | null, openModal: boolean = false) => {
     if (setExternalSelectedIncident) {
       setExternalSelectedIncident(inc);
     } else {
       setLocalSelectedIncident(inc);
     }
     if (inc) {
+      setSelectedCluster(null);
+    }
+    if (inc && openModal) {
       setIsDossierOpen(true);
     }
   };
