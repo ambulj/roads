@@ -456,10 +456,10 @@ export const FullLifecycleSimulationModal: React.FC<FullLifecycleSimulationModal
       <div className="bg-[#0B101E] border border-slate-700/80 rounded-3xl w-full max-w-5xl shadow-2xl overflow-hidden flex flex-col max-h-[95vh] text-slate-100 animate-scaleIn">
         
         {/* ── Top Header ── */}
-        <div className="px-6 py-3.5 bg-gradient-to-r from-blue-950/70 via-slate-900 to-slate-950 border-b border-slate-800 flex items-center justify-between">
+        <div className="px-6 py-3.5 bg-slate-900 border-b border-slate-800 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-blue-600/20 text-blue-400 border border-blue-500/30 flex items-center justify-center shadow-xs shrink-0">
-              <Sparkles className="w-5 h-5 text-blue-400" />
+            <div className="w-9 h-9 rounded-lg bg-blue-700 text-white flex items-center justify-center shrink-0">
+              <Sparkles className="w-5 h-5 text-amber-300" />
             </div>
             <div>
               <div className="flex items-center gap-2">
@@ -601,7 +601,7 @@ export const FullLifecycleSimulationModal: React.FC<FullLifecycleSimulationModal
 
             {/* STAGE 2 VISUAL: 3D Depth Cavity Profile & DBSCAN Fusion Animation */}
             {currentStep === 2 && (
-              <div className="w-full h-full p-5 bg-gradient-to-br from-slate-950 via-[#0B1222] to-slate-950 flex flex-col justify-between">
+              <div className="w-full h-full p-5 bg-[#0B1222] flex flex-col justify-between">
                 <div className="flex items-center justify-between border-b border-slate-800 pb-2">
                   <div className="flex items-center gap-2 font-mono text-xs text-indigo-300 font-bold">
                     <Box className="w-4 h-4 text-indigo-400" />
@@ -661,7 +661,7 @@ export const FullLifecycleSimulationModal: React.FC<FullLifecycleSimulationModal
 
             {/* STAGE 3 VISUAL: Municipal CAD Work Order & Dispatch Routing */}
             {currentStep === 3 && (
-              <div className="w-full h-full p-5 bg-gradient-to-br from-slate-950 via-[#131320] to-slate-950 flex flex-col justify-between">
+              <div className="w-full h-full p-5 bg-[#131320] flex flex-col justify-between">
                 <div className="flex items-center justify-between border-b border-slate-800 pb-2">
                   <div className="flex items-center gap-2 font-mono text-xs text-amber-300 font-bold">
                     <ClipboardList className="w-4 h-4 text-amber-400" />
@@ -747,7 +747,7 @@ export const FullLifecycleSimulationModal: React.FC<FullLifecycleSimulationModal
 
             {/* STAGE 5 VISUAL: Autonomous Re-Pass Verification & SLA Clearance */}
             {currentStep === 5 && (
-              <div className="w-full h-full p-5 bg-gradient-to-br from-slate-950 via-[#0B1A1E] to-slate-950 flex flex-col justify-between">
+              <div className="w-full h-full p-5 bg-[#0B1A1E] flex flex-col justify-between">
                 <div className="flex items-center justify-between border-b border-slate-800 pb-2">
                   <div className="flex items-center gap-2 font-mono text-xs text-emerald-300 font-bold">
                     <ShieldCheck className="w-4 h-4 text-emerald-400" />
@@ -851,7 +851,7 @@ export const FullLifecycleSimulationModal: React.FC<FullLifecycleSimulationModal
                   onClose();
                 }
               }}
-              className="px-4 py-2 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white text-xs font-bold flex items-center gap-1.5 shadow-md shadow-emerald-900/20 transition active:scale-95 cursor-pointer"
+              className="px-4 py-2 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold flex items-center gap-1.5 transition active:scale-95 cursor-pointer"
             >
               <span>{currentStep === 5 ? 'Finish & Inspect Map' : 'Next Stage'}</span>
               <ChevronRight className="w-4 h-4" />

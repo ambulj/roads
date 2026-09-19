@@ -1,4 +1,4 @@
-﻿import { defineConfig, loadEnv } from "vite";
+import { defineConfig, loadEnv } from "vite";
 import react from "@vitejs/plugin-react";
 
 // https://vite.dev/config/
@@ -22,6 +22,11 @@ export default defineConfig(({ mode }) => {
       strictPort: false, // Try next port if 5173 is busy
       proxy: {
         "/api": {
+          target: backendOrigin,
+          changeOrigin: true,
+          rewrite: (path) => path,
+        },
+        "/uploads": {
           target: backendOrigin,
           changeOrigin: true,
           rewrite: (path) => path,
@@ -57,8 +62,9 @@ export default defineConfig(({ mode }) => {
       port: 5173,
       host: "0.0.0.0",
       proxy: {
-        "/api": { target: backendOrigin, changeOrigin: true },
-        "/ws":  { target: wsOrigin, ws: true, changeOrigin: true },
+        "/api":     { target: backendOrigin, changeOrigin: true },
+        "/uploads": { target: backendOrigin, changeOrigin: true },
+        "/ws":      { target: wsOrigin, ws: true, changeOrigin: true },
       },
     },
   };

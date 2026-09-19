@@ -61,9 +61,9 @@ export const WhatsAppDispatchModal: React.FC<WhatsAppDispatchModalProps> = ({
 
   // Build authentic MoHUA/MoRTH WhatsApp Message payload
   const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${cluster.lat},${cluster.lng}`;
-  const portalUrl = `https://roadsaarthi.gov.in/#/capture?order=${cluster.cluster_code}`;
+  const portalUrl = `https://SheherSaathi.gov.in/#/capture?order=${cluster.cluster_code}`;
 
-  const messageText = `*🚨 ROADSAARTHI AUTONOMOUS EMERGENCY DISPATCH*
+  const messageText = `*🚨 SheherSaathi AUTONOMOUS EMERGENCY DISPATCH*
 *Ministry of Road Transport & Highways (MoRTH)*
 --------------------------------------------
 *Ticket Code:* ${cluster.cluster_code}
@@ -81,7 +81,7 @@ ${isHospital ? `*⚠️ CRITICAL HOSPITAL ZONE:* Near ${poiName} (+15 Priority B
 *📷 Field Repair & Evidence Upload Portal:*
 ${portalUrl}
 
-_This is an automated dispatch from RoadSaarthi Edge-AI Fleet Telemetry. Reply ACK to acknowledge receipt._`;
+_This is an automated dispatch from SheherSaathi Edge-AI Fleet Telemetry. Reply ACK to acknowledge receipt._`;
 
   // WhatsApp Web / Universal deep link
   const cleanPhone = selectedContact.phone.replace(/[^0-9]/g, "");
@@ -99,8 +99,8 @@ _This is an automated dispatch from RoadSaarthi Edge-AI Fleet Telemetry. Reply A
   const handleSimulateApiPush = async () => {
     setIsSending(true);
     try {
-      const token = typeof window !== 'undefined' ? localStorage.getItem('roadsaarthi_jwt_token') : null;
-      const role = typeof window !== 'undefined' ? (localStorage.getItem('roadsaarthi_active_role') || 'maintenance') : 'maintenance';
+      const token = typeof window !== 'undefined' ? localStorage.getItem('SheherSaathi_jwt_token') : null;
+      const role = typeof window !== 'undefined' ? (localStorage.getItem('SheherSaathi_active_role') || 'maintenance') : 'maintenance';
       const headers: Record<string, string> = {
         'Content-Type': 'application/json',
         'X-Demo-Role': role

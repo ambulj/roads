@@ -105,7 +105,7 @@ class RealRTSPWorker:
         cv2.line(frame, (1230, 670), (1160, 670), accent, 2)
         cv2.line(frame, (1230, 670), (1230, 600), accent, 2)
         
-        cv2.putText(frame, "ROADSAARTHI — MOBILE DVR MULTI-CAMERA STREAM", (50, 45), 
+        cv2.putText(frame, "SheherSaathi — MOBILE DVR MULTI-CAMERA STREAM", (50, 45), 
                     cv2.FONT_HERSHEY_SIMPLEX, 0.65, (160, 175, 190), 1, cv2.LINE_AA)
         cv2.putText(frame, f"{cfg['name']}", (50, 80), 
                     cv2.FONT_HERSHEY_SIMPLEX, 0.85, accent, 2, cv2.LINE_AA)

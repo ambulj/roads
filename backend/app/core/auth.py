@@ -32,77 +32,89 @@ def verify_password(password: str, expected_hash: str, salt: str) -> bool:
     return hmac.compare_digest(computed_hash, expected_hash)
 
 DEFAULT_GOV_PASSWORD = "chennai@2026"
-DEFAULT_SALT = "roadsaarthi_salt_2026"
+DEFAULT_SALT = "SheherSaathi_salt_2026"
 DEFAULT_PW_HASH = "c48c3acb586a71bfac26854fca1a837b984ebd03b4390ae7b19903562294ddc5"
 
-# ── Seeded Government Personas ───────────────────────────────────────────────
+# ── Seeded Government Personas (4 Official Civic Profiles + Admin Superuser) ──
 SEEDED_USERS: Dict[str, Dict[str, Any]] = {
     "admin": {
         "username": "admin",
-        "name": "Dr. R. Sundaravel, IAS",
+        "name": "State ICCC Super Administrator",
         "email": "admin@metravue.chennai.gov.in",
         "role": "admin",
-        "designation": "Chief Road Engineer & Commissioner",
-        "department": "Command & Policy Operations",
-        "agency": "Greater Chennai Corporation (GCC)",
-        "badge_number": "GCC-ADM-001",
+        "designation": "Chief Director & System Administrator",
+        "department": "Integrated Command and Control Centre (ICCC)",
+        "agency": "State Municipal Administration & Digital Hub",
+        "badge_number": "ICCC-ADMIN-001",
         "password_hash": DEFAULT_PW_HASH,
         "salt": DEFAULT_SALT,
-        "permissions": ["all"]
+        "permissions": ["all", "work_orders", "incidents", "anpr_review", "echallan", "pcr_dispatch", "vahan_compliance", "executive_oversight", "high_value_approval", "policy_reports", "command"]
     },
-    "operations": {
-        "username": "operations",
-        "name": "Capt. M. Balaji",
-        "email": "operations@metravue.chennai.gov.in",
-        "role": "operations",
-        "designation": "Chief Transport Operations Manager",
-        "department": "Intelligent Transit Monitoring",
-        "agency": "Metropolitan Transport Corp (MTC)",
-        "badge_number": "MTC-OPS-104",
-        "password_hash": DEFAULT_PW_HASH,
-        "salt": DEFAULT_SALT,
-        "permissions": ["fleet", "telemetry", "streams", "analytics"]
-    },
-    "maintenance": {
-        "username": "maintenance",
-        "name": "Er. K. Shanmugam, M.E.",
-        "email": "maintenance@metravue.chennai.gov.in",
-        "role": "maintenance",
-        "designation": "Superintending Engineer (Roads & Bridges)",
-        "department": "Bus Route Roads & Works Dept",
-        "agency": "GCC Engineering Wing",
-        "badge_number": "GCC-ENG-312",
-        "password_hash": DEFAULT_PW_HASH,
-        "salt": DEFAULT_SALT,
-        "permissions": ["work_orders", "clusters", "contractor_audits", "analytics"]
-    },
-    "safety": {
-        "username": "safety",
+    "traffic_police": {
+        "username": "traffic_police",
         "name": "S. Priya, IPS",
-        "email": "safety@metravue.chennai.gov.in",
-        "role": "safety",
+        "email": "traffic_police@metravue.chennai.gov.in",
+        "role": "traffic_police",
         "designation": "Deputy Commissioner of Police (Traffic)",
-        "department": "Traffic Enforcement & PCR Fleet",
+        "department": "Traffic Enforcement & PCR Interceptor Wing",
         "agency": "Greater Chennai Traffic Police (GCTP)",
         "badge_number": "GCTP-IPS-009",
         "password_hash": DEFAULT_PW_HASH,
         "salt": DEFAULT_SALT,
-        "permissions": ["incidents", "anpr_review", "echallan", "pcr_dispatch", "analytics"]
+        "permissions": ["incidents", "anpr_review", "echallan", "pcr_dispatch", "command"]
     },
-    "analyst": {
-        "username": "analyst",
-        "name": "V. Divya, M.Tech",
-        "email": "analyst@metravue.chennai.gov.in",
-        "role": "analyst",
-        "designation": "Senior Mobility Data Analyst",
-        "department": "Urban Transport Planning Wing",
-        "agency": "Chennai Metro Development Authority (CMDA)",
-        "badge_number": "CMDA-ANA-045",
+    "pwd_engineer": {
+        "username": "pwd_engineer",
+        "name": "Er. K. Shanmugam, M.E.",
+        "email": "pwd_engineer@metravue.chennai.gov.in",
+        "role": "pwd_engineer",
+        "designation": "Superintending Engineer (Roads & Bridges)",
+        "department": "Bus Route Roads & PWD Works Dept",
+        "agency": "GCC & Tamil Nadu Highways PWD",
+        "badge_number": "PWD-ENG-312",
         "password_hash": DEFAULT_PW_HASH,
         "salt": DEFAULT_SALT,
-        "permissions": ["read_only", "analytics"]
+        "permissions": ["work_orders", "clusters", "road_memory", "sla_enforcement", "command"]
+    },
+    "rto_officer": {
+        "username": "rto_officer",
+        "name": "Thiru M. Natarajan",
+        "email": "rto_officer@metravue.chennai.gov.in",
+        "role": "rto_officer",
+        "designation": "Regional Transport Officer (Chennai Central / TN-01)",
+        "department": "Vehicle Compliance & Registration Authority",
+        "agency": "Tamil Nadu Transport Department (RTO)",
+        "badge_number": "TN-RTO-01",
+        "password_hash": DEFAULT_PW_HASH,
+        "salt": DEFAULT_SALT,
+        "permissions": ["vahan_compliance", "confirmed_anpr", "rto_lookup", "command"]
+    },
+    "commissioner": {
+        "username": "commissioner",
+        "name": "Dr. R. Sundaravel, IAS",
+        "email": "commissioner@metravue.chennai.gov.in",
+        "role": "commissioner",
+        "designation": "Transport Commissioner & Secretary to Govt",
+        "department": "Transport & Urban Infrastructure Oversight",
+        "agency": "Government of Tamil Nadu",
+        "badge_number": "GOV-IAS-001",
+        "password_hash": DEFAULT_PW_HASH,
+        "salt": DEFAULT_SALT,
+        "permissions": ["executive_oversight", "high_value_approval", "policy_reports", "analytics", "command"]
     }
 }
+
+# Legacy Persona Aliases for Seamless Backward Compatibility
+ROLE_ALIASES: Dict[str, str] = {
+    "safety": "traffic_police",
+    "maintenance": "pwd_engineer",
+    "operations": "rto_officer"
+}
+
+def resolve_canonical_role(role_name: str) -> str:
+    """Normalizes role aliases to the 4 canonical profiles."""
+    r = (role_name or "").lower().strip()
+    return ROLE_ALIASES.get(r, r)
 
 # ── JWT Functions ────────────────────────────────────────────────────────────
 
@@ -116,7 +128,7 @@ def create_access_token(data: Dict[str, Any], expires_delta_seconds: Optional[in
         **data,
         "iat": now,
         "exp": expires,
-        "iss": "RoadSaarthi-Auth-Core"
+        "iss": "SheherSaathi-Auth-Core"
     }
     
     header_b64 = _base64url_encode(json.dumps(header, separators=(',', ':')).encode('utf-8'))
@@ -190,20 +202,24 @@ def get_current_user(
         token = authorization[7:].strip()
         payload = decode_access_token(token)
         username = payload.get("sub") or payload.get("username")
-        user = SEEDED_USERS.get(username)
+        canonical_user_key = resolve_canonical_role(username)
+        user = SEEDED_USERS.get(canonical_user_key)
         if user:
             return user
+        canonical_role = resolve_canonical_role(payload.get("role", "pwd_engineer"))
         return {
             "username": username,
-            "role": payload.get("role", "maintenance"),
+            "role": canonical_role,
             "name": payload.get("name", username),
-            "agency": payload.get("agency", "GCC Engineering Wing"),
-            "permissions": payload.get("permissions", ["work_orders", "clusters", "analytics"])
+            "agency": payload.get("agency", "GCC & TN Highways PWD"),
+            "permissions": payload.get("permissions", ["work_orders", "clusters", "command"])
         }
     
     # Fallback to demo persona if provided in header
-    if x_demo_role and x_demo_role.lower() in SEEDED_USERS:
-        return SEEDED_USERS[x_demo_role.lower()]
+    if x_demo_role:
+        canonical_key = resolve_canonical_role(x_demo_role)
+        if canonical_key in SEEDED_USERS:
+            return SEEDED_USERS[canonical_key]
         
     raise HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
@@ -222,12 +238,17 @@ def get_optional_current_user(
         return None
 
 def require_roles(allowed_roles: List[str]):
-    """Returns a dependency function verifying the user's role."""
+    """Returns a dependency function verifying the user's role against allowed roles."""
+    canonical_allowed = set()
+    for r in allowed_roles:
+        canonical_allowed.add(resolve_canonical_role(r))
+        canonical_allowed.add(r.lower())
+
     def role_checker(user: Dict[str, Any] = Depends(get_current_user)) -> Dict[str, Any]:
-        role = user.get("role")
-        if role == "admin":
-            return user  # Admin has sovereign clearance
-        if role not in allowed_roles:
+        role = resolve_canonical_role(user.get("role", ""))
+        if role == "admin" or user.get("role") == "admin":
+            return user  # Superuser Master Access to all civic subsystems
+        if role not in canonical_allowed and user.get("role") not in canonical_allowed:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail=f"Access denied: Role '{role}' does not have permission. Required role(s): {', '.join(allowed_roles)}"

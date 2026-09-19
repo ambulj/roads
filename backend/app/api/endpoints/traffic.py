@@ -271,3 +271,126 @@ def get_anpr_sample():
     from app.services.anpr_engine import anpr_engine
     return anpr_engine.detect_plate(None)
 
+@router.get("/rto/lookup/{plate_number}")
+def lookup_rto_registration(plate_number: str):
+    """
+    Simulated VAHAN / Sarathi National Vehicle Registry integration for RTO officers.
+    Cross-references plate against state jurisdiction, RTO office, RC status, HSRP compliance, and fitness cert.
+    """
+    from app.services.anpr_engine import anpr_engine, CHENNAI_RTO_CODES, STATE_CODES
+    import re
+    cleaned = re.sub(r"[^A-Z0-9]", "", plate_number.upper())
+    parsed = anpr_engine._parse_indian_plate(cleaned)
+    
+    state_code = parsed.get("state_code", "TN")
+    rto_code = parsed.get("rto_code", "01")
+    state_name = STATE_CODES.get(state_code, f"State {state_code}")
+    rto_office = CHENNAI_RTO_CODES.get(rto_code, f"{state_name} Regional Transport Office {rto_code}")
+
+    # Canonical registration records simulation
+    records_db = {
+        "TN09CB4412": {
+            "make_model": "Mahindra Scorpio-N 2.2L Diesel",
+            "class": "Motor Car / SUV (LMV)",
+            "owner": "R. Vignesh (First Owner)",
+            "registration_date": "14-Feb-2023",
+            "fitness_valid_upto": "13-Feb-2038",
+            "insurance_status": "ACTIVE (ICICI Lombard, Exp: 12-Feb-2027)",
+            "puc_status": "VALID (Green Tier, Exp: 18-Nov-2026)",
+            "hsrp_status": "COMPLIANT_INSTALLED",
+            "commercial_permit": "N/A (Private Individual)",
+            "rc_status": "ACTIVE"
+        },
+        "TN07BW9921": {
+            "make_model": "Honda City 1.5 i-VTEC V",
+            "class": "Medium Passenger Vehicle (Sedan)",
+            "owner": "FastTrack Cabs Corp Pvt Ltd",
+            "registration_date": "08-Jun-2021",
+            "fitness_valid_upto": "07-Jun-2026",
+            "insurance_status": "ACTIVE (New India Assurance)",
+            "puc_status": "VALID (Exp: 10-Oct-2026)",
+            "hsrp_status": "COMPLIANT_INSTALLED",
+            "commercial_permit": "All-Tamil Nadu Tourist Taxi Permit",
+            "rc_status": "ACTIVE"
+        },
+        "TN07BP9901": {
+            "make_model": "TVS Jupiter 125cc",
+            "class": "Two-Wheeler (MCWG)",
+            "owner": "K. Karthikeyan",
+            "registration_date": "22-Nov-2022",
+            "fitness_valid_upto": "21-Nov-2037",
+            "insurance_status": "ACTIVE (HDFC ERGO)",
+            "puc_status": "VALID (Exp: 04-Dec-2026)",
+            "hsrp_status": "COMPLIANT_INSTALLED",
+            "commercial_permit": "N/A",
+            "rc_status": "ACTIVE"
+        },
+        "TN01AX8732": {
+            "make_model": "Tata Nexon EV Max",
+            "class": "Battery Electric Vehicle (LMV)",
+            "owner": "S. Arvind Kumar",
+            "registration_date": "19-Apr-2024",
+            "fitness_valid_upto": "18-Apr-2039",
+            "insurance_status": "ACTIVE (Bajaj Allianz)",
+            "puc_status": "EXEMPT (Zero Emission Electric)",
+            "hsrp_status": "COMPLIANT_INSTALLED (Green Plate HSRP)",
+            "commercial_permit": "N/A",
+            "rc_status": "ACTIVE"
+        },
+        "TN10EA4109": {
+            "make_model": "Volkswagen Polo 1.0 TSI",
+            "class": "Motor Car / Hatchback",
+            "owner": "M. Deepa",
+            "registration_date": "11-Sep-2020",
+            "fitness_valid_upto": "10-Sep-2035",
+            "insurance_status": "ACTIVE (United India Insurance)",
+            "puc_status": "VALID (Exp: 15-Jan-2027)",
+            "hsrp_status": "COMPLIANT_INSTALLED",
+            "commercial_permit": "N/A",
+            "rc_status": "ACTIVE"
+        }
+    }
+
+    veh_details = records_db.get(cleaned, {
+        "make_model": "Commercial Transit / Private Vehicle",
+        "class": "Light Motor Vehicle (LMV)",
+        "owner": "Registered Citizen / Fleet Operator",
+        "registration_date": "10-Jan-2022",
+        "fitness_valid_upto": "09-Jan-2037",
+        "insurance_status": "ACTIVE",
+        "puc_status": "VALID",
+        "hsrp_status": "COMPLIANT_INSTALLED",
+        "commercial_permit": "State Authority Standard",
+        "rc_status": "ACTIVE"
+    })
+
+    return {
+        "plate_number": plate_number.upper(),
+        "normalized_plate": cleaned,
+        "is_valid_format": parsed.get("is_valid", True),
+        "state_code": state_code,
+        "state_name": state_name,
+        "rto_code": rto_code,
+        "rto_office": rto_office,
+        "series": parsed.get("series", "TN"),
+        "unique_number": parsed.get("unique_number", "0000"),
+        "vahan_details": veh_details
+    }
+
+class ComplianceFlagPayload(BaseModel):
+    plate_number: str
+    flag_reason: str
+    officer_notes: Optional[str] = "Marked for RTO vehicle fitness re-inspection"
+
+@router.post("/rto/flag-compliance")
+def flag_vehicle_compliance(payload: ComplianceFlagPayload):
+    """Flags a vehicle in the RTO transport registry for compliance follow-up."""
+    return {
+        "success": True,
+        "message": f"Vehicle {payload.plate_number} flagged in RTO Compliance Audit Register for: {payload.flag_reason}",
+        "plate_number": payload.plate_number,
+        "action_required": "Fitness & HSRP Re-Inspection Notice Issued",
+        "timestamp": time.strftime("%d %b, %I:%M %p")
+    }
+
+

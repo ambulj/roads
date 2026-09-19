@@ -7,6 +7,9 @@ import shutil
 import uuid
 from pathlib import Path
 from app.services.stream_manager import stream_manager
+from app.services.evidence_vault import evidence_vault
+from app.services.yolo_inference import yolo_engine
+import cv2
 
 router = APIRouter()
 
@@ -50,9 +53,9 @@ async def upload_stream_media(
 ):
     """
     Uploads a video or photo file to replace the camera feed.
-    The system processes ONLY this file for the selected bus & channel,
-    running real computer vision detection on the actual pixels,
-    looping the video continuously or serving the photo continuously.
+    Saves temporary raw media to uploads/temp/ (with auto TTL cleanup).
+    Runs real-time DPDP face blurring and neural YOLO detection,
+    permanently capturing verified evidence in the Evidence Vault.
     """
     filename = file.filename or "upload"
     ext = os.path.splitext(filename)[1].lower()
@@ -70,20 +73,53 @@ async def upload_stream_media(
             detail=f"Unsupported file format '{ext}'. Supported video formats: MP4, MOV, AVI, WEBM. Supported images: JPG, PNG, WEBP."
         )
 
-    file_id = uuid.uuid4().hex[:8]
-    safe_name = f"{file_id}_{filename.replace(' ', '_')}"
-    target_path = UPLOAD_DIR / safe_name
+    file_bytes = await file.read()
+    temp_path = evidence_vault.save_temp_upload(file_bytes, filename)
     
-    with open(target_path, "wb") as buffer:
-        shutil.copyfileobj(file.file, buffer)
-        
+    # Run instant keyframe perception on the uploaded media
+    annotated_b64 = None
+    evidence_url = None
+    evidence_id = None
+    detections = []
+    
+    try:
+        if media_type == "image":
+            nparr = np.frombuffer(file_bytes, np.uint8)
+            img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+            if img is not None:
+                detect_res = yolo_engine.detect_road_hazards(img, channel=channel, burn_overlay=True)
+                annotated_b64 = detect_res.get("annotated_b64")
+                evidence_url = detect_res.get("evidence_url")
+                evidence_id = detect_res.get("evidence_id")
+                detections = detect_res.get("detections", [])
+        elif media_type == "video":
+            cap = cv2.VideoCapture(str(temp_path))
+            if cap.isOpened():
+                ret, frame = cap.read()
+                if ret and frame is not None:
+                    detect_res = yolo_engine.detect_road_hazards(frame, channel=channel, burn_overlay=True)
+                    annotated_b64 = detect_res.get("annotated_b64")
+                    evidence_url = detect_res.get("evidence_url")
+                    evidence_id = detect_res.get("evidence_id")
+                    detections = detect_res.get("detections", [])
+                cap.release()
+    except Exception as e:
+        print(f"[STREAMS UPLOAD] Instant perception warning: {e}")
+
     result = stream_manager.configure_uploaded_media(
         bus_id=bus_id,
-        file_path=str(target_path),
+        file_path=str(temp_path),
         media_type=media_type,
         channel=channel,
         auto_ingest=auto_ingest
     )
+    
+    if isinstance(result, dict):
+        result["annotated_b64"] = annotated_b64
+        result["evidence_url"] = evidence_url
+        result["evidence_id"] = evidence_id
+        result["detections"] = detections
+
     return result
 
 @router.post("/reset/{bus_id}")

@@ -43,7 +43,7 @@ export const LoginPortal: React.FC<LoginPortalProps> = ({ onLoginSuccess }) => {
 
     try {
       await loginWithCredentials(emailInput.trim(), passwordInput, rememberMe);
-      setAuthFeedback({ type: 'success', message: 'Clearance verified! Entering RoadSaarthi Command Center...' });
+      setAuthFeedback({ type: 'success', message: 'Clearance verified! Entering SheherSaathi Command Center...' });
       setTimeout(() => {
         setIsAuthenticating(false);
         if (onLoginSuccess) {
@@ -66,15 +66,15 @@ export const LoginPortal: React.FC<LoginPortalProps> = ({ onLoginSuccess }) => {
       <div className="absolute inset-0 bg-[linear-gradient(to_right,#1f293d_1px,transparent_1px),linear-gradient(to_bottom,#1f293d_1px,transparent_1px)] bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_0%,#000_70%,transparent_100%)] opacity-25 pointer-events-none" />
 
       {/* Top Municipal Bar */}
-      <header className="relative z-10 border-b border-slate-800/80 bg-slate-950/60 backdrop-blur-md px-4 sm:px-8 py-3.5 flex items-center justify-between">
+      <header className="relative z-10 border-b border-slate-800 bg-slate-950 px-4 sm:px-8 py-3.5 flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-blue-600 to-indigo-700 flex items-center justify-center text-white shadow-lg shadow-blue-500/20 border border-blue-400/30">
+          <div className="w-9 h-9 rounded-lg bg-blue-700 flex items-center justify-center text-white border border-blue-600">
             <BusFront className="w-5 h-5" />
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <span className="font-extrabold text-sm sm:text-base tracking-tight text-white">ROADSAARTHI</span>
-              <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-400 border border-blue-500/30">
+              <span className="font-extrabold text-sm sm:text-base tracking-tight text-white">SheherSaathi</span>
+              <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-slate-800 text-blue-400 border border-slate-700">
                 PROD v2.6.0
               </span>
             </div>
@@ -96,12 +96,12 @@ export const LoginPortal: React.FC<LoginPortalProps> = ({ onLoginSuccess }) => {
 
       {/* Main Authentication Container: Centered Clean Government Portal */}
       <main className="relative z-10 flex-1 max-w-md w-full mx-auto px-4 sm:px-6 py-10 flex flex-col justify-center">
-        <div className="bg-gradient-to-b from-slate-900/95 to-slate-950/95 border border-slate-800 rounded-3xl p-6 sm:p-8 shadow-2xl backdrop-blur-xl relative overflow-hidden">
+        <div className="bg-slate-900 border border-slate-800 rounded-xl p-6 sm:p-8 shadow-xl relative overflow-hidden">
           
           {/* Form Header */}
-          <div className="flex items-center justify-between border-b border-slate-800/80 pb-4 mb-6">
+          <div className="flex items-center justify-between border-b border-slate-800 pb-4 mb-6">
             <div className="flex items-center gap-3">
-              <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-700 border border-blue-400/40 flex items-center justify-center text-white shadow-lg shadow-blue-600/20">
+              <div className="w-10 h-10 rounded-lg bg-blue-700 border border-blue-600 flex items-center justify-center text-white">
                 <Lock className="w-5 h-5" />
               </div>
               <div>
@@ -213,7 +213,7 @@ export const LoginPortal: React.FC<LoginPortalProps> = ({ onLoginSuccess }) => {
             <button
               type="submit"
               disabled={isAuthenticating}
-              className="w-full py-3.5 rounded-xl bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold text-xs uppercase tracking-wider shadow-lg shadow-blue-600/30 transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 mt-2"
+              className="w-full py-3 rounded-lg bg-blue-700 hover:bg-blue-800 text-white font-bold text-xs uppercase tracking-wider transition flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 mt-2 shadow-xs"
             >
               {isAuthenticating ? (
                 <>

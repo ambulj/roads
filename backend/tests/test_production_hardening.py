@@ -19,41 +19,41 @@ class TestProductionHardening(unittest.TestCase):
 
     # ── 1. AUTHENTICATION & RBAC ─────────────────────────────────────────────
     def test_01_auth_token_issuance_and_me(self):
-        # Test valid login for maintenance engineer
-        res = client.post("/api/auth/login", json={"role": "maintenance"})
+        # Test valid login for PWD engineer
+        res = client.post("/api/auth/login", json={"role": "pwd_engineer"})
         self.assertEqual(res.status_code, 200)
         data = res.json()
         self.assertIn("access_token", data)
-        self.assertEqual(data["user"]["role"], "maintenance")
+        self.assertEqual(data["user"]["role"], "pwd_engineer")
         token = data["access_token"]
 
         # Test /api/auth/me with Bearer token
         res_me = client.get("/api/auth/me", headers={"Authorization": f"Bearer {token}"})
         self.assertEqual(res_me.status_code, 200)
-        self.assertEqual(res_me.json()["role"], "maintenance")
+        self.assertEqual(res_me.json()["role"], "pwd_engineer")
 
     def test_02_rbac_work_order_protection(self):
         # 1. Unauthenticated mutation should fail with 401
         res_unauth = client.patch("/api/work-orders/cl-0001/status", json={"status": "in_progress"})
         self.assertEqual(res_unauth.status_code, 401)
 
-        # 2. Login as read-only analyst -> 403 Forbidden
-        res_analyst = client.post("/api/auth/login", json={"role": "analyst"})
-        token_analyst = res_analyst.json()["access_token"]
+        # 2. Login as RTO officer (not authorized for PWD work orders) -> 403 Forbidden
+        res_rto = client.post("/api/auth/login", json={"role": "rto_officer"})
+        token_rto = res_rto.json()["access_token"]
         res_forbidden = client.patch(
             "/api/work-orders/cl-0001/status", 
             json={"status": "in_progress"},
-            headers={"Authorization": f"Bearer {token_analyst}"}
+            headers={"Authorization": f"Bearer {token_rto}"}
         )
         self.assertEqual(res_forbidden.status_code, 403)
 
-        # 3. Login as maintenance engineer -> 200 OK
-        res_maint = client.post("/api/auth/login", json={"role": "maintenance"})
-        token_maint = res_maint.json()["access_token"]
+        # 3. Login as PWD engineer -> 200 OK
+        res_pwd = client.post("/api/auth/login", json={"role": "pwd_engineer"})
+        token_pwd = res_pwd.json()["access_token"]
         res_ok = client.patch(
             "/api/work-orders/cl-0001/status", 
             json={"status": "in_progress", "field_notes": "Crew mobilized"},
-            headers={"Authorization": f"Bearer {token_maint}"}
+            headers={"Authorization": f"Bearer {token_pwd}"}
         )
         self.assertEqual(res_ok.status_code, 200)
 

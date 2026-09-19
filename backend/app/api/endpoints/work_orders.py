@@ -83,11 +83,11 @@ def list_work_orders(
     ]
 
 @router.patch("/{order_id}/status")
-async def update_status(
+async def update_work_order_status(
     order_id: str,
     payload: WorkOrderUpdate,
     db: Session = Depends(get_db),
-    current_user: Dict[str, Any] = Depends(require_roles(["admin", "maintenance", "operations", "safety"]))
+    current_user: Dict[str, Any] = Depends(require_roles(["pwd_engineer", "maintenance"]))
 ):
     """Updates work order repair status directly in persistent DB."""
     now_str = datetime.datetime.now(datetime.timezone.utc).strftime("%d %b, %I:%M %p")
@@ -185,7 +185,7 @@ def export_csv(db: Session = Depends(get_db)):
     return Response(
         content=csv_data,
         media_type="text/csv",
-        headers={"Content-Disposition": "attachment; filename=roadsaarthi_pwd_dispatch.csv"}
+        headers={"Content-Disposition": "attachment; filename=SheherSaathi_pwd_dispatch.csv"}
     )
 
 

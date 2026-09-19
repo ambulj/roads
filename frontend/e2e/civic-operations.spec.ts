@@ -31,7 +31,7 @@ test.describe('Civic operations safeguards', () => {
     await page.getByTitle('Toggle navigation sidebar').click();
     await expect(page.getByTitle('Expand sidebar (S)')).toBeVisible();
     await page.getByTitle('Expand sidebar (S)').click();
-    await page.getByRole('button', { name: 'RoadSaarthi command center' }).click();
+    await page.getByRole('button', { name: 'SheherSaathi command center' }).click();
     await expect(page).toHaveURL(/#\/command/);
     await page.getByTitle(/Search buses, roads, hazards/).click();
     await expect(page.getByText(/Command Palette|Search Command Center/i).first()).toBeVisible();

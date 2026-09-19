@@ -82,7 +82,7 @@ class EdgeSyncEngine:
     def process_edge_buffer_sync(self, payload: EdgeBufferSyncPayload) -> EdgeSyncResult:
         """
         Receives a compressed batch of buffered readings from a bus arriving at a depot or reconnecting.
-        Ingests the data into RoadSaarthi database, triggers DBSCAN deduplication,
+        Ingests the data into SheherSaathi database, triggers DBSCAN deduplication,
         and computes bandwidth reduction ratios.
         """
         from app.storage.mock_database import store

@@ -1,4 +1,4 @@
-// Procedural Tactical Audio Engine for RoadSaarthi Command Center
+// Procedural Tactical Audio Engine for SheherSaathi Command Center
 // Uses native Web Audio API for zero-latency, zero-dependency, offline-ready tactical alerts
 
 class AudioAlertEngine {
@@ -7,7 +7,7 @@ class AudioAlertEngine {
 
   constructor() {
     try {
-      const saved = localStorage.getItem('roadsaarthi_sound_muted');
+      const saved = localStorage.getItem('SheherSaathi_sound_muted');
       if (saved !== null) {
         this.isMuted = saved === 'true';
       }
@@ -29,7 +29,7 @@ class AudioAlertEngine {
   public toggleMute(): boolean {
     this.isMuted = !this.isMuted;
     try {
-      localStorage.setItem('roadsaarthi_sound_muted', String(this.isMuted));
+      localStorage.setItem('SheherSaathi_sound_muted', String(this.isMuted));
     } catch {}
     if (!this.isMuted) {
       this.playConsensusChime();

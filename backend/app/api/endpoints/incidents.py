@@ -425,7 +425,7 @@ def get_incident_statutory_dossier(incident_id: str, db: Session = Depends(get_d
         <div class="footer-sig">
             <div class="sig-block">
                 <div>[SYSTEM ELECTRONIC SEAL]</div>
-                <div style="font-weight: bold; margin-top: 4px;">RoadSaarthi Multi-Channel NPU</div>
+                <div style="font-weight: bold; margin-top: 4px;">SheherSaathi Multi-Channel NPU</div>
                 <div>Automated Statutory Engine</div>
             </div>
             <div class="sig-block">

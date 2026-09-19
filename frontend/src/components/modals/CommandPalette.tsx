@@ -177,7 +177,7 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
             <span><kbd className="font-mono">↵</kbd> select</span>
             <span><kbd className="font-mono">Esc</kbd> close</span>
           </div>
-          <span className="text-[11px] text-blue-600 dark:text-blue-400 font-semibold">RoadSaarthi</span>
+          <span className="text-[11px] text-blue-600 dark:text-blue-400 font-semibold">SheherSaathi</span>
         </div>
       </div>
     </div>

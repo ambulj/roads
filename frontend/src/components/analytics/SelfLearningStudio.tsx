@@ -119,8 +119,8 @@ export const SelfLearningStudio: React.FC = () => {
       {/* Header Banner */}
       <div className="flex flex-wrap items-center justify-between gap-4 pb-6 border-b border-slate-800 relative z-10">
         <div className="flex items-center gap-3">
-          <div className="p-3 bg-gradient-to-br from-cyan-500/20 to-purple-500/20 border border-cyan-500/40 rounded-xl">
-            <Brain className="w-6 h-6 text-cyan-400 animate-pulse" />
+          <div className="p-3 bg-slate-800 border border-slate-700 rounded-xl">
+            <Brain className="w-6 h-6 text-blue-400 animate-pulse" />
           </div>
           <div>
             <div className="flex items-center gap-2">
@@ -157,7 +157,7 @@ export const SelfLearningStudio: React.FC = () => {
             size="sm"
             onClick={handleRetrain}
             disabled={isRetraining}
-            className="bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white font-semibold shadow-lg shadow-cyan-500/20"
+            className="bg-blue-700 hover:bg-blue-800 text-white font-semibold"
           >
             <Zap className={`w-4 h-4 mr-1.5 ${isRetraining ? 'animate-spin text-amber-300' : ''}`} />
             {isRetraining ? "Retraining Model..." : "Trigger Retraining Cycle"}

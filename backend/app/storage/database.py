@@ -22,7 +22,7 @@ if os.path.exists(_ENV_PATH):
     load_dotenv(_ENV_PATH)
 
 # ── SQLite path: always relative to backend directory ───────────────────────
-_SQLITE_FILE = os.path.join(_BACKEND_DIR, "roadsaarthi.db")
+_SQLITE_FILE = os.path.join(_BACKEND_DIR, "SheherSaathi.db")
 _SQLITE_URL  = f"sqlite:///{_SQLITE_FILE}"
 
 # ── Determine which database to use ─────────────────────────────────────────
@@ -149,6 +149,7 @@ def init_db():
                 db.add(DBFleetNode(**bus_dict))
 
         # ── Seed traffic incidents ────────────────────────────────────────────
+        # ── Seed traffic incidents: Exactly ONE of each critical type ──────────
         if db.query(DBTrafficIncident).count() == 0:
             initial_incidents = [
                 {
@@ -162,75 +163,142 @@ def init_db():
                     "target_speed_kmh": 78.5,
                     "is_intercepted": False,
                     "intercepted_by_bus_id": None,
-                    "snapshot_url": None,
+                    "snapshot_url": "https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?w=600&auto=format&fit=crop&q=80",
                     "road_name": "GST Road (NH-32) near Airport Flyover",
                     "lat": 12.9850, "lng": 80.1650,
                     "occurred_at": "5 Sept, 05:12 am",
                     "status": "ACTIVE_ALERT",
                     "review_status": "AUTO_ADMISSIBLE",
                     "dispatch_status": "PCR_DISPATCHED",
-                    "channel": 2
+                    "channel": 2,
+                    "description": "High-speed collision followed by non-stop evasion towards Airport Flyover."
                 },
                 {
                     "id": "inc-002",
                     "reporting_bus_id": "PATROL-VAN-12",
                     "incident_type": "RASH_DRIVING",
                     "plate_number": "TN-02-AZ-8819",
-                    "plate_confidence": 0.92,
+                    "plate_confidence": 0.94,
                     "vehicle_color": "Black",
                     "vehicle_class": "Sedan",
-                    "target_speed_kmh": 86.0,
-                    "is_intercepted": True,
-                    "intercepted_by_bus_id": "BUS-TN02-3891",
-                    "snapshot_url": None,
-                    "road_name": "Anna Salai (Mount Road) CBD Corridor",
-                    "lat": 13.0550, "lng": 80.2450,
-                    "occurred_at": "5 Sept, 04:30 am",
-                    "status": "DISPATCHED",
+                    "target_speed_kmh": 92.0,
+                    "is_intercepted": False,
+                    "intercepted_by_bus_id": None,
+                    "snapshot_url": "https://images.unsplash.com/photo-1568605117036-5fe5e7bab0b7?w=600&auto=format&fit=crop&q=80",
+                    "road_name": "Guindy Kathipara Grade Junction",
+                    "lat": 13.0078, "lng": 80.2045,
+                    "occurred_at": "5 Sept, 05:30 am",
+                    "status": "ACTIVE_ALERT",
                     "review_status": "AUTO_ADMISSIBLE",
                     "dispatch_status": "ECHALLAN_ISSUED",
-                    "channel": 2
+                    "channel": 2,
+                    "description": "Aggressive tailgating and high-speed zigzag overtaking clocked at 92 km/h."
                 },
                 {
                     "id": "inc-003",
                     "reporting_bus_id": "BUS-TN02-3891",
                     "incident_type": "VULNERABLE_PEDESTRIAN",
                     "plate_number": "TN-07-BP-9901",
-                    "plate_confidence": 0.86, # Low confidence -> triggers review queue
+                    "plate_confidence": 0.88,
                     "vehicle_color": "Silver",
                     "vehicle_class": "Two-Wheeler",
                     "target_speed_kmh": 32.0,
                     "is_intercepted": False,
                     "intercepted_by_bus_id": None,
-                    "snapshot_url": None,
-                    "road_name": "Usman Road D.A.V. School Junction",
+                    "snapshot_url": "https://images.unsplash.com/photo-1570125909232-eb263c188f7e?w=600&auto=format&fit=crop&q=80",
+                    "road_name": "Usman Road D.A.V. School Link",
                     "lat": 13.0425, "lng": 80.2345,
                     "occurred_at": "5 Sept, 07:45 am",
                     "status": "ACTIVE_ALERT",
                     "review_status": "PENDING_REVIEW",
                     "dispatch_status": "UNASSIGNED",
-                    "channel": 3
+                    "channel": 3,
+                    "description": "School children crossing alert: Vehicle failed to yield right-of-way in school zone."
                 },
                 {
                     "id": "inc-004",
                     "reporting_bus_id": "BUS-TN22-5501",
                     "incident_type": "WATERLOGGING",
                     "plate_number": None,
-                    "plate_confidence": 0.89,
+                    "plate_confidence": 0.91,
                     "vehicle_color": None,
-                    "vehicle_class": "Flood Level 18cm",
+                    "vehicle_class": "Critical Flood Pool",
                     "target_speed_kmh": 0.0,
                     "is_intercepted": False,
                     "intercepted_by_bus_id": None,
-                    "snapshot_url": None,
-                    "road_name": "Velachery Underpass Waterlogging",
+                    "snapshot_url": "https://images.unsplash.com/photo-1515694346937-94d85e41e6f0?w=600&auto=format&fit=crop&q=80",
+                    "road_name": "Velachery Main Road Underpass Link",
                     "lat": 12.9790, "lng": 80.2190,
                     "occurred_at": "4 Sept, 11:20 pm",
                     "status": "ACTIVE_ALERT",
                     "review_status": "AUTO_ADMISSIBLE",
                     "dispatch_status": "UNASSIGNED",
-                    "water_depth_cm": 18.0,
-                    "channel": 1
+                    "water_depth_cm": 28.0,
+                    "channel": 1,
+                    "description": "Stormwater accumulation >28cm causing severe hydroplaning and traffic bottleneck."
+                },
+                {
+                    "id": "inc-005",
+                    "reporting_bus_id": "BUS-TN04-7719",
+                    "incident_type": "OPEN_MANHOLE",
+                    "plate_number": None,
+                    "plate_confidence": 0.95,
+                    "vehicle_color": None,
+                    "vehicle_class": "Exposed Drain Void (Dia: 65cm)",
+                    "target_speed_kmh": 0.0,
+                    "is_intercepted": False,
+                    "intercepted_by_bus_id": None,
+                    "snapshot_url": "https://images.unsplash.com/photo-1578632767115-351597cf2477?w=600&auto=format&fit=crop&q=80",
+                    "road_name": "Poonamallee High Road (Near Central Station)",
+                    "lat": 13.0827, "lng": 80.2707,
+                    "occurred_at": "5 Sept, 05:48 am",
+                    "status": "ACTIVE_ALERT",
+                    "review_status": "AUTO_ADMISSIBLE",
+                    "dispatch_status": "UNASSIGNED",
+                    "channel": 1,
+                    "description": "Missing cast-iron manhole cover creating immediate fatality hazard for two-wheelers."
+                },
+                {
+                    "id": "inc-006",
+                    "reporting_bus_id": "BUS-TN02-3891",
+                    "incident_type": "ZEBRA_CROSSING_ENCROACHMENT",
+                    "plate_number": "TN-01-AX-8732",
+                    "plate_confidence": 0.95,
+                    "vehicle_color": "Pearl White",
+                    "vehicle_class": "Compact SUV",
+                    "target_speed_kmh": 0.0,
+                    "is_intercepted": True,
+                    "intercepted_by_bus_id": "BUS-TN02-3891",
+                    "snapshot_url": "https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?w=600&auto=format&fit=crop&q=80",
+                    "road_name": "Anna Salai near Thousand Lights Crossing",
+                    "lat": 13.0604, "lng": 80.2520,
+                    "occurred_at": "5 Sept, 05:18 am",
+                    "status": "RESOLVED",
+                    "review_status": "AUTO_ADMISSIBLE",
+                    "dispatch_status": "ECHALLAN_ISSUED",
+                    "channel": 3,
+                    "description": "Vehicle stopped squarely over marked zebra walkway during pedestrian walk signal."
+                },
+                {
+                    "id": "inc-007",
+                    "reporting_bus_id": "BUS-TN22-5501",
+                    "incident_type": "BUS_LANE_ENCROACHMENT",
+                    "plate_number": "TN-10-EA-4109",
+                    "plate_confidence": 0.97,
+                    "vehicle_color": "Red",
+                    "vehicle_class": "Hatchback",
+                    "target_speed_kmh": 46.0,
+                    "is_intercepted": True,
+                    "intercepted_by_bus_id": "BUS-TN22-5501",
+                    "snapshot_url": "https://images.unsplash.com/photo-1549399542-7e3f8b79c341?w=600&auto=format&fit=crop&q=80",
+                    "road_name": "OMR IT Expressway (Tidel Park BRTS Lane)",
+                    "lat": 12.9719, "lng": 80.2500,
+                    "occurred_at": "5 Sept, 05:42 am",
+                    "status": "RESOLVED",
+                    "review_status": "AUTO_ADMISSIBLE",
+                    "dispatch_status": "ECHALLAN_ISSUED",
+                    "channel": 3,
+                    "description": "Unauthorized private vehicle obstruction inside designated transit bus right-of-way."
                 }
             ]
             for inc in initial_incidents:

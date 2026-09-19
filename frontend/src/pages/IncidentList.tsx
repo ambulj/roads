@@ -247,7 +247,7 @@ export const IncidentList: React.FC<IncidentListProps> = ({
   const handleQuickEscalate = (incident: TrafficIncident, e?: React.MouseEvent) => {
     if (e) e.stopPropagation();
     if (!canEscalatePCR) {
-      showWarningToast('Insufficient Role Permissions', 'Only Public Safety Officers or Admins can authorize police intercept dispatches.');
+      showWarningToast('Insufficient Clearance', 'PCR / 112 emergency interceptor dispatch is restricted to Traffic Police (City Wing).');
       return;
     }
     if (onUpdateStatus) {

@@ -1,4 +1,4 @@
-﻿# RoadSaarthi — Municipal Road Intelligence Platform
+﻿# SheherSaathi — Municipal Road Intelligence Platform
 
 > Edge-AI & WebGIS CAD System for Government of India road safety and maintenance operations.  
 > Ministry of Road Transport & Highways (MoRTH) · Version 2.6.0
@@ -11,7 +11,7 @@
 
 ### Option A — One-Click Launch (Windows)
 
-Double-click **`run_roadsaarthi.bat`** (or right-click → Run with PowerShell on `run_roadsaarthi.ps1`).
+Double-click **`run_SheherSaathi.bat`** (or right-click → Run with PowerShell on `run_SheherSaathi.ps1`).
 
 The launcher will automatically:
 1. Detect Python and Node.js
@@ -100,7 +100,7 @@ Copy `backend/.env.example` → `backend/.env` and `frontend/.env.example` → `
 ## Project Structure
 
 ```
-roadsaarthi/
+SheherSaathi/
 ├── backend/                    # FastAPI Python backend
 │   ├── app/
 │   │   ├── api/                # REST & WebSocket routes
@@ -109,7 +109,7 @@ roadsaarthi/
 │   │   ├── services/           # Business logic
 │   │   ├── spatial/            # DBSCAN clustering
 │   │   └── storage/            # Database layer
-│   ├── roadsaarthi.db          # SQLite database (auto-created)
+│   ├── SheherSaathi.db          # SQLite database (auto-created)
 │   ├── requirements.txt        # Python dependencies
 │   ├── .env                    # Local config (not committed)
 │   ├── .env.example            # Config template (committed)
@@ -127,8 +127,8 @@ roadsaarthi/
 │   └── vite.config.ts          # Build & proxy config
 │
 ├── docker-compose.yml          # Docker Compose (optional)
-├── run_roadsaarthi.bat         # Windows one-click launcher (CMD)
-├── run_roadsaarthi.ps1         # Windows one-click launcher (PowerShell)
+├── run_SheherSaathi.bat         # Windows one-click launcher (CMD)
+├── run_SheherSaathi.ps1         # Windows one-click launcher (PowerShell)
 └── .gitignore                  # Git ignore rules
 ```
 

@@ -2,7 +2,7 @@ import os
 from typing import List
 
 class Settings:
-    PROJECT_NAME: str = "RoadSaarthi — Mobile Urban Road Intelligence"
+    PROJECT_NAME: str = "SheherSaathi — Mobile Urban Road & Civic Intelligence"
     VERSION: str = "2.6.0-PROD"
     API_V1_STR: str = "/api"
     
@@ -27,7 +27,7 @@ class Settings:
     SYNTHETIC_INTERVAL_SECONDS: int = int(os.getenv("SYNTHETIC_INTERVAL_SECONDS", "300"))
 
     # Authentication & Security
-    JWT_SECRET_KEY: str = os.getenv("JWT_SECRET_KEY", "roadsaarthi-sovereign-gov-secret-key-2026")
+    JWT_SECRET_KEY: str = os.getenv("JWT_SECRET_KEY", "SheherSaathi-sovereign-gov-secret-key-2026")
     JWT_ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "1440")) # 24 hours
 

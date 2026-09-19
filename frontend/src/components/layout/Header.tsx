@@ -17,7 +17,8 @@ import {
   Keyboard,
   Sparkles,
   KeyRound,
-  ShieldCheck
+  ShieldCheck,
+  UploadCloud
 } from "lucide-react";
 import { ThemeToggle } from "../common/ThemeToggle";
 import { LanguageToggle } from "../common/LanguageToggle";
@@ -42,12 +43,12 @@ interface HeaderProps {
   onOpenBriefModal?: () => void;
   onTriggerDedup?: () => void;
   onOpenAuthModal?: () => void;
-  onOpenInterventionModal?: () => void;
   onOpenStreamModelModal?: () => void;
   onOpenDocumentModal?: () => void;
   onOpenShortcutsModal?: () => void;
   onOpenSensorFusionModal?: () => void;
   onOpenLifecycleDemo?: () => void;
+  onOpenUploadModal?: () => void;
   incidents?: TrafficIncident[];
   onSelectIncident?: (incident: TrafficIncident) => void;
 }
@@ -59,12 +60,12 @@ export const Header: React.FC<HeaderProps> = ({
   onToggleSidebar,
   activeNodesCount,
   onOpenAuthModal,
-  onOpenInterventionModal,
   onOpenStreamModelModal,
   onOpenDocumentModal,
   onOpenShortcutsModal,
   onOpenSensorFusionModal,
   onOpenLifecycleDemo,
+  onOpenUploadModal,
   incidents = [],
   onSelectIncident
 }) => {
@@ -136,7 +137,7 @@ export const Header: React.FC<HeaderProps> = ({
         {/* Brand Logo & Name */}
         <button
           onClick={() => onNavigate("command")}
-          aria-label="RoadSaarthi command center"
+          aria-label="SheherSaathi command center"
           className="group flex items-center gap-2.5 text-left shrink-0"
         >
           <span className="grid h-9 w-9 place-items-center rounded-lg bg-[#252a3a] text-[#f5c552] shadow-[2px_2px_0_#f5c552] dark:bg-[#f5c552] dark:text-[#20232a]">
@@ -144,10 +145,7 @@ export const Header: React.FC<HeaderProps> = ({
           </span>
           <span className="hidden min-[480px]:block">
             <span className="block font-serif text-[16px] font-bold leading-none tracking-tight">
-              RoadSaarthi
-            </span>
-            <span className="mt-0.5 block font-mono text-[9px] uppercase tracking-[.14em] text-[#737783] dark:text-[#9da0aa]">
-              Chennai Intelligence
+              SheherSaathi
             </span>
           </span>
         </button>
@@ -169,26 +167,17 @@ export const Header: React.FC<HeaderProps> = ({
 
         {/* Right Header Navigation & Actions */}
         <div className="ml-auto flex items-center gap-2">
-          {/* Live System Clock */}
-          <LiveClock className="hidden lg:flex text-xs font-mono text-slate-500" />
-
-          {/* End-to-End Simulation Demo Button */}
-          {onOpenLifecycleDemo && (
+          {/* Universal AI Upload & Detect Button */}
+          {onOpenUploadModal && (
             <button
-              onClick={onOpenLifecycleDemo}
-              title="Run End-to-End Interactive Civic Lifecycle Simulation (Bus -> Verification -> Re-Pass)"
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white text-xs font-bold shadow-sm shadow-blue-900/20 transition active:scale-95 cursor-pointer"
+              onClick={onOpenUploadModal}
+              title="Upload Custom Road Video/Photo for Real AI Defect Detection & Ingest"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold shadow-xs transition active:scale-95 cursor-pointer"
             >
-              <Sparkles className="w-3.5 h-3.5 text-amber-300" />
-              <span className="hidden sm:inline">Interactive Demo</span>
+              <UploadCloud className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">Upload &amp; Detect</span>
             </button>
           )}
-
-          {/* Active Nodes Status */}
-          <div className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 text-xs font-mono">
-            <span className="w-2 h-2 rounded-full bg-emerald-500" />
-            <span className="text-slate-700 dark:text-slate-300 font-semibold">{activeNodesCount || 5} Buses Active</span>
-          </div>
 
           {/* Notification Center */}
           <div className="relative">
@@ -199,7 +188,7 @@ export const Header: React.FC<HeaderProps> = ({
             >
               <Bell className="w-4 h-4" />
               {unreadAlertsCount > 0 && (
-                <span className="absolute top-1 right-1 w-2 h-2 rounded-full bg-rose-500" />
+                <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-rose-500" />
               )}
             </button>
 
@@ -217,9 +206,6 @@ export const Header: React.FC<HeaderProps> = ({
             )}
           </div>
 
-          {/* Language Toggle */}
-          <LanguageToggle />
-
           {/* Theme Toggle */}
           <ThemeToggle />
 
@@ -227,16 +213,13 @@ export const Header: React.FC<HeaderProps> = ({
           <div className="relative" ref={profileMenuRef}>
             <button
               onClick={() => setIsProfileMenuOpen((p) => !p)}
-              className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg border border-slate-200 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-800 transition text-xs font-medium cursor-pointer"
+              className="flex items-center gap-1.5 p-1 rounded-lg border border-slate-200 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-800 transition text-xs font-medium cursor-pointer"
+              title={`${user.name} (${getRoleBadgeLabel(user.role)})`}
             >
-              <div className="w-6 h-6 rounded-full bg-blue-600 text-white flex items-center justify-center font-bold text-[11px]">
+              <div className="w-7 h-7 rounded-lg bg-slate-800 dark:bg-slate-700 text-white flex items-center justify-center font-bold text-[11px]">
                 {user.name.charAt(0)}
               </div>
-              <div className="hidden md:block text-left leading-none">
-                <div className="font-bold text-slate-800 dark:text-slate-200 text-xs">{user.name}</div>
-                <div className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">{getRoleBadgeLabel(user.role)}</div>
-              </div>
-              <ChevronDown className="w-3.5 h-3.5 text-slate-400 ml-0.5" />
+              <ChevronDown className="w-3 h-3 text-slate-400 mr-0.5" />
             </button>
 
             {isProfileMenuOpen && (

@@ -5,7 +5,6 @@ import {
 } from 'lucide-react';
 import { FleetNode } from '../types';
 import { LiveCameraFeed } from '../components/fleet/LiveCameraFeed';
-import { VoiceRadioDispatcher } from '../components/fleet/VoiceRadioDispatcher';
 import { SensorDiagnosticsPanel } from '../components/fleet/SensorDiagnosticsPanel';
 import { Card, Badge } from '../components/ui';
 import { api } from '../services/api';
@@ -19,7 +18,7 @@ interface FleetNodesProps {
 
 export const FleetNodes: React.FC<FleetNodesProps> = ({ fleet, onFleetChange }) => {
   const [selectedBusId, setSelectedBusId] = useState<string>(fleet[0]?.id || 'BUS-TN01-1042');
-  const [viewMode, setViewMode] = useState<'camera' | 'sensors' | 'radio'>('camera');
+  const [viewMode, setViewMode] = useState<'camera' | 'sensors'>('camera');
   const [capturedSnapshots, setCapturedSnapshots] = useState<Array<{ id: string; url: string; time: string; busId: string }>>([]);
   const [edgeStatus, setEdgeStatus] = useState<any>(null);
   const [isAddBusModalOpen, setIsAddBusModalOpen] = useState(false);
@@ -185,18 +184,6 @@ export const FleetNodes: React.FC<FleetNodesProps> = ({ fleet, onFleetChange }) 
             <Cpu className="w-3.5 h-3.5 text-blue-600" />
             <span>Telemetry Diagnostics</span>
           </button>
-
-          <button
-            onClick={() => setViewMode('radio')}
-            className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all ${
-              viewMode === 'radio'
-                ? 'bg-white dark:bg-slate-900 text-blue-600 dark:text-blue-400 shadow-xs'
-                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
-            }`}
-          >
-            <Radio className="w-3.5 h-3.5 text-amber-500" />
-            <span>AI Voice Radio Dispatch</span>
-          </button>
         </div>
 
         <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400 font-mono">
@@ -301,10 +288,6 @@ export const FleetNodes: React.FC<FleetNodesProps> = ({ fleet, onFleetChange }) 
 
       {viewMode === 'sensors' && (
         <SensorDiagnosticsPanel bus={activeBus} />
-      )}
-
-      {viewMode === 'radio' && (
-        <VoiceRadioDispatcher />
       )}
 
       {/* 5. Active Fleet Unit Roster Grid */}

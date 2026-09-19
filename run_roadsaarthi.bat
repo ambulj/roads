@@ -1,8 +1,8 @@
-﻿@echo off
+@echo off
 setlocal enabledelayedexpansion
 
 :: ============================================================
-::  RoadSaarthi — One-Click Launcher (Windows CMD)
+::  SheherSaathi — One-Click Launcher (Windows CMD)
 ::  Works from any folder location.
 :: ============================================================
 
@@ -14,7 +14,7 @@ set "FRONTEND_DIR=%PROJECT_DIR%\frontend"
 
 echo.
 echo  ====================================================================
-echo   RoadSaarthi — Municipal Road Intelligence Platform
+echo   SheherSaathi — Municipal Road & Urban Intelligence Platform
 echo  ====================================================================
 echo   Project path: %PROJECT_DIR%
 echo.
@@ -63,12 +63,12 @@ if not exist "%FRONTEND_DIR%\node_modules" (
 :: ── Start Backend ─────────────────────────────────────────────────────────
 echo.
 echo  [START] Launching backend on http://127.0.0.1:8000 ...
-start "RoadSaarthi Backend" cmd /k "cd /d "%BACKEND_DIR%" && call venv\Scripts\activate && python run_backend.py"
+start "SheherSaathi Backend" cmd /k "cd /d "%BACKEND_DIR%" && call venv\Scripts\activate && python run_backend.py"
 timeout /t 3 /nobreak >nul
 
 :: ── Start Frontend ────────────────────────────────────────────────────────
 echo  [START] Launching frontend on http://localhost:5173 ...
-start "RoadSaarthi Frontend" cmd /k "cd /d "%FRONTEND_DIR%" && npm run dev"
+start "SheherSaathi Frontend" cmd /k "cd /d "%FRONTEND_DIR%" && npm run dev"
 timeout /t 4 /nobreak >nul
 
 :: ── Open Browser ─────────────────────────────────────────────────────────

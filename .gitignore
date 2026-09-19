@@ -1,5 +1,5 @@
 # ============================================================
-# RoadSaarthi — .gitignore
+# SheherSaathi — .gitignore
 # ============================================================
 
 # ── Python / Backend ─────────────────────────────────────────
@@ -46,8 +46,13 @@ frontend/.vite/
 
 # ── Database files ────────────────────────────────────────────
 # The SQLite database is created automatically on first run.
-# Commit the file only if you want to bundle seed data.
-backend/roadsaarthi.db
+*.db
+backend/*.db
+
+# ── Test results & reports ───────────────────────────────────
+test-results/
+frontend/test-results/
+frontend/playwright-report/
 
 # ── OS & Editor junk ─────────────────────────────────────────
 .DS_Store

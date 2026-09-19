@@ -25,7 +25,7 @@ CHECKPOINTS_DIR = DATASET_DIR / "checkpoints"
 
 class SelfLearningEngine:
     """
-    Self-Learning & Continuous Active Learning Engine for RoadSaarthi.
+    Self-Learning & Continuous Active Learning Engine for SheherSaathi.
     Continuously curates captured bus footage and telemetry into an Indian road defect dataset,
     triages uncertain detections (0.35 <= conf <= 0.70) for Officer Annotation,
     runs automated empirical retraining cycles, computes Precision/Recall/mAP@50,
@@ -330,7 +330,7 @@ class SelfLearningEngine:
         try:
             from app.services.yolo_inference import yolo_engine
             yolo_engine.reload()
-            yolo_engine.model_name = f"RoadSaarthi Self-Learned Active Classifier ({new_version})"
+            yolo_engine.model_name = f"SheherSaathi Self-Learned Active Classifier ({new_version})"
         except Exception as e:
             print(f"[SELF LEARNING] Hot-reload notification error: {e}")
 

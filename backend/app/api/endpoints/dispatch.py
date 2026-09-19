@@ -61,11 +61,11 @@ async def dispatch_whatsapp_alert(
         agency = payload.agency_name or cluster.assigned_agency
 
     maps_url = f"https://www.google.com/maps/search/?api=1&query={lat:.5f},{lng:.5f}"
-    portal_url = f"https://roadsaarthi.gov.in/#/capture?order={payload.cluster_code}"
+    portal_url = f"https://SheherSaathi.gov.in/#/capture?order={payload.cluster_code}"
     bitumen_kg = int(round(rpi * 0.65))
 
     message_text = (
-        f"*🚨 ROADSAARTHI AUTONOMOUS EMERGENCY DISPATCH*\n"
+        f"*🚨 SheherSaathi AUTONOMOUS EMERGENCY DISPATCH*\n"
         f"*Ministry of Road Transport & Highways (MoRTH)*\n"
         f"--------------------------------------------\n"
         f"*Ticket Code:* {payload.cluster_code}\n"
@@ -78,7 +78,7 @@ async def dispatch_whatsapp_alert(
         f"*Google Maps Nav:* {maps_url}\n\n"
         f"*📷 Field Repair & Evidence Upload Portal:*\n"
         f"{portal_url}\n\n"
-        f"_This is an automated statutory dispatch from RoadSaarthi Edge-AI Fleet Telemetry. Reply ACK to acknowledge receipt._"
+        f"_This is an automated statutory dispatch from SheherSaathi Edge-AI Fleet Telemetry. Reply ACK to acknowledge receipt._"
     )
 
     clean_phone = payload.recipient_phone.replace("+", "").replace(" ", "").replace("-", "")

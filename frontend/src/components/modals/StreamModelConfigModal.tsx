@@ -631,10 +631,10 @@ export const StreamModelConfigModal: React.FC<StreamModelConfigModalProps> = ({
             <div className="space-y-4">
               <div className="p-4 rounded-2xl bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-900/50 text-xs space-y-2">
                 <h3 className="font-bold text-blue-900 dark:text-blue-200 text-sm">
-                  4 Real Production Ways to Connect Buses to RoadSaarthi
+                  4 Real Production Ways to Connect Buses to SheherSaathi
                 </h3>
                 <p className="text-slate-600 dark:text-slate-300 leading-relaxed">
-                  RoadSaarthi eliminates the need for expensive dedicated survey vehicles by utilizing standard hardware already inside public transit fleets.
+                  SheherSaathi eliminates the need for expensive dedicated survey vehicles by utilizing standard hardware already inside public transit fleets.
                 </p>
               </div>
 
@@ -649,7 +649,7 @@ export const StreamModelConfigModal: React.FC<StreamModelConfigModalProps> = ({
                 <div className="p-3.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 space-y-1">
                   <span className="font-bold text-xs text-slate-900 dark:text-white">2. Smartphone / Tablet In-Cabin Dashcam</span>
                   <p className="text-[11px] text-slate-500 dark:text-slate-400">
-                    Zero-cost deployment: Driver or conductor mounts an Android/iOS phone running the RoadSaarthi Web App.
+                    Zero-cost deployment: Driver or conductor mounts an Android/iOS phone running the SheherSaathi Web App.
                   </p>
                 </div>
 

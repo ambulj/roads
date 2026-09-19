@@ -1,7 +1,7 @@
 from fastapi import APIRouter
 from app.api.endpoints import (
     telemetry, clusters, work_orders, fleet, analytics, incidents,
-    models, streams, auth, traffic, dispatch, simulation, learning, road_memory, city_brain, privacy
+    models, streams, auth, traffic, dispatch, simulation, learning, road_memory, city_brain, privacy, evidence
 )
 from app.api import websockets
 
@@ -23,6 +23,7 @@ api_router.include_router(learning.router, prefix="/learning", tags=["Self-Learn
 api_router.include_router(road_memory.router, prefix="/road-memory", tags=["Road Memory & AI Repair Verification"])
 api_router.include_router(city_brain.router, prefix="/city-brain", tags=["City Brain Decision AI & Optimization"])
 api_router.include_router(privacy.router, prefix="/privacy", tags=["DPDP Act 2023 Privacy Preservation & Face Blurring"])
+api_router.include_router(evidence.router, prefix="/evidence", tags=["Forensic Evidence Vault & Temp Retention"])
 
 
 

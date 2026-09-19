@@ -935,14 +935,6 @@ export const LiveCameraFeed: React.FC<LiveCameraFeedProps> = ({
         </div>
       </div>
 
-      {/* Speed Breaker Shock Alert Banner */}
-      {currentJerk >= 1.6 && (
-        <div className="absolute top-24 left-1/2 -translate-x-1/2 z-30 bg-rose-600/95 text-white font-mono font-bold text-xs px-3.5 py-1.5 rounded-full shadow-2xl border border-rose-300 flex items-center gap-2 animate-bounce pointer-events-none">
-          <AlertTriangle className="w-4 h-4 text-amber-300" />
-          <span>IRC:99 NON-COMPLIANT SPEED BREAKER (+{currentJerk}g SHOCK SPIKE)</span>
-        </div>
-      )}
-
       {/* Main Viewport (Live RTSP / Quad-View / Digital Twin Canvas) */}
       <div className="relative w-full aspect-video min-h-[300px] max-h-[540px] bg-slate-950 flex items-center justify-center overflow-hidden">
         {isQuadView ? (
@@ -984,40 +976,30 @@ export const LiveCameraFeed: React.FC<LiveCameraFeedProps> = ({
               alt={`Live Stream ${bus.id} CH${selectedChannel}`}
               className="w-full h-full object-cover"
             />
-            {/* Real Computer Vision Perception HUD (Replaces static prototype boxes) */}
+            {/* Streamlined Perception HUD */}
             {showBoundingBoxes && (
-              <div className="absolute top-3 right-3 z-10 flex flex-col gap-1.5 items-end pointer-events-none">
-                <div className="bg-slate-950/90 backdrop-blur-md px-3 py-1.5 rounded-xl border border-slate-700/80 text-[11px] font-mono flex items-center gap-2 shadow-xl">
-                  <span className={`w-2 h-2 rounded-full ${activeDetections.length > 0 ? "bg-rose-500 animate-ping" : "bg-emerald-400"}`} />
+              <div className="absolute top-3 right-3 z-10 flex items-center gap-2 pointer-events-none">
+                <div className="bg-slate-950/85 backdrop-blur-md px-2.5 py-1 rounded-lg border border-slate-700/80 text-[11px] font-mono flex items-center gap-2 shadow-lg">
+                  <span className={`w-2 h-2 rounded-full ${activeDetections.length > 0 ? "bg-rose-500 animate-pulse" : "bg-emerald-400"}`} />
                   <span className="text-slate-200">
-                    CV ENGINE: <strong className={activeDetections.length > 0 ? "text-rose-400" : "text-emerald-400"}>
-                      {activeDetections.length > 0 ? `${activeDetections.length} HAZARD(S) IN FRAME` : "NO DISTRESS DETECTED"}
+                    AI CV: <strong className={activeDetections.length > 0 ? "text-rose-400 font-bold" : "text-emerald-400"}>
+                      {activeDetections.length > 0 ? `${activeDetections.length} HAZARD${activeDetections.length > 1 ? 'S' : ''}` : "MONITORING"}
                     </strong>
                   </span>
+                  {activeDetections.length > 0 && (
+                    <span className="text-rose-300 font-bold bg-rose-950/60 px-1.5 py-0.5 rounded border border-rose-600/40 text-[10px]">
+                      {activeDetections[0].defect_name || activeDetections[0].label || 'D40'} ({Math.round((activeDetections[0].confidence || 0.95) * 100)}%)
+                    </span>
+                  )}
                 </div>
-
-                {activeDetections.slice(0, 3).map((d, i) => (
-                  <div key={i} className="bg-slate-950/90 backdrop-blur-md px-2.5 py-1 rounded-lg border border-rose-500/50 text-[10px] font-mono text-rose-300 flex items-center gap-2 shadow-lg">
-                    <span className="font-bold text-white">{d.defect_name || d.label}</span>
-                    {d.depth_cm && <span className="text-amber-300">Depth: {d.depth_cm}cm</span>}
-                    {d.range_m && <span className="text-amber-300">Range: {d.range_m}m</span>}
-                    <span className="text-emerald-400 font-bold">{Math.round((d.confidence || 0.95) * 100)}%</span>
-                  </div>
-                ))}
               </div>
             )}
 
-            {/* Bottom Stream Origin Badge & Quick Revert */}
-            <div className="absolute bottom-3 left-3 z-20 bg-slate-900/90 backdrop-blur-md px-3 py-1.5 rounded-xl border border-slate-700 text-emerald-400 font-mono text-xs flex items-center gap-2 shadow-lg">
-              <span className={`w-2 h-2 rounded-full ${uploadedMediaInfo.active ? "bg-cyan-400 animate-ping" : "bg-emerald-500 animate-ping"}`} />
-              <span className="font-bold">
-                {uploadedMediaInfo.active ? (
-                  <>USER FOOTAGE STREAM ● {uploadedMediaInfo.filename} ({uploadedMediaInfo.mediaType?.toUpperCase()})</>
-                ) : (
-                  <>CCTV INGEST ● {bus.id} ({DVR_CHANNELS[selectedChannel - 1]?.name}: {DVR_CHANNELS[selectedChannel - 1]?.role})</>
-                )}
-              </span>
-              {uploadedMediaInfo.active && (
+            {/* Stream Origin Badge & Quick Revert */}
+            {uploadedMediaInfo.active && (
+              <div className="absolute top-3 left-3 z-20 bg-slate-900/90 backdrop-blur-md px-2.5 py-1 rounded-lg border border-cyan-500/40 text-cyan-300 font-mono text-[11px] flex items-center gap-2 shadow-lg">
+                <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-ping" />
+                <span className="truncate max-w-[200px]">{uploadedMediaInfo.filename}</span>
                 <button
                   onClick={async (e) => {
                     e.stopPropagation();
@@ -1028,13 +1010,13 @@ export const LiveCameraFeed: React.FC<LiveCameraFeedProps> = ({
                       setFrameTimestamp(Date.now());
                     } catch {}
                   }}
-                  className="ml-2 px-2 py-0.5 rounded bg-rose-600 hover:bg-rose-500 text-white font-bold text-[10px] transition cursor-pointer shadow-xs"
+                  className="px-1.5 py-0.5 rounded bg-rose-600 hover:bg-rose-500 text-white font-bold text-[9.5px] transition cursor-pointer"
                   title="Revert back to standard live CCTV camera feed"
                 >
-                  Revert to CCTV
+                  Revert
                 </button>
-              )}
-            </div>
+              </div>
+            )}
           </div>
         ) : feedMode === 'webcam' ? (
           <div className="relative w-full h-full bg-black flex items-center justify-center">

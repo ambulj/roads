@@ -160,7 +160,7 @@ export const DocumentExportModal: React.FC<DocumentExportModalProps> = ({
                     1. Breach Findings &amp; Ground-Truth Evidence
                   </h3>
                   <p className="text-justify text-slate-700 leading-normal">
-                    RoadSaarthi Multi-Bus Consensus System has verified persistent road distress <strong className="font-mono font-bold">{targetCluster?.defect_name || 'D40 Pothole Cavity'}</strong> (Ground Truth ID: <code className="font-bold">{targetCluster?.cluster_code || 'WO-0001'}</code>) at coordinates <code className="font-bold">[{targetCluster?.lat || 12.9516}, {targetCluster?.lng || 80.1462}]</code> with {targetCluster?.pass_count || 7} verified fleet passes.
+                    SheherSaathi Multi-Bus Consensus System has verified persistent road distress <strong className="font-mono font-bold">{targetCluster?.defect_name || 'D40 Pothole Cavity'}</strong> (Ground Truth ID: <code className="font-bold">{targetCluster?.cluster_code || 'WO-0001'}</code>) at coordinates <code className="font-bold">[{targetCluster?.lat || 12.9516}, {targetCluster?.lng || 80.1462}]</code> with {targetCluster?.pass_count || 7} verified fleet passes.
                   </p>
                   <p className="text-justify text-slate-700 leading-normal">
                     The statutory emergency repair SLA of <strong>{targetCluster?.sla_hours || 24} Hours</strong> has been breached without municipal engineer closure certification.

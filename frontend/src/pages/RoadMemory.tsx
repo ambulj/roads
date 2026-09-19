@@ -24,13 +24,15 @@ import { RoadMemoryCorridor, RoadMemoryTimelineEvent } from '../types';
 import { Card, Badge, Button } from '../components/ui';
 import { INITIAL_ROAD_MEMORY_CORRIDORS, api } from '../services/api';
 import { RoadDeteriorationTimeMachine } from '../components/analytics/RoadDeteriorationTimeMachine';
+import { SelfLearningStudio } from '../components/analytics/SelfLearningStudio';
+import { Brain } from 'lucide-react';
 
 export const RoadMemory: React.FC = () => {
   const [corridors, setCorridors] = useState<RoadMemoryCorridor[]>(INITIAL_ROAD_MEMORY_CORRIDORS);
   const [isLoading, setIsLoading] = useState(false);
   const [selectedCorridorId, setSelectedCorridorId] = useState<string>('corridor-gst');
   const [timelineFilter, setTimelineFilter] = useState<string>('ALL');
-  const [activeTab, setActiveTab] = useState<'timeline' | 'timemachine'>('timeline');
+  const [activeTab, setActiveTab] = useState<'timeline' | 'timemachine' | 'selflearning'>('timeline');
 
   const fetchCorridors = async () => {
     setIsLoading(true);
@@ -82,7 +84,7 @@ export const RoadMemory: React.FC = () => {
   return (
     <div className="flex-1 flex flex-col min-h-0 overflow-y-auto custom-scrollbar p-5 md:p-6 lg:p-7 space-y-5 max-w-[1750px] mx-auto w-full select-none">
       {/* Top Module Sub-Tab Switcher */}
-      <div className="flex bg-white dark:bg-slate-900 p-1 rounded-2xl border border-slate-200 dark:border-slate-800 text-xs font-semibold w-fit shadow-xs">
+      <div className="flex flex-wrap bg-white dark:bg-slate-900 p-1 rounded-2xl border border-slate-200 dark:border-slate-800 text-xs font-semibold w-fit shadow-xs gap-1">
         <button
           onClick={() => setActiveTab('timeline')}
           className={`px-4 py-2 rounded-xl transition flex items-center gap-2 ${
@@ -104,12 +106,28 @@ export const RoadMemory: React.FC = () => {
           }`}
         >
           <Sparkles className="w-4 h-4 text-amber-300" />
-          <span>Markov-Chain Deterioration Time-Machine</span>
+          <span>Markov Deterioration Forecasts (IRI)</span>
+        </button>
+
+        <button
+          onClick={() => setActiveTab('selflearning')}
+          className={`px-4 py-2 rounded-xl transition flex items-center gap-2 ${
+            activeTab === 'selflearning'
+              ? 'bg-emerald-600 text-white font-bold shadow-xs'
+              : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white'
+          }`}
+        >
+          <Brain className="w-4 h-4 text-emerald-300" />
+          <span>Self-Learning & Continuous Retraining Studio</span>
         </button>
       </div>
 
       {activeTab === 'timemachine' && (
         <RoadDeteriorationTimeMachine />
+      )}
+
+      {activeTab === 'selflearning' && (
+        <SelfLearningStudio />
       )}
 
       {activeTab === 'timeline' && (

@@ -452,6 +452,71 @@ export const IncidentDossierModal: React.FC<IncidentDossierModalProps> = ({
           /* ==================================================== */
           <div className="flex-1 overflow-y-auto p-4 space-y-3.5 custom-scrollbar bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100">
             
+            {/* 0. PRIMARY ISSUE & STATUTORY INFRACTION HEADER BANNER */}
+            <div className={`p-4 rounded-xl border flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs ${
+              isHitAndRun 
+                ? 'bg-rose-50 dark:bg-rose-950/50 border-rose-200 dark:border-rose-900 text-rose-950 dark:text-rose-100'
+                : isRashDriving || isRedLight
+                ? 'bg-orange-50 dark:bg-orange-950/50 border-orange-200 dark:border-orange-900 text-orange-950 dark:text-orange-100'
+                : isWaterlog
+                ? 'bg-cyan-50 dark:bg-cyan-950/50 border-cyan-200 dark:border-cyan-900 text-cyan-950 dark:text-cyan-100'
+                : isOpenManhole
+                ? 'bg-red-50 dark:bg-red-950/50 border-red-200 dark:border-red-900 text-red-950 dark:text-red-100'
+                : 'bg-blue-50 dark:bg-blue-950/50 border-blue-200 dark:border-blue-900 text-blue-950 dark:text-blue-100'
+            }`}>
+              <div className="space-y-1.5 min-w-0">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className={`text-[10px] font-mono font-bold uppercase tracking-wider px-2 py-0.5 rounded border ${
+                    isHitAndRun
+                      ? 'bg-rose-600 text-white border-rose-700'
+                      : isWaterlog
+                      ? 'bg-cyan-600 text-white border-cyan-700'
+                      : isOpenManhole
+                      ? 'bg-red-600 text-white border-red-700'
+                      : 'bg-blue-600 text-white border-blue-700'
+                  }`}>
+                    {isHitAndRun ? '🚨 CRITICAL HIT & RUN' :
+                     isRashDriving ? '⚡ RASH DRIVING INFRACTION' :
+                     isZebraCrossing ? '🚸 PEDESTRIAN CROSSWALK ENDANGERMENT' :
+                     isWaterlog ? '🌊 CRITICAL WATERLOGGING HAZARD' :
+                     isOpenManhole ? '⚠️ OPEN DRAIN FATALITY HAZARD' :
+                     String(incident.incident_type).replace(/_/g, ' ')}
+                  </span>
+                  <span className="text-xs font-mono font-bold opacity-90">
+                    {incident.mva_section || legalCode.section}
+                  </span>
+                </div>
+
+                <h2 className="text-base sm:text-lg font-extrabold tracking-tight leading-snug">
+                  {incident.description || legalCode.title}
+                </h2>
+
+                <div className="text-xs opacity-90 flex items-center gap-3 flex-wrap font-medium pt-0.5">
+                  <span className="flex items-center gap-1">📍 <b>{incident.road_name}</b></span>
+                  {incident.plate_number ? (
+                    <span className="flex items-center gap-1">
+                      🚗 Plate: <b className="font-mono bg-white/70 dark:bg-black/40 px-1.5 py-0.5 rounded border border-black/10 dark:border-white/10">{incident.plate_number}</b>
+                    </span>
+                  ) : null}
+                  {incident.target_speed_kmh ? (
+                    <span className="flex items-center gap-1 text-rose-700 dark:text-rose-300 font-bold">
+                      ⚡ Clocked Speed: <b>{incident.target_speed_kmh} km/h</b>
+                    </span>
+                  ) : null}
+                </div>
+              </div>
+
+              {isTrafficViolation && (
+                <div className="shrink-0 flex sm:flex-col items-end justify-between sm:justify-center border-t sm:border-t-0 sm:border-l border-black/10 dark:border-white/10 pt-2 sm:pt-0 sm:pl-4">
+                  <span className="text-[10px] uppercase font-bold tracking-wider opacity-75">Statutory Penalty</span>
+                  <span className="text-xl font-black font-mono text-rose-600 dark:text-rose-400">
+                    ₹{incident.fine_amount_inr?.toLocaleString() || legalCode.fine.split(' ')[0] || '5,000'}
+                  </span>
+                  <span className="text-[9.5px] opacity-75 font-mono">MVA 1988 Statutory</span>
+                </div>
+              )}
+            </div>
+
             {/* 1. WATERLOGGING DEWATERING OPERATIONAL PANEL */}
             {isWaterlog && (
               <div className="bg-cyan-50 dark:bg-cyan-950/50 border border-cyan-200 dark:border-cyan-800 rounded-xl p-4 space-y-3">

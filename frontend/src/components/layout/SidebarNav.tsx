@@ -97,7 +97,7 @@ export const SidebarNav: React.FC<SidebarNavProps> = ({
         <div className="md:hidden h-12 px-4 border-b border-[#d9d5ce] dark:border-[#30323b] flex items-center justify-between bg-[#eeece6] dark:bg-[#111319]">
           <div className="flex items-center gap-2">
             <Bus className="w-5 h-5 text-blue-600 dark:text-cyan-400" />
-            <span className="font-extrabold text-xs text-[#20232a] dark:text-[#f3f0e9] uppercase tracking-wider">ROADSAARTHI</span>
+            <span className="font-extrabold text-xs text-[#20232a] dark:text-[#f3f0e9] uppercase tracking-wider">SheherSaathi</span>
           </div>
           <button onClick={onCloseMobile} className="p-1 rounded-lg text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white transition-colors">
             <X className="w-5 h-5" />

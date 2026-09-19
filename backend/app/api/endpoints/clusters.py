@@ -131,3 +131,9 @@ def get_cluster(cluster_id: str, db: Session = Depends(get_db)):
             return c
     raise HTTPException(status_code=404, detail="Hazard cluster not found")
 
+@router.post("", response_model=HazardCluster)
+def create_cluster(cluster_data: dict, db: Session = Depends(get_db)):
+    """Creates a new hazard cluster from user upload or live edge stream."""
+    created = store.add_cluster(cluster_data)
+    return created
+

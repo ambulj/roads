@@ -343,7 +343,7 @@ async def synthetic_generator_loop(interval_seconds: int = 300):
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="RoadSaarthi 5-Minute Synthetic Data Generator")
+    parser = argparse.ArgumentParser(description="SheherSaathi 5-Minute Synthetic Data Generator")
     parser.add_argument("--interval", type=int, default=300, help="Interval in seconds between generation runs (default: 300s = 5m)")
     parser.add_argument("--once", action="store_true", help="Run a single synthetic generation cycle and exit")
     args = parser.parse_args()

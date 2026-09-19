@@ -22,7 +22,8 @@ import {
   Radio,
   Maximize2,
   Video,
-  Cpu
+  Cpu,
+  UploadCloud
 } from 'lucide-react';
 import { HazardCluster, WorkOrderStatus, DefectCode } from '../types';
 import { useLanguage } from '../context/LanguageContext';
@@ -31,6 +32,7 @@ import { Badge } from '../components/ui/Badge';
 import { api } from '../services/api';
 import { StreamModelConfigModal } from '../components/modals/StreamModelConfigModal';
 import { DocumentExportModal } from '../components/modals/DocumentExportModal';
+import { UploadFootageModal } from '../components/modals/UploadFootageModal';
 import { RotateCcw, Pause, Play, Download, Printer } from 'lucide-react';
 
 interface MobileDashcamProps {
@@ -501,7 +503,7 @@ export const MobileDashcam: React.FC<MobileDashcamProps> = ({
     // Draw metadata watermark
     ctx.fillStyle = '#10b981';
     ctx.font = 'bold 24px monospace';
-    ctx.fillText(`ROADSAARTHI FORENSIC EVIDENCE SNAPSHOT • ${activeBusRig.id}`, 60, 90);
+    ctx.fillText(`SheherSaathi FORENSIC EVIDENCE SNAPSHOT • ${activeBusRig.id}`, 60, 90);
 
     ctx.fillStyle = '#ffffff';
     ctx.font = '20px sans-serif';
@@ -524,7 +526,7 @@ export const MobileDashcam: React.FC<MobileDashcamProps> = ({
     // Trigger download
     const dataUrl = canvas.toDataURL('image/jpeg', 0.95);
     const link = document.createElement('a');
-    link.download = `RoadSaarthi_Evidence_${activeBusRig.id}_${Date.now()}.jpg`;
+    link.download = `SheherSaathi_Evidence_${activeBusRig.id}_${Date.now()}.jpg`;
     link.href = dataUrl;
     link.click();
 
@@ -543,6 +545,7 @@ export const MobileDashcam: React.FC<MobileDashcamProps> = ({
   );
   const [submittedTicket, setSubmittedTicket] = useState<HazardCluster | null>(null);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+  const [isUniversalUploadOpen, setIsUniversalUploadOpen] = useState<boolean>(false);
 
   // ── YOLO INFERENCE STATE ──────────────────────────────────────────────────
   const [isYoloRunning, setIsYoloRunning] = useState<boolean>(false);
@@ -1029,124 +1032,39 @@ export const MobileDashcam: React.FC<MobileDashcamProps> = ({
 
         {/* ── TAB 2: CITIZEN REPORT ─────────────────────────────────────────── */}
         {activeTab === 'citizen' && (
-          <div className="bg-white dark:bg-[#0B101D] border border-slate-200 dark:border-slate-800 rounded-2xl p-4 sm:p-6 shadow-xs space-y-4">
-            {!submittedTicket ? (
-              <>
-                <div className="border-b border-slate-100 dark:border-slate-800 pb-3">
-                  <h3 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                    <Camera className="w-4 h-4 text-rose-500" />
-                    <span>Citizen Geo-Tagged Road Hazard Reporting</span>
-                  </h3>
-                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                    Upload street photo evidence; onboard YOLOv8 validates distress geometry and generates an official municipal work order.
-                  </p>
-                </div>
+          <div className="bg-white dark:bg-[#0B101D] border border-slate-200 dark:border-slate-800 rounded-2xl p-6 shadow-xs space-y-5">
+            <div className="border-b border-slate-100 dark:border-slate-800 pb-3">
+              <h3 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                <Camera className="w-4 h-4 text-rose-500" />
+                <span>Unified Citizen &amp; Operator AI Road Hazard Ingest</span>
+              </h3>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                Upload street footage or high-res photo evidence; onboard YOLO11 analyzes distress geometry, measures cavity depth, and generates an official municipal work order.
+              </p>
+            </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                  <div className="space-y-3">
-                    <div className="relative rounded-2xl overflow-hidden bg-slate-950 border border-slate-800 aspect-video flex items-center justify-center">
-                      <img src={photoPreview} alt="Defect" className="w-full h-full object-cover" />
-                      <input 
-                        ref={fileInputRef}
-                        type="file"
-                        accept="image/*"
-                        onChange={handlePhotoUpload}
-                        className="hidden"
-                      />
-                      <button 
-                        onClick={() => fileInputRef.current?.click()}
-                        className="absolute bottom-3 right-3 px-3 py-1.5 rounded-xl bg-slate-900/85 text-white text-xs font-bold border border-slate-700 flex items-center gap-1.5 hover:bg-slate-800 transition"
-                      >
-                        <Upload className="w-3.5 h-3.5" />
-                        <span>Upload Custom Photo</span>
-                      </button>
-                    </div>
-
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={handleRunYoloInference}
-                      disabled={isYoloRunning}
-                      className="w-full text-xs font-bold"
-                    >
-                      {isYoloRunning ? 'Analyzing Defect Mesh...' : 'Run YOLOv8 AI Validation'}
-                    </Button>
-                  </div>
-
-                  <div className="space-y-3 text-xs">
-                    <div>
-                      <label className="font-bold text-slate-700 dark:text-slate-300 block mb-1">Defect Classification:</label>
-                      <select
-                        value={selectedDefect}
-                        onChange={(e) => setSelectedDefect(e.target.value as DefectCode)}
-                        className="w-full p-2.5 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 font-medium text-slate-800 dark:text-slate-200"
-                      >
-                        <option value="D40">Pothole / Deep Cavity (D40)</option>
-                        <option value="D20">Alligator / Fatigue Crack (D20)</option>
-                        <option value="D10">Transverse Crack (D10)</option>
-                        <option value="WATERLOGGING">Monsoon Waterlogging Basin</option>
-                        <option value="ZEBRA_CROSSING">Faded Pedestrian Crossing</option>
-                      </select>
-                    </div>
-
-                    <div>
-                      <label className="font-bold text-slate-700 dark:text-slate-300 block mb-1">Corridor Location:</label>
-                      <select
-                        value={selectedRoad}
-                        onChange={(e) => setSelectedRoad(e.target.value)}
-                        className="w-full p-2.5 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 font-medium text-slate-800 dark:text-slate-200"
-                      >
-                        <option value="GST Road, Tambaram (NH-32)">GST Road, Tambaram (NH-32)</option>
-                        <option value="Anna Salai (Mount Road)">Anna Salai (Mount Road)</option>
-                        <option value="Old Mahabalipuram Road (OMR)">Old Mahabalipuram Road (OMR)</option>
-                        <option value="Velachery Main Road">Velachery Main Road</option>
-                      </select>
-                    </div>
-
-                    <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <AlertTriangle className="w-4 h-4 text-amber-500" />
-                        <div>
-                          <div className="font-bold text-amber-900 dark:text-amber-200">Near Hospital / School (+15 Priority)</div>
-                          <div className="text-[10.5px] text-amber-700 dark:text-amber-300">Triggers statutory 24-hour SLA turnaround.</div>
-                        </div>
-                      </div>
-                      <input 
-                        type="checkbox"
-                        checked={nearPOI}
-                        onChange={(e) => setNearPOI(e.target.checked)}
-                        className="w-4 h-4 rounded text-blue-600 cursor-pointer"
-                      />
-                    </div>
-
-                    <Button
-                      variant="primary"
-                      size="md"
-                      onClick={handleSubmitCitizenReport}
-                      disabled={isSubmitting}
-                      className="w-full bg-rose-600 hover:bg-rose-500 text-white font-bold"
-                    >
-                      {isSubmitting ? 'Generating Work Order...' : 'Submit Defect with Photo Evidence'}
-                    </Button>
-                  </div>
-                </div>
-              </>
-            ) : (
-              <div className="p-5 rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-300 dark:border-emerald-800 space-y-3">
-                <div className="flex items-center gap-2">
-                  <CheckCircle2 className="w-5 h-5 text-emerald-600" />
-                  <h4 className="font-bold text-sm text-emerald-900 dark:text-emerald-100">
-                    Work Order {submittedTicket.cluster_code} Successfully Created!
-                  </h4>
-                </div>
-                <p className="text-xs text-emerald-800 dark:text-emerald-300">
-                  Assigned to <strong>{submittedTicket.assigned_agency}</strong> under {submittedTicket.sla_hours}h SLA. Photo evidence verified with GPS tag.
-                </p>
-                <Button variant="outline" size="sm" onClick={() => setSubmittedTicket(null)}>
-                  Report Another Issue
-                </Button>
+            <div className="p-8 rounded-2xl border-2 border-dashed border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950/50 flex flex-col items-center justify-center text-center space-y-3">
+              <div className="p-4 rounded-2xl bg-blue-500/10 text-blue-500 border border-blue-500/20">
+                <UploadCloud className="w-8 h-8" />
               </div>
-            )}
+              <div>
+                <h4 className="font-bold text-slate-900 dark:text-white text-sm">
+                  Run YOLO11 AI Defect Detection &amp; Ingest
+                </h4>
+                <p className="text-xs text-slate-500 dark:text-slate-400 max-w-md mx-auto mt-1">
+                  Upload video or photo evidence. Real OpenCV &amp; YOLO contour analysis measures cavity depth, area, and automatically registers issues to the live system.
+                </p>
+              </div>
+              <Button
+                variant="primary"
+                size="md"
+                onClick={() => setIsUniversalUploadOpen(true)}
+                className="bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs flex items-center gap-2 shadow-md cursor-pointer"
+              >
+                <UploadCloud className="w-4 h-4" />
+                <span>Open Universal AI Ingest Console</span>
+              </Button>
+            </div>
           </div>
         )}
 
@@ -1242,6 +1160,12 @@ export const MobileDashcam: React.FC<MobileDashcamProps> = ({
         <StreamModelConfigModal
           isOpen={isStreamConfigModalOpen}
           onClose={() => setIsStreamConfigModalOpen(false)}
+        />
+        <UploadFootageModal
+          isOpen={isUniversalUploadOpen}
+          onClose={() => setIsUniversalUploadOpen(false)}
+          onAddCluster={onAddCluster}
+          onNavigateToMap={onBackToDashboard}
         />
       </div>
     </div>

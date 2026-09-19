@@ -127,7 +127,7 @@ export const CityBrainHub: React.FC = () => {
   return (
     <div className="space-y-6">
       {/* ── Top Header Banner ──────────────────────────────────────────────── */}
-      <div className={`p-6 rounded-2xl border ${isDark ? 'bg-gradient-to-r from-slate-900 via-indigo-950/40 to-slate-900 border-indigo-900/50' : 'bg-gradient-to-r from-slate-50 via-indigo-50/50 to-white border-indigo-200'} shadow-lg relative overflow-hidden`}>
+      <div className={`p-6 rounded-xl border ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'} shadow-xs relative overflow-hidden`}>
         <div className="absolute top-0 right-0 w-96 h-96 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none" />
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 relative z-10">
           <div>

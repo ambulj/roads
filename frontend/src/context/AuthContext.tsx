@@ -12,131 +12,131 @@ export interface OfficerMetadata {
 export const OFFICER_DETAILS: Record<CivicRole, { profile: UserProfile; meta: OfficerMetadata }> = {
   admin: {
     profile: {
-      id: 'usr-admin-01',
-      name: 'Dr. R. Sundaravel, IAS',
+      id: 'usr-admin-00',
+      name: 'State ICCC Super Administrator',
       email: 'admin@metravue.chennai.gov.in',
       role: 'admin',
-      designation: 'Chief Road Engineer & Commissioner',
-      department: 'Command & Policy Operations',
-      agency: 'Greater Chennai Corporation (GCC)',
-      badge_number: 'GCC-ADM-001',
-      avatar_initials: 'RS',
-      last_login: 'Active Now (GovNet 2FA)'
+      designation: 'Chief Director & System Administrator',
+      department: 'Integrated Command and Control Centre (ICCC)',
+      agency: 'State Municipal Administration & Digital Hub',
+      badge_number: 'ICCC-ADMIN-001',
+      avatar_initials: 'AD',
+      last_login: 'Active Now (Superuser Terminal)'
     },
     meta: {
-      jurisdiction: 'Greater Chennai Metropolitan Region (All 15 Zones)',
-      commandFocus: 'Executive Oversight, Multi-Agency Coordination & Policy Directives',
-      activeQueueCount: 38,
-      allowedRoutes: ['command', 'fleet', 'memory', 'incidents', 'work-orders', 'analytics', 'capture'],
+      jurisdiction: 'State-wide Unified ICCC Operations (Police, PWD, RTO & Urban Local Bodies)',
+      commandFocus: 'Omnipotent Master Control: Work Orders, PCR 112 Dispatch, e-Challan, VAHAN Audits & Executive Sanctions',
+      activeQueueCount: 15,
+      allowedRoutes: ['command', 'incidents', 'work-orders', 'analytics', 'memory', 'fleet', 'capture'],
       primaryMetrics: [
-        { label: 'Overall Road Health', value: '78.4%', hint: '+2.1% this month' },
-        { label: 'SLA Compliance', value: '94.2%', hint: 'Within 24h targets' },
-        { label: 'Active Fleet Units', value: '5 Live Buses', hint: '100% NPU online' },
-        { label: 'Total Fines Logged', value: '₹4,85,500', hint: 'Auto e-Challan sum' }
+        { label: 'System Control', value: '100% Master', hint: 'Full Read / Write across all civic domains' },
+        { label: 'Open Work Orders', value: '8 Active', hint: '3 Critical P0 hazards' },
+        { label: 'Active Violations', value: '7 Ingested', hint: 'Hit & Run, Rash Driving, Pedestrians' },
+        { label: 'Active Fleet Online', value: '5 / 5 Units', hint: 'Transit Edge AI sensing' }
       ]
     }
   },
-  operations: {
+  traffic_police: {
     profile: {
-      id: 'usr-ops-02',
-      name: 'Capt. M. Balaji',
-      email: 'operations@metravue.chennai.gov.in',
-      role: 'operations',
-      designation: 'Chief Transport Operations Manager',
-      department: 'Intelligent Transit Monitoring',
-      agency: 'Metropolitan Transport Corp (MTC)',
-      badge_number: 'MTC-OPS-104',
-      avatar_initials: 'MB',
-      last_login: '14m ago via Central Ops Wall'
-    },
-    meta: {
-      jurisdiction: 'MTC Transit Network & Depot Corridors (NH-32, OMR, Anna Salai)',
-      commandFocus: 'Bus Headway Optimization, Edge NPU Telemetry & Route Diversions',
-      activeQueueCount: 12,
-      allowedRoutes: ['command', 'fleet', 'memory', 'analytics', 'capture'],
-      primaryMetrics: [
-        { label: 'Fleet Online', value: '5 / 5 Units', hint: '100% telemetry ping' },
-        { label: 'Avg Corridor Speed', value: '38.4 km/h', hint: 'GST Road optimal' },
-        { label: 'Edge FPS Rate', value: '27.2 FPS', hint: 'Sony IMX335 active' },
-        { label: 'Headway Variance', value: '±2.4 mins', hint: 'Within schedule' }
-      ]
-    }
-  },
-  maintenance: {
-    profile: {
-      id: 'usr-maint-03',
-      name: 'Er. K. Shanmugam, M.E.',
-      email: 'maintenance@metravue.chennai.gov.in',
-      role: 'maintenance',
-      designation: 'Superintending Engineer (Roads & Bridges)',
-      department: 'Bus Route Roads & Works Dept',
-      agency: 'GCC Engineering Wing',
-      badge_number: 'GCC-ENG-312',
-      avatar_initials: 'KS',
-      last_login: '4m ago (Mobile Toughbook)'
-    },
-    meta: {
-      jurisdiction: 'Zone 8 (Anna Nagar) to Zone 14 (Perungudi) Arterials',
-      commandFocus: '3D Distress Depth Triage, Asphalt Estimations & Contractor Work Orders',
-      activeQueueCount: 19,
-      allowedRoutes: ['command', 'work-orders', 'memory', 'analytics', 'capture'],
-      primaryMetrics: [
-        { label: 'Open Work Orders', value: '12 Active', hint: '4 Critical P0 D40s' },
-        { label: 'Asphalt Demanded', value: '3.84 Tonnes', hint: 'Dense Macadam DBM' },
-        { label: 'Avg RPI Score', value: '88.4', hint: 'Prioritized by formula' },
-        { label: 'Contractor SLA', value: '18.5 hrs avg', hint: 'Target < 24 hrs' }
-      ]
-    }
-  },
-  safety: {
-    profile: {
-      id: 'usr-safety-04',
+      id: 'usr-police-01',
       name: 'S. Priya, IPS',
-      email: 'safety@metravue.chennai.gov.in',
-      role: 'safety',
+      email: 'traffic_police@metravue.chennai.gov.in',
+      role: 'traffic_police',
       designation: 'Deputy Commissioner of Police (Traffic)',
-      department: 'Traffic Enforcement & PCR Fleet',
+      department: 'Traffic Enforcement & PCR Interceptor Wing',
       agency: 'Greater Chennai Traffic Police (GCTP)',
       badge_number: 'GCTP-IPS-009',
       avatar_initials: 'SP',
-      last_login: 'Active Now (Enforcement Console)'
+      last_login: 'Active Now (Live Dispatch Wall)'
     },
     meta: {
-      jurisdiction: 'Greater Chennai Traffic Police Control Command (112 Interceptor Fleet)',
-      commandFocus: 'ANPR Hit-and-Run Interception, Zebra Violations & Rapid PCR Dispatch',
-      activeQueueCount: 16,
-      allowedRoutes: ['command', 'incidents', 'memory', 'analytics', 'capture'],
+      jurisdiction: 'Greater Chennai Police Commissionerate (All 4 Traffic Zones)',
+      commandFocus: 'Hit & Run Evasions, Rash Driving, Low-Confidence ANPR Review & PCR 112 Rapid Dispatch',
+      activeQueueCount: 7,
+      allowedRoutes: ['command', 'incidents', 'capture'],
       primaryMetrics: [
-        { label: 'Active Violations', value: '7 Ingested', hint: 'ANPR plate match' },
-        { label: 'Auto e-Challans', value: '₹14,500 pending', hint: 'MVA Sec 177/184' },
-        { label: 'PCR Dispatches', value: '3 Units rolling', hint: 'Avg ETA 4.2 mins' },
-        { label: 'Hit & Run Alerts', value: '1 Active Case', hint: 'GST Rd Airport' }
+        { label: 'Active Violations', value: '7 Ingested', hint: 'Hit & Run, Rash Driving, Pedestrians' },
+        { label: 'Draft e-Challans', value: '₹21,000 pending', hint: 'MVA Sec 184 / 177 / 134 citation sum' },
+        { label: 'PCR Dispatches', value: '3 Units rolling', hint: '112 Quick-Response Fleet active' },
+        { label: 'Hit & Run Active', value: '1 Case Alert', hint: 'BNS Section 106(2) Priority Case' }
       ]
     }
   },
-  analyst: {
+  pwd_engineer: {
     profile: {
-      id: 'usr-analyst-05',
-      name: 'V. Divya, M.Tech',
-      email: 'analyst@metravue.chennai.gov.in',
-      role: 'analyst',
-      designation: 'Senior Mobility Data Analyst',
-      department: 'Urban Transport Planning Wing',
-      agency: 'Chennai Metro Development Authority (CMDA)',
-      badge_number: 'CMDA-ANA-045',
-      avatar_initials: 'VD',
-      last_login: '1h ago (Read-Only Session)'
+      id: 'usr-pwd-02',
+      name: 'Er. K. Shanmugam, M.E.',
+      email: 'pwd_engineer@metravue.chennai.gov.in',
+      role: 'pwd_engineer',
+      designation: 'Superintending Engineer (Roads & Bridges)',
+      department: 'Bus Route Roads & Works Dept',
+      agency: 'GCC & Tamil Nadu Highways PWD',
+      badge_number: 'PWD-ENG-312',
+      avatar_initials: 'KS',
+      last_login: '3m ago (Field Toughbook)'
     },
     meta: {
-      jurisdiction: 'Chennai Metropolitan Area (Spatial Data & Infrastructure Planning)',
-      commandFocus: 'Multi-Modal Corridors, Pavement Deterioration Curves & Policy Impact',
-      activeQueueCount: 0,
-      allowedRoutes: ['command', 'memory', 'analytics'],
+      jurisdiction: 'Chennai Arterial Corridors & PWD Division 4 (GST Rd, OMR, Anna Salai)',
+      commandFocus: 'Pothole Triaging, 3D Mesh Depth Audits, Contractor Work Orders & SLA Enforcement',
+      activeQueueCount: 8,
+      allowedRoutes: ['command', 'work-orders', 'memory', 'capture'],
       primaryMetrics: [
-        { label: 'Corridor Datasets', value: '8 Monitored', hint: '100% spatial sync' },
-        { label: 'DBSCAN Dedup Ratio', value: '53.0%', hint: '585 down to 275' },
-        { label: 'Surface Degradation', value: '4.8% / quarter', hint: 'Pre-monsoon trend' },
-        { label: 'Access Mode', value: 'Read-Only Clearance', hint: 'Planning view' }
+        { label: 'Open Work Orders', value: '8 Active', hint: '3 Critical P0 hazards' },
+        { label: 'Asphalt Demanded', value: '3.36 Tonnes', hint: 'Dense Bituminous Macadam (DBM)' },
+        { label: 'Avg RPI Score', value: '78.3', hint: 'Authoritative IRC weighted formula' },
+        { label: 'Contractor SLA Target', value: '< 24 hrs', hint: 'L&T / GMR / TNRDC contract bound' }
+      ]
+    }
+  },
+  rto_officer: {
+    profile: {
+      id: 'usr-rto-03',
+      name: 'Thiru M. Natarajan',
+      email: 'rto_officer@metravue.chennai.gov.in',
+      role: 'rto_officer',
+      designation: 'Regional Transport Officer (Chennai Central / TN-01)',
+      department: 'Vehicle Compliance & Registration Authority',
+      agency: 'Tamil Nadu Transport Department (RTO)',
+      badge_number: 'TN-RTO-01',
+      avatar_initials: 'MN',
+      last_login: '12m ago (VAHAN Sarathi Gateway)'
+    },
+    meta: {
+      jurisdiction: 'Regional Transport Office Network (TN-01 to TN-22 Jurisdictions)',
+      commandFocus: 'Confirmed ANPR Hits, VAHAN National Registry Cross-Reference & HSRP Compliance Audits',
+      activeQueueCount: 5,
+      allowedRoutes: ['command', 'incidents'],
+      primaryMetrics: [
+        { label: 'Confirmed ANPR Hits', value: '7 Plates', hint: 'Multi-bus verified vehicle reads' },
+        { label: 'RTO Jurisdictions', value: 'TN-01 to TN-22', hint: 'Chennai Central, South, West & OMR' },
+        { label: 'Compliance Flags', value: '100% Audited', hint: 'VAHAN / Sarathi fitness cross-check' },
+        { label: 'HSRP Non-Compliance', value: '0 Suspended', hint: 'High Security Plate standard' }
+      ]
+    }
+  },
+  commissioner: {
+    profile: {
+      id: 'usr-comm-04',
+      name: 'Dr. R. Sundaravel, IAS',
+      email: 'commissioner@metravue.chennai.gov.in',
+      role: 'commissioner',
+      designation: 'Transport Commissioner & Secretary to Govt',
+      department: 'Transport & Urban Infrastructure Oversight',
+      agency: 'Government of Tamil Nadu',
+      badge_number: 'GOV-IAS-001',
+      avatar_initials: 'RS',
+      last_login: 'Active Now (Executive Secretariat)'
+    },
+    meta: {
+      jurisdiction: 'State of Tamil Nadu — Urban Transport & Infrastructure Oversight',
+      commandFocus: 'Executive City Rollup, Multi-Corridor Risk Scoring, Budget Allocation & Policy Sanctions',
+      activeQueueCount: 0,
+      allowedRoutes: ['command', 'analytics', 'memory'],
+      primaryMetrics: [
+        { label: 'Overall Road Health', value: '82.4%', hint: 'City-wide aggregate pavement index' },
+        { label: 'Corridors Monitored', value: '8 Arterials', hint: '100% spatial sync (NH-32, OMR, Anna Salai)' },
+        { label: 'Active Fleet Online', value: '5 / 5 Units', hint: 'Transit Edge AI sensing' },
+        { label: 'Total Fine Penalties', value: '₹21,000', hint: 'Statutory recovery pool' }
       ]
     }
   }
@@ -144,10 +144,23 @@ export const OFFICER_DETAILS: Record<CivicRole, { profile: UserProfile; meta: Of
 
 export const SEEDED_OFFICERS: Record<CivicRole, UserProfile> = {
   admin: OFFICER_DETAILS.admin.profile,
-  operations: OFFICER_DETAILS.operations.profile,
-  maintenance: OFFICER_DETAILS.maintenance.profile,
-  safety: OFFICER_DETAILS.safety.profile,
-  analyst: OFFICER_DETAILS.analyst.profile,
+  traffic_police: OFFICER_DETAILS.traffic_police.profile,
+  pwd_engineer: OFFICER_DETAILS.pwd_engineer.profile,
+  rto_officer: OFFICER_DETAILS.rto_officer.profile,
+  commissioner: OFFICER_DETAILS.commissioner.profile,
+};
+
+// Map legacy role strings to canonical CivicRole
+export const CANONICAL_ROLE_MAP: Record<string, CivicRole> = {
+  admin: 'admin',
+  commissioner: 'commissioner',
+  safety: 'traffic_police',
+  traffic_police: 'traffic_police',
+  maintenance: 'pwd_engineer',
+  pwd_engineer: 'pwd_engineer',
+  operations: 'rto_officer',
+  rto_officer: 'rto_officer',
+  analyst: 'commissioner'
 };
 
 interface AuthContextType {
@@ -164,7 +177,11 @@ interface AuthContextType {
   canIssueEChallan: boolean;
   canDeploySumpPump: boolean;
   canEscalatePCR: boolean;
+  canReviewANPR: boolean;
+  canLookupRTO: boolean;
+  canFlagRTOCompliance: boolean;
   canRunInterventions: boolean;
+  canExportReports: boolean;
   canEditSettings: boolean;
   canManageSettings: boolean;
   isReadOnly: boolean;
@@ -174,8 +191,8 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | null>(null);
 
-const STORAGE_ROLE_KEY = 'roadsaarthi_active_role';
-const STORAGE_AUTH_KEY = 'roadsaarthi_auth_session';
+const STORAGE_ROLE_KEY = 'SheherSaathi_active_role';
+const STORAGE_AUTH_KEY = 'SheherSaathi_auth_session';
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => {
@@ -184,23 +201,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (savedAuth === 'true') return true;
       if (savedAuth === 'false') return false;
     }
-    return true; // Default logged in with active officer, can be logged out anytime
+    return true; // Default logged in with active officer
   });
 
   const [activeRole, setActiveRole] = useState<CivicRole>(() => {
     if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem(STORAGE_ROLE_KEY) as CivicRole;
-      if (saved && OFFICER_DETAILS[saved]) return saved;
-      try { localStorage.setItem(STORAGE_ROLE_KEY, 'maintenance'); } catch {}
+      const saved = localStorage.getItem(STORAGE_ROLE_KEY);
+      if (saved && CANONICAL_ROLE_MAP[saved]) return CANONICAL_ROLE_MAP[saved];
+      try { localStorage.setItem(STORAGE_ROLE_KEY, 'traffic_police'); } catch {}
     }
-    return 'maintenance';
+    return 'traffic_police';
   });
 
   const [liveKPIs, setLiveKPIs] = useState<{ label: string; value: string; hint: string }[]>([]);
 
   const refreshKPIs = useCallback(async () => {
     try {
-      const token = typeof window !== 'undefined' ? localStorage.getItem('roadsaarthi_jwt_token') : null;
+      const token = typeof window !== 'undefined' ? localStorage.getItem('SheherSaathi_jwt_token') : null;
       const res = await fetch('/api/auth/kpis', {
         headers: token ? { 'Authorization': `Bearer ${token}` } : {}
       });
@@ -213,8 +230,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } catch {}
   }, []);
 
-  const user = OFFICER_DETAILS[activeRole].profile;
-  const baseMeta = OFFICER_DETAILS[activeRole].meta;
+  const currentRole = OFFICER_DETAILS[activeRole] ? activeRole : 'traffic_police';
+  const user = OFFICER_DETAILS[currentRole].profile;
+  const baseMeta = OFFICER_DETAILS[currentRole].meta;
   const meta: OfficerMetadata = {
     ...baseMeta,
     primaryMetrics: liveKPIs.length > 0 ? liveKPIs : baseMeta.primaryMetrics
@@ -229,7 +247,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (res.ok) {
       const data = await res.json();
       if (data?.access_token && typeof window !== 'undefined') {
-        localStorage.setItem('roadsaarthi_jwt_token', data.access_token);
+        localStorage.setItem('SheherSaathi_jwt_token', data.access_token);
       }
       return data;
     }
@@ -248,11 +266,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, [activeRole, syncBackendToken]);
 
   const login = useCallback(async (role: CivicRole, remember: boolean = true): Promise<boolean> => {
-    if (OFFICER_DETAILS[role]) {
-      setActiveRole(role);
+    const canonical = CANONICAL_ROLE_MAP[role] || 'traffic_police';
+    if (OFFICER_DETAILS[canonical]) {
+      setActiveRole(canonical);
       setIsAuthenticated(true);
       if (typeof window !== 'undefined') {
-        localStorage.setItem(STORAGE_ROLE_KEY, role);
+        localStorage.setItem(STORAGE_ROLE_KEY, canonical);
         if (remember) {
           localStorage.setItem(STORAGE_AUTH_KEY, 'true');
         } else {
@@ -260,7 +279,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           localStorage.removeItem(STORAGE_AUTH_KEY);
         }
       }
-      await authenticateWithBackend({ role });
+      await authenticateWithBackend({ role: canonical });
       return true;
     }
     return false;
@@ -278,9 +297,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       password: password || 'chennai@2026' 
     });
 
-    let resolvedRole: CivicRole = 'maintenance';
-    if (authData?.user?.role && OFFICER_DETAILS[authData.user.role as CivicRole]) {
-      resolvedRole = authData.user.role as CivicRole;
+    let resolvedRole: CivicRole = 'traffic_police';
+    if (authData?.user?.role && CANONICAL_ROLE_MAP[authData.user.role]) {
+      resolvedRole = CANONICAL_ROLE_MAP[authData.user.role];
     } else {
       // Client-side fallback lookup
       const match = (Object.keys(OFFICER_DETAILS) as CivicRole[]).find((r) => {
@@ -295,7 +314,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (match) {
         resolvedRole = match;
       } else {
-        throw new Error(`Officer persona '${trimmed}' not recognized. Available: admin, operations, maintenance, safety, analyst.`);
+        throw new Error(`Officer persona '${trimmed}' not recognized. Available profiles: traffic_police, pwd_engineer, rto_officer, commissioner.`);
       }
     }
 
@@ -312,32 +331,32 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
     }
     return true;
-  }, [authenticateWithBackend]);
+  }, [authenticateWithBackend, refreshKPIs]);
 
   const logout = useCallback(() => {
     setIsAuthenticated(false);
     if (typeof window !== 'undefined') {
       localStorage.setItem(STORAGE_AUTH_KEY, 'false');
-      localStorage.removeItem('roadsaarthi_jwt_token');
+      localStorage.removeItem('SheherSaathi_jwt_token');
       sessionStorage.removeItem(STORAGE_AUTH_KEY);
     }
   }, []);
 
   const switchRole = useCallback((newRole: CivicRole) => {
-    if (OFFICER_DETAILS[newRole]) {
-      setActiveRole(newRole);
+    const canonical = CANONICAL_ROLE_MAP[newRole] || 'traffic_police';
+    if (OFFICER_DETAILS[canonical]) {
+      setActiveRole(canonical);
       setIsAuthenticated(true);
-      syncBackendToken(newRole);
+      syncBackendToken(canonical);
       if (typeof window !== 'undefined') {
-        localStorage.setItem(STORAGE_ROLE_KEY, newRole);
+        localStorage.setItem(STORAGE_ROLE_KEY, canonical);
         localStorage.setItem(STORAGE_AUTH_KEY, 'true');
       }
     }
   }, [syncBackendToken]);
 
-
   const returnToDemo = useCallback(() => {
-    setActiveRole('maintenance');
+    setActiveRole('traffic_police');
     setIsAuthenticated(true);
     if (typeof window !== 'undefined') {
       localStorage.removeItem(STORAGE_ROLE_KEY);
@@ -346,29 +365,39 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   const hasAccessToRoute = useCallback((route: string): boolean => {
-    // Normalization
     const r = route.replace(/^#\/?/, '').trim();
     if (r === '' || r === 'command') return true;
     return meta.allowedRoutes.includes(r);
   }, [meta]);
 
-  // RBAC Permission checks
-  const canDispatchWorkOrder = activeRole === 'admin' || activeRole === 'maintenance' || activeRole === 'operations' || activeRole === 'safety';
-  const canIssueEChallan = activeRole === 'admin' || activeRole === 'safety';
-  const canDeploySumpPump = activeRole === 'admin' || activeRole === 'maintenance';
-  const canEscalatePCR = activeRole === 'admin' || activeRole === 'safety';
-  const canRunInterventions = activeRole === 'admin' || activeRole === 'operations' || activeRole === 'maintenance';
-  const canManageSettings = activeRole === 'admin';
+  // ── Strict Role-Gated Capabilities ──────────────────────────────────────────
+  // 0. Admin Superuser: Omnipotent master control across all 4 civic domains with zero restrictions.
+  // 1. Traffic Police: PCR dispatch, e-challans, ANPR triage. No PWD work order approval.
+  // 2. Road / PWD Authority: Work order approval, contractor assignment, SLA enforcement, sump pumps. No police dispatches.
+  // 3. RTO / Transport Dept: VAHAN RTO lookup, compliance audits. No police dispatch, no road paving approvals.
+  // 4. Transport Commissioner: Executive oversight rollup, high-value intervention sanctions, policy reports. Read-mostly in queues.
+  const isAdmin = activeRole === 'admin';
+  const canDispatchWorkOrder = isAdmin || activeRole === 'pwd_engineer' || activeRole === 'commissioner';
+  const canIssueEChallan = isAdmin || activeRole === 'traffic_police';
+  const canDeploySumpPump = isAdmin || activeRole === 'pwd_engineer';
+  const canEscalatePCR = isAdmin || activeRole === 'traffic_police';
+  const canReviewANPR = isAdmin || activeRole === 'traffic_police' || activeRole === 'rto_officer' || activeRole === 'commissioner';
+  const canLookupRTO = isAdmin || activeRole === 'rto_officer' || activeRole === 'traffic_police' || activeRole === 'commissioner';
+  const canFlagRTOCompliance = isAdmin || activeRole === 'rto_officer';
+  const canRunInterventions = isAdmin || activeRole === 'pwd_engineer' || activeRole === 'commissioner';
+  const canExportReports = isAdmin || activeRole === 'commissioner' || activeRole === 'pwd_engineer';
+  const canManageSettings = isAdmin || activeRole === 'commissioner';
   const canEditSettings = canManageSettings;
-  const isReadOnly = activeRole === 'analyst';
+  const isReadOnly = !isAdmin && activeRole === 'commissioner';
 
   const getRoleBadgeLabel = (role: CivicRole): string => {
     switch (role) {
-      case 'admin': return 'Chief Municipal Engineer';
-      case 'operations': return 'MTC Operations Manager';
-      case 'maintenance': return 'Road Maintenance Division';
-      case 'safety': return 'Traffic & Safety Division';
-      case 'analyst': return 'Urban Mobility Analyst';
+      case 'admin': return 'System Administrator (Master Control)';
+      case 'traffic_police': return 'Traffic Police (City Wing)';
+      case 'pwd_engineer': return 'Road / PWD Maintenance Authority';
+      case 'rto_officer': return 'RTO / Transport Department';
+      case 'commissioner': return 'Senior Oversight / Transport Commissioner';
+      default: return 'Civic Officer';
     }
   };
 
@@ -376,33 +405,33 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     switch (role) {
       case 'admin':
         return {
-          bg: 'bg-purple-100 dark:bg-purple-950/80',
-          text: 'text-purple-800 dark:text-purple-300',
-          border: 'border-purple-300 dark:border-purple-800'
-        };
-      case 'operations':
-        return {
-          bg: 'bg-blue-100 dark:bg-blue-950/80',
-          text: 'text-blue-800 dark:text-blue-300',
-          border: 'border-blue-300 dark:border-blue-800'
-        };
-      case 'maintenance':
-        return {
           bg: 'bg-emerald-100 dark:bg-emerald-950/80',
           text: 'text-emerald-800 dark:text-emerald-300',
           border: 'border-emerald-300 dark:border-emerald-800'
         };
-      case 'safety':
+      case 'traffic_police':
         return {
           bg: 'bg-rose-100 dark:bg-rose-950/80',
           text: 'text-rose-800 dark:text-rose-300',
           border: 'border-rose-300 dark:border-rose-800'
         };
-      case 'analyst':
+      case 'pwd_engineer':
         return {
-          bg: 'bg-slate-100 dark:bg-slate-850',
-          text: 'text-slate-800 dark:text-slate-300',
-          border: 'border-slate-300 dark:border-slate-700'
+          bg: 'bg-amber-100 dark:bg-amber-950/80',
+          text: 'text-amber-800 dark:text-amber-300',
+          border: 'border-amber-300 dark:border-amber-800'
+        };
+      case 'rto_officer':
+        return {
+          bg: 'bg-blue-100 dark:bg-blue-950/80',
+          text: 'text-blue-800 dark:text-blue-300',
+          border: 'border-blue-300 dark:border-blue-800'
+        };
+      case 'commissioner':
+        return {
+          bg: 'bg-purple-100 dark:bg-purple-950/80',
+          text: 'text-purple-800 dark:text-purple-300',
+          border: 'border-purple-300 dark:border-purple-800'
         };
     }
   };
@@ -423,7 +452,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         canIssueEChallan,
         canDeploySumpPump,
         canEscalatePCR,
+        canReviewANPR,
+        canLookupRTO,
+        canFlagRTOCompliance,
         canRunInterventions,
+        canExportReports,
         canEditSettings,
         canManageSettings,
         isReadOnly,

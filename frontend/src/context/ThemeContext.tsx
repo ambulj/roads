@@ -13,7 +13,7 @@ const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [theme, setThemeState] = useState<Theme>(() => {
     try {
-      const saved = localStorage.getItem('roadsaarthi_theme');
+      const saved = localStorage.getItem('SheherSaathi_theme');
       if (saved === 'light' || saved === 'dark') return saved;
       return 'light'; // Default to clean modern Light mode
     } catch {
@@ -30,7 +30,7 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       root.classList.add('light');
     }
     try {
-      localStorage.setItem('roadsaarthi_theme', theme);
+      localStorage.setItem('SheherSaathi_theme', theme);
     } catch {}
   }, [theme]);
 

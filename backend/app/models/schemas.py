@@ -64,6 +64,9 @@ class IncidentStatus(str, Enum):
     BARRICADED = "BARRICADED"
     RESOLVED = "RESOLVED"
     REJECTED = "REJECTED"
+    ECHALLAN_ISSUED = "ECHALLAN_ISSUED"
+    UNDER_REVIEW = "UNDER_REVIEW"
+    PENDING = "PENDING"
 
 class CameraPositionEnum(str, Enum):
     FRONT_WINDSHIELD = "FRONT_WINDSHIELD"
@@ -144,7 +147,7 @@ class TrafficIncident(BaseModel):
     lat: float
     lng: float
     occurred_at: str
-    status: IncidentStatus = IncidentStatus.ACTIVE_ALERT
+    status: Union[IncidentStatus, str] = IncidentStatus.ACTIVE_ALERT
     fine_amount_inr: Optional[float] = None
     mva_section: Optional[str] = None
     echallan_issued: Optional[bool] = None

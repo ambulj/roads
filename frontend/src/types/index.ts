@@ -1,5 +1,5 @@
 // ============================================================
-//  RoadSaarthi Type Definitions
+//  SheherSaathi Type Definitions
 // ============================================================
 
 export type DefectCode = 
@@ -492,8 +492,8 @@ export interface AsphaltQualityAudit {
   audited_at: string;
 }
 
-// ── Civic Roles & RBAC ──────────────────────────────────────────────────────
-export type CivicRole = "admin" | "operations" | "maintenance" | "safety" | "analyst";
+// ── Civic Roles & RBAC (Government Profiles + Admin Superuser) ───────────────
+export type CivicRole = "admin" | "traffic_police" | "pwd_engineer" | "rto_officer" | "commissioner";
 
 export interface UserProfile {
   id: string;

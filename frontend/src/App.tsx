@@ -15,12 +15,11 @@ import { RPIFormulaModal } from "./components/modals/RPIFormulaModal";
 import { BriefModal } from "./components/modals/BriefModal";
 import { CommandPalette } from "./components/modals/CommandPalette";
 import { AuthModal } from "./components/modals/AuthModal";
-import { InterventionSimulatorModal } from "./components/modals/InterventionSimulatorModal";
-import { StreamModelConfigModal } from "./components/modals/StreamModelConfigModal";
+import { SensorIntelligenceModal } from "./components/modals/SensorIntelligenceModal";
 import { DocumentExportModal } from "./components/modals/DocumentExportModal";
 import { KeyboardShortcutsModal } from "./components/modals/KeyboardShortcutsModal";
-import { SensorFusionModal } from "./components/modals/SensorFusionModal";
 import { FullLifecycleSimulationModal } from "./components/modals/FullLifecycleSimulationModal";
+import { UploadFootageModal } from "./components/modals/UploadFootageModal";
 import { audioAlerts } from "./utils/audioAlerts";
 import { useTelemetrySocket } from "./hooks/useTelemetrySocket";
 import { INITIAL_CORRIDORS, api } from "./services/api";
@@ -47,7 +46,7 @@ const getInitialRoute = (): AppRoute => {
   const hash = window.location.hash.replace(/^#\/?/, "").trim();
   if (VALID_ROUTES.includes(hash as AppRoute)) return hash as AppRoute;
   try {
-    const saved = localStorage.getItem("roadsaarthi_active_route");
+    const saved = localStorage.getItem("SheherSaathi_active_route");
     if (saved && VALID_ROUTES.includes(saved as AppRoute)) return saved as AppRoute;
   } catch {}
   return "command";
@@ -57,18 +56,22 @@ export const App: React.FC = () => {
   const { isAuthenticated, user, meta, hasAccessToRoute } = useAuth();
   const [currentRoute, setCurrentRoute] = useState<AppRoute>(getInitialRoute);
   const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
-  const [isRPIModalOpen, setIsRPIModalOpen] = useState(false);
+  const [isSensorModalOpen, setIsSensorModalOpen] = useState(false);
+  const [sensorModalTab, setSensorModalTab] = useState<"fusion" | "rpi" | "streams">("fusion");
   const [isBriefModalOpen, setIsBriefModalOpen] = useState(false);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
-  const [isInterventionModalOpen, setIsInterventionModalOpen] = useState(false);
-  const [isStreamModelModalOpen, setIsStreamModelModalOpen] = useState(false);
   const [isDocumentModalOpen, setIsDocumentModalOpen] = useState(false);
   const [isShortcutsModalOpen, setIsShortcutsModalOpen] = useState(false);
-  const [isSensorFusionModalOpen, setIsSensorFusionModalOpen] = useState(false);
   const [isLifecycleModalOpen, setIsLifecycleModalOpen] = useState(false);
+  const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
   const [selectedIncident, setSelectedIncident] = useState<TrafficIncident | null>(null);
+
+  const openSensorModal = (tab: "fusion" | "rpi" | "streams" = "fusion") => {
+    setSensorModalTab(tab);
+    setIsSensorModalOpen(true);
+  };
   const { toggleTheme } = useTheme();
   const { success: showSuccessToast, info: showInfoToast, warning: showWarningToast } = useToast();
 
@@ -85,7 +88,7 @@ export const App: React.FC = () => {
       }
       setCurrentRoute(target);
       window.location.hash = `#/${target}`;
-      try { localStorage.setItem("roadsaarthi_active_route", target); } catch {}
+      try { localStorage.setItem("SheherSaathi_active_route", target); } catch {}
       setIsMobileMenuOpen(false);
     }
   }, [hasAccessToRoute, user, showWarningToast]);
@@ -123,11 +126,9 @@ export const App: React.FC = () => {
         if (isCommandPaletteOpen) { setIsCommandPaletteOpen(false); return; }
         if (isDocumentModalOpen) { setIsDocumentModalOpen(false); return; }
         if (isShortcutsModalOpen) { setIsShortcutsModalOpen(false); return; }
-        if (isRPIModalOpen) { setIsRPIModalOpen(false); return; }
+        if (isSensorModalOpen) { setIsSensorModalOpen(false); return; }
         if (isBriefModalOpen) { setIsBriefModalOpen(false); return; }
         if (isAuthModalOpen) { setIsAuthModalOpen(false); return; }
-        if (isInterventionModalOpen) { setIsInterventionModalOpen(false); return; }
-        if (isSensorFusionModalOpen) { setIsSensorFusionModalOpen(false); return; }
         if (isMobileMenuOpen) { setIsMobileMenuOpen(false); return; }
         return;
       }
@@ -168,7 +169,7 @@ export const App: React.FC = () => {
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [isAuthenticated, handleNavigate, toggleTheme, isCommandPaletteOpen, isRPIModalOpen, isBriefModalOpen, isAuthModalOpen, isInterventionModalOpen, isSensorFusionModalOpen, isMobileMenuOpen]);
+  }, [isAuthenticated, handleNavigate, toggleTheme, isCommandPaletteOpen, isSensorModalOpen, isBriefModalOpen, isAuthModalOpen, isMobileMenuOpen]);
 
   // Deep Linking & URL Query Sync (e.g. #/command?bus=BUS-TN01-1042)
   useEffect(() => {
@@ -182,7 +183,7 @@ export const App: React.FC = () => {
       if (VALID_ROUTES.includes(targetRoute)) {
         if (hasAccessToRoute(targetRoute)) {
           setCurrentRoute(targetRoute);
-          try { localStorage.setItem("roadsaarthi_active_route", targetRoute); } catch {}
+          try { localStorage.setItem("SheherSaathi_active_route", targetRoute); } catch {}
         }
       }
 
@@ -258,16 +259,16 @@ export const App: React.FC = () => {
         onToggleSidebar={() => setIsSidebarCollapsed((p) => !p)}
         isBackendConnected={isConnected}
         activeNodesCount={fleet.filter((b) => b.is_online).length}
-        onOpenRPIModal={() => setIsRPIModalOpen(true)}
+        onOpenRPIModal={() => openSensorModal("rpi")}
         onOpenBriefModal={() => setIsBriefModalOpen(true)}
         onTriggerDedup={handleTriggerDedup}
         onOpenAuthModal={() => setIsAuthModalOpen(true)}
-        onOpenInterventionModal={() => setIsInterventionModalOpen(true)}
-        onOpenStreamModelModal={() => setIsStreamModelModalOpen(true)}
+        onOpenStreamModelModal={() => openSensorModal("streams")}
         onOpenDocumentModal={() => setIsDocumentModalOpen(true)}
         onOpenShortcutsModal={() => setIsShortcutsModalOpen(true)}
-        onOpenSensorFusionModal={() => setIsSensorFusionModalOpen(true)}
+        onOpenSensorFusionModal={() => openSensorModal("fusion")}
         onOpenLifecycleDemo={() => setIsLifecycleModalOpen(true)}
+        onOpenUploadModal={() => setIsUploadModalOpen(true)}
         incidents={incidents}
         onSelectIncident={handleSelectIncident}
       />
@@ -306,7 +307,7 @@ export const App: React.FC = () => {
                 fleet={fleet}
                 incidents={incidents}
                 auditLogs={auditLogs}
-                onOpenRPIModal={() => setIsRPIModalOpen(true)}
+                onOpenRPIModal={() => openSensorModal("rpi")}
                 onOpenBriefModal={() => setIsBriefModalOpen(true)}
                 onNavigateToCapture={() => handleNavigate("capture")}
                 onNavigate={handleNavigate}
@@ -360,26 +361,21 @@ export const App: React.FC = () => {
       </div>
 
       {/* Modals */}
-      <SensorFusionModal isOpen={isSensorFusionModalOpen} onClose={() => setIsSensorFusionModalOpen(false)} />
+      <SensorIntelligenceModal
+        isOpen={isSensorModalOpen}
+        onClose={() => setIsSensorModalOpen(false)}
+        defaultTab={sensorModalTab}
+      />
       <CommandPalette
         isOpen={isCommandPaletteOpen}
         onClose={() => setIsCommandPaletteOpen(false)}
         onNavigate={handleNavigate}
         onTriggerDedup={handleTriggerDedup}
-        onOpenRPIModal={() => setIsRPIModalOpen(true)}
+        onOpenRPIModal={() => openSensorModal("rpi")}
         onOpenBriefModal={() => setIsBriefModalOpen(true)}
       />
-      <RPIFormulaModal isOpen={isRPIModalOpen} onClose={() => setIsRPIModalOpen(false)} />
       <BriefModal isOpen={isBriefModalOpen} onClose={() => setIsBriefModalOpen(false)} />
       <AuthModal isOpen={isAuthModalOpen} onClose={() => setIsAuthModalOpen(false)} />
-      <InterventionSimulatorModal
-        isOpen={isInterventionModalOpen}
-        onClose={() => setIsInterventionModalOpen(false)}
-      />
-      <StreamModelConfigModal
-        isOpen={isStreamModelModalOpen}
-        onClose={() => setIsStreamModelModalOpen(false)}
-      />
       <DocumentExportModal
         isOpen={isDocumentModalOpen}
         onClose={() => setIsDocumentModalOpen(false)}
@@ -393,6 +389,12 @@ export const App: React.FC = () => {
         onClose={() => setIsLifecycleModalOpen(false)}
         onUpdateStatus={handleUpdateStatus}
         onAddCluster={(newCl) => setClusters((prev) => [newCl, ...prev])}
+      />
+      <UploadFootageModal
+        isOpen={isUploadModalOpen}
+        onClose={() => setIsUploadModalOpen(false)}
+        onAddCluster={(newCl) => setClusters((prev) => [newCl, ...prev])}
+        onNavigateToMap={() => handleNavigate("command")}
       />
     </div>
   );

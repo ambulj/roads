@@ -16,7 +16,7 @@ export const BriefModal: React.FC<BriefModalProps> = ({ isOpen, onClose }) => {
         <div className="flex items-center justify-between pb-3 border-b border-slate-200 dark:border-slate-800">
           <div className="flex items-center gap-2 text-blue-600 dark:text-blue-400 font-bold text-sm">
             <Award className="w-5 h-5" />
-            <span>RoadSaarthi — Executive Architecture Brief (BEL / MoHUA)</span>
+            <span>SheherSaathi — Executive Architecture Brief (BEL / MoHUA)</span>
           </div>
           <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 hover:text-slate-700 dark:hover:text-white transition">
             <X className="w-4 h-4" />
@@ -26,7 +26,7 @@ export const BriefModal: React.FC<BriefModalProps> = ({ isOpen, onClose }) => {
         {/* Overview */}
         <div className="p-3.5 rounded-xl bg-blue-50/70 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800/60 text-xs text-slate-700 dark:text-slate-300 leading-relaxed">
           <span className="text-blue-700 dark:text-blue-300 font-bold">Strategic Vision: </span> 
-          RoadSaarthi transforms standard public transit buses into mobile urban edge sensing nodes. By eliminating costly dedicated inspection vehicles, municipal road audits become a continuous, real-time by-product of daily public transit operations.
+          SheherSaathi transforms standard public transit buses into mobile urban edge sensing nodes. By eliminating costly dedicated inspection vehicles, municipal road audits become a continuous, real-time by-product of daily public transit operations.
         </div>
 
         {/* 4 Pillars Grid */}

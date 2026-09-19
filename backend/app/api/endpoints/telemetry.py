@@ -154,7 +154,7 @@ async def infer_zebra_crossing(
 ):
     """
     Runs YOLO inference on road photo to detect zebra crossing markings.
-    Optionally pushes detected zebra crossing directly to RoadSaarthi cluster ledger.
+    Optionally pushes detected zebra crossing directly to SheherSaathi cluster ledger.
     """
     if file:
         image_bytes = await file.read()
@@ -167,7 +167,7 @@ async def infer_zebra_crossing(
 
     result = yolo_engine.detect_zebra_crossings(image_bytes)
 
-    # If requested, automatically create an official work order docket in RoadSaarthi
+    # If requested, automatically create an official work order docket in SheherSaathi
     if auto_ingest and result.get("detections"):
         for det in result["detections"]:
             ingest_payload = {
