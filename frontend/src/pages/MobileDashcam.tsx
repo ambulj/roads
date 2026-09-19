@@ -44,7 +44,12 @@ import {
   VolumeX,
   Crosshair,
   Shield,
-  Disc
+  Disc,
+  Filter,
+  MonitorPlay,
+  Settings2,
+  HelpCircle,
+  BarChart2
 } from 'lucide-react';
 import { HazardCluster, WorkOrderStatus, DefectCode } from '../types';
 import { useLanguage } from '../context/LanguageContext';
@@ -316,12 +321,18 @@ export const MobileDashcam: React.FC<MobileDashcamProps> = ({
   const [viewMode, setViewMode] = useState<'single' | 'quad_matrix'>('single');
   const [isPlaying, setIsPlaying] = useState<boolean>(true);
   
+  // Model & AI Parameter Controls
+  const [confidenceThreshold, setConfidenceThreshold] = useState<number>(0.65);
+  const [quantizationModel, setQuantizationModel] = useState<'TensorRT_FP16' | 'INT8' | 'FP32'>('TensorRT_FP16');
+  const [playbackSpeed, setPlaybackSpeed] = useState<number>(1.0);
+  
   // HUD Layer Toggles
   const [showAiBboxes, setShowAiBboxes] = useState<boolean>(true);
   const [showPrivacyBlur, setShowPrivacyBlur] = useState<boolean>(true);
   const [showTelemetryHUD, setShowTelemetryHUD] = useState<boolean>(true);
   const [showImuShockWave, setShowImuShockWave] = useState<boolean>(true);
   const [showCrosswalkZone, setShowCrosswalkZone] = useState<boolean>(true);
+  const [showScanlines, setShowScanlines] = useState<boolean>(true);
   
   // Hardware Diagnostics & Telemetry
   const [edgeFps, setEdgeFps] = useState<number>(30);
@@ -343,7 +354,7 @@ export const MobileDashcam: React.FC<MobileDashcamProps> = ({
   // Active camera selection
   const activeCamera = activeBusRig.cameras.find(c => c.position === activeCameraPosition) || activeBusRig.cameras[0];
 
-  // Simulated Animation Loop on Canvas
+  // Dynamic Canvas Rendering Engine
   useEffect(() => {
     let animFrame: number;
     let tick = 0;
@@ -354,52 +365,54 @@ export const MobileDashcam: React.FC<MobileDashcamProps> = ({
     if (!ctx) return;
 
     const render = () => {
-      tick++;
+      tick += playbackSpeed;
       const w = canvas.width;
       const h = canvas.height;
 
-      // Draw simulated road background
-      const skyGrad = ctx.createLinearGradient(0, 0, 0, h * 0.45);
-      skyGrad.addColorStop(0, '#0f172a');
+      // Draw Sky & Environment
+      const skyGrad = ctx.createLinearGradient(0, 0, 0, h * 0.42);
+      skyGrad.addColorStop(0, '#090d16');
       skyGrad.addColorStop(1, '#1e293b');
       ctx.fillStyle = skyGrad;
-      ctx.fillRect(0, 0, w, h * 0.45);
+      ctx.fillRect(0, 0, w, h * 0.42);
 
-      // Asphalt Road
-      const roadGrad = ctx.createLinearGradient(0, h * 0.45, 0, h);
+      // Distant Skyline / Roadway
+      ctx.fillStyle = '#0f172a';
+      ctx.fillRect(0, h * 0.38, w, h * 0.04);
+
+      // Asphalt Road Surface
+      const roadGrad = ctx.createLinearGradient(0, h * 0.42, 0, h);
       roadGrad.addColorStop(0, '#1e293b');
-      roadGrad.addColorStop(1, '#090d16');
+      roadGrad.addColorStop(0.3, '#141c2c');
+      roadGrad.addColorStop(1, '#080c14');
       ctx.fillStyle = roadGrad;
-      ctx.fillRect(0, h * 0.45, w, h * 0.55);
+      ctx.fillRect(0, h * 0.42, w, h * 0.58);
 
-      // Horizon line
-      const horizonY = h * 0.45;
+      const horizonY = h * 0.42;
 
-      // Perspective Road Edges
-      ctx.strokeStyle = '#e2e8f0';
+      // Road Borders & Shoulders
+      ctx.strokeStyle = '#64748b';
       ctx.lineWidth = 3;
-      // Left edge
       ctx.beginPath();
       ctx.moveTo(w * 0.42, horizonY);
-      ctx.lineTo(w * 0.05, h);
+      ctx.lineTo(w * 0.04, h);
       ctx.stroke();
 
-      // Right edge
       ctx.beginPath();
       ctx.moveTo(w * 0.58, horizonY);
-      ctx.lineTo(w * 0.95, h);
+      ctx.lineTo(w * 0.96, h);
       ctx.stroke();
 
-      // Dashed Center Lanes (Moving)
+      // Dashed White / Yellow Highway Markers
       ctx.strokeStyle = '#facc15';
       ctx.lineWidth = 4;
-      const laneOffset = isPlaying ? (tick * 4) % 60 : 0;
-      for (let y = horizonY; y < h; y += 40) {
+      const laneOffset = isPlaying ? (tick * 5) % 80 : 0;
+      for (let y = horizonY; y < h; y += 45) {
         const progress = (y + laneOffset - horizonY) / (h - horizonY);
         if (progress > 0 && progress < 1) {
-          const cy = horizonY + progress * (h - horizonY);
+          const cy = horizonY + Math.pow(progress, 1.6) * (h - horizonY);
           const cx = w * 0.5;
-          const segLen = 15 * progress;
+          const segLen = 18 * progress;
           ctx.beginPath();
           ctx.moveTo(cx, cy);
           ctx.lineTo(cx, cy + segLen);
@@ -407,137 +420,152 @@ export const MobileDashcam: React.FC<MobileDashcamProps> = ({
         }
       }
 
-      // Feature specific overlays based on position
+      // 1. FRONT CAMERA VISION ZERO SCENE
       if (activeCamera.position === 'front_road') {
-        // Pedestrian Crosswalk
         if (showCrosswalkZone) {
-          ctx.fillStyle = 'rgba(16, 185, 129, 0.15)';
+          ctx.fillStyle = 'rgba(16, 185, 129, 0.16)';
           ctx.strokeStyle = '#10b981';
           ctx.lineWidth = 2;
           ctx.beginPath();
-          ctx.moveTo(w * 0.32, h * 0.62);
-          ctx.lineTo(w * 0.68, h * 0.62);
+          ctx.moveTo(w * 0.34, h * 0.60);
+          ctx.lineTo(w * 0.66, h * 0.60);
           ctx.lineTo(w * 0.78, h * 0.78);
           ctx.lineTo(w * 0.22, h * 0.78);
           ctx.closePath();
           ctx.fill();
           ctx.stroke();
 
-          // White Zebra Stripes
-          ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
+          // White Zebra Markings
+          ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
           for (let s = -3; s <= 3; s++) {
             const sx = w * 0.5 + s * (w * 0.06);
-            ctx.fillRect(sx - 10, h * 0.65, 20, h * 0.1);
+            ctx.fillRect(sx - 12, h * 0.63, 24, h * 0.11);
           }
         }
 
-        // Bounding box for pedestrians / school children
         if (showAiBboxes) {
-          const bx = w * 0.45;
-          const by = h * 0.55;
-          const bw = 90;
-          const bh = 110;
+          const bx = w * 0.44;
+          const by = h * 0.52;
+          const bw = 95;
+          const bh = 120;
 
-          // Box
+          // Pedestrian Box
           ctx.strokeStyle = '#f59e0b';
           ctx.lineWidth = 2.5;
           ctx.strokeRect(bx, by, bw, bh);
 
-          // Header Tag
+          // Top Badge
           ctx.fillStyle = '#f59e0b';
-          ctx.fillRect(bx, by - 22, 190, 22);
+          ctx.fillRect(bx, by - 24, 215, 24);
           ctx.fillStyle = '#000000';
           ctx.font = 'bold 11px monospace';
-          ctx.fillText('PEDESTRIAN YIELD [96.8%]', bx + 5, by - 7);
+          ctx.fillText('PEDESTRIAN CROSSING [96.8%]', bx + 5, by - 7);
 
-          // Distance Tag
-          ctx.fillStyle = 'rgba(0,0,0,0.75)';
-          ctx.fillRect(bx, by + bh, 120, 18);
+          // Bottom Metric
+          ctx.fillStyle = 'rgba(0,0,0,0.85)';
+          ctx.fillRect(bx, by + bh, 150, 20);
           ctx.fillStyle = '#34d399';
           ctx.font = 'bold 10px monospace';
-          ctx.fillText('DIST: 14.2m | 22 km/h', bx + 5, by + bh + 13);
+          ctx.fillText('PROX: 14.2m | YIELD: MANDATORY', bx + 5, by + bh + 14);
         }
-      } else if (activeCamera.position === 'rear_anpr') {
-        // Rear Car Target
-        const bx = w * 0.38;
-        const by = h * 0.48;
-        const bw = 160;
-        const bh = 140;
+      } 
+      // 2. REAR CAMERA ANPR HIT-AND-RUN DRAGNET
+      else if (activeCamera.position === 'rear_anpr') {
+        const bx = w * 0.36;
+        const by = h * 0.46;
+        const bw = 180;
+        const bh = 150;
 
-        // Vehicle Box
         ctx.strokeStyle = '#e11d48';
         ctx.lineWidth = 3;
         ctx.strokeRect(bx, by, bw, bh);
 
-        // Header
         ctx.fillStyle = '#e11d48';
-        ctx.fillRect(bx, by - 24, 210, 24);
+        ctx.fillRect(bx, by - 24, 230, 24);
         ctx.fillStyle = '#ffffff';
         ctx.font = 'bold 11px monospace';
-        ctx.fillText('EVASION TARGET [97.4%]', bx + 5, by - 8);
+        ctx.fillText('HIGH-SPEED EVASION [97.4%]', bx + 6, by - 8);
 
-        // Plate Box
+        // License Plate Plate OCR
         ctx.fillStyle = '#000000';
-        ctx.fillRect(bx + 20, by + 70, 120, 32);
+        ctx.fillRect(bx + 25, by + 75, 130, 36);
         ctx.strokeStyle = '#facc15';
         ctx.lineWidth = 2;
-        ctx.strokeRect(bx + 20, by + 70, 120, 32);
+        ctx.strokeRect(bx + 25, by + 75, 130, 36);
         ctx.fillStyle = '#facc15';
-        ctx.font = 'bold 15px monospace';
-        ctx.fillText('TN-01-AX-8732', bx + 26, by + 92);
+        ctx.font = 'bold 16px monospace';
+        ctx.fillText('TN-01-AX-8732', bx + 32, by + 99);
 
-        // Speed Delta Vector
         ctx.fillStyle = 'rgba(0, 0, 0, 0.85)';
-        ctx.fillRect(bx, by + bh + 4, 160, 20);
+        ctx.fillRect(bx, by + bh + 4, 180, 22);
         ctx.fillStyle = '#fb7185';
         ctx.font = 'bold 10px monospace';
-        ctx.fillText('SPEED: 78.4 km/h (+36 Δv)', bx + 6, by + bh + 18);
-      } else if (activeCamera.position === 'curb_pedestrian') {
-        // Open Manhole Cavity
-        const mx = w * 0.35;
-        const my = h * 0.65;
-        const mw = 130;
-        const mh = 70;
+        ctx.fillText('SPEED: 78.4 km/h (+36.4 Δv)', bx + 6, by + bh + 19);
+      }
+      // 3. CURBSIDE MANHOLE & WATERLOG DRAIN
+      else if (activeCamera.position === 'curb_pedestrian') {
+        const mx = w * 0.32;
+        const my = h * 0.64;
+        const mw = 140;
+        const mh = 75;
 
-        ctx.fillStyle = '#0f172a';
+        ctx.fillStyle = '#0a0e17';
         ctx.beginPath();
         ctx.ellipse(mx + mw / 2, my + mh / 2, mw / 2, mh / 2, 0, 0, Math.PI * 2);
         ctx.fill();
         ctx.strokeStyle = '#dc2626';
-        ctx.lineWidth = 3;
+        ctx.lineWidth = 3.5;
         ctx.stroke();
 
         ctx.fillStyle = '#dc2626';
-        ctx.fillRect(mx, my - 22, 190, 22);
+        ctx.fillRect(mx, my - 24, 210, 24);
         ctx.fillStyle = '#ffffff';
         ctx.font = 'bold 11px monospace';
-        ctx.fillText('OPEN MANHOLE VOID [94.2%]', mx + 5, my - 7);
-      } else if (activeCamera.position === 'street_lane') {
-        // BRTS Corridor Box
-        const bx = w * 0.52;
-        const by = h * 0.50;
-        const bw = 170;
-        const bh = 120;
+        ctx.fillText('OPEN MANHOLE VOID [94.2%]', mx + 6, my - 8);
+      }
+      // 4. BRTS BUS LANE
+      else if (activeCamera.position === 'street_lane') {
+        const bx = w * 0.48;
+        const by = h * 0.48;
+        const bw = 180;
+        const bh = 130;
 
         ctx.strokeStyle = '#3b82f6';
         ctx.lineWidth = 2.5;
         ctx.strokeRect(bx, by, bw, bh);
 
         ctx.fillStyle = '#3b82f6';
-        ctx.fillRect(bx, by - 22, 185, 22);
+        ctx.fillRect(bx, by - 24, 215, 24);
         ctx.fillStyle = '#ffffff';
         ctx.font = 'bold 11px monospace';
-        ctx.fillText('BUS LANE ENCROACH [98.1%]', bx + 5, by - 7);
+        ctx.fillText('BUS LANE ENCROACH [98.1%]', bx + 6, by - 8);
       }
 
-      // Privacy Blur Mask (DPDP Act)
+      // Optical Targeting Reticle in Center
+      ctx.strokeStyle = 'rgba(56, 189, 248, 0.25)';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(w * 0.5 - 20, h * 0.5);
+      ctx.lineTo(w * 0.5 + 20, h * 0.5);
+      ctx.moveTo(w * 0.5, h * 0.5 - 20);
+      ctx.lineTo(w * 0.5 + 20, h * 0.5);
+      ctx.stroke();
+
+      // Scanline Effect Overlay
+      if (showScanlines) {
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.08)';
+        for (let sl = 0; sl < h; sl += 4) {
+          ctx.fillRect(0, sl, w, 1.5);
+        }
+      }
+
+      // Privacy Blur Stamp (DPDP Act 2023)
       if (showPrivacyBlur) {
-        ctx.fillStyle = 'rgba(15, 23, 42, 0.65)';
-        // Redaction stamp on top right corner
-        ctx.fillRect(w - 220, 15, 205, 24);
+        ctx.fillStyle = 'rgba(15, 23, 42, 0.75)';
+        ctx.fillRect(w - 230, 15, 215, 24);
         ctx.fillStyle = '#34d399';
         ctx.font = 'bold 10px monospace';
-        ctx.fillText('DPDP ACT 2023 PRIVACY ACTIVE', w - 210, 31);
+        ctx.fillText('DPDP ACT 2023 PRIVACY MASKED', w - 220, 31);
       }
 
       animFrame = requestAnimationFrame(render);
@@ -548,12 +576,12 @@ export const MobileDashcam: React.FC<MobileDashcamProps> = ({
     return () => {
       cancelAnimationFrame(animFrame);
     };
-  }, [isPlaying, activeCameraPosition, showAiBboxes, showPrivacyBlur, showCrosswalkZone]);
+  }, [isPlaying, activeCameraPosition, showAiBboxes, showPrivacyBlur, showCrosswalkZone, showScanlines, playbackSpeed]);
 
-  // Handle Ingestion to DB / WebSockets
+  // Push to Central Database & WebSocket Pipeline
   const handleSimulateIncidentTrigger = (customOverlay?: any) => {
     const ov = customOverlay || activeCamera.detectedOverlay;
-    showSuccessToast('Edge Event Triggered', `[${activeCamera.shortTag}] Ingested ${ov.label} with ${ov.confidence}% confidence.`);
+    showSuccessToast('Edge Event Triggered', `[${activeCamera.shortTag}] Logged ${ov.label} with ${ov.confidence}% confidence.`);
 
     setRecordedPacketsCount(prev => prev + 1);
 
@@ -582,7 +610,7 @@ export const MobileDashcam: React.FC<MobileDashcamProps> = ({
     }
   };
 
-  // Toggle Device Camera Mode
+  // Toggle WebRTC Device Camera Mode
   const toggleDeviceCamera = async () => {
     if (!useDeviceWebcam) {
       try {
@@ -608,16 +636,16 @@ export const MobileDashcam: React.FC<MobileDashcamProps> = ({
   };
 
   return (
-    <div className="flex-1 flex flex-col min-h-0 overflow-y-auto custom-scrollbar bg-[#090d16] text-slate-100 select-none">
+    <div className="flex-1 flex flex-col min-h-0 overflow-y-auto custom-scrollbar bg-[#080c14] text-slate-100 select-none">
       
       {/* ── Top Header Navigation Bar ── */}
-      <div className="sticky top-0 z-40 bg-[#0b111e]/90 backdrop-blur-md border-b border-slate-800 px-4 sm:px-6 py-3.5 flex flex-col md:flex-row md:items-center justify-between gap-3 shadow-md">
+      <div className="sticky top-0 z-40 bg-[#0b111e]/95 backdrop-blur-md border-b border-slate-800 px-4 sm:px-6 py-3 flex flex-col md:flex-row md:items-center justify-between gap-3 shadow-xl">
         
         {/* Left Title & Rig Selector */}
         <div className="flex items-center gap-3">
           <button 
             onClick={onBackToDashboard}
-            className="p-2 rounded-xl bg-slate-800/80 border border-slate-700 hover:bg-slate-700 text-slate-300 transition cursor-pointer shadow-xs"
+            className="p-2 rounded-xl bg-slate-800/90 border border-slate-700 hover:bg-slate-700 text-slate-300 transition cursor-pointer shadow-xs"
             title="Back to Command Center"
           >
             <ArrowLeft className="w-5 h-5" />
@@ -625,19 +653,19 @@ export const MobileDashcam: React.FC<MobileDashcamProps> = ({
 
           <div>
             <div className="flex items-center gap-2.5">
-              <div className="w-7 h-7 rounded-lg bg-blue-600 flex items-center justify-center text-white shadow-sm shadow-blue-500/30">
+              <div className="w-8 h-8 rounded-xl bg-blue-600 flex items-center justify-center text-white shadow-md shadow-blue-500/30">
                 <Video className="w-4 h-4" />
               </div>
-              <h1 className="text-lg sm:text-xl font-extrabold text-white tracking-tight">
-                Edge Dashcam &amp; 360° Multi-Camera Ingestion
+              <h1 className="text-base sm:text-lg font-extrabold text-white tracking-tight">
+                360° Edge Dashcam &amp; Multi-Camera Ingestion Studio
               </h1>
               <span className="px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 text-[10px] font-mono font-bold flex items-center gap-1">
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
-                NPU ACTIVE
+                {quantizationModel}
               </span>
             </div>
             <p className="text-xs text-slate-400 mt-0.5">
-              Real-time YOLOv8 + ByteTrack edge inference, Section 63 BSA legal timestamping &amp; IMU sensor shock fusion.
+              Autonomous YOLOv8 + ByteTrack inference, Section 63 BSA legal timestamping &amp; IMU sensor shock fusion.
             </p>
           </div>
         </div>
@@ -718,13 +746,13 @@ export const MobileDashcam: React.FC<MobileDashcamProps> = ({
         </div>
       </div>
 
-      <div className="p-4 sm:p-6 space-y-5 max-w-[1750px] mx-auto w-full">
+      <div className="p-4 sm:p-6 space-y-4 max-w-[1750px] mx-auto w-full">
         
-        {/* ── 1. Channel Switcher & Stream Telemetry Ribbon ── */}
-        <div className="bg-[#0f172a] border border-slate-800 rounded-2xl p-3 shadow-lg flex flex-col md:flex-row md:items-center justify-between gap-3">
+        {/* ── 1. Channel Switcher & AI Inference Controls Ribbon ── */}
+        <div className="bg-[#0f172a] border border-slate-800 rounded-2xl p-3 shadow-lg flex flex-col lg:flex-row lg:items-center justify-between gap-3">
           
           {/* Camera Channel Buttons */}
-          <div className="flex items-center gap-2 overflow-x-auto custom-scrollbar pb-1 md:pb-0">
+          <div className="flex items-center gap-2 overflow-x-auto custom-scrollbar pb-1 lg:pb-0">
             {activeBusRig.cameras.map((cam) => {
               const isActive = cam.position === activeCameraPosition && viewMode === 'single';
               return (
@@ -752,55 +780,76 @@ export const MobileDashcam: React.FC<MobileDashcamProps> = ({
             })}
           </div>
 
-          {/* Quick HUD Overlays Toggle Strip */}
-          <div className="flex items-center gap-2 flex-wrap">
-            <button
-              onClick={() => setShowAiBboxes(!showAiBboxes)}
-              className={`px-2.5 py-1.5 rounded-lg text-xs font-semibold border transition cursor-pointer flex items-center gap-1 ${
-                showAiBboxes
-                  ? 'bg-emerald-500/20 border-emerald-500/50 text-emerald-300'
-                  : 'bg-slate-800 border-slate-700 text-slate-500'
-              }`}
-            >
-              <Eye className="w-3.5 h-3.5" />
-              <span>AI BBoxes: {showAiBboxes ? 'ON' : 'OFF'}</span>
-            </button>
+          {/* AI Thresholds & Quantization Controls */}
+          <div className="flex items-center gap-3 flex-wrap">
+            
+            {/* Confidence Slider */}
+            <div className="flex items-center gap-2 bg-slate-950 px-3 py-1.5 rounded-xl border border-slate-800 text-xs font-mono">
+              <span className="text-slate-400">IoU Conf:</span>
+              <input 
+                type="range" 
+                min="0.5" 
+                max="0.95" 
+                step="0.05"
+                value={confidenceThreshold}
+                onChange={(e) => setConfidenceThreshold(Number(e.target.value))}
+                className="w-16 accent-blue-500 cursor-pointer"
+              />
+              <span className="text-blue-400 font-bold">{Math.round(confidenceThreshold * 100)}%</span>
+            </div>
 
-            <button
-              onClick={() => setShowPrivacyBlur(!showPrivacyBlur)}
-              className={`px-2.5 py-1.5 rounded-lg text-xs font-semibold border transition cursor-pointer flex items-center gap-1 ${
-                showPrivacyBlur
-                  ? 'bg-blue-500/20 border-blue-500/50 text-blue-300'
-                  : 'bg-slate-800 border-slate-700 text-slate-500'
-              }`}
-            >
-              <ShieldCheck className="w-3.5 h-3.5" />
-              <span>DPDP Privacy: {showPrivacyBlur ? 'MASKED' : 'RAW'}</span>
-            </button>
+            {/* Model Quantization Selector */}
+            <div className="flex items-center gap-1.5 bg-slate-950 px-2.5 py-1 rounded-xl border border-slate-800 text-xs font-mono">
+              <Cpu className="w-3.5 h-3.5 text-emerald-400" />
+              <select
+                value={quantizationModel}
+                onChange={(e) => setQuantizationModel(e.target.value as any)}
+                className="bg-transparent text-slate-300 font-bold focus:outline-hidden cursor-pointer"
+              >
+                <option value="TensorRT_FP16" className="bg-slate-900">TensorRT FP16 (14.2ms)</option>
+                <option value="INT8" className="bg-slate-900">INT8 Quantized (8.6ms)</option>
+                <option value="FP32" className="bg-slate-900">Full FP32 (28.4ms)</option>
+              </select>
+            </div>
 
-            <button
-              onClick={() => setShowCrosswalkZone(!showCrosswalkZone)}
-              className={`px-2.5 py-1.5 rounded-lg text-xs font-semibold border transition cursor-pointer flex items-center gap-1 ${
-                showCrosswalkZone
-                  ? 'bg-amber-500/20 border-amber-500/50 text-amber-300'
-                  : 'bg-slate-800 border-slate-700 text-slate-500'
-              }`}
-            >
-              <School className="w-3.5 h-3.5" />
-              <span>Vision Zero Zone</span>
-            </button>
+            {/* HUD Overlays Toggles */}
+            <div className="flex items-center gap-1.5">
+              <button
+                onClick={() => setShowAiBboxes(!showAiBboxes)}
+                className={`px-2.5 py-1.5 rounded-lg text-xs font-semibold border transition cursor-pointer flex items-center gap-1 ${
+                  showAiBboxes
+                    ? 'bg-emerald-500/20 border-emerald-500/50 text-emerald-300'
+                    : 'bg-slate-850 border-slate-700 text-slate-500'
+                }`}
+              >
+                <Eye className="w-3.5 h-3.5" />
+                <span>BBoxes: {showAiBboxes ? 'ON' : 'OFF'}</span>
+              </button>
+
+              <button
+                onClick={() => setShowPrivacyBlur(!showPrivacyBlur)}
+                className={`px-2.5 py-1.5 rounded-lg text-xs font-semibold border transition cursor-pointer flex items-center gap-1 ${
+                  showPrivacyBlur
+                    ? 'bg-blue-500/20 border-blue-500/50 text-blue-300'
+                    : 'bg-slate-850 border-slate-700 text-slate-500'
+                }`}
+              >
+                <ShieldCheck className="w-3.5 h-3.5" />
+                <span>DPDP Mask</span>
+              </button>
+            </div>
           </div>
         </div>
 
         {/* ── 2. Main Stage: Video Viewport & Real-Time Edge Telemetry Grid ── */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
           
           {/* Main Visual Viewport (8 Cols) */}
-          <div className="lg:col-span-8 space-y-4">
+          <div className="lg:col-span-8 space-y-3">
             
             {viewMode === 'single' ? (
               /* Single Camera Focused Viewport */
-              <div className="relative rounded-2xl overflow-hidden border border-slate-800 bg-black min-h-[480px] flex items-center justify-center shadow-2xl">
+              <div className="relative rounded-2xl overflow-hidden border border-slate-800 bg-black min-h-[490px] flex items-center justify-center shadow-2xl">
                 
                 {useDeviceWebcam ? (
                   <video 
@@ -808,7 +857,7 @@ export const MobileDashcam: React.FC<MobileDashcamProps> = ({
                     autoPlay 
                     playsInline 
                     muted 
-                    className="w-full h-full object-cover min-h-[480px]"
+                    className="w-full h-full object-cover min-h-[490px]"
                   />
                 ) : (
                   <canvas 
@@ -821,14 +870,14 @@ export const MobileDashcam: React.FC<MobileDashcamProps> = ({
 
                 {/* Top Optical HUD Ribbon */}
                 <div className="absolute top-3 left-3 right-3 z-30 flex items-center justify-between text-xs font-mono text-white pointer-events-none">
-                  <div className="flex items-center gap-2 bg-slate-950/85 backdrop-blur-md px-3 py-1.5 rounded-xl border border-slate-800 shadow-lg">
+                  <div className="flex items-center gap-2 bg-slate-950/90 backdrop-blur-md px-3 py-1.5 rounded-xl border border-slate-800 shadow-lg">
                     <Radio className="w-3.5 h-3.5 text-emerald-400 animate-pulse" />
                     <span className="font-bold text-emerald-400">{activeCamera.shortTag}</span>
                     <span className="text-slate-400">&bull; {activeCamera.resolution}</span>
                     <span className="text-slate-400">&bull; {activeBusRig.id}</span>
                   </div>
 
-                  <div className="flex items-center gap-2 bg-slate-950/85 backdrop-blur-md px-3 py-1.5 rounded-xl border border-slate-800 shadow-lg">
+                  <div className="flex items-center gap-2 bg-slate-950/90 backdrop-blur-md px-3 py-1.5 rounded-xl border border-slate-800 shadow-lg">
                     <Compass className="w-3.5 h-3.5 text-blue-400" />
                     <span>CORRIDOR: <b className="text-amber-400">{activeBusRig.routeCode}</b></span>
                     <span className="text-slate-400">&bull; {activeCamera.detectedOverlay.speedKmh || 32.0} km/h</span>
@@ -848,12 +897,26 @@ export const MobileDashcam: React.FC<MobileDashcamProps> = ({
                     <Activity className="w-3 h-3 text-rose-400" />
                     <span>IMU JERK: <b className="text-rose-400">{activeCamera.position === 'front_road' ? '+1.84g' : '+0.21g'}</b></span>
                     <span className="text-slate-500">|</span>
-                    <span>LATENCY: <b className="text-emerald-400">{inferenceLatencyMs}ms</b></span>
+                    <span>LATENCY: <b className="text-emerald-400">{quantizationModel === 'INT8' ? '8.6ms' : (quantizationModel === 'FP32' ? '28.4ms' : '14.2ms')}</b></span>
                   </div>
                 </div>
 
                 {/* Bottom Right: Playback & Action Controls */}
                 <div className="absolute bottom-3 right-3 z-30 flex items-center gap-2">
+                  
+                  {/* Speed Selector */}
+                  <div className="flex items-center bg-slate-900/90 border border-slate-700 rounded-xl px-2 py-1 text-[11px] font-mono">
+                    <select
+                      value={playbackSpeed}
+                      onChange={(e) => setPlaybackSpeed(Number(e.target.value))}
+                      className="bg-transparent text-slate-200 font-bold focus:outline-hidden cursor-pointer"
+                    >
+                      <option value="0.5" className="bg-slate-900">0.5x</option>
+                      <option value="1.0" className="bg-slate-900">1.0x</option>
+                      <option value="2.0" className="bg-slate-900">2.0x</option>
+                    </select>
+                  </div>
+
                   <button
                     onClick={() => setIsPlaying(!isPlaying)}
                     className="p-2 rounded-xl bg-slate-900/90 border border-slate-700 hover:bg-slate-800 text-white cursor-pointer shadow-lg"
@@ -887,7 +950,7 @@ export const MobileDashcam: React.FC<MobileDashcamProps> = ({
                     <img 
                       src={cam.feedPreviewUrl} 
                       alt={cam.label}
-                      className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition"
+                      className="w-full h-full object-cover opacity-85 group-hover:opacity-100 transition"
                     />
                     <div className="absolute top-2 left-2 bg-slate-950/90 border border-slate-800 px-2 py-0.5 rounded text-[10px] font-mono text-emerald-400">
                       {cam.shortTag}
@@ -902,11 +965,11 @@ export const MobileDashcam: React.FC<MobileDashcamProps> = ({
             )}
 
             {/* Bottom Playback & Stream Timeline Bar */}
-            <div className="bg-[#0f172a] border border-slate-800 rounded-2xl p-4 shadow-lg flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs font-mono text-slate-300">
+            <div className="bg-[#0f172a] border border-slate-800 rounded-2xl p-3.5 shadow-lg flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs font-mono text-slate-300">
               <div className="flex items-center gap-3">
                 <div className="flex items-center gap-1.5 text-emerald-400 font-bold">
                   <Disc className="w-4 h-4 animate-spin text-emerald-400" />
-                  <span>EDGE BUFFER: 128 MB RING CACHE</span>
+                  <span>EDGE RING BUFFER: 128 MB</span>
                 </div>
                 <span className="text-slate-600">|</span>
                 <span>PACKETS INGESTED: <b className="text-white">{recordedPacketsCount}</b></span>
@@ -929,7 +992,7 @@ export const MobileDashcam: React.FC<MobileDashcamProps> = ({
           </div>
 
           {/* Right Edge Diagnostics & Perception Suite (4 Cols) */}
-          <div className="lg:col-span-4 space-y-4">
+          <div className="lg:col-span-4 space-y-3">
             
             {/* 1. Active Channel Perception Dossier */}
             <div className="bg-[#0f172a] border border-slate-800 rounded-2xl p-4 shadow-xl space-y-3">
@@ -937,7 +1000,7 @@ export const MobileDashcam: React.FC<MobileDashcamProps> = ({
                 <div className="flex items-center gap-2">
                   <Zap className="w-4 h-4 text-amber-400" />
                   <span className="text-xs font-bold text-slate-200 uppercase tracking-wider">
-                    Edge Perception Intel
+                    Active Channel Intel
                   </span>
                 </div>
                 <Badge variant="info" size="sm">
@@ -947,7 +1010,7 @@ export const MobileDashcam: React.FC<MobileDashcamProps> = ({
 
               <div className="p-3 rounded-xl bg-slate-950 border border-slate-800 space-y-1.5">
                 <div className="flex items-center justify-between">
-                  <span className="text-[11px] font-mono text-slate-400">CLASS DETECTION</span>
+                  <span className="text-[10px] font-mono text-slate-400">CLASS DETECTED</span>
                   <span className="text-xs font-mono font-bold text-amber-400">{activeCamera.detectedOverlay.incidentType}</span>
                 </div>
                 <h3 className="font-extrabold text-sm text-white leading-snug">
@@ -959,11 +1022,11 @@ export const MobileDashcam: React.FC<MobileDashcamProps> = ({
               </div>
 
               <div className="grid grid-cols-2 gap-2 text-xs font-mono">
-                <div className="p-2.5 rounded-xl bg-slate-950 border border-slate-800">
+                <div className="p-2 rounded-xl bg-slate-950 border border-slate-800">
                   <div className="text-[10px] text-slate-500 uppercase">Camera Sensor</div>
                   <div className="text-slate-200 font-bold truncate mt-0.5">{activeCamera.lensModel}</div>
                 </div>
-                <div className="p-2.5 rounded-xl bg-slate-950 border border-slate-800">
+                <div className="p-2 rounded-xl bg-slate-950 border border-slate-800">
                   <div className="text-[10px] text-slate-500 uppercase">Field of View</div>
                   <div className="text-slate-200 font-bold mt-0.5">{activeCamera.fov}</div>
                 </div>
@@ -981,7 +1044,7 @@ export const MobileDashcam: React.FC<MobileDashcamProps> = ({
             </div>
 
             {/* 2. Edge Hardware & TensorRT Benchmarks */}
-            <div className="bg-[#0f172a] border border-slate-800 rounded-2xl p-4 shadow-xl space-y-3">
+            <div className="bg-[#0f172a] border border-slate-800 rounded-2xl p-4 shadow-xl space-y-2.5">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <Cpu className="w-4 h-4 text-blue-400" />
@@ -994,28 +1057,30 @@ export const MobileDashcam: React.FC<MobileDashcamProps> = ({
                 </span>
               </div>
 
-              <div className="space-y-2 text-xs font-mono">
+              <div className="space-y-1.5 text-xs font-mono">
                 <div className="flex justify-between items-center p-2 rounded-lg bg-slate-950 border border-slate-800/80">
-                  <span className="text-slate-400">SoC Compute:</span>
+                  <span className="text-slate-400">SoC Architecture:</span>
                   <span className="font-bold text-white">{activeBusRig.npuHardware}</span>
                 </div>
                 <div className="flex justify-between items-center p-2 rounded-lg bg-slate-950 border border-slate-800/80">
-                  <span className="text-slate-400">TensorRT Latency:</span>
-                  <span className="font-bold text-emerald-400">{inferenceLatencyMs} ms / frame</span>
+                  <span className="text-slate-400">TensorRT Engine:</span>
+                  <span className="font-bold text-emerald-400">
+                    {quantizationModel === 'INT8' ? '8.6 ms (INT8)' : (quantizationModel === 'FP32' ? '28.4 ms (FP32)' : '14.2 ms (FP16)')}
+                  </span>
                 </div>
                 <div className="flex justify-between items-center p-2 rounded-lg bg-slate-950 border border-slate-800/80">
                   <span className="text-slate-400">NPU Core Temp:</span>
                   <span className="font-bold text-amber-400">{npuTempC} °C</span>
                 </div>
                 <div className="flex justify-between items-center p-2 rounded-lg bg-slate-950 border border-slate-800/80">
-                  <span className="text-slate-400">Power Consumption:</span>
+                  <span className="text-slate-400">Power Envelope:</span>
                   <span className="font-bold text-blue-400">{activeBusRig.powerWatts} W</span>
                 </div>
               </div>
             </div>
 
             {/* 3. Quick Scenario Presets */}
-            <div className="bg-[#0f172a] border border-slate-800 rounded-2xl p-4 shadow-xl space-y-2.5">
+            <div className="bg-[#0f172a] border border-slate-800 rounded-2xl p-4 shadow-xl space-y-2">
               <span className="text-xs font-bold text-slate-300 uppercase tracking-wider block">
                 Quick Scenario Selectors:
               </span>
