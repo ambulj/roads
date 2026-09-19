@@ -2,8 +2,7 @@ import React, { useState, useMemo } from "react";
 import {
   Search,
   RotateCcw,
-  Sparkles,
-  Video
+  Sparkles
 } from "lucide-react";
 import { MetricCards } from "../components/triage/MetricCards";
 import { PriorityQueue } from "../components/triage/PriorityQueue";
@@ -282,26 +281,6 @@ export const CommandCenter: React.FC<CommandCenterProps> = ({
                 <span>Reset</span>
               </button>
             )}
-
-            {/* Live AI Vision HUD Button */}
-            <button
-              onClick={() => {
-                if (onNavigate) {
-                  onNavigate("capture");
-                } else {
-                  onNavigateToCapture();
-                }
-              }}
-              className="h-8 px-3 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-[11px] flex items-center gap-1.5 transition active:scale-95 cursor-pointer shrink-0 shadow-xs"
-              title="Open Live Edge AI Multi-Camera Vision & Telemetry HUD"
-            >
-              <span className="relative flex h-2 w-2">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-200 opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-white"></span>
-              </span>
-              <Video className="w-3.5 h-3.5" />
-              <span>Live AI HUD</span>
-            </button>
 
             {onOpenLifecycleDemo && (
               <button
