@@ -22,7 +22,14 @@ import {
   Box,
   ChevronLeft,
   ChevronRight,
-  CheckCircle2
+  CheckCircle2,
+  Radio,
+  Sparkles,
+  Zap,
+  Sliders,
+  ShieldCheck,
+  FileCheck,
+  DollarSign
 } from 'lucide-react';
 import { TrafficIncident, OpenManholeAlert, SubmergedPotholeAlert } from '../types';
 import { IncidentDossierModal } from '../components/modals/IncidentDossierModal';
@@ -100,7 +107,28 @@ export const IncidentList: React.FC<IncidentListProps> = ({
     }
   };
 
-  // Category counts — memoised so these don't recompute on every render
+  // Executive Metrics Calculations
+  const stats = useMemo(() => {
+    const total = incidents.length;
+    const hitAndRun = incidents.filter(i => i.incident_type === 'HIT_AND_RUN').length;
+    const rashDriving = incidents.filter(i => i.incident_type === 'RASH_DRIVING').length;
+    const pcrDispatched = incidents.filter(i => {
+      const s = (i.status || '').toLowerCase();
+      return s.includes('escalat') || s.includes('dispatch') || s.includes('pcr');
+    }).length;
+    const totalFines = incidents.reduce((acc, curr) => acc + (curr.fine_amount_inr || 2000), 0);
+
+    return {
+      total,
+      hitAndRun,
+      rashDriving,
+      pcrDispatched,
+      totalFines,
+      pendingReview: reviewQueue.length
+    };
+  }, [incidents, reviewQueue.length]);
+
+  // Category counts
   const categories = useMemo(() => {
     const totalCount = incidents.length;
     const hitAndRunCount = incidents.filter(i => i.incident_type === 'HIT_AND_RUN').length;
@@ -118,11 +146,11 @@ export const IncidentList: React.FC<IncidentListProps> = ({
 
     return [
       { id: 'ALL', label: t('cat.all', 'All Incidents'), count: totalCount },
-      { id: 'REVIEW_QUEUE', label: 'ANPR Review Queue (<85%)', count: reviewQueue.length },
-      { id: 'HIT_AND_RUN', label: t('defect.hitAndRun', 'Hit & Run'), count: hitAndRunCount },
-      { id: 'RASH_DRIVING', label: t('cat.rashDriving', 'Rash Driving'), count: rashDrivingCount },
+      { id: 'REVIEW_QUEUE', label: 'ANPR Review (<85%)', count: reviewQueue.length },
+      { id: 'HIT_AND_RUN', label: t('defect.hitAndRun', 'Hit & Run (MVA 161)'), count: hitAndRunCount },
+      { id: 'RASH_DRIVING', label: t('cat.rashDriving', 'Rash Driving (MVA 184)'), count: rashDrivingCount },
       { id: 'WATERLOGGING', label: t('defect.waterlog', 'Waterlogging'), count: waterlogCount },
-      { id: 'VULNERABLE_PEDESTRIAN', label: t('cat.pedestrian', 'Pedestrian'), count: pedestrianCount },
+      { id: 'VULNERABLE_PEDESTRIAN', label: t('cat.pedestrian', 'Pedestrian (IRC:35)'), count: pedestrianCount },
       { id: 'ESCALATED', label: t('incidents.pcrSent', 'Dispatched / PCR'), count: dispatchedCount },
       { id: 'RESOLVED', label: 'Resolved / Intercepted', count: resolvedCount }
     ];
@@ -136,7 +164,8 @@ export const IncidentList: React.FC<IncidentListProps> = ({
         (item.plate_number?.toLowerCase() || '').includes(q) ||
         (item.road_name?.toLowerCase() || '').includes(q) ||
         (item.reporting_bus_id?.toLowerCase() || '').includes(q) ||
-        (item.vehicle_class?.toLowerCase() || '').includes(q);
+        (item.vehicle_class?.toLowerCase() || '').includes(q) ||
+        (item.incident_type?.toLowerCase() || '').includes(q);
 
       let matchesCategory = true;
       if (activeCategory === 'ESCALATED') {
@@ -258,37 +287,120 @@ export const IncidentList: React.FC<IncidentListProps> = ({
   };
 
   const handleExportCSV = () => {
-    // Directly download official statutory CSV from backend
     window.open('/api/incidents/export/csv', '_blank');
     setToastMessage("Downloading official GCTP statutory enforcement log CSV");
     setTimeout(() => setToastMessage(null), 3000);
   };
 
-
   return (
-    <div className="flex-1 flex flex-col min-h-0 overflow-y-auto custom-scrollbar p-5 md:p-6 lg:p-7 space-y-5 max-w-[1750px] mx-auto w-full select-none font-sans">
+    <div className="flex-1 flex flex-col min-h-0 overflow-y-auto custom-scrollbar p-4 md:p-6 lg:p-7 space-y-5 max-w-[1750px] mx-auto w-full select-none font-sans">
       {/* Toast Notification */}
       {toastMessage && (
-        <div className="fixed top-5 right-5 z-50 flex items-center gap-2 px-3.5 py-2 bg-[#12304A] border border-[#1A73A8] rounded-xl text-white text-xs shadow-2xl backdrop-blur-xl animate-in fade-in slide-in-from-top-2">
-          <Send className="w-3.5 h-3.5 text-[#E87524] animate-pulse" />
+        <div className="fixed top-5 right-5 z-50 flex items-center gap-2 px-3.5 py-2 bg-slate-900 border border-blue-500 rounded-xl text-white text-xs shadow-2xl backdrop-blur-xl animate-in fade-in slide-in-from-top-2">
+          <Send className="w-3.5 h-3.5 text-blue-400 animate-pulse" />
           <span>{toastMessage}</span>
         </div>
       )}
 
-      {/* Sleek Emergency Protocol Banner (Collapsible) */}
+      {/* 1. EXECUTIVE ENFORCEMENT & TRAFFIC COMMAND RIBBON */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3.5">
+        {/* Card 1: Active Detections */}
+        <div className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col justify-between relative overflow-hidden group">
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+              Enforcement Incidents
+            </span>
+            <div className="w-8 h-8 rounded-xl bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 flex items-center justify-center border border-blue-200 dark:border-blue-900">
+              <ShieldAlert className="w-4 h-4" />
+            </div>
+          </div>
+          <div className="mt-2 flex items-baseline gap-2">
+            <span className="text-2xl font-black text-slate-900 dark:text-white font-mono">{stats.total}</span>
+            <span className="text-xs font-semibold text-blue-600 dark:text-blue-400 font-mono">Live 5Hz</span>
+          </div>
+          <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-1 flex items-center justify-between">
+            <span>{stats.hitAndRun} Hit &amp; Run</span>
+            <span>{stats.rashDriving} Rash Driving</span>
+          </div>
+        </div>
+
+        {/* Card 2: ANPR Review Queue */}
+        <div 
+          onClick={() => setActiveCategory('REVIEW_QUEUE')}
+          className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-amber-200 dark:border-amber-900/60 hover:border-amber-400 dark:hover:border-amber-600 shadow-sm flex flex-col justify-between relative overflow-hidden cursor-pointer transition"
+        >
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] font-bold text-amber-600 dark:text-amber-400 uppercase tracking-wider">
+              ANPR Review (&lt;85%)
+            </span>
+            <div className="w-8 h-8 rounded-xl bg-amber-50 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 flex items-center justify-center border border-amber-200 dark:border-amber-900">
+              <Sliders className="w-4 h-4" />
+            </div>
+          </div>
+          <div className="mt-2 flex items-baseline gap-2">
+            <span className="text-2xl font-black text-amber-600 dark:text-amber-400 font-mono">{stats.pendingReview}</span>
+            <span className="text-xs font-semibold text-amber-500 font-mono">HITL Mandate</span>
+          </div>
+          <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-1">
+            CMVR Rule 50 Officer Clearance
+          </div>
+        </div>
+
+        {/* Card 3: PCR Interceptors */}
+        <div className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col justify-between relative overflow-hidden">
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+              112 / PCR Interceptors
+            </span>
+            <div className="w-8 h-8 rounded-xl bg-rose-50 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400 flex items-center justify-center border border-rose-200 dark:border-rose-900">
+              <Siren className="w-4 h-4" />
+            </div>
+          </div>
+          <div className="mt-2 flex items-baseline gap-2">
+            <span className="text-2xl font-black text-rose-600 dark:text-rose-400 font-mono">{stats.pcrDispatched}</span>
+            <span className="text-xs font-semibold text-rose-500 font-mono">Dispatched</span>
+          </div>
+          <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-1">
+            Coordinated Multi-Bus Pursuit Active
+          </div>
+        </div>
+
+        {/* Card 4: Fines Valuation */}
+        <div className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col justify-between relative overflow-hidden">
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+              Assessed Penalties
+            </span>
+            <div className="w-8 h-8 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 flex items-center justify-center border border-emerald-200 dark:border-emerald-900">
+              <DollarSign className="w-4 h-4" />
+            </div>
+          </div>
+          <div className="mt-2 flex items-baseline gap-2">
+            <span className="text-2xl font-black text-emerald-600 dark:text-emerald-400 font-mono">
+              ₹{stats.totalFines.toLocaleString()}
+            </span>
+            <span className="text-xs font-semibold text-emerald-500 font-mono">e-Challan</span>
+          </div>
+          <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-1">
+            MVA 1988 §177 / §184 Statutory Log
+          </div>
+        </div>
+      </div>
+
+      {/* 2. EMERGENCY HAZARDS PROTOCOL BANNER */}
       {(openManholes.length > 0 || submergedPotholes.length > 0) && (
-        <div className="rounded-xl border border-rose-200 dark:border-rose-900/60 bg-rose-50/80 dark:bg-rose-950/30 p-3 shadow-xs transition-all">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
-            <div className="flex items-center gap-2.5 min-w-0">
-              <div className="w-7 h-7 rounded-lg bg-rose-600 text-white flex items-center justify-center shrink-0 shadow-xs">
+        <div className="rounded-2xl border border-rose-200 dark:border-rose-900/60 bg-rose-50/80 dark:bg-rose-950/30 p-3.5 shadow-xs transition-all">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div className="flex items-center gap-3 min-w-0">
+              <div className="w-8 h-8 rounded-xl bg-rose-600 text-white flex items-center justify-center shrink-0 shadow-xs">
                 <AlertOctagon className="w-4 h-4 animate-pulse" />
               </div>
               <div className="min-w-0">
                 <div className="flex items-center gap-2 flex-wrap">
                   <span className="font-bold text-xs text-rose-900 dark:text-rose-200">
-                    High-Priority Emergency Protocols Active
+                    High-Priority Infrastructure Hazards Active
                   </span>
-                  <span className="text-[10px] font-semibold bg-rose-200/80 dark:bg-rose-900/60 text-rose-800 dark:text-rose-300 px-2 py-0.5 rounded-md font-mono">
+                  <span className="text-[10px] font-bold bg-rose-200/80 dark:bg-rose-900/60 text-rose-800 dark:text-rose-300 px-2 py-0.5 rounded-md font-mono">
                     {openManholes.length} Open Manholes • {submergedPotholes.length} Submerged Traps
                   </span>
                 </div>
@@ -300,33 +412,33 @@ export const IncidentList: React.FC<IncidentListProps> = ({
 
             <button
               onClick={() => setShowEmergencyDetails(!showEmergencyDetails)}
-              className="px-2.5 py-1 text-xs font-semibold text-rose-700 dark:text-rose-300 hover:bg-rose-100 dark:hover:bg-rose-900/50 rounded-lg border border-rose-300/80 dark:border-rose-800 transition-colors self-start sm:self-auto shrink-0"
+              className="px-3 py-1 text-xs font-semibold text-rose-700 dark:text-rose-300 hover:bg-rose-100 dark:hover:bg-rose-900/50 rounded-lg border border-rose-300/80 dark:border-rose-800 transition cursor-pointer shrink-0"
             >
               {showEmergencyDetails ? "Hide Emergency Cases ▲" : "View Emergency Cases ▼"}
             </button>
           </div>
 
           {showEmergencyDetails && (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5 mt-3 pt-3 border-t border-rose-200 dark:border-rose-900/50">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-3.5 pt-3.5 border-t border-rose-200 dark:border-rose-900/50">
               {openManholes.map((om) => (
-                <div key={om.id} className="p-2.5 rounded-xl bg-white dark:bg-slate-900 border border-rose-300/60 dark:border-rose-800/60 flex flex-col justify-between gap-1.5 shadow-xs">
+                <div key={om.id} className="p-3 rounded-xl bg-white dark:bg-slate-900 border border-rose-300/60 dark:border-rose-800/60 flex flex-col justify-between gap-2 shadow-xs">
                   <div className="flex items-start justify-between gap-2">
                     <div>
                       <div className="font-bold text-xs text-slate-900 dark:text-white flex items-center gap-1.5">
                         <span className="w-2 h-2 rounded-full bg-rose-500 animate-ping" />
                         <span>{om.road_name}</span>
                       </div>
-                      <div className="text-[10.5px] text-slate-500 dark:text-slate-400">{om.zone} &bull; {om.detected_at}</div>
+                      <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">{om.zone} &bull; {om.detected_at}</div>
                     </div>
-                    <Badge variant="critical" size="sm" className="font-mono">
+                    <Badge variant="critical" size="sm" className="font-mono font-bold">
                       Δ {om.depth_drop_cm}cm Drop
                     </Badge>
                   </div>
-                  <div className="flex items-center justify-between text-[10.5px] pt-1.5 border-t border-slate-100 dark:border-slate-800">
-                    <span className="font-mono text-amber-600 dark:text-amber-400 font-semibold">
+                  <div className="flex items-center justify-between text-[11px] pt-2 border-t border-slate-100 dark:border-slate-800 font-mono">
+                    <span className="text-amber-600 dark:text-amber-400 font-semibold">
                       Docket: {om.jal_board_docket}
                     </span>
-                    <div className="flex items-center gap-1.5">
+                    <div className="flex items-center gap-2">
                       <button
                         onClick={() => setMeshIncident({
                           id: om.id,
@@ -340,7 +452,7 @@ export const IncidentList: React.FC<IncidentListProps> = ({
                           cameraConfidence: 96,
                           defectType: "Open Manhole Rim Drop"
                         })}
-                        className="px-2 py-0.5 rounded bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 border border-blue-300/60 dark:border-blue-800 text-[10px] font-bold flex items-center gap-1"
+                        className="px-2 py-0.5 rounded bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 border border-blue-300/60 dark:border-blue-800 text-[10px] font-bold flex items-center gap-1 cursor-pointer"
                       >
                         <Box className="w-2.5 h-2.5" />
                         <span>3D Mesh</span>
@@ -352,10 +464,10 @@ export const IncidentList: React.FC<IncidentListProps> = ({
               ))}
 
               {submergedPotholes.map((sph) => (
-                <div key={sph.id} className="p-2.5 rounded-xl bg-white dark:bg-slate-900 border border-sky-300/60 dark:border-sky-800/60 flex items-center justify-between gap-2 shadow-xs">
+                <div key={sph.id} className="p-3 rounded-xl bg-white dark:bg-slate-900 border border-sky-300/60 dark:border-sky-800/60 flex items-center justify-between gap-3 shadow-xs">
                   <div>
                     <div className="font-bold text-xs text-slate-900 dark:text-white">{sph.road_name}</div>
-                    <div className="text-[10.5px] text-slate-500 dark:text-slate-400 mt-0.5">
+                    <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
                       {sph.lane_blocked} &bull; Water: {sph.estimated_water_depth_mm}mm
                     </div>
                   </div>
@@ -363,7 +475,7 @@ export const IncidentList: React.FC<IncidentListProps> = ({
                     <div className="text-xs font-mono font-bold text-amber-600 dark:text-amber-400">
                       {sph.acoustic_spl_db} dB &bull; +{sph.vertical_shock_gz}g
                     </div>
-                    <div className="flex items-center gap-1.5 mt-1 justify-end">
+                    <div className="flex items-center gap-2 mt-1.5 justify-end">
                       <button
                         onClick={() => setMeshIncident({
                           id: sph.id,
@@ -377,7 +489,7 @@ export const IncidentList: React.FC<IncidentListProps> = ({
                           cameraConfidence: 93,
                           defectType: "Submerged Pothole Cavity"
                         })}
-                        className="px-2 py-0.5 rounded bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 border border-blue-300/60 dark:border-blue-800 text-[10px] font-bold flex items-center gap-1"
+                        className="px-2 py-0.5 rounded bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 border border-blue-300/60 dark:border-blue-800 text-[10px] font-bold flex items-center gap-1 cursor-pointer"
                       >
                         <Box className="w-2.5 h-2.5" />
                         <span>3D Mesh</span>
@@ -392,11 +504,10 @@ export const IncidentList: React.FC<IncidentListProps> = ({
         </div>
       )}
 
-      {/* Single Consolidated Executive Toolbar */}
-      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-2.5 bg-white dark:bg-[#0E1424] border border-slate-200 dark:border-slate-800 p-2.5 rounded-2xl shadow-card shrink-0">
-        {/* Left: Search Input + Category Filter Pills with Inline Counts */}
-        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 flex-1 min-w-0">
-          {/* Search Box */}
+      {/* 3. CONSOLIDATED EXECUTIVE TOOLBAR */}
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-3 rounded-2xl shadow-sm shrink-0">
+        {/* Search Input & Category Pills */}
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 flex-1 min-w-0">
           <div className="w-full sm:w-64 shrink-0">
             <Input
               value={searchQuery}
@@ -407,7 +518,7 @@ export const IncidentList: React.FC<IncidentListProps> = ({
                 searchQuery ? (
                   <button
                     onClick={() => setSearchQuery('')}
-                    className="text-slate-400 hover:text-slate-700 dark:hover:text-white"
+                    className="text-slate-400 hover:text-slate-700 dark:hover:text-white cursor-pointer"
                   >
                     <X className="w-3.5 h-3.5" />
                   </button>
@@ -416,23 +527,23 @@ export const IncidentList: React.FC<IncidentListProps> = ({
             />
           </div>
 
-          {/* Clean Category Tabs with Built-in Counts */}
-          <div className="flex items-center gap-1 overflow-x-auto custom-scrollbar p-1 bg-slate-100 dark:bg-[#121A2C] rounded-xl border border-slate-200 dark:border-slate-800">
+          {/* Category Tabs */}
+          <div className="flex items-center gap-1 overflow-x-auto custom-scrollbar p-1 bg-slate-100 dark:bg-slate-950 rounded-xl border border-slate-200 dark:border-slate-800">
             {categories.map(cat => {
               const isActive = activeCategory === cat.id;
               return (
                 <button
                   key={cat.id}
                   onClick={() => setActiveCategory(cat.id)}
-                  className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs transition whitespace-nowrap font-medium ${
+                  className={`flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs transition whitespace-nowrap font-medium cursor-pointer ${
                     isActive
                       ? 'bg-blue-600 text-white shadow-xs font-semibold'
                       : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
                   }`}
                 >
                   <span>{cat.label}</span>
-                  <span className={`text-[10px] px-1.5 py-0.2 rounded font-sans ${
-                    isActive ? 'bg-white/20 text-white font-bold' : 'bg-slate-200/80 dark:bg-slate-800 text-slate-600 dark:text-slate-400'
+                  <span className={`text-[10px] px-1.5 py-0.2 rounded font-mono ${
+                    isActive ? 'bg-white/25 text-white font-bold' : 'bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-400'
                   }`}>
                     {cat.count}
                   </span>
@@ -442,9 +553,8 @@ export const IncidentList: React.FC<IncidentListProps> = ({
           </div>
         </div>
 
-        {/* Right: View Toggle + Export */}
+        {/* View Switcher, Sync, and Export */}
         <div className="flex items-center justify-between sm:justify-end gap-2 shrink-0">
-          {/* Reset button if active */}
           {(searchQuery || activeCategory !== 'ALL') && (
             <Button
               variant="ghost"
@@ -454,41 +564,40 @@ export const IncidentList: React.FC<IncidentListProps> = ({
                 setActiveCategory('ALL');
               }}
               icon={<RotateCcw className="w-3 h-3 text-rose-500" />}
-              className="text-rose-500 hover:text-rose-600"
+              className="text-rose-500 hover:text-rose-600 cursor-pointer"
             >
               Reset
             </Button>
           )}
 
-          {/* View Mode Switcher */}
+          {/* View Mode Toggle */}
           <div className="flex items-center p-1 bg-slate-100 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs gap-1">
             <button
               onClick={() => setViewMode('table')}
-              className={`p-1.5 rounded-lg transition ${
-                viewMode === 'table' ? 'bg-white dark:bg-slate-800 text-blue-600 dark:text-blue-400 shadow-xs font-bold' : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
+              className={`p-1.5 rounded-lg transition cursor-pointer ${
+                viewMode === 'table' ? 'bg-white dark:bg-slate-800 text-blue-600 dark:text-blue-400 shadow-xs font-bold' : 'text-slate-500 hover:text-slate-900 dark:hover:text-slate-200'
               }`}
-              title="CAD Table View"
+              title="CAD Board Table View"
             >
               <List className="w-3.5 h-3.5" />
             </button>
             <button
               onClick={() => setViewMode('grid')}
-              className={`p-1.5 rounded-lg transition ${
-                viewMode === 'grid' ? 'bg-white dark:bg-slate-800 text-blue-600 dark:text-blue-400 shadow-xs font-bold' : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
+              className={`p-1.5 rounded-lg transition cursor-pointer ${
+                viewMode === 'grid' ? 'bg-white dark:bg-slate-800 text-blue-600 dark:text-blue-400 shadow-xs font-bold' : 'text-slate-500 hover:text-slate-900 dark:hover:text-slate-200'
               }`}
-              title="Cards View"
+              title="Evidence Cards View"
             >
               <LayoutGrid className="w-3.5 h-3.5" />
             </button>
           </div>
 
-          {/* Realtime Telemetry Indicator */}
-          <div className="flex items-center gap-1.5 px-2.5 py-1 bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-200 dark:border-emerald-800/80 rounded-xl text-xs text-emerald-700 dark:text-emerald-300">
+          {/* Real-time Indicator */}
+          <div className="flex items-center gap-1.5 px-2.5 py-1 bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-200 dark:border-emerald-800/80 rounded-xl text-xs text-emerald-700 dark:text-emerald-300 font-mono">
             <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shrink-0" />
-            <span className="hidden md:inline font-medium">Realtime Live</span>
+            <span className="hidden md:inline font-bold">5Hz Live</span>
           </div>
 
-          {/* Sync Button */}
           {onRefresh && (
             <Button
               variant="secondary"
@@ -499,31 +608,30 @@ export const IncidentList: React.FC<IncidentListProps> = ({
                 setTimeout(() => setToastMessage(null), 2000);
               }}
               icon={<RotateCcw className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />}
-              title="Synchronize live incidents from database"
+              title="Synchronize live database"
             >
               <span className="hidden sm:inline">Sync</span>
             </Button>
           )}
 
-          {/* Export CSV */}
           <Button
             variant="secondary"
             size="sm"
             onClick={handleExportCSV}
             icon={<Download className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />}
-            title="Export incidents CSV"
+            title="Export statutory CSV log"
           >
             <span className="hidden sm:inline">Export</span>
           </Button>
         </div>
       </div>
 
-      {/* Main Data View: Review Queue or Table or Cards */}
+      {/* 4. MAIN VIEW: REVIEW QUEUE, CAD TABLE, OR EVIDENCE CARDS */}
       {activeCategory === 'REVIEW_QUEUE' ? (
         <div className="space-y-4">
           <div className="p-4 rounded-2xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900/60 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-xl bg-amber-600 text-white flex items-center justify-center font-bold shadow-xs">
+              <div className="w-9 h-9 rounded-xl bg-amber-600 text-white flex items-center justify-center font-bold shadow-xs shrink-0">
                 <AlertTriangle className="w-5 h-5" />
               </div>
               <div>
@@ -541,7 +649,7 @@ export const IncidentList: React.FC<IncidentListProps> = ({
               </span>
               <button
                 onClick={fetchReviewQueue}
-                className="px-2.5 py-1 rounded-lg border border-amber-300 dark:border-amber-800 text-xs text-amber-800 dark:text-amber-200 hover:bg-amber-100 dark:hover:bg-amber-900/50 cursor-pointer"
+                className="px-2.5 py-1 rounded-lg border border-amber-300 dark:border-amber-800 text-xs text-amber-800 dark:text-amber-200 hover:bg-amber-100 dark:hover:bg-amber-900/50 cursor-pointer font-medium"
               >
                 Refresh
               </button>
@@ -552,22 +660,22 @@ export const IncidentList: React.FC<IncidentListProps> = ({
             <div className="p-12 text-center bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl">
               <CheckCircle2 className="w-10 h-10 text-emerald-500 mx-auto mb-2" />
               <h4 className="text-sm font-bold text-slate-900 dark:text-white">Review Queue is Clear</h4>
-              <p className="text-xs text-slate-500">All high-speed camera captures have been processed or meet the 85% confidence threshold.</p>
+              <p className="text-xs text-slate-500 mt-1">All high-speed camera captures have been processed or meet the 85% confidence threshold.</p>
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {reviewQueue.map((item) => (
-                <div key={item.id} className="p-4 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-[#0E1424] space-y-3 shadow-xs">
+                <div key={item.id} className="p-4 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 space-y-3 shadow-xs">
                   <div className="flex items-start justify-between gap-2">
                     <div>
                       <div className="flex items-center gap-2">
                         <span className="font-mono font-bold text-xs text-slate-900 dark:text-white">{item.id}</span>
-                        <span className="text-[10.5px] font-mono px-2 py-0.5 rounded bg-amber-100 dark:bg-amber-950/80 text-amber-800 dark:text-amber-300 font-bold">
+                        <span className="text-[10.5px] font-mono px-2 py-0.5 rounded bg-amber-100 dark:bg-amber-950 text-amber-800 dark:text-amber-300 font-bold">
                           {Math.round((item.plate_confidence || 0.74) * 100)}% Conf
                         </span>
                       </div>
                       <p className="text-xs font-bold text-slate-800 dark:text-slate-200 mt-1">{item.road_name}</p>
-                      <p className="text-[11px] text-slate-400">Detected by {item.reporting_bus_id} &bull; {item.occurred_at}</p>
+                      <p className="text-[11px] text-slate-400 font-mono">Detected by {item.reporting_bus_id} &bull; {item.occurred_at}</p>
                     </div>
                     <span className="px-2 py-0.5 rounded-md font-mono text-[10px] font-bold bg-amber-50 dark:bg-amber-950 text-amber-600 dark:text-amber-400 border border-amber-300 dark:border-amber-800">
                       PENDING REVIEW
@@ -585,7 +693,7 @@ export const IncidentList: React.FC<IncidentListProps> = ({
                       <span className="text-slate-500">Flag Reason:</span>
                       <span className="text-amber-600 dark:text-amber-400 font-medium">{item.review_flag_reason}</span>
                     </div>
-                    <div className="flex items-center justify-between text-[10px] text-slate-400 pt-1 border-t border-slate-200 dark:border-slate-800">
+                    <div className="flex items-center justify-between text-[10px] text-slate-400 pt-1 border-t border-slate-200 dark:border-slate-800 font-mono">
                       <span>Mandate:</span>
                       <span className="italic">{item.statutory_mandate}</span>
                     </div>
@@ -604,7 +712,7 @@ export const IncidentList: React.FC<IncidentListProps> = ({
                       size="sm"
                       onClick={() => handleReviewAction(item.id, 'ACCEPT')}
                     >
-                      Approve E-Challan
+                      Approve e-Challan
                     </Button>
                   </div>
                 </div>
@@ -613,14 +721,12 @@ export const IncidentList: React.FC<IncidentListProps> = ({
           )}
         </div>
       ) : viewMode === 'table' ? (
-        /* ========================================================= */
-        /* CLEAN, UNCLUTTERED HIGH-DENSITY CAD BOARD TABLE          */
-        /* ========================================================= */
-        <div className="bg-white dark:bg-[#0E1424] border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden shadow-card flex-1 flex flex-col min-h-0">
+        /* CAD BOARD TABLE VIEW */
+        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden shadow-sm flex-1 flex flex-col min-h-0">
           <div className="overflow-x-auto custom-scrollbar flex-1">
             <table className="w-full text-left font-sans text-xs">
               <thead>
-                <tr className="border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-[#121A2C] text-slate-600 dark:text-slate-300 text-[11px] uppercase tracking-wider font-semibold">
+                <tr className="border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-slate-600 dark:text-slate-300 text-[11px] uppercase tracking-wider font-semibold">
                   <th className="py-2.5 px-3.5 font-semibold">Time</th>
                   <th className="py-2.5 px-3.5 font-semibold">Type</th>
                   <th className="py-2.5 px-3.5 font-semibold">Vehicle / Identification</th>
@@ -628,7 +734,7 @@ export const IncidentList: React.FC<IncidentListProps> = ({
                   <th className="py-2.5 px-3.5 font-semibold text-center">Speed</th>
                   <th className="py-2.5 px-3.5 font-semibold">Node</th>
                   <th className="py-2.5 px-3.5 font-semibold">Status</th>
-                  <th className="py-2.5 px-3.5 font-semibold text-right">Action</th>
+                  <th className="py-2.5 px-3.5 font-semibold text-right">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
@@ -664,7 +770,7 @@ export const IncidentList: React.FC<IncidentListProps> = ({
                         <td className="py-2.5 px-3.5 text-slate-700 dark:text-slate-300 whitespace-nowrap">
                           <div className="flex items-center gap-1.5 text-slate-500 dark:text-slate-400">
                             <Clock className="w-3 h-3 shrink-0" />
-                            <span className="text-[11px] text-slate-700 dark:text-slate-300">{incident.occurred_at}</span>
+                            <span className="text-[11px] text-slate-700 dark:text-slate-300 font-mono">{incident.occurred_at}</span>
                           </div>
                         </td>
 
@@ -683,7 +789,9 @@ export const IncidentList: React.FC<IncidentListProps> = ({
                                 {incident.plate_number}
                               </span>
                               {incident.plate_confidence && (
-                                <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-semibold font-mono">
+                                <span className={`text-[10px] font-bold font-mono ${
+                                  incident.plate_confidence >= 0.85 ? 'text-emerald-600 dark:text-emerald-400' : 'text-amber-500'
+                                }`}>
                                   {(incident.plate_confidence * 100).toFixed(0)}%
                                 </span>
                               )}
@@ -711,7 +819,11 @@ export const IncidentList: React.FC<IncidentListProps> = ({
                         {/* Speed */}
                         <td className="py-2.5 px-3.5 text-center whitespace-nowrap">
                           {incident.target_speed_kmh ? (
-                            <span className="font-bold text-amber-600 dark:text-amber-400 text-xs font-mono">
+                            <span className={`font-bold text-xs font-mono px-1.5 py-0.5 rounded ${
+                              incident.target_speed_kmh > 65 
+                                ? 'bg-rose-50 text-rose-700 dark:bg-rose-950/60 dark:text-rose-300' 
+                                : 'text-amber-600 dark:text-amber-400'
+                            }`}>
                               {incident.target_speed_kmh} km/h
                             </span>
                           ) : (
@@ -754,7 +866,7 @@ export const IncidentList: React.FC<IncidentListProps> = ({
                               href={`/api/incidents/${incident.id}/report`}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="px-2 py-1 rounded bg-blue-50 dark:bg-blue-950/60 hover:bg-blue-100 dark:hover:bg-blue-900/80 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800 text-[11px] font-bold flex items-center gap-1 transition cursor-pointer"
+                              className="px-2 py-1 rounded-lg bg-blue-50 dark:bg-blue-950/60 hover:bg-blue-100 dark:hover:bg-blue-900/80 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800 text-[11px] font-bold flex items-center gap-1 transition cursor-pointer"
                               title="Print / Save Section 65B Official Legal Dossier"
                             >
                               <Eye className="w-3 h-3 text-blue-500" /> Dossier
@@ -764,7 +876,7 @@ export const IncidentList: React.FC<IncidentListProps> = ({
                             {incident.incident_type === 'WATERLOGGING' && (
                               <button
                                 onClick={() => handleOpenDossier(incident)}
-                                className="px-2 py-1 rounded bg-cyan-50 dark:bg-cyan-950/60 hover:bg-cyan-100 dark:hover:bg-cyan-900/80 text-cyan-700 dark:text-cyan-300 border border-cyan-200 dark:border-cyan-800 text-[11px] font-bold flex items-center gap-1 transition cursor-pointer"
+                                className="px-2 py-1 rounded-lg bg-cyan-50 dark:bg-cyan-950/60 hover:bg-cyan-100 dark:hover:bg-cyan-900/80 text-cyan-700 dark:text-cyan-300 border border-cyan-200 dark:border-cyan-800 text-[11px] font-bold flex items-center gap-1 transition cursor-pointer"
                                 title="Deploy GCC Dewatering Sump Pump"
                               >
                                 <Droplets className="w-3 h-3 text-cyan-600 dark:text-cyan-400" /> Sump Pump
@@ -775,7 +887,7 @@ export const IncidentList: React.FC<IncidentListProps> = ({
                             {incident.incident_type === 'OPEN_MANHOLE' && (
                               <button
                                 onClick={() => handleOpenDossier(incident)}
-                                className="px-2 py-1 rounded bg-amber-50 dark:bg-amber-950/60 hover:bg-amber-100 dark:hover:bg-amber-900/80 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800 text-[11px] font-bold flex items-center gap-1 transition cursor-pointer"
+                                className="px-2 py-1 rounded-lg bg-amber-50 dark:bg-amber-950/60 hover:bg-amber-100 dark:hover:bg-amber-900/80 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800 text-[11px] font-bold flex items-center gap-1 transition cursor-pointer"
                                 title="Deploy Emergency Barricade Squad"
                               >
                                 <AlertTriangle className="w-3 h-3 text-amber-600 dark:text-amber-400" /> Barricade
@@ -810,14 +922,14 @@ export const IncidentList: React.FC<IncidentListProps> = ({
                             {(incident.plate_number || incident.incident_type.includes('CROSSING') || incident.incident_type.includes('LANE') || incident.incident_type.includes('LIGHT') || incident.incident_type === 'UNSAFE_OVERTAKE') && (
                               <button
                                 onClick={() => handleOpenDossier(incident)}
-                                className="px-2 py-1 rounded bg-amber-50 dark:bg-amber-950/60 hover:bg-amber-100 dark:hover:bg-amber-900/80 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800 text-[11px] font-bold flex items-center gap-1 transition cursor-pointer"
+                                className="px-2 py-1 rounded-lg bg-amber-50 dark:bg-amber-950/60 hover:bg-amber-100 dark:hover:bg-amber-900/80 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800 text-[11px] font-bold flex items-center gap-1 transition cursor-pointer"
                                 title="Issue / Print Statutory e-Challan (MVA Sec 177/184)"
                               >
                                 <span className="font-mono text-[10px]">₹</span> e-Challan
                               </button>
                             )}
 
-                            {/* Police Intercept: Strictly for Hit & Run and Rash Driving */}
+                            {/* Police Intercept */}
                             {(incident.incident_type === 'HIT_AND_RUN' || incident.incident_type === 'RASH_DRIVING') && !isEscalated && !isResolved && (
                               <Button
                                 variant="danger"
@@ -830,11 +942,11 @@ export const IncidentList: React.FC<IncidentListProps> = ({
                               </Button>
                             )}
 
-                            {/* Intercept Button: when dispatched and not yet intercepted */}
+                            {/* Intercept Button */}
                             {isEscalated && !isIntercepted && !isResolved && (
                               <button
                                 onClick={(e) => handleQuickStatus(incident, 'INTERCEPTED', e)}
-                                className="px-2 py-1 rounded bg-purple-50 dark:bg-purple-950/60 hover:bg-purple-100 dark:hover:bg-purple-900/80 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-800 text-[11px] font-bold flex items-center gap-1 transition cursor-pointer"
+                                className="px-2 py-1 rounded-lg bg-purple-50 dark:bg-purple-950/60 hover:bg-purple-100 dark:hover:bg-purple-900/80 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-800 text-[11px] font-bold flex items-center gap-1 transition cursor-pointer"
                                 title="Mark target vehicle intercepted by PCR / Patrol"
                               >
                                 <CheckCircle2 className="w-3 h-3 text-purple-600 dark:text-purple-400" /> Intercept
@@ -845,7 +957,7 @@ export const IncidentList: React.FC<IncidentListProps> = ({
                             {!isResolved && (isEscalated || isIntercepted || incident.status?.includes('PUMP') || incident.status?.includes('BARRICAD') || incident.status?.includes('WORK_ORDER') || incident.status?.includes('ECHALLAN')) && (
                               <button
                                 onClick={(e) => handleQuickStatus(incident, 'RESOLVED', e)}
-                                className="px-2 py-1 rounded bg-emerald-50 dark:bg-emerald-950/60 hover:bg-emerald-100 dark:hover:bg-emerald-900/80 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 text-[11px] font-bold flex items-center gap-1 transition cursor-pointer"
+                                className="px-2 py-1 rounded-lg bg-emerald-50 dark:bg-emerald-950/60 hover:bg-emerald-100 dark:hover:bg-emerald-900/80 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 text-[11px] font-bold flex items-center gap-1 transition cursor-pointer"
                                 title="Mark incident resolved"
                               >
                                 <CheckCircle2 className="w-3 h-3 text-emerald-600 dark:text-emerald-400" /> Resolve
@@ -864,7 +976,6 @@ export const IncidentList: React.FC<IncidentListProps> = ({
                           </div>
                         </td>
                       </tr>
-
                     );
                   })
                 )}
@@ -872,9 +983,9 @@ export const IncidentList: React.FC<IncidentListProps> = ({
             </table>
           </div>
 
-          {/* Pagination Controls for Table View */}
+          {/* Pagination */}
           {filteredIncidents.length > PAGE_SIZE && (
-            <div className="flex flex-col sm:flex-row items-center justify-between gap-3 px-4 py-3 border-t border-slate-200 dark:border-slate-800 bg-[#F0F4FA] dark:bg-slate-900/60 text-xs text-slate-500 dark:text-slate-400">
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-3 px-4 py-3 border-t border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950/80 text-xs text-slate-500 dark:text-slate-400 font-mono">
               <div>
                 Showing <span className="font-semibold text-slate-800 dark:text-slate-200">{(currentPage - 1) * PAGE_SIZE + 1}</span> to{' '}
                 <span className="font-semibold text-slate-800 dark:text-slate-200">{Math.min(currentPage * PAGE_SIZE, filteredIncidents.length)}</span> of{' '}
@@ -884,18 +995,18 @@ export const IncidentList: React.FC<IncidentListProps> = ({
                 <button
                   onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
                   disabled={currentPage === 1}
-                  className="p-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-slate-50 dark:hover:bg-slate-700 transition"
+                  className="p-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-slate-50 dark:hover:bg-slate-700 transition cursor-pointer"
                   title="Previous Page"
                 >
                   <ChevronLeft className="w-4 h-4" />
                 </button>
-                <span className="px-2.5 py-1 rounded-lg font-medium text-slate-700 dark:text-slate-300">
+                <span className="px-2.5 py-1 rounded-lg font-bold text-slate-700 dark:text-slate-300">
                   Page {currentPage} of {totalPages}
                 </span>
                 <button
                   onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
                   disabled={currentPage === totalPages}
-                  className="p-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-slate-50 dark:hover:bg-slate-700 transition"
+                  className="p-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-slate-50 dark:hover:bg-slate-700 transition cursor-pointer"
                   title="Next Page"
                 >
                   <ChevronRight className="w-4 h-4" />
@@ -905,11 +1016,8 @@ export const IncidentList: React.FC<IncidentListProps> = ({
           )}
         </div>
       ) : (
-        <>
-          {/* ========================================================= */}
-          {/* CLEAN, UNCLUTTERED CARD GRID VIEW                         */}
-          {/* ========================================================= */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+        /* FORENSIC EVIDENCE CARDS GRID VIEW */
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {filteredIncidents.length === 0 ? (
             <div className="col-span-full">
               <EmptyState
@@ -934,11 +1042,11 @@ export const IncidentList: React.FC<IncidentListProps> = ({
                 <div
                   key={incident.id}
                   onClick={() => handleOpenDossier(incident)}
-                  className="bg-white dark:bg-[#0E1424] border border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 rounded-2xl p-4 flex flex-col justify-between transition-all duration-150 cursor-pointer shadow-card"
+                  className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:border-blue-500/60 dark:hover:border-blue-500/60 rounded-2xl p-4 flex flex-col justify-between transition-all duration-150 cursor-pointer shadow-sm group"
                 >
                   <div>
                     {/* Header: Type & Status */}
-                    <div className="flex items-center justify-between gap-2 mb-2.5">
+                    <div className="flex items-center justify-between gap-2 mb-3">
                       <Badge variant={badge.variant} dot size="sm" icon={<BadgeIcon className="w-3 h-3" />}>
                         {badge.label}
                       </Badge>
@@ -948,177 +1056,108 @@ export const IncidentList: React.FC<IncidentListProps> = ({
                     </div>
 
                     {/* Plate or Hazard summary */}
-                    <div className="h-10 bg-slate-50 dark:bg-slate-950 rounded-xl border border-slate-200 dark:border-slate-800 px-3 flex items-center justify-between mb-2.5">
+                    <div className="h-11 bg-slate-50 dark:bg-slate-950 rounded-xl border border-slate-200 dark:border-slate-800 px-3.5 flex items-center justify-between mb-3">
                       {incident.plate_number ? (
                         <>
                           <span className="font-bold text-slate-900 dark:text-slate-100 text-xs font-mono tracking-wider">
                             {incident.plate_number}
                           </span>
                           {incident.plate_confidence && (
-                            <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-semibold font-mono">
+                            <span className={`text-[10px] font-bold font-mono ${
+                              incident.plate_confidence >= 0.85 ? 'text-emerald-600 dark:text-emerald-400' : 'text-amber-500'
+                            }`}>
                               {(incident.plate_confidence * 100).toFixed(0)}% OCR
                             </span>
                           )}
                         </>
                       ) : (
-                        <span className="text-xs text-slate-600 dark:text-slate-400 truncate">
+                        <span className="text-xs text-slate-600 dark:text-slate-400 truncate font-medium">
                           {incident.vehicle_class || 'Non-Vehicular Hazard'}
                         </span>
                       )}
                     </div>
 
                     {/* Compact Details */}
-                    <div className="space-y-1 text-xs text-slate-600 dark:text-slate-300 mb-3">
+                    <div className="space-y-1.5 text-xs text-slate-600 dark:text-slate-300 mb-3">
                       <div className="flex items-center gap-1.5 text-[11px] truncate">
                         <MapPin className="w-3 h-3 text-slate-400 shrink-0" />
-                        <span className="truncate text-slate-800 dark:text-slate-200">{incident.road_name}</span>
+                        <span className="truncate text-slate-800 dark:text-slate-200 font-medium">{incident.road_name}</span>
                       </div>
-                      <div className="flex items-center justify-between text-[10.5px] text-slate-500 dark:text-slate-400 pt-0.5 font-mono">
+                      <div className="flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400 pt-0.5 font-mono">
                         <span>{incident.occurred_at}</span>
                         <span className="px-1.5 py-0.5 rounded bg-blue-50 dark:bg-blue-950/50 text-[10px] text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-900">
                           CH {incident.channel || 2} • {incident.camera_position || 'REAR_OVERTAKE'}
                         </span>
                       </div>
                       {incident.mva_section && (
-                        <div className="text-[10px] text-slate-500 dark:text-slate-400 truncate pt-0.5">
-                          <span className="font-semibold text-rose-600 dark:text-rose-400">₹{incident.fine_amount_inr || 2000}</span> • {incident.mva_section}
+                        <div className="text-[11px] text-slate-500 dark:text-slate-400 truncate pt-0.5 font-mono">
+                          <span className="font-bold text-rose-600 dark:text-rose-400">₹{incident.fine_amount_inr || 2000}</span> • {incident.mva_section}
                         </div>
                       )}
                     </div>
                   </div>
 
                   {/* Footer Actions */}
-                  <div className="pt-2.5 border-t border-slate-100 dark:border-slate-800 flex items-center gap-2 flex-wrap" onClick={e => e.stopPropagation()}>
-                    {/* Official Printable Legal Dossier */}
+                  <div className="pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between gap-2" onClick={e => e.stopPropagation()}>
                     <a
                       href={`/api/incidents/${incident.id}/report`}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="px-2.5 py-1 rounded-lg bg-blue-50 dark:bg-blue-950/60 hover:bg-blue-100 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800 text-xs font-bold flex items-center gap-1 transition"
-                      title="Print / Save Section 65B Official Legal Dossier"
+                      className="px-2.5 py-1 rounded-lg bg-blue-50 dark:bg-blue-950/60 hover:bg-blue-100 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800 text-xs font-bold flex items-center gap-1 transition cursor-pointer"
+                      title="Print Section 65B Dossier"
                     >
                       <Eye className="w-3.5 h-3.5 text-blue-500" /> Dossier
                     </a>
 
-                    {incident.incident_type === 'WATERLOGGING' && (
-                      <button
-                        onClick={() => handleOpenDossier(incident)}
-                        className="px-2.5 py-1 rounded-lg bg-cyan-50 dark:bg-cyan-950/60 hover:bg-cyan-100 text-cyan-700 dark:text-cyan-300 border border-cyan-200 dark:border-cyan-800 text-xs font-bold flex items-center gap-1 transition"
-                      >
-                        <Droplets className="w-3.5 h-3.5" /> Sump Pump
-                      </button>
-                    )}
+                    <div className="flex items-center gap-1.5">
+                      {(incident.incident_type === 'HIT_AND_RUN' || incident.incident_type === 'RASH_DRIVING') && !isEscalated && !isResolved && (
+                        <Button
+                          variant="danger"
+                          size="xs"
+                          onClick={(e) => handleQuickEscalate(incident, e)}
+                          icon={<Send className="w-3 h-3" />}
+                        >
+                          112 PCR
+                        </Button>
+                      )}
 
-
-                    {incident.incident_type === 'OPEN_MANHOLE' && (
-                      <button
-                        onClick={() => handleOpenDossier(incident)}
-                        className="px-2.5 py-1 rounded-lg bg-amber-50 dark:bg-amber-950/60 hover:bg-amber-100 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800 text-xs font-bold flex items-center gap-1 transition"
-                      >
-                        <AlertTriangle className="w-3.5 h-3.5" /> Barricade
-                      </button>
-                    )}
-
-                    {(incident.plate_number || incident.incident_type.includes('CROSSING') || incident.incident_type.includes('LANE') || incident.incident_type.includes('LIGHT')) && (
-                      <button
-                        onClick={() => handleOpenDossier(incident)}
-                        className="px-2.5 py-1 rounded-lg bg-amber-50 dark:bg-amber-950/60 hover:bg-amber-100 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800 text-xs font-bold flex items-center gap-1 transition"
-                      >
-                        <span className="font-mono text-xs">₹</span> e-Challan
-                      </button>
-                    )}
-
-                    {(incident.incident_type === 'HIT_AND_RUN' || incident.incident_type === 'RASH_DRIVING') && !isEscalated && !isResolved && (
                       <Button
-                        variant="danger"
-                        size="sm"
-                        onClick={(e) => handleQuickEscalate(incident, e)}
-                        icon={<Send className="w-3.5 h-3.5" />}
-                        title="Dispatch 112 Police PCR"
+                        variant="primary"
+                        size="xs"
+                        onClick={() => handleOpenDossier(incident)}
+                        icon={<Eye className="w-3 h-3" />}
                       >
-                        112 PCR
+                        Inspect
                       </Button>
-                    )}
-
-                    {/* Quick Intercept Button */}
-                    {isEscalated && !isIntercepted && !isResolved && (
-                      <button
-                        onClick={(e) => handleQuickStatus(incident, 'INTERCEPTED', e)}
-                        className="px-2.5 py-1 rounded-lg bg-purple-50 dark:bg-purple-950/60 hover:bg-purple-100 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-800 text-xs font-bold flex items-center gap-1 transition cursor-pointer"
-                        title="Mark target vehicle intercepted"
-                      >
-                        <CheckCircle2 className="w-3.5 h-3.5 text-purple-600 dark:text-purple-400" /> Intercept
-                      </button>
-                    )}
-
-                    {/* Quick Resolve Button */}
-                    {!isResolved && (isEscalated || isIntercepted || incident.status?.includes('PUMP') || incident.status?.includes('BARRICAD') || incident.status?.includes('WORK_ORDER') || incident.status?.includes('ECHALLAN')) && (
-                      <button
-                        onClick={(e) => handleQuickStatus(incident, 'RESOLVED', e)}
-                        className="px-2.5 py-1 rounded-lg bg-emerald-50 dark:bg-emerald-950/60 hover:bg-emerald-100 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 text-xs font-bold flex items-center gap-1 transition cursor-pointer"
-                        title="Mark incident resolved"
-                      >
-                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" /> Resolve
-                      </button>
-                    )}
-
-                    <Button
-                      variant="primary"
-                      size="sm"
-                      onClick={() => handleOpenDossier(incident)}
-                      icon={<Eye className="w-3.5 h-3.5" />}
-                      className="flex-1"
-                    >
-                      Dossier
-                    </Button>
+                    </div>
                   </div>
                 </div>
               );
             })
           )}
         </div>
+      )}
 
-        {/* Pagination Controls for Card View */}
-        {filteredIncidents.length > PAGE_SIZE && (
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-3 p-4 rounded-2xl bg-[#F8FAFD] dark:bg-[#0E1424] border border-slate-200/90 dark:border-slate-800 shadow-xs text-xs text-slate-500 dark:text-slate-400">
-            <div>
-              Showing <span className="font-semibold text-slate-800 dark:text-slate-200">{(currentPage - 1) * PAGE_SIZE + 1}</span> to{' '}
-              <span className="font-semibold text-slate-800 dark:text-slate-200">{Math.min(currentPage * PAGE_SIZE, filteredIncidents.length)}</span> of{' '}
-              <span className="font-semibold text-slate-800 dark:text-slate-200">{filteredIncidents.length}</span> incidents
-            </div>
-            <div className="flex items-center gap-1.5">
-              <button
-                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                disabled={currentPage === 1}
-                className="p-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-slate-50 dark:hover:bg-slate-700 transition"
-                title="Previous Page"
-              >
-                <ChevronLeft className="w-4 h-4" />
-              </button>
-              <span className="px-2.5 py-1 rounded-lg font-medium text-slate-700 dark:text-slate-300">
-                Page {currentPage} of {totalPages}
-              </span>
-              <button
-                onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-                disabled={currentPage === totalPages}
-                className="p-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-slate-50 dark:hover:bg-slate-700 transition"
-                title="Next Page"
-              >
-                <ChevronRight className="w-4 h-4" />
-              </button>
-            </div>
-          </div>
-        )}
-      </>
-    )}
+      {/* Incident Dossier Modal */}
+      {selectedIncident && (
+        <IncidentDossierModal
+          isOpen={isDossierOpen}
+          onClose={() => {
+            setIsDossierOpen(false);
+            setSelectedIncident(null);
+          }}
+          incident={selectedIncident}
+          onUpdateStatus={onUpdateStatus}
+        />
+      )}
 
-      {/* 3D Road Mesh Visualizer Modal for specific defect/hazard */}
+      {/* 3D Road Mesh Visualizer Modal */}
       {meshIncident && (
         <RoadMeshVisualizerModal
-          isOpen={!!meshIncident}
+          isOpen={Boolean(meshIncident)}
           onClose={() => setMeshIncident(null)}
           hazardId={meshIncident.id}
-          locationName={`${meshIncident.location} • ${meshIncident.defectType}`}
+          locationName={meshIncident.location}
           depthCm={meshIncident.depthCm}
           areaM2={meshIncident.areaM2}
           volumeLiters={meshIncident.volumeLiters}
@@ -1129,21 +1168,6 @@ export const IncidentList: React.FC<IncidentListProps> = ({
           defectType={meshIncident.defectType}
         />
       )}
-
-      {/* Interactive Dossier Modal */}
-      <IncidentDossierModal
-        isOpen={isDossierOpen}
-        onClose={() => setIsDossierOpen(false)}
-        incident={selectedIncident}
-        onUpdateStatus={(incId, newStatus) => {
-          if (onUpdateStatus) {
-            onUpdateStatus(incId, newStatus);
-          }
-          if (selectedIncident && selectedIncident.id === incId) {
-            setSelectedIncident({ ...selectedIncident, status: newStatus });
-          }
-        }}
-      />
     </div>
   );
 };
