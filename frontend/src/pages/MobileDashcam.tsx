@@ -15,25 +15,33 @@ import {
   Sparkles,
   RefreshCw,
   Send, 
-  Sliders,
-  ChevronRight,
-  Eye,
-  Layers,
-  Radio,
-  Maximize2,
-  Video,
-  Cpu,
-  UploadCloud
+  Sliders, 
+  ChevronRight, 
+  Eye, 
+  Layers, 
+  Radio, 
+  Maximize2, 
+  Video, 
+  Cpu, 
+  UploadCloud,
+  School,
+  Droplets,
+  RotateCcw,
+  Pause,
+  Play,
+  Download,
+  Printer,
+  Compass
 } from 'lucide-react';
 import { HazardCluster, WorkOrderStatus, DefectCode } from '../types';
 import { useLanguage } from '../context/LanguageContext';
+import { useToast } from '../context/ToastContext';
 import { Button } from '../components/ui/Button';
 import { Badge } from '../components/ui/Badge';
 import { api } from '../services/api';
-import { StreamModelConfigModal } from '../components/modals/StreamModelConfigModal';
-import { DocumentExportModal } from '../components/modals/DocumentExportModal';
 import { UploadFootageModal } from '../components/modals/UploadFootageModal';
-import { RotateCcw, Pause, Play, Download, Printer } from 'lucide-react';
+import { DocumentExportModal } from '../components/modals/DocumentExportModal';
+import { StreamModelConfigModal } from '../components/modals/StreamModelConfigModal';
 
 interface MobileDashcamProps {
   clusters?: HazardCluster[];
@@ -63,6 +71,9 @@ export interface BusMountedCamera {
     hudColor: string;
     incidentType: string;
     defectType?: string;
+    speedKmh?: number;
+    plateNumber?: string;
+    zoneType?: 'school_crossing' | 'hit_and_run' | 'pothole_depth' | 'waterlog';
   };
 }
 
@@ -79,42 +90,64 @@ const FLEET_BUS_RIGS: FleetBusRig[] = [
   {
     id: 'BUS-TN01-1042',
     routeCode: 'MTC-118A',
-    routeCorridor: 'GST Road, Tambaram (NH-32)',
+    routeCorridor: 'Avvai Shanmugam Salai & Anna Salai Link',
     vehicleType: 'Tata Ultra EV 12M Transit Bus',
     npuHardware: 'NVIDIA Jetson AGX Orin 64GB (275 TOPS)',
     cameras: [
       {
         position: 'front_road',
-        label: 'Front 4K Road Surface Camera',
+        label: 'Front 4K Vision Zero & Crosswalk Camera',
         lensModel: 'Sony IMX490 Automotive HDR Sensor (F/1.6)',
         resolution: '3840x2160 (4K UHD)',
         fps: 30,
         fov: '120° Wide Horizontal',
-        feedPreviewUrl: 'https://images.unsplash.com/photo-1515162816999-a0c47dc192f7?w=1200&auto=format&fit=crop&q=80',
-        primaryRole: 'Road Geometry, Pothole Cavity & Water Disparity',
+        feedPreviewUrl: 'https://images.unsplash.com/photo-1577495508048-b635879837f1?w=1200&auto=format&fit=crop&q=80',
+        primaryRole: 'Zebra Crossing, School Children & Pedestrian Safety',
         detectedOverlay: {
-          label: 'POTHOLE D40 CAVITY',
-          confidence: 96.4,
-          subtext: 'Depth: 8.4cm • Shock: +1.48g',
-          bboxStyle: 'border-rose-500 bg-rose-500/10 text-rose-300',
+          label: 'SCHOOL CHILDREN CROSSING (VISION ZERO)',
+          confidence: 96.8,
+          subtext: '3 Students Detected • Zone-Overlap 88% • Mandatory Yield',
+          bboxStyle: 'border-amber-500 bg-amber-500/15 text-amber-300',
+          hudColor: 'amber',
+          incidentType: 'SCHOOL_CHILDREN_CROSSING_RISK',
+          zoneType: 'school_crossing',
+          speedKmh: 22.4
+        }
+      },
+      {
+        position: 'rear_anpr',
+        label: 'Rear Dragnet ANPR & Hit-and-Run Intercept Radar',
+        lensModel: 'Basler Ace 2 Pro GigE Global Shutter',
+        resolution: '1920x1080 (Global Shutter)',
+        fps: 60,
+        fov: '85° Telephoto ANPR',
+        feedPreviewUrl: 'https://images.unsplash.com/photo-1568605117036-5fe5e7bab0b7?w=1200&auto=format&fit=crop&q=80',
+        primaryRole: 'Behavioral Trajectory Tracking & Hit & Run Evasion Dragnet',
+        detectedOverlay: {
+          label: 'HIT & RUN EVASION TRAJECTORY (CRITICAL)',
+          confidence: 97.4,
+          subtext: 'Plate TN-01-AX-8732 • Accel Spike +36.4 km/h • 112 Intercept',
+          bboxStyle: 'border-rose-600 bg-rose-600/20 text-rose-300',
           hudColor: 'rose',
-          incidentType: 'POTHOLE_D40',
-          defectType: 'D40'
+          incidentType: 'HIT_AND_RUN',
+          zoneType: 'hit_and_run',
+          plateNumber: 'TN-01-AX-8732',
+          speedKmh: 78.4
         }
       },
       {
         position: 'curb_pedestrian',
-        label: 'Curb-Side Pedestrian & Drain Camera',
+        label: 'Curb-Side Pedestrian & Drain Inspection Camera',
         lensModel: 'Sony Starvis II 1080p Low-Light Optical',
         resolution: '1920x1080 (Full HD)',
         fps: 30,
         fov: '95° Curb Directed',
-        feedPreviewUrl: 'https://images.unsplash.com/photo-1577495508048-b635879837f1?w=1200&auto=format&fit=crop&q=80',
-        primaryRole: 'Zebra Crossing, Open Manholes & Footpath Obstructions',
+        feedPreviewUrl: 'https://images.unsplash.com/photo-1515162816999-a0c47dc192f7?w=1200&auto=format&fit=crop&q=80',
+        primaryRole: 'Open Manholes, Footpath Distress & Cavity Scans',
         detectedOverlay: {
-          label: 'OPEN MANHOLE VOID',
+          label: 'OPEN MANHOLE VOID (P0 HAZARD)',
           confidence: 94.2,
-          subtext: '650mm Dia Void • Ward Barricade Req',
+          subtext: '650mm Dia Open Drain • Zone 5 Barricade Squad Alerted',
           bboxStyle: 'border-red-600 bg-red-600/15 text-red-300',
           hudColor: 'red',
           incidentType: 'OPEN_MANHOLE'
@@ -122,38 +155,21 @@ const FLEET_BUS_RIGS: FleetBusRig[] = [
       },
       {
         position: 'street_lane',
-        label: 'Street-Side Bus Lane & Traffic Camera',
+        label: 'Street-Side Dedicated Bus Lane Camera',
         lensModel: 'Allied Vision Alvium 1800 C-500 Sensor',
         resolution: '1920x1080 (Full HD)',
         fps: 60,
         fov: '110° Lateral Traffic',
         feedPreviewUrl: 'https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?w=1200&auto=format&fit=crop&q=80',
-        primaryRole: 'Bus Lane Encroachments & Reckless Overtakes',
+        primaryRole: 'BRTS Corridor Encroachments & Unsafe Overtakes',
         detectedOverlay: {
-          label: 'BUS LANE VIOLATION (MVA 115)',
+          label: 'BUS LANE ENCROACHMENT (MVA 177)',
           confidence: 98.1,
-          subtext: 'TN-09-BK-4012 • ₹1,500 Fine',
-          bboxStyle: 'border-amber-500 bg-amber-500/15 text-amber-300',
-          hudColor: 'amber',
-          incidentType: 'BUS_LANE_ENCROACH'
-        }
-      },
-      {
-        position: 'rear_anpr',
-        label: 'Rear High-Speed ANPR & Tailgate Camera',
-        lensModel: 'Basler Ace 2 Pro GigE Global Shutter',
-        resolution: '1920x1080 (Global Shutter)',
-        fps: 60,
-        fov: '85° Telephoto ANPR',
-        feedPreviewUrl: 'https://images.unsplash.com/photo-1568605117036-5fe5e7bab0b7?w=1200&auto=format&fit=crop&q=80',
-        primaryRole: 'Tailgating, Hit & Run Escape Plate Tracking',
-        detectedOverlay: {
-          label: 'SPEEDING TAILGATER (ANPR)',
-          confidence: 99.4,
-          subtext: 'TN-01-XX-9901 • Speed: 84 km/h',
-          bboxStyle: 'border-purple-500 bg-purple-500/15 text-purple-300',
-          hudColor: 'purple',
-          incidentType: 'HIT_AND_RUN'
+          subtext: 'Commercial SUV • Plate TN-09-BK-4012 • ₹2,000 Fine',
+          bboxStyle: 'border-blue-500 bg-blue-500/15 text-blue-300',
+          hudColor: 'blue',
+          incidentType: 'BUS_LANE_ENCROACH',
+          plateNumber: 'TN-09-BK-4012'
         }
       }
     ]
@@ -175,31 +191,13 @@ const FLEET_BUS_RIGS: FleetBusRig[] = [
         feedPreviewUrl: 'https://images.unsplash.com/photo-1515162816999-a0c47dc192f7?w=1200&auto=format&fit=crop&q=80',
         primaryRole: 'Road Geometry, Alligator Cracks & Rutting',
         detectedOverlay: {
-          label: 'ALLIGATOR CRACK D20',
-          confidence: 92.5,
-          subtext: 'Area: 0.28m² • IRC:SP:20 Slurry Seal',
-          bboxStyle: 'border-amber-500 bg-amber-500/10 text-amber-300',
-          hudColor: 'amber',
-          incidentType: 'D20',
-          defectType: 'D20'
-        }
-      },
-      {
-        position: 'street_lane',
-        label: 'Street-Side Bus Lane Camera',
-        lensModel: 'Allied Vision Alvium 1800 C-500 Sensor',
-        resolution: '1920x1080 (Full HD)',
-        fps: 60,
-        fov: '110° Lateral Traffic',
-        feedPreviewUrl: 'https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?w=1200&auto=format&fit=crop&q=80',
-        primaryRole: 'Bus Priority Lane Enforcement',
-        detectedOverlay: {
-          label: 'BUS LANE VIOLATION',
-          confidence: 95.8,
-          subtext: 'Commercial SUV • Plate TN-02-BA-4412',
-          bboxStyle: 'border-blue-500 bg-blue-500/15 text-blue-300',
-          hudColor: 'blue',
-          incidentType: 'BUS_LANE_ENCROACH'
+          label: 'POTHOLE D40 CAVITY',
+          confidence: 96.4,
+          subtext: 'Depth: 8.4cm • IRC:SP:20 3D Mesh • Cost: ₹3,450',
+          bboxStyle: 'border-rose-500 bg-rose-500/10 text-rose-300',
+          hudColor: 'rose',
+          incidentType: 'POTHOLE_D40',
+          defectType: 'D40'
         }
       },
       {
@@ -214,436 +212,51 @@ const FLEET_BUS_RIGS: FleetBusRig[] = [
         detectedOverlay: {
           label: 'RASH DRIVING ALERT',
           confidence: 97.2,
-          subtext: 'Speed: 88 km/h • 112 PCR Alerted',
+          subtext: 'Speed: 88.0 km/h • 112 PCR Alerted',
           bboxStyle: 'border-rose-500 bg-rose-500/15 text-rose-300',
           hudColor: 'rose',
-          incidentType: 'RASH_DRIVING'
-        }
-      }
-    ]
-  },
-  {
-    id: 'BUS-TN01-2098',
-    routeCode: 'MTC-29C',
-    routeCorridor: 'Anna Salai (Mount Road) CBD',
-    vehicleType: 'Eicher Skyline Pro EV City Bus',
-    npuHardware: 'Intel OpenVINO Movidius Myriad X Rig',
-    cameras: [
-      {
-        position: 'front_road',
-        label: 'Front 4K Road Surface Camera',
-        lensModel: 'Sony IMX490 Automotive HDR Sensor (F/1.6)',
-        resolution: '3840x2160 (4K UHD)',
-        fps: 30,
-        fov: '120° Wide Horizontal',
-        feedPreviewUrl: 'https://images.unsplash.com/photo-1515162816999-a0c47dc192f7?w=1200&auto=format&fit=crop&q=80',
-        primaryRole: 'Surface Distress & Potholes',
-        detectedOverlay: {
-          label: 'SURFACE TRANSVERSE CRACK D10',
-          confidence: 89.4,
-          subtext: 'Length: 2.4m • Bitumen Sealant',
-          bboxStyle: 'border-amber-500 bg-amber-500/10 text-amber-300',
-          hudColor: 'amber',
-          incidentType: 'D10',
-          defectType: 'D10'
-        }
-      },
-      {
-        position: 'curb_pedestrian',
-        label: 'Curb-Side Pedestrian & Zebra Camera',
-        lensModel: 'Sony Starvis II 1080p Optical',
-        resolution: '1920x1080 (Full HD)',
-        fps: 30,
-        fov: '95° Curb Directed',
-        feedPreviewUrl: 'https://images.unsplash.com/photo-1577495508048-b635879837f1?w=1200&auto=format&fit=crop&q=80',
-        primaryRole: 'Pedestrian Zebra Crossing & Wheelchair Ramps',
-        detectedOverlay: {
-          label: 'ZEBRA CROSSING ENCROACHMENT',
-          confidence: 96.0,
-          subtext: 'Auto Rickshaw blocking ramp • MVA 177',
-          bboxStyle: 'border-amber-500 bg-amber-500/15 text-amber-300',
-          hudColor: 'amber',
-          incidentType: 'ZEBRA_CROSSING_ENCROACHMENT'
-        }
-      }
-    ]
-  },
-  {
-    id: 'BUS-TN03-4410',
-    routeCode: 'MTC-5A',
-    routeCorridor: 'Velachery Main Road & Bypass',
-    vehicleType: 'Tata Ultra Electric High-Floor',
-    npuHardware: 'NVIDIA Jetson Orin Nano 8GB (40 TOPS)',
-    cameras: [
-      {
-        position: 'front_road',
-        label: 'Dual Stereo 3D Depth Camera Rig',
-        lensModel: 'Intel RealSense D435i Dual Optical Stereo Sensor',
-        resolution: '1920x1080 x 2 (Stereo Disparity)',
-        fps: 60,
-        fov: '87° x 58° Depth Field',
-        feedPreviewUrl: 'https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?w=1200&auto=format&fit=crop&q=80',
-        primaryRole: 'Monsoon Flood Waterlogging Depth & Basin Profiling',
-        detectedOverlay: {
-          label: 'WATERLOGGING BASIN (DEPTH CALIPER)',
-          confidence: 96.8,
-          subtext: 'Depth: 28cm • GCC Dewatering Sump Req',
-          bboxStyle: 'border-cyan-500 bg-cyan-500/15 text-cyan-300',
-          hudColor: 'cyan',
-          incidentType: 'WATERLOGGING'
-        }
-      }
-    ]
-  },
-  {
-    id: 'BUS-TN02-5501',
-    routeCode: 'MTC-70V',
-    routeCorridor: 'Guindy Kathipara Grade Junction',
-    vehicleType: 'Ashok Leyland Switch EiV12',
-    npuHardware: 'NVIDIA Jetson Xavier NX (21 TOPS)',
-    cameras: [
-      {
-        position: 'front_road',
-        label: 'Front 4K Road Surface Camera',
-        lensModel: 'Sony IMX490 Automotive HDR Sensor (F/1.6)',
-        resolution: '3840x2160 (4K UHD)',
-        fps: 30,
-        fov: '120° Wide Horizontal',
-        feedPreviewUrl: 'https://images.unsplash.com/photo-1515162816999-a0c47dc192f7?w=1200&auto=format&fit=crop&q=80',
-        primaryRole: 'Flyover Structural Joint & Road Defects',
-        detectedOverlay: {
-          label: 'POTHOLE D40 GRADE JOINT',
-          confidence: 94.1,
-          subtext: 'Depth: 6.8cm • High Axle Shock +2.1g',
-          bboxStyle: 'border-rose-500 bg-rose-500/10 text-rose-300',
-          hudColor: 'rose',
-          incidentType: 'POTHOLE_D40',
-          defectType: 'D40'
-        }
-      },
-      {
-        position: 'street_lane',
-        label: 'Street-Side Overtake Enforcement Camera',
-        lensModel: 'Allied Vision Alvium 1800 C-500 Sensor',
-        resolution: '1920x1080 (Full HD)',
-        fps: 60,
-        fov: '110° Lateral Traffic',
-        feedPreviewUrl: 'https://images.unsplash.com/photo-1568605117036-5fe5e7bab0b7?w=1200&auto=format&fit=crop&q=80',
-        primaryRole: 'Unsafe Grade Junction Overtakes',
-        detectedOverlay: {
-          label: 'UNSAFE FLYOVER OVERTAKE',
-          confidence: 97.4,
-          subtext: 'MVA Sec 184 • Hazardous Manoeuvre',
-          bboxStyle: 'border-amber-500 bg-amber-500/15 text-amber-300',
-          hudColor: 'amber',
-          incidentType: 'UNSAFE_OVERTAKE'
+          incidentType: 'RASH_DRIVING',
+          speedKmh: 88.0
         }
       }
     ]
   }
 ];
 
-export const MobileDashcam: React.FC<MobileDashcamProps> = ({ 
+export const MobileDashcam: React.FC<MobileDashcamProps> = ({
   clusters = [],
-  onBackToDashboard, 
-  onSendIngest, 
+  onBackToDashboard,
+  onSendIngest,
   onSendIncident,
   onUpdateWorkOrder,
   onAddCluster
 }) => {
-  const { t, language } = useLanguage();
+  const { t } = useLanguage();
+  const { success: showSuccessToast } = useToast();
 
-  // Primary active tab
-  const [activeTab, setActiveTab] = useState<'citizen' | 'dashcam' | 'contractor'>('dashcam');
+  const [activeBusRig, setActiveBusRig] = useState<FleetBusRig>(FLEET_BUS_RIGS[0]);
+  const [activeCameraPosition, setActiveCameraPosition] = useState<CameraMountPosition>('front_road');
+  const [isPlaying, setIsPlaying] = useState<boolean>(true);
+  const [hudOverlayActive, setHudOverlayActive] = useState<boolean>(true);
+  const [privacyBlurActive, setPrivacyBlurActive] = useState<boolean>(true);
+  const [showTelemetryHUD, setShowTelemetryHUD] = useState<boolean>(true);
+  const [activeMode, setActiveMode] = useState<'live_bus_rig' | 'citizen_report' | 'contractor_audit'>('live_bus_rig');
+  
+  // Interactive HUD layers
+  const [showPedestrianZoneHUD, setShowPedestrianZoneHUD] = useState<boolean>(true);
+  const [showHitRunVectorHUD, setShowHitRunVectorHUD] = useState<boolean>(true);
 
-  // ── 360° MULTI-CAMERA BUS RIG STATE ───────────────────────────────────────
-  const [activeStreams, setActiveStreams] = useState<any[]>([]);
-  const [frameTimestamp, setFrameTimestamp] = useState<number>(Date.now());
-  const [streamError, setStreamError] = useState<boolean>(false);
-  const [useLiveRtsp, setUseLiveRtsp] = useState<boolean>(true);
+  // Modals
+  const [isUploadModalOpen, setIsUploadModalOpen] = useState<boolean>(false);
+  const [isConfigModalOpen, setIsConfigModalOpen] = useState<boolean>(false);
+  const [isExportModalOpen, setIsExportModalOpen] = useState<boolean>(false);
 
-  // Poll active configured streams from backend
-  useEffect(() => {
-    const fetchStreams = async () => {
-      try {
-        const res = await api.getActiveStreams();
-        if (Array.isArray(res)) setActiveStreams(res);
-      } catch {}
-    };
-    fetchStreams();
-    const interval = setInterval(fetchStreams, 3000);
-    return () => clearInterval(interval);
-  }, []);
+  // Active camera selection
+  const activeCamera = activeBusRig.cameras.find(c => c.position === activeCameraPosition) || activeBusRig.cameras[0];
 
-  const dynamicRigs: FleetBusRig[] = activeStreams
-    .filter(s => !FLEET_BUS_RIGS.some(r => r.id === s.bus_id))
-    .map(s => ({
-      id: s.bus_id,
-      routeCode: s.stream_type === 'CP_PLUS_DVR_RTSP' ? 'CP-PLUS' : 'LIVE-RTSP',
-      routeCorridor: `Live Stream: ${s.rtsp_url || 'Active Video Node'}`,
-      vehicleType: 'Transit Bus (Connected Real RTSP Feed)',
-      npuHardware: 'Edge-AI Zero-Hardware Perception',
-      cameras: [
-        {
-          position: 'front_road' as CameraMountPosition,
-          label: 'Windshield Real RTSP Stream',
-          lensModel: 'Real Optical Stream Ingestion',
-          resolution: s.resolution || '1080p Stream',
-          fps: Math.round(s.current_fps || 30),
-          fov: '120° Wide Angle',
-          feedPreviewUrl: `/api/streams/snapshot/${s.bus_id}`,
-          primaryRole: 'Live Surface Perceptual Detection',
-          detectedOverlay: {
-            label: 'REAL-TIME RTSP INGEST',
-            confidence: 97.5,
-            subtext: `${s.status || 'STREAMING'} • 5Hz GPS Telematics`,
-            bboxStyle: 'border-emerald-500 bg-emerald-500/15 text-emerald-300',
-            hudColor: 'emerald',
-            incidentType: 'D40',
-            defectType: 'D40'
-          }
-        }
-      ]
-    }));
-
-  const allBusRigs = [...FLEET_BUS_RIGS, ...dynamicRigs];
-  const [selectedBusId, setSelectedBusId] = useState<string>('BUS-TN01-1042');
-  const activeBusRig = allBusRigs.find(b => b.id === selectedBusId) || allBusRigs[0];
-
-  const [activeCameraPos, setActiveCameraPos] = useState<CameraMountPosition>('front_road');
-  const activeCamera = activeBusRig.cameras.find(c => c.position === activeCameraPos) || activeBusRig.cameras[0];
-
-  const [isScanning, setIsScanning] = useState<boolean>(true);
-  const [scanShockGz, setScanShockGz] = useState<number>(0.98);
-  const [lastTriggerNotice, setLastTriggerNotice] = useState<string | null>(null);
-  const [isStreamConfigModalOpen, setIsStreamConfigModalOpen] = useState<boolean>(false);
-  const [isDvrRewindActive, setIsDvrRewindActive] = useState<boolean>(false);
-  const [dvrSeconds, setDvrSeconds] = useState<number>(0);
-  const [isFrozen, setIsFrozen] = useState<boolean>(false);
-
-  // WebCam / Live Device Camera state
-  const [isWebcamActive, setIsWebcamActive] = useState<boolean>(false);
-  const webcamVideoRef = useRef<HTMLVideoElement | null>(null);
-  const webcamStreamRef = useRef<MediaStream | null>(null);
-
-  const startWebcam = async () => {
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: 'environment', width: { ideal: 1920 }, height: { ideal: 1080 } },
-        audio: false,
-      });
-      webcamStreamRef.current = stream;
-      setIsWebcamActive(true);
-      setTimeout(() => {
-        if (webcamVideoRef.current) {
-          webcamVideoRef.current.srcObject = stream;
-          webcamVideoRef.current.play().catch(() => {});
-        }
-      }, 100);
-    } catch (err) {
-      console.warn("Retrying with fallback video constraints:", err);
-      try {
-        const fallback = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
-        webcamStreamRef.current = fallback;
-        setIsWebcamActive(true);
-        setTimeout(() => {
-          if (webcamVideoRef.current) {
-            webcamVideoRef.current.srcObject = fallback;
-            webcamVideoRef.current.play().catch(() => {});
-          }
-        }, 100);
-      } catch (e) {
-        alert("Camera permission denied or camera not found on this device.");
-      }
-    }
-  };
-
-  const stopWebcam = () => {
-    if (webcamStreamRef.current) {
-      webcamStreamRef.current.getTracks().forEach((t) => t.stop());
-      webcamStreamRef.current = null;
-    }
-    setIsWebcamActive(false);
-  };
-
-  useEffect(() => {
-    return () => {
-      if (webcamStreamRef.current) {
-        webcamStreamRef.current.getTracks().forEach((t) => t.stop());
-      }
-    };
-  }, []);
-
-  // Refresh live video frames when not frozen
-  useEffect(() => {
-    if (isFrozen) return;
-    const frameInterval = setInterval(() => {
-      setFrameTimestamp(Date.now());
-    }, 180);
-    return () => clearInterval(frameInterval);
-  }, [isFrozen]);
-  const [isDocModalOpen, setIsDocModalOpen] = useState<boolean>(false);
-  const [snapshotDownloadedNotice, setSnapshotDownloadedNotice] = useState<string | null>(null);
-
-  const handleExportEvidenceSnapshot = () => {
-    const canvas = document.createElement('canvas');
-    canvas.width = 1280;
-    canvas.height = 720;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-
-    // Draw background
-    ctx.fillStyle = '#0f172a';
-    ctx.fillRect(0, 0, 1280, 720);
-
-    // Draw frame simulation
-    ctx.fillStyle = '#1e293b';
-    ctx.fillRect(40, 40, 1200, 640);
-
-    // Draw metadata watermark
-    ctx.fillStyle = '#10b981';
-    ctx.font = 'bold 24px monospace';
-    ctx.fillText(`SheherSaathi FORENSIC EVIDENCE SNAPSHOT • ${activeBusRig.id}`, 60, 90);
-
-    ctx.fillStyle = '#ffffff';
-    ctx.font = '20px sans-serif';
-    ctx.fillText(`Camera: ${activeCamera.label} (${activeCamera.position})`, 60, 130);
-    ctx.fillText(`GPS Coordinates: 12.9516° N, 80.1462° E (GST Road Tambaram NH-32)`, 60, 160);
-    ctx.fillText(`Time: ${new Date().toISOString()} • Frame: #${Math.floor(Math.random() * 8000 + 1000)}`, 60, 190);
-    ctx.fillText(`Detection: ${activeCamera.detectedOverlay.label} (Conf: ${activeCamera.detectedOverlay.confidence}%)`, 60, 220);
-
-    // Draw bounding box
-    ctx.strokeStyle = '#ef4444';
-    ctx.lineWidth = 4;
-    ctx.strokeRect(340, 280, 600, 320);
-
-    ctx.fillStyle = '#ef4444';
-    ctx.fillRect(340, 240, 280, 40);
-    ctx.fillStyle = '#ffffff';
-    ctx.font = 'bold 18px monospace';
-    ctx.fillText(activeCamera.detectedOverlay.label, 350, 268);
-
-    // Trigger download
-    const dataUrl = canvas.toDataURL('image/jpeg', 0.95);
-    const link = document.createElement('a');
-    link.download = `SheherSaathi_Evidence_${activeBusRig.id}_${Date.now()}.jpg`;
-    link.href = dataUrl;
-    link.click();
-
-    setSnapshotDownloadedNotice('✓ Forensic Evidence Snapshot Exported with GPS EXIF Watermark!');
-    setTimeout(() => setSnapshotDownloadedNotice(null), 4000);
-  };
-
-  // ── CITIZEN REPORT STATE ───────────────────────────────────────────────────
-  const [selectedDefect, setSelectedDefect] = useState<DefectCode>('D40');
-  const [selectedRoad, setSelectedRoad] = useState<string>('GST Road, Tambaram (NH-32)');
-  const [nearPOI, setNearPOI] = useState<boolean>(true);
-  const [poiType, setPoiType] = useState<'hospital' | 'school'>('hospital');
-  const [userNote, setUserNote] = useState<string>('Deep pothole cavity in middle lane causing severe two-wheeler skid hazard.');
-  const [photoPreview, setPhotoPreview] = useState<string>(
-    'https://images.unsplash.com/photo-1515162816999-a0c47dc192f7?w=800&auto=format&fit=crop&q=80'
-  );
-  const [submittedTicket, setSubmittedTicket] = useState<HazardCluster | null>(null);
-  const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
-  const [isUniversalUploadOpen, setIsUniversalUploadOpen] = useState<boolean>(false);
-
-  // ── YOLO INFERENCE STATE ──────────────────────────────────────────────────
-  const [isYoloRunning, setIsYoloRunning] = useState<boolean>(false);
-  const [yoloResult, setYoloResult] = useState<any>(null);
-
-  // ── CONTRACTOR REPAIR UPLOAD STATE ────────────────────────────────────────
-  const [contractorOrderId, setContractorOrderId] = useState<string>(clusters[0]?.id || 'cl-0001');
-  const [afterRepairPhoto, setAfterRepairPhoto] = useState<string>(
-    'https://images.unsplash.com/photo-1578985545062-69928b1d9587?w=800&auto=format&fit=crop&q=80'
-  );
-  const [repairNotes, setRepairNotes] = useState<string>(
-    'Cavity squared to IRC:SP:20 specs, tack coat RS-1 applied, filled with cold-mix asphalt and vibratory compacted.'
-  );
-  const [autoCloseSuccess, setAutoCloseSuccess] = useState<boolean>(false);
-
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const contractorFileInputRef = useRef<HTMLInputElement>(null);
-
-  const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onload = () => setPhotoPreview(reader.result as string);
-      reader.readAsDataURL(file);
-    }
-  };
-
-  const handleContractorPhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onload = () => setAfterRepairPhoto(reader.result as string);
-      reader.readAsDataURL(file);
-    }
-  };
-
-  const handleRunYoloInference = async () => {
-    if (!photoPreview) return;
-    setIsYoloRunning(true);
-    try {
-      const res = await api.inferYolo(photoPreview, selectedRoad, 12.9516, 80.1462);
-      setYoloResult(res);
-      if (res?.detections?.length > 0) {
-        const top = res.detections[0];
-        if (top.defect_code === 'ZEBRA_CROSSING' || top.defect_code === 'FADED_CROSSING') {
-          setSelectedDefect('ZEBRA_CROSSING');
-        }
-      }
-    } catch {
-      // fallback in api
-    } finally {
-      setIsYoloRunning(false);
-    }
-  };
-
-  const handleSubmitCitizenReport = () => {
-    setIsSubmitting(true);
-    setTimeout(() => {
-      const ticketId = `WO-00${Math.floor(10 + Math.random() * 89)}`;
-      const baseRpi = selectedDefect === 'D40' ? 88.0 : selectedDefect === 'D20' ? 76.0 : 65.0;
-      const boost = nearPOI ? 15 : 0;
-      const finalRpi = Math.min(100.0, baseRpi + boost);
-
-      const newCluster: HazardCluster = {
-        id: `cl-${Date.now()}`,
-        cluster_code: ticketId,
-        defect_type: selectedDefect,
-        defect_name: selectedDefect === 'D40' ? 'Pothole' : selectedDefect === 'D20' ? 'Alligator Crack' : 'Zebra Crossing',
-        severity_level: finalRpi > 80 ? 'critical' : 'high',
-        rpi_score: finalRpi,
-        pass_count: 1,
-        total_observations: 1,
-        road_name: selectedRoad,
-        classification: 'Major Urban Arterial',
-        nearest_poi: nearPOI ? 'St. Thomas Convent School' : 'Tambaram Junction',
-        poi_distance_m: nearPOI ? 45 : 320,
-        assigned_agency: 'L&T Highways Infra Ltd',
-        agency_phone: '+91 98401 22345',
-        sla_hours: nearPOI ? 24 : 48,
-        status: 'open',
-        lat: 12.9516,
-        lng: 80.1462,
-        created_at: 'Just now',
-        updated_at: 'Just now',
-        before_image_url: photoPreview
-      };
-
-      onAddCluster?.(newCluster);
-      setSubmittedTicket(newCluster);
-      setIsSubmitting(false);
-    }, 800);
-  };
-
-  const handleTriggerActiveCameraAI = () => {
-    const ov = activeCamera.detectedOverlay;
-    setScanShockGz(activeCamera.position === 'front_road' ? 1.48 : 0.98);
-    setLastTriggerNotice(`[${activeCamera.label}] -> Logged: ${ov.label} with ${ov.confidence}% confidence!`);
-    setTimeout(() => setScanShockGz(0.98), 1200);
+  const handleSimulateIncidentTrigger = (customOverlay?: any) => {
+    const ov = customOverlay || activeCamera.detectedOverlay;
+    showSuccessToast('Edge Event Triggered', `[${activeCamera.label}] Logged ${ov.label} with ${ov.confidence}% confidence.`);
 
     if (ov.defectType) {
       onSendIngest({
@@ -659,513 +272,342 @@ export const MobileDashcam: React.FC<MobileDashcamProps> = ({
       onSendIncident({
         reporting_bus_id: activeBusRig.id,
         incident_type: ov.incidentType,
-        lat: 12.9516,
-        lng: 80.1462,
+        lat: 13.0450,
+        lng: 80.2380,
         road_name: activeBusRig.routeCorridor,
-        plate_number: activeCamera.position === 'rear_anpr' ? 'TN-01-XX-9901' : (activeCamera.position === 'street_lane' ? 'TN-09-BK-4012' : undefined),
-        fine_amount_inr: activeCamera.position === 'street_lane' ? 1500 : undefined,
-        mva_section: activeCamera.position === 'street_lane' ? 'MVA Sec 115/194' : undefined,
-        water_depth_cm: ov.incidentType === 'WATERLOGGING' ? 28 : undefined
+        plate_number: ov.plateNumber || (activeCamera.position === 'rear_anpr' ? 'TN-01-AX-8732' : undefined),
+        target_speed_kmh: ov.speedKmh,
+        fine_amount_inr: ov.incidentType === 'HIT_AND_RUN' ? 10000 : (ov.incidentType === 'SCHOOL_CHILDREN_CROSSING_RISK' ? 2000 : 1500),
+        mva_section: ov.incidentType === 'HIT_AND_RUN' ? 'MVA 1988 Sec 134(a)(b)' : 'IRC:35 & CMVR Rule 138'
       });
     }
   };
 
   return (
-    <div className="flex-1 flex flex-col min-h-0 overflow-y-auto custom-scrollbar bg-[#EEF2F7] dark:bg-[#090D16] text-slate-900 dark:text-slate-100 select-none transition-colors">
-      <div className="p-5 md:p-6 lg:p-7 space-y-5 max-w-[1700px] mx-auto w-full">
+    <div className="flex-1 flex flex-col min-h-0 overflow-y-auto custom-scrollbar bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 select-none">
+      <div className="p-4 md:p-6 lg:p-7 space-y-5 max-w-[1700px] mx-auto w-full">
         
         {/* Top Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             <button 
               onClick={onBackToDashboard}
-              className="p-2 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 transition shadow-2xs"
+              className="p-2 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 transition cursor-pointer shadow-xs"
               title="Back to Command Center"
             >
               <ArrowLeft className="w-5 h-5" />
             </button>
             <div>
-              <h2 className="font-extrabold text-lg sm:text-xl text-slate-900 dark:text-white tracking-tight font-sans flex items-center gap-2">
-                <span>Fleet 360° Edge AI &amp; Field Diagnostics</span>
-                <span className="px-2 py-0.5 rounded-md bg-blue-100 dark:bg-blue-950 text-blue-700 dark:text-blue-300 text-xs font-mono font-bold">
+              <div className="flex items-center gap-2">
+                <h1 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white tracking-tight">
+                  Fleet 360° Edge Vision &amp; Live Stream HUD
+                </h1>
+                <span className="px-2.5 py-0.5 rounded-full bg-blue-50 dark:bg-blue-950 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-900 text-xs font-mono font-bold">
                   MULTI-CAM RIG
                 </span>
-              </h2>
-              <p className="text-xs text-slate-500 dark:text-slate-400 leading-tight mt-0.5">
-                Multi-perspective bus sensor rigs, citizen geo-tag ticketing, and contractor photo audits.
+              </div>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                Real-time video inference HUD for pedestrian crossings, hit-and-run tracking, and surface distress.
               </p>
             </div>
           </div>
 
-          {/* Mode Switcher Tabs */}
-          <div className="flex bg-white dark:bg-slate-800/90 p-1 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-semibold self-start sm:self-auto shadow-2xs">
+          {/* Action Buttons */}
+          <div className="flex items-center gap-2">
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={() => setIsUploadModalOpen(true)}
+              icon={<UploadCloud className="w-4 h-4" />}
+            >
+              Demonstration Scenario Pack
+            </Button>
+
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={() => setIsExportModalOpen(true)}
+              icon={<Download className="w-4 h-4" />}
+            >
+              Export Dossier
+            </Button>
+          </div>
+        </div>
+
+        {/* 1. CAMERA SELECTION CHANNEL BAR */}
+        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-3.5 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-3">
+          <div className="flex items-center gap-2 overflow-x-auto custom-scrollbar p-0.5">
+            {activeBusRig.cameras.map((cam) => {
+              const isActive = cam.position === activeCameraPosition;
+              return (
+                <button
+                  key={cam.position}
+                  onClick={() => setActiveCameraPosition(cam.position)}
+                  className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition cursor-pointer ${
+                    isActive
+                      ? 'bg-blue-600 text-white shadow-xs'
+                      : 'bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-750 border border-slate-200 dark:border-slate-700'
+                  }`}
+                >
+                  <Camera className="w-4 h-4" />
+                  <span>{cam.label}</span>
+                  <span className={`text-[11px] px-2 py-0.2 rounded-full font-mono ${
+                    isActive ? 'bg-white/20 text-white' : 'bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-400'
+                  }`}>
+                    {cam.fps} FPS
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+
+          <div className="flex items-center gap-2">
             <button
-              onClick={() => setActiveTab('dashcam')}
-              className={`px-3 py-1.5 rounded-lg transition flex items-center gap-1.5 ${
-                activeTab === 'dashcam'
-                  ? 'bg-blue-600 text-white shadow-xs font-bold'
-                  : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white'
+              onClick={() => setHudOverlayActive(!hudOverlayActive)}
+              className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition cursor-pointer flex items-center gap-1.5 ${
+                hudOverlayActive
+                  ? 'bg-emerald-50 dark:bg-emerald-950/60 border-emerald-300 dark:border-emerald-800 text-emerald-700 dark:text-emerald-300'
+                  : 'bg-slate-100 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-500'
               }`}
             >
-              <Video className="w-3.5 h-3.5" />
-              <span>360° Bus Rig AI</span>
+              <Eye className="w-3.5 h-3.5" />
+              <span>HUD Overlays: {hudOverlayActive ? 'ON' : 'OFF'}</span>
             </button>
 
             <button
-              onClick={() => setActiveTab('citizen')}
-              className={`px-3 py-1.5 rounded-lg transition flex items-center gap-1.5 ${
-                activeTab === 'citizen'
-                  ? 'bg-blue-600 text-white shadow-xs font-bold'
-                  : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white'
+              onClick={() => setPrivacyBlurActive(!privacyBlurActive)}
+              className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition cursor-pointer flex items-center gap-1.5 ${
+                privacyBlurActive
+                  ? 'bg-blue-50 dark:bg-blue-950/60 border-blue-300 dark:border-blue-800 text-blue-700 dark:text-blue-300'
+                  : 'bg-slate-100 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-500'
               }`}
             >
-              <Camera className="w-3.5 h-3.5" />
-              <span>Citizen Report</span>
-            </button>
-
-            <button
-              onClick={() => setActiveTab('contractor')}
-              className={`px-3 py-1.5 rounded-lg transition flex items-center gap-1.5 ${
-                activeTab === 'contractor'
-                  ? 'bg-blue-600 text-white shadow-xs font-bold'
-                  : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white'
-              }`}
-            >
-              <Wrench className="w-3.5 h-3.5" />
-              <span>Contractor Audit</span>
+              <ShieldCheck className="w-3.5 h-3.5" />
+              <span>DPDP Privacy: {privacyBlurActive ? 'ACTIVE' : 'OFF'}</span>
             </button>
           </div>
         </div>
 
-        {/* ── TAB 1: 360° MULTI-CAMERA BUS RIG ──────────────────────────────── */}
-        {activeTab === 'dashcam' && (
-          <div className="space-y-4 animate-fadeIn">
-            {/* Bus & Hardware Selector Bar */}
-            <div className="p-4 rounded-2xl bg-white dark:bg-[#0B101D] border border-slate-200 dark:border-slate-800 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-2xl bg-blue-100 dark:bg-blue-950/80 border border-blue-200 dark:border-blue-900 flex items-center justify-center text-blue-600 dark:text-blue-400 shrink-0">
-                  <Bus className="w-5 h-5" />
-                </div>
-                <div>
-                  <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400 font-mono block">
-                    Active Patrolling Vehicle:
-                  </label>
-                  <select
-                    value={selectedBusId}
-                    onChange={(e) => {
-                      const newId = e.target.value;
-                      setSelectedBusId(newId);
-                      const rig = FLEET_BUS_RIGS.find(b => b.id === newId);
-                      if (rig && rig.cameras.length > 0) {
-                        setActiveCameraPos(rig.cameras[0].position);
-                      }
-                    }}
-                    className="mt-0.5 text-sm font-bold bg-transparent border-b border-blue-500 text-slate-900 dark:text-white outline-none cursor-pointer pr-4"
-                  >
-                    {allBusRigs.map(rig => (
-                      <option key={rig.id} value={rig.id} className="bg-white dark:bg-slate-900 text-slate-900 dark:text-white">
-                        {rig.id} ({rig.routeCode}) • {rig.routeCorridor}
-                      </option>
-                    ))}
-                  </select>
-                </div>
+        {/* 2. MAIN LIVE STREAM VIEWPORT & HUD STAGE */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+          
+          {/* Main Video Viewport (2 Cols) */}
+          <div className="lg:col-span-2 relative rounded-2xl overflow-hidden border border-slate-200 dark:border-slate-800 bg-black min-h-[460px] flex items-center justify-center shadow-md">
+            
+            {/* Background Stream Video / Image */}
+            <img
+              src={activeCamera.feedPreviewUrl}
+              alt="Feed Preview"
+              className="w-full h-full object-cover min-h-[460px]"
+            />
+
+            {/* Top Optical HUD Ribbon */}
+            <div className="absolute top-3 left-3 right-3 z-30 flex items-center justify-between text-xs font-mono text-white pointer-events-none">
+              <div className="flex items-center gap-2 bg-black/80 backdrop-blur-xs px-3 py-1.5 rounded-xl border border-white/20">
+                <Radio className="w-3.5 h-3.5 text-emerald-400 animate-pulse" />
+                <span className="font-bold text-emerald-400">LIVE FEED &bull; {activeCamera.resolution}</span>
+                <span className="text-slate-400">&bull; {activeBusRig.id} ({activeBusRig.routeCode})</span>
               </div>
 
-              {/* Hardware Specs Pills */}
-              <div className="flex flex-wrap items-center gap-2 text-xs font-mono">
-                <div className="px-2.5 py-1 rounded-xl bg-slate-100 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300">
-                  <span className="text-slate-400">NPU: </span>
-                  <strong className="text-blue-600 dark:text-blue-400">{activeBusRig.npuHardware}</strong>
-                </div>
-                <div className="px-2.5 py-1 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-300 font-bold flex items-center gap-1.5">
-                  <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping" />
-                  <span>{activeBusRig.cameras.length} Active Feeds</span>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setIsStreamConfigModalOpen(true)}
-                  className="px-2.5 py-1 rounded-xl bg-blue-50 dark:bg-blue-950/60 border border-blue-200 dark:border-blue-800 text-blue-700 dark:text-blue-300 font-bold flex items-center gap-1.5 hover:bg-blue-100 dark:hover:bg-blue-900/60 transition cursor-pointer"
-                  title="Configure Live RTSP URLs and Custom .pt Weights"
-                >
-                  <Cpu className="w-3 h-3" />
-                  <span>Stream &amp; Model Config</span>
-                </button>
+              <div className="flex items-center gap-2 bg-black/80 backdrop-blur-xs px-3 py-1.5 rounded-xl border border-white/20">
+                <span>SPEED: <b className="text-amber-400">{activeCamera.detectedOverlay.speedKmh || 32.0} km/h</b></span>
+                <span className="text-slate-400">&bull; 0.98g Shock</span>
               </div>
             </div>
 
-            {/* Dynamic Camera Mount Buttons - ONLY SHOW MOUNTED CAMERAS FOR THIS BUS */}
-            <div className="flex items-center gap-2 overflow-x-auto custom-scrollbar pb-1">
-              <span className="text-xs font-bold text-slate-500 dark:text-slate-400 font-mono uppercase tracking-wider shrink-0 pr-2">
-                Mounted Feeds:
-              </span>
-              {activeBusRig.cameras.map((cam) => {
-                const isActive = activeCamera.position === cam.position;
-                return (
-                  <button
-                    key={cam.position}
-                    onClick={() => setActiveCameraPos(cam.position)}
-                    className={`px-3.5 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 shrink-0 border ${
-                      isActive
-                        ? 'bg-blue-600 text-white border-blue-500 shadow-md shadow-blue-900/20'
-                        : 'bg-white dark:bg-[#0B101D] text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800'
-                    }`}
-                  >
-                    <Camera className="w-3.5 h-3.5" />
-                    <span>{cam.label}</span>
-                    <span className={`text-[10px] px-1.5 py-0.2 rounded font-mono ${
-                      isActive ? 'bg-blue-700 text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-500'
-                    }`}>
-                      {cam.fps} FPS
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
-
-            {/* Camera Viewport with Perspective-Specific HUD Overlay */}
-            <div className="bg-white dark:bg-[#0B101D] border border-slate-200 dark:border-slate-800 rounded-2xl p-4 sm:p-5 shadow-xs space-y-4">
-              <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
-                <div>
-                  <h3 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                    <span>{activeCamera.label}</span>
-                    <span className="text-xs font-mono font-normal text-slate-400">
-                      ({activeCamera.lensModel})
-                    </span>
-                  </h3>
-                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 font-mono text-[11px]">
-                    Role: {activeCamera.primaryRole} • Resolution: {activeCamera.resolution} • FOV: {activeCamera.fov}
-                  </p>
-                </div>
-
-                <div className="flex items-center gap-2 text-xs font-mono">
-                  <span className="px-2 py-0.5 rounded bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 font-bold">
-                    {activeCamera.fps} FPS INT8
-                  </span>
-                </div>
+            {/* DPDP Act 2023 Face Redaction Badge */}
+            {privacyBlurActive && (
+              <div className="absolute bottom-3 left-3 z-30 flex items-center gap-1.5 px-3 py-1 rounded-lg bg-emerald-950/80 border border-emerald-500/40 text-[11px] text-emerald-300 font-mono">
+                <ShieldCheck className="w-3.5 h-3.5" />
+                <span>DPDP ACT 2023 &bull; OPTICAL PRIVACY REDACTION ACTIVE</span>
               </div>
+            )}
 
-              {/* DVR Rewind & Evidence Snapshot Toolbar */}
-              <div className="flex flex-wrap items-center justify-between gap-2 p-2.5 rounded-xl bg-slate-100 dark:bg-slate-850 border border-slate-200 dark:border-slate-800 text-xs font-mono">
-                <div className="flex items-center gap-2">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setIsDvrRewindActive(!isDvrRewindActive);
-                      if (!isDvrRewindActive) setDvrSeconds(8);
-                    }}
-                    className={`px-3 py-1.5 rounded-lg flex items-center gap-1.5 font-bold transition ${
-                      isDvrRewindActive ? 'bg-purple-600 text-white shadow-xs' : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-200'
-                    }`}
-                  >
-                    <RotateCcw className="w-3.5 h-3.5" />
-                    <span>{isDvrRewindActive ? `Rewound -${dvrSeconds}s (DVR Active)` : 'Rewind 15s Buffer'}</span>
-                  </button>
+            {/* DYNAMIC HUD OVERLAYS */}
+            {hudOverlayActive && (
+              <>
+                {/* 1. School Children & Pedestrian Crosswalk Overlay (Front Camera) */}
+                {activeCamera.position === 'front_road' && showPedestrianZoneHUD && (
+                  <div className="absolute inset-0 pointer-events-none z-20 flex items-center justify-center p-8">
+                    {/* Crosswalk Green Polygon */}
+                    <div className="absolute bottom-12 w-3/4 h-36 rounded-xl border-2 border-emerald-400/80 bg-emerald-500/10 backdrop-blur-[1px] flex flex-col justify-between p-2.5 animate-pulse">
+                      <div className="flex items-center justify-between text-[11px] font-mono text-emerald-300 font-bold bg-black/60 px-2 py-0.5 rounded w-fit">
+                        <span>IRC:35 PEDESTRIAN CROSSING ZONE (COMPLIANT)</span>
+                      </div>
+                      <span className="text-[10px] font-mono text-emerald-400 text-right">AREA IOA: 88.5% &bull; SPEED LIMIT 20 KM/H</span>
+                    </div>
 
-                  <button
-                    type="button"
-                    onClick={() => setIsFrozen(!isFrozen)}
-                    className={`px-3 py-1.5 rounded-lg flex items-center gap-1.5 font-bold transition ${
-                      isFrozen ? 'bg-amber-600 text-white' : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200'
-                    }`}
-                  >
-                    {isFrozen ? <Play className="w-3.5 h-3.5" /> : <Pause className="w-3.5 h-3.5" />}
-                    <span>{isFrozen ? 'Resume Stream' : 'Freeze Frame'}</span>
-                  </button>
-                </div>
-
-                {isDvrRewindActive && (
-                  <div className="flex items-center gap-2 flex-1 max-w-xs px-2">
-                    <span className="text-[10px] text-purple-600 dark:text-purple-400 font-bold">-15s</span>
-                    <input
-                      type="range"
-                      min="0"
-                      max="15"
-                      value={dvrSeconds}
-                      onChange={(e) => setDvrSeconds(Number(e.target.value))}
-                      className="w-full accent-purple-600 cursor-pointer"
-                    />
-                    <span className="text-[10px] text-purple-600 dark:text-purple-400 font-bold">0s</span>
+                    {/* Pedestrian / School Children Bounding Boxes */}
+                    <div className="absolute bottom-24 left-1/3 border-2 border-amber-400 bg-amber-500/20 px-4 py-2 rounded-lg text-amber-200 text-xs font-mono font-bold flex flex-col items-start gap-1 shadow-lg animate-bounce">
+                      <div className="flex items-center gap-1.5 bg-amber-950/90 text-amber-300 px-2 py-0.5 rounded text-[11px]">
+                        <School className="w-3.5 h-3.5" />
+                        <span>SCHOOL CHILDREN CROSSING (3 STUDENTS)</span>
+                      </div>
+                      <span className="text-[10.5px] text-white">YIELD MANDATE &bull; PROXIMITY: 18m</span>
+                    </div>
                   </div>
                 )}
 
-                <div className="flex items-center gap-2">
-                  <button
-                    type="button"
-                    onClick={isWebcamActive ? stopWebcam : startWebcam}
-                    className={`px-3 py-1.5 rounded-lg font-bold flex items-center gap-1.5 shadow-xs transition cursor-pointer ${
-                      isWebcamActive
-                        ? 'bg-emerald-500 text-slate-950 animate-pulse'
-                        : 'bg-slate-800 hover:bg-slate-700 text-emerald-400 border border-emerald-500/40'
-                    }`}
-                    title={isWebcamActive ? "Disconnect live webcam" : "Connect live smartphone / laptop camera"}
-                  >
-                    <Camera className="w-3.5 h-3.5" />
-                    <span>{isWebcamActive ? 'WebCam Active' : 'Connect WebCam'}</span>
-                  </button>
+                {/* 2. Hit-and-Run Dragnet Radar Overlay (Rear Camera) */}
+                {activeCamera.position === 'rear_anpr' && showHitRunVectorHUD && (
+                  <div className="absolute inset-0 pointer-events-none z-20 flex items-center justify-center p-8">
+                    {/* Vehicle Target Box */}
+                    <div className="border-2 border-rose-500 bg-rose-500/15 p-4 rounded-xl shadow-2xl flex flex-col items-center gap-2 animate-pulse">
+                      <div className="flex items-center gap-2 bg-rose-950/90 border border-rose-500 text-rose-200 px-3 py-1 rounded-lg text-xs font-mono font-bold">
+                        <ShieldAlert className="w-4 h-4 text-rose-400" />
+                        <span>FLEEING VEHICLE BEHAVIORAL SIGNATURE</span>
+                      </div>
 
-                  <button
-                    type="button"
-                    onClick={handleExportEvidenceSnapshot}
-                    className="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold flex items-center gap-1.5 shadow-xs transition cursor-pointer"
-                    title="Export High-Res Evidence JPG with GPS EXIF metadata"
-                  >
-                    <Download className="w-3.5 h-3.5" />
-                    <span>Export Snapshot</span>
-                  </button>
+                      {/* License Plate HUD Card */}
+                      <div className="border-2 border-yellow-400 bg-black/95 px-5 py-2 rounded-lg font-mono font-black text-xl text-yellow-300 tracking-widest">
+                        TN-01-AX-8732
+                      </div>
 
-                  <button
-                    type="button"
-                    onClick={() => setIsDocModalOpen(true)}
-                    className="px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-bold flex items-center gap-1.5 shadow-xs transition cursor-pointer"
-                    title="Generate Draft Violation Notice or E-Challan PDF"
-                  >
-                    <Printer className="w-3.5 h-3.5" />
-                    <span>Generate Draft Notice</span>
-                  </button>
-                </div>
-              </div>
-
-              {snapshotDownloadedNotice && (
-                <div className="p-2.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-300 dark:border-emerald-800 text-xs text-emerald-800 dark:text-emerald-300 font-bold font-mono">
-                  {snapshotDownloadedNotice}
-                </div>
-              )}
-
-              {/* Viewport Frame */}
-              <div className="relative h-72 sm:h-96 rounded-2xl overflow-hidden bg-slate-950 border border-slate-800 flex items-center justify-center">
-                {isWebcamActive ? (
-                  <video
-                    ref={webcamVideoRef}
-                    autoPlay
-                    playsInline
-                    muted
-                    className="w-full h-full object-cover"
-                  />
-                ) : (
-                  <img
-                    key={`${selectedBusId}-${activeCameraPos}`}
-                    src={
-                      useLiveRtsp && !streamError
-                        ? `/api/streams/snapshot/${selectedBusId}?t=${frameTimestamp}`
-                        : activeCamera.feedPreviewUrl
-                    }
-                    onError={() => setStreamError(true)}
-                    onLoad={() => setStreamError(false)}
-                    alt={activeCamera.label}
-                    className="w-full h-full object-cover opacity-90 transition-opacity duration-200"
-                  />
+                      <div className="text-[11px] font-mono bg-black/80 px-2.5 py-0.5 rounded text-white flex items-center gap-2">
+                        <span>CLOCK SPEED: <b className="text-rose-400">78.4 km/h</b></span>
+                        <span className="text-amber-400">&Delta;v: +36.4 km/h (Spike)</span>
+                      </div>
+                    </div>
+                  </div>
                 )}
+              </>
+            )}
 
-                {/* Perspective Bounding Box HUD */}
-                <div className={`absolute top-1/3 left-1/4 w-48 sm:w-64 h-28 sm:h-36 border-2 rounded-xl flex flex-col justify-between p-2 animate-pulse ${activeCamera.detectedOverlay.bboxStyle}`}>
-                  <div className="flex items-center justify-between text-[10.5px] font-mono font-bold bg-black/80 px-2 py-1 rounded">
-                    <span>{isWebcamActive ? "LIVE WEBCAM AI TRACKING" : activeCamera.detectedOverlay.label}</span>
-                    <span className="text-emerald-400">{isWebcamActive ? "98.4%" : `${activeCamera.detectedOverlay.confidence}%`}</span>
-                  </div>
-                  <div className="text-[10px] font-mono bg-black/80 px-2 py-0.5 rounded self-start">
-                    {isWebcamActive ? "Edge AI Ingest Active • 30 FPS" : activeCamera.detectedOverlay.subtext}
-                  </div>
-                </div>
-
-                {/* Top Left HUD */}
-                <div className="absolute top-3 left-3 bg-slate-900/85 backdrop-blur-md px-3 py-1.5 rounded-xl border border-slate-700 text-white font-mono text-xs flex items-center gap-2 shadow-lg">
-                  <span className="w-2 h-2 rounded-full bg-rose-500 animate-pulse" />
-                  <span>{isWebcamActive ? "LIVE WEBCAM INGEST" : `REC ● ${activeBusRig.id}`}</span>
-                  <span className="text-slate-400">|</span>
-                  <span>{isWebcamActive ? "1080p 30FPS" : activeCamera.position.toUpperCase()}</span>
-                </div>
-
-                {/* Top Right Live Status Pill */}
-                <div className="absolute top-3 right-3 bg-slate-900/85 backdrop-blur-md px-2.5 py-1 rounded-xl border border-slate-700 text-xs font-mono flex items-center gap-2 shadow-lg">
-                  <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                  <span className="text-white font-bold text-[11px]">
-                    {isWebcamActive ? "CONNECTED LIVE" : (!streamError ? 'LIVE ZERO-HW RTSP' : 'STANDBY HUD')}
-                  </span>
-                  {!isWebcamActive && (
-                    <button
-                      type="button"
-                      onClick={() => setUseLiveRtsp(prev => !prev)}
-                      className="ml-1 text-[10px] text-blue-400 hover:text-blue-300 underline font-sans cursor-pointer"
-                    >
-                      {useLiveRtsp ? 'Sim' : 'Live'}
-                    </button>
-                  )}
-                </div>
-
-                {/* Bottom Right Telemetry */}
-                <div className="absolute bottom-3 right-3 bg-slate-900/85 backdrop-blur-md px-3 py-1.5 rounded-xl border border-slate-700 text-amber-300 font-mono text-[11px] shadow-lg">
-                  NAVIC 5Hz LOCK • 11 SATELLITES • 38 km/h
-                </div>
-              </div>
-
-              {/* Live AI Trigger Action */}
-              <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs">
-                <div>
-                  <div className="font-bold text-slate-800 dark:text-slate-200">
-                    Simulate Live Detection for {activeCamera.label}:
-                  </div>
-                  <div className="text-slate-500 dark:text-slate-400 text-[11px] mt-0.5">
-                    Triggers {activeCamera.detectedOverlay.label} edge telemetry and dispatches to central CAD / Enforcement.
-                  </div>
-                </div>
-
-                <Button
-                  variant="primary"
-                  size="sm"
-                  onClick={handleTriggerActiveCameraAI}
-                  icon={<Sparkles className="w-3.5 h-3.5" />}
-                  className="bg-blue-600 hover:bg-blue-500 text-white font-bold shrink-0"
-                >
-                  Trigger {activeCamera.label.split(' ')[0]} AI Detection
-                </Button>
-              </div>
-
-              {lastTriggerNotice && (
-                <div className="p-3 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-300 dark:border-emerald-800 text-xs text-emerald-800 dark:text-emerald-300 flex items-center justify-between font-mono animate-fadeIn">
-                  <span>{lastTriggerNotice}</span>
-                  <span className="font-bold text-emerald-600">DISPATCHED</span>
-                </div>
-              )}
-            </div>
-          </div>
-        )}
-
-        {/* ── TAB 2: CITIZEN REPORT ─────────────────────────────────────────── */}
-        {activeTab === 'citizen' && (
-          <div className="bg-white dark:bg-[#0B101D] border border-slate-200 dark:border-slate-800 rounded-2xl p-6 shadow-xs space-y-5">
-            <div className="border-b border-slate-100 dark:border-slate-800 pb-3">
-              <h3 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                <Camera className="w-4 h-4 text-rose-500" />
-                <span>Unified Citizen &amp; Operator AI Road Hazard Ingest</span>
-              </h3>
-              <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                Upload street footage or high-res photo evidence; onboard YOLO11 analyzes distress geometry, measures cavity depth, and generates an official municipal work order.
-              </p>
-            </div>
-
-            <div className="p-8 rounded-2xl border-2 border-dashed border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950/50 flex flex-col items-center justify-center text-center space-y-3">
-              <div className="p-4 rounded-2xl bg-blue-500/10 text-blue-500 border border-blue-500/20">
-                <UploadCloud className="w-8 h-8" />
-              </div>
-              <div>
-                <h4 className="font-bold text-slate-900 dark:text-white text-sm">
-                  Run YOLO11 AI Defect Detection &amp; Ingest
-                </h4>
-                <p className="text-xs text-slate-500 dark:text-slate-400 max-w-md mx-auto mt-1">
-                  Upload video or photo evidence. Real OpenCV &amp; YOLO contour analysis measures cavity depth, area, and automatically registers issues to the live system.
-                </p>
-              </div>
+            {/* Viewport Control Bar */}
+            <div className="absolute bottom-3 right-3 z-30 flex items-center gap-2">
               <Button
                 variant="primary"
-                size="md"
-                onClick={() => setIsUniversalUploadOpen(true)}
-                className="bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs flex items-center gap-2 shadow-md cursor-pointer"
+                size="sm"
+                onClick={() => handleSimulateIncidentTrigger()}
+                icon={<Sparkles className="w-4 h-4" />}
               >
-                <UploadCloud className="w-4 h-4" />
-                <span>Open Universal AI Ingest Console</span>
+                Log Edge Detection to Pipeline
               </Button>
             </div>
           </div>
-        )}
 
-        {/* ── TAB 3: CONTRACTOR REPAIR UPLOAD & AUDIT ───────────────────────── */}
-        {activeTab === 'contractor' && (
-          <div className="bg-white dark:bg-[#0B101D] border border-slate-200 dark:border-slate-800 rounded-2xl p-4 sm:p-6 shadow-xs space-y-4">
-            <div className="border-b border-slate-100 dark:border-slate-800 pb-3">
-              <h3 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                <CheckCircle2 className="w-4 h-4 text-emerald-500" />
-                <span>Field Proof-of-Repair &amp; SLA Clearance</span>
-              </h3>
-              <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                Contractors upload post-repair compaction photos to authorize SLA milestone clearance under IRC:SP:20.
-              </p>
-            </div>
+          {/* Right Inspection & Telemetry Panel (1 Col) */}
+          <div className="space-y-4">
+            
+            {/* Active Perception Summary Card */}
+            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 shadow-xs space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
+                  Active Channel Perception
+                </span>
+                <Badge variant="info" size="sm">
+                  {Math.round(activeCamera.detectedOverlay.confidence)}% Confidence
+                </Badge>
+              </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-5 text-xs">
-              <div className="space-y-3">
-                <div className="relative rounded-2xl overflow-hidden bg-slate-950 border border-slate-800 aspect-video flex items-center justify-center">
-                  <img src={afterRepairPhoto} alt="After Repair" className="w-full h-full object-cover" />
-                  <input 
-                    ref={contractorFileInputRef}
-                    type="file"
-                    accept="image/*"
-                    onChange={handleContractorPhotoUpload}
-                    className="hidden"
-                  />
-                  <button 
-                    onClick={() => contractorFileInputRef.current?.click()}
-                    className="absolute bottom-3 right-3 px-3 py-1.5 rounded-xl bg-slate-900/85 text-white text-xs font-bold border border-slate-700 flex items-center gap-1.5 hover:bg-slate-800 transition"
-                  >
-                    <Upload className="w-3.5 h-3.5" />
-                    <span>Upload After-Repair Photo</span>
-                  </button>
+              <div>
+                <h3 className="font-bold text-sm text-slate-900 dark:text-white leading-tight">
+                  {activeCamera.detectedOverlay.label}
+                </h3>
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 leading-normal">
+                  {activeCamera.detectedOverlay.subtext}
+                </p>
+              </div>
+
+              <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 space-y-2 text-xs">
+                <div className="flex justify-between">
+                  <span className="text-slate-500">Mount Sensor:</span>
+                  <span className="font-semibold text-slate-800 dark:text-slate-200">{activeCamera.lensModel}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-slate-500">Corridor Road:</span>
+                  <span className="font-semibold text-slate-800 dark:text-slate-200">{activeBusRig.routeCorridor}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-slate-500">NPU Compute:</span>
+                  <span className="font-mono text-blue-600 dark:text-blue-400">{activeBusRig.npuHardware}</span>
                 </div>
               </div>
 
-              <div className="space-y-3">
-                <div>
-                  <label className="font-bold text-slate-700 dark:text-slate-300 block mb-1">Select Work Order Ticket:</label>
-                  <select
-                    value={contractorOrderId}
-                    onChange={(e) => setContractorOrderId(e.target.value)}
-                    className="w-full p-2.5 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 font-medium text-slate-800 dark:text-slate-200"
-                  >
-                    {clusters.map(c => (
-                      <option key={c.id} value={c.id}>
-                        {c.cluster_code || c.id} • {c.defect_name} ({c.road_name})
-                      </option>
-                    ))}
-                  </select>
-                </div>
+              <Button
+                variant="primary"
+                size="sm"
+                onClick={() => handleSimulateIncidentTrigger()}
+                className="w-full"
+                icon={<Send className="w-4 h-4" />}
+              >
+                Trigger &amp; Ingest into Live DB
+              </Button>
+            </div>
 
-                <div>
-                  <label className="font-bold text-slate-700 dark:text-slate-300 block mb-1">Field Compaction Notes:</label>
-                  <textarea
-                    value={repairNotes}
-                    onChange={(e) => setRepairNotes(e.target.value)}
-                    rows={3}
-                    className="w-full p-2.5 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 font-medium text-slate-800 dark:text-slate-200 outline-none"
-                  />
-                </div>
+            {/* Quick Demonstration Scenario Triggers */}
+            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 shadow-xs space-y-2.5">
+              <span className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider block">
+                Quick Scenario Selectors:
+              </span>
 
-                <Button
-                  variant="primary"
-                  size="md"
+              <div className="space-y-1.5">
+                <button
                   onClick={() => {
-                    onUpdateWorkOrder?.(contractorOrderId, 'verified_closed', undefined, afterRepairPhoto, repairNotes);
-                    setAutoCloseSuccess(true);
-                    setTimeout(() => setAutoCloseSuccess(false), 4000);
+                    setActiveCameraPosition('front_road');
+                    setShowPedestrianZoneHUD(true);
                   }}
-                  className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold"
+                  className="w-full p-2.5 rounded-xl border border-amber-200 dark:border-amber-900/60 bg-amber-50/50 dark:bg-amber-950/40 hover:border-amber-400 text-left transition cursor-pointer flex items-center justify-between"
                 >
-                  Submit Proof-of-Repair &amp; Clear SLA
-                </Button>
-
-                {autoCloseSuccess && (
-                  <div className="p-3 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-300 dark:border-emerald-800 text-emerald-800 dark:text-emerald-300 font-bold font-mono">
-                    ✓ Repair proof submitted! Work order marked Verified Closed.
+                  <div className="flex items-center gap-2 text-xs">
+                    <School className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+                    <div>
+                      <div className="font-bold text-slate-900 dark:text-white">School Children Crossing</div>
+                      <div className="text-[10.5px] text-slate-500">D.A.V. Senior Secondary Zone</div>
+                    </div>
                   </div>
-                )}
+                  <ChevronRight className="w-4 h-4 text-slate-400" />
+                </button>
+
+                <button
+                  onClick={() => {
+                    setActiveCameraPosition('rear_anpr');
+                    setShowHitRunVectorHUD(true);
+                  }}
+                  className="w-full p-2.5 rounded-xl border border-rose-200 dark:border-rose-900/60 bg-rose-50/50 dark:bg-rose-950/40 hover:border-rose-400 text-left transition cursor-pointer flex items-center justify-between"
+                >
+                  <div className="flex items-center gap-2 text-xs">
+                    <ShieldAlert className="w-4 h-4 text-rose-600 dark:text-rose-400" />
+                    <div>
+                      <div className="font-bold text-slate-900 dark:text-white">Hit &amp; Run Evasion Trajectory</div>
+                      <div className="text-[10.5px] text-slate-500">ANPR OCR + Speed Acceleration</div>
+                    </div>
+                  </div>
+                  <ChevronRight className="w-4 h-4 text-slate-400" />
+                </button>
+
+                <button
+                  onClick={() => setActiveCameraPosition('curb_pedestrian')}
+                  className="w-full p-2.5 rounded-xl border border-cyan-200 dark:border-cyan-900/60 bg-cyan-50/50 dark:bg-cyan-950/40 hover:border-cyan-400 text-left transition cursor-pointer flex items-center justify-between"
+                >
+                  <div className="flex items-center gap-2 text-xs">
+                    <Droplets className="w-4 h-4 text-cyan-600 dark:text-cyan-400" />
+                    <div>
+                      <div className="font-bold text-slate-900 dark:text-white">Open Manhole &amp; Waterlog</div>
+                      <div className="text-[10.5px] text-slate-500">Emergency Barricade &amp; Pump</div>
+                    </div>
+                  </div>
+                  <ChevronRight className="w-4 h-4 text-slate-400" />
+                </button>
               </div>
             </div>
           </div>
-        )}
+        </div>
 
-        {/* Real-time Stream & Custom Model Configuration Modal */}
-        <DocumentExportModal
-          isOpen={isDocModalOpen}
-          onClose={() => setIsDocModalOpen(false)}
-          documentType={activeCamera.position === 'rear_anpr' ? 'POLICE_ECHALLAN' : 'CONTRACTOR_SUMMONS'}
-        />
-        <StreamModelConfigModal
-          isOpen={isStreamConfigModalOpen}
-          onClose={() => setIsStreamConfigModalOpen(false)}
-        />
+        {/* Modal Connections */}
         <UploadFootageModal
-          isOpen={isUniversalUploadOpen}
-          onClose={() => setIsUniversalUploadOpen(false)}
-          onAddCluster={onAddCluster}
-          onNavigateToMap={onBackToDashboard}
+          isOpen={isUploadModalOpen}
+          onClose={() => setIsUploadModalOpen(false)}
+          busId={activeBusRig.id}
+          onUploadSuccess={(res) => {
+            showSuccessToast('Scenario Ingested', `Ingested ${res.defectLabel} into live corridor.`);
+          }}
+        />
+
+        <DocumentExportModal
+          isOpen={isExportModalOpen}
+          onClose={() => setIsExportModalOpen(false)}
+          targetCluster={clusters[0] || null}
         />
       </div>
     </div>
