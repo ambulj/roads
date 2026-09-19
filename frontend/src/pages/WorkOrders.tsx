@@ -32,6 +32,7 @@ import { RoadMeshVisualizerModal, isRoadSurfaceDefect } from '../components/moda
 import { EmptyState } from '../components/common/EmptyState';
 import { MultiBusTruthBadge } from '../components/triage/MultiBusTruthBadge';
 import { ContractorSlaLedger } from '../components/workorders/ContractorSlaLedger';
+import { SyntheticGeneratorControl } from '../components/common/SyntheticGeneratorControl';
 import { useAuth } from '../context/AuthContext';
 import { api } from '../services/api';
 import { useToast } from '../context/ToastContext';
@@ -247,6 +248,8 @@ export const WorkOrders: React.FC<WorkOrdersProps> = ({ clusters, onUpdateStatus
                 <span className="w-2 h-2 rounded-full bg-amber-500" />
               </button>
             </div>
+
+            <SyntheticGeneratorControl />
 
             <button
               onClick={() => openConsole(clusters[0] || null, 'repass')}

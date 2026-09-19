@@ -29,6 +29,7 @@ import { TrafficIncident } from "../../types";
 import { NotificationCenter } from "./NotificationCenter";
 import { audioAlerts } from "../../utils/audioAlerts";
 import { api } from "../../services/api";
+import { SyntheticGeneratorControl } from "../common/SyntheticGeneratorControl";
 
 
 interface HeaderProps {
@@ -167,6 +168,9 @@ export const Header: React.FC<HeaderProps> = ({
 
         {/* Right Header Navigation & Actions */}
         <div className="ml-auto flex items-center gap-2">
+          {/* On-Demand Synthetic Generator Button */}
+          <SyntheticGeneratorControl />
+
           {/* Universal AI Upload & Detect Button */}
           {onOpenUploadModal && (
             <button

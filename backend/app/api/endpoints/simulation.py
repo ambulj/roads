@@ -11,6 +11,9 @@ class SimulationTogglePayload(BaseModel):
     synthetic_generation: Optional[bool] = None
     demo_mode: Optional[bool] = None
 
+class SimulationGeneratePayload(BaseModel):
+    mode: Optional[str] = "all" # 'all' | 'hazard' | 'pothole' | 'pedestrian' | 'hit_and_run' | 'waterlogging'
+
 @router.get("/status")
 def get_simulation_status():
     """Returns the current state of background fleet movement and synthetic generation."""
@@ -42,4 +45,37 @@ async def toggle_simulation(payload: SimulationTogglePayload):
         "success": True,
         "message": f"Simulation state updated: {status['mode_label']}",
         "status": status
+    }
+
+@router.post("/generate-synthetic")
+async def trigger_synthetic_generation(payload: Optional[SimulationGeneratePayload] = None):
+    """
+    Explicitly triggers on-demand synthetic data generation on user request.
+    Can generate a single targeted hazard, pedestrian event, hit-and-run incident, or full urban cycle.
+    """
+    from app.services.synthetic_generator import generate_on_demand_synthetic
+    from app.storage.mock_database import store
+
+    mode = payload.mode if payload else "all"
+    result = generate_on_demand_synthetic(mode=mode)
+
+    # Broadcast updated state to all connected frontends
+    try:
+        if manager.active_connections:
+            await manager.broadcast({
+                "type": "SYNTHETIC_GENERATED_EVENT",
+                "mode": mode,
+                "result": result,
+                "metrics": store.get_metrics(),
+                "clusters": store.get_clusters(),
+                "incidents": store.get_incidents(),
+                "fleet": store.fleet_nodes,
+                "latest_log": store.audit_logs[0] if store.audit_logs else None
+            })
+    except Exception as e:
+        print(f"[SIMULATION API] Broadcast notice: {e}")
+
+    return {
+        "success": True,
+        "data": result
     }

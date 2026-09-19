@@ -1112,6 +1112,23 @@ class ApiService {
     return { success: false };
   }
 
+  async generateSyntheticData(mode: string = "all"): Promise<any> {
+    try {
+      const res = await fetch(`${API_BASE}/simulation/generate-synthetic`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...this.getAuthHeaders()
+        },
+        body: JSON.stringify({ mode })
+      });
+      if (res.ok) return await res.json();
+    } catch (e) {
+      console.warn("Failed to generate synthetic data:", e);
+    }
+    return { success: false };
+  }
+
   async getTrafficBottlenecks(): Promise<any[]> {
 
     try {

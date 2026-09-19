@@ -10,7 +10,6 @@ from app.core.config import settings
 
 class SimulationController:
     def __init__(self):
-        # If DEMO_MODE is true, background simulation starts paused by default
         self.demo_mode: bool = settings.DEMO_MODE
         self.fleet_simulation_active: bool = settings.ENABLE_FLEET_SIMULATION and not self.demo_mode
         self.synthetic_generation_active: bool = settings.ENABLE_SYNTHETIC_GENERATION and not self.demo_mode

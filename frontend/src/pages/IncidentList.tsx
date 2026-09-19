@@ -32,6 +32,7 @@ import { RoadMeshVisualizerModal } from '../components/modals/RoadMeshVisualizer
 import { Button, Badge, Input } from '../components/ui';
 import { EmptyState } from '../components/common/EmptyState';
 import { ConfirmationModal, ConfirmationModalProps } from '../components/common/ConfirmationModal';
+import { SyntheticGeneratorControl } from '../components/common/SyntheticGeneratorControl';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
 import { useToast } from '../context/ToastContext';
@@ -415,6 +416,8 @@ export const IncidentList: React.FC<IncidentListProps> = ({
               <LayoutGrid className="w-4 h-4" />
             </button>
           </div>
+
+          <SyntheticGeneratorControl onGenerated={() => { if (onRefresh) onRefresh(); }} />
 
           {onRefresh && (
             <Button

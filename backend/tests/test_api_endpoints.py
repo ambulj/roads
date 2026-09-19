@@ -577,6 +577,38 @@ class TestAPIEndpoints(unittest.TestCase):
         self.assertIn("query_plate", trail_data)
         self.assertIn("trail", trail_data)
 
+    def test_29_on_demand_synthetic_generator(self):
+        """Verify on-demand synthetic generation endpoints for hazards, pedestrians, and cycles."""
+        # 1. Generate Pothole Hazard
+        res_haz = self.client.post("/api/simulation/generate-synthetic", json={"mode": "hazard"})
+        self.assertEqual(res_haz.status_code, 200)
+        haz_data = res_haz.json()
+        self.assertTrue(haz_data["success"])
+        self.assertIn("hazard", haz_data["data"])
+
+        # 2. Generate Pedestrian Safety Event
+        res_ped = self.client.post("/api/simulation/generate-synthetic", json={"mode": "pedestrian"})
+        self.assertEqual(res_ped.status_code, 200)
+        ped_data = res_ped.json()
+        self.assertTrue(ped_data["success"])
+        self.assertIn("incident", ped_data["data"])
+        self.assertEqual(ped_data["data"]["incident"]["incident_type"], "VULNERABLE_PEDESTRIAN")
+
+        # 3. Generate Hit and Run Alert
+        res_hnr = self.client.post("/api/simulation/generate-synthetic", json={"mode": "hit_and_run"})
+        self.assertEqual(res_hnr.status_code, 200)
+        hnr_data = res_hnr.json()
+        self.assertTrue(hnr_data["success"])
+        self.assertIn("incident", hnr_data["data"])
+        self.assertEqual(hnr_data["data"]["incident"]["incident_type"], "HIT_AND_RUN")
+
+        # 4. Generate Full Urban Cycle
+        res_all = self.client.post("/api/simulation/generate-synthetic", json={"mode": "all"})
+        self.assertEqual(res_all.status_code, 200)
+        all_data = res_all.json()
+        self.assertTrue(all_data["success"])
+        self.assertIn("summary", all_data["data"])
+
 if __name__ == "__main__":
     unittest.main()
 

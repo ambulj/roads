@@ -22,7 +22,7 @@ class Settings:
     
     # Simulation & Demo Toggles (Control background loops during judged demo)
     ENABLE_FLEET_SIMULATION: bool = os.getenv("ENABLE_FLEET_SIMULATION", "true").lower() in ("true", "1", "yes")
-    ENABLE_SYNTHETIC_GENERATION: bool = os.getenv("ENABLE_SYNTHETIC_GENERATION", "true").lower() in ("true", "1", "yes")
+    ENABLE_SYNTHETIC_GENERATION: bool = os.getenv("ENABLE_SYNTHETIC_GENERATION", "false").lower() in ("true", "1", "yes")
     DEMO_MODE: bool = os.getenv("DEMO_MODE", "false").lower() in ("true", "1", "yes")
     SYNTHETIC_INTERVAL_SECONDS: int = int(os.getenv("SYNTHETIC_INTERVAL_SECONDS", "300"))
 

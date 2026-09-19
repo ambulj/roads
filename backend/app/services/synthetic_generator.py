@@ -108,6 +108,168 @@ def generate_indian_license_plate() -> str:
     digits = f"{random.randint(1000, 9999)}"
     return f"TN-{random.choice(districts)}-{series}-{digits}"
 
+def generate_single_hazard(defect_type: Optional[str] = None) -> Dict[str, Any]:
+    buses = store.fleet_nodes
+    bus_ids = [b["id"] for b in buses] if buses else ["BUS-TN01-1042", "BUS-TN02-3891", "MUNICIPAL-TRUCK-07"]
+    bus_id = random.choice(bus_ids)
+    
+    selected_defect = defect_type or random.choices(
+        ["D40", "D20", "D10", "D00", "WATERLOGGING", "ZEBRA_CROSSING", "OPEN_MANHOLE"],
+        weights=[40, 20, 15, 10, 5, 5, 5],
+        k=1
+    )[0]
+    
+    corridor = random.choice(URBAN_CORRIDORS)
+    lat = round(random.uniform(*corridor["lat_range"]), 5)
+    lng = round(random.uniform(*corridor["lng_range"]), 5)
+    
+    vertical_g = round(random.uniform(1.4, 2.3), 2) if selected_defect == "D40" else round(random.uniform(1.0, 1.4), 2)
+    
+    payload = {
+        "bus_id": bus_id,
+        "lat": lat,
+        "lng": lng,
+        "speed_kmh": round(random.uniform(32.0, 50.0), 1),
+        "heading": round(random.uniform(0.0, 360.0), 1),
+        "defect_type": selected_defect,
+        "confidence": round(random.uniform(0.89, 0.98), 3),
+        "vertical_g_force": vertical_g
+    }
+    res = store.add_ingest(payload)
+    return {
+        "type": "HAZARD_INGEST",
+        "bus_id": bus_id,
+        "defect_type": selected_defect,
+        "road_name": corridor["name"],
+        "lat": lat,
+        "lng": lng,
+        "action": res.get("action"),
+        "cluster_id": res.get("cluster_id")
+    }
+
+def generate_single_pedestrian_event() -> Dict[str, Any]:
+    buses = store.fleet_nodes
+    bus_ids = [b["id"] for b in buses] if buses else ["BUS-TN01-1042", "BUS-TN02-3891"]
+    bus_id = random.choice(bus_ids)
+    corridor = random.choice(URBAN_CORRIDORS)
+    lat = round(random.uniform(*corridor["lat_range"]), 5)
+    lng = round(random.uniform(*corridor["lng_range"]), 5)
+    plate = generate_indian_license_plate()
+    
+    payload = {
+        "reporting_bus_id": bus_id,
+        "incident_type": "VULNERABLE_PEDESTRIAN",
+        "plate_number": plate,
+        "plate_confidence": round(random.uniform(0.92, 0.98), 2),
+        "vehicle_color": random.choice(VEHICLE_COLORS),
+        "vehicle_class": random.choice(["Two-Wheeler", "Auto Rickshaw", "Sedan", "Hatchback"]),
+        "target_speed_kmh": round(random.uniform(28.0, 44.0), 1),
+        "road_name": f"{corridor['name']} [School Crossing Zone]",
+        "lat": lat,
+        "lng": lng,
+        "fine_amount_inr": 2000,
+        "mva_section": "MVA Sec 134/184 (Pedestrian Crosswalk Hazard)",
+        "echallan_issued": False,
+        "description": "School children crossing zone alert: Vehicle failed to yield right-of-way during active pedestrian crossing."
+    }
+    return store.add_incident(payload)
+
+def generate_single_hit_and_run() -> Dict[str, Any]:
+    buses = store.fleet_nodes
+    bus_ids = [b["id"] for b in buses] if buses else ["BUS-TN01-1042", "PATROL-VAN-12"]
+    bus_id = random.choice(bus_ids)
+    corridor = random.choice(URBAN_CORRIDORS)
+    lat = round(random.uniform(*corridor["lat_range"]), 5)
+    lng = round(random.uniform(*corridor["lng_range"]), 5)
+    plate = generate_indian_license_plate()
+    speed = round(random.uniform(72.0, 98.0), 1)
+    
+    payload = {
+        "reporting_bus_id": bus_id,
+        "incident_type": "HIT_AND_RUN",
+        "plate_number": plate,
+        "plate_confidence": round(random.uniform(0.94, 0.99), 2),
+        "vehicle_color": random.choice(VEHICLE_COLORS),
+        "vehicle_class": random.choice(["SUV", "Sedan", "Commercial Truck"]),
+        "target_speed_kmh": speed,
+        "road_name": f"{corridor['name']} Express Corridor",
+        "lat": lat,
+        "lng": lng,
+        "pcr_unit_assigned": f"PCR-{random.randint(11, 45)}",
+        "description": f"Hit-and-run evasion detected: Vehicle {plate} accelerated rapidly to {speed} km/h after perimeter impact."
+    }
+    return store.add_incident(payload)
+
+def generate_single_waterlogging() -> Dict[str, Any]:
+    buses = store.fleet_nodes
+    bus_ids = [b["id"] for b in buses] if buses else ["BUS-TN22-5501", "MUNICIPAL-TRUCK-07"]
+    bus_id = random.choice(bus_ids)
+    corridor = random.choice(URBAN_CORRIDORS)
+    lat = round(random.uniform(*corridor["lat_range"]), 5)
+    lng = round(random.uniform(*corridor["lng_range"]), 5)
+    depth = random.randint(20, 42)
+    
+    payload = {
+        "reporting_bus_id": bus_id,
+        "incident_type": "WATERLOGGING",
+        "plate_number": None,
+        "plate_confidence": None,
+        "vehicle_color": None,
+        "vehicle_class": f"Monsoon Flood Basin ({depth}cm)",
+        "target_speed_kmh": 0.0,
+        "road_name": f"{corridor['name']} Underpass Drain Link",
+        "lat": lat,
+        "lng": lng,
+        "water_depth_cm": depth,
+        "pump_deployed": False,
+        "description": f"Severe waterlogging detected: Inundation depth {depth}cm exceeding critical threshold. Dewatering pump required."
+    }
+    return store.add_incident(payload)
+
+def generate_on_demand_synthetic(mode: str = "all") -> Dict[str, Any]:
+    mode_clean = (mode or "all").lower().strip()
+    if mode_clean in ("hazard", "pothole", "d40"):
+        defect = "D40" if mode_clean in ("pothole", "d40") else None
+        res = generate_single_hazard(defect_type=defect)
+        return {
+            "mode": mode_clean,
+            "message": f"Generated synthetic road hazard ({res.get('defect_type', 'D40')}) on {res.get('road_name')}",
+            "hazard": res,
+            "timestamp": datetime.now(timezone.utc).isoformat()
+        }
+    elif mode_clean in ("pedestrian", "school", "crosswalk"):
+        res = generate_single_pedestrian_event()
+        return {
+            "mode": mode_clean,
+            "message": f"Generated pedestrian crossing safety incident for {res.get('plate_number', 'Vehicle')} on {res.get('road_name')}",
+            "incident": res,
+            "timestamp": datetime.now(timezone.utc).isoformat()
+        }
+    elif mode_clean in ("hit_and_run", "evasion", "police"):
+        res = generate_single_hit_and_run()
+        return {
+            "mode": mode_clean,
+            "message": f"Generated Hit-and-Run alert for plate {res.get('plate_number')} clocked at {res.get('target_speed_kmh')} km/h",
+            "incident": res,
+            "timestamp": datetime.now(timezone.utc).isoformat()
+        }
+    elif mode_clean in ("waterlogging", "flood", "water"):
+        res = generate_single_waterlogging()
+        return {
+            "mode": mode_clean,
+            "message": f"Generated monsoon waterlogging alert ({res.get('water_depth_cm')}cm depth) on {res.get('road_name')}",
+            "incident": res,
+            "timestamp": datetime.now(timezone.utc).isoformat()
+        }
+    else:
+        tick_res = generate_synthetic_tick()
+        return {
+            "mode": "all",
+            "message": f"Generated full urban synthetic cycle: {len(tick_res['ingests_generated'])} ingests, {len(tick_res['incidents_generated'])} incidents, {len(tick_res['work_orders_updated'])} work orders updated.",
+            "summary": tick_res,
+            "timestamp": datetime.now(timezone.utc).isoformat()
+        }
+
 def generate_synthetic_tick() -> Dict[str, Any]:
     results: Dict[str, Any] = {
         "timestamp": datetime.now(timezone.utc).isoformat(),
