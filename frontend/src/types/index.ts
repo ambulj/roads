@@ -797,4 +797,24 @@ export interface FederatedRoundResult {
   server_aggregation_time_ms: number;
 }
 
+export interface PrivacyStatus {
+  privacy_engine_active: boolean;
+  statutory_mandate: string;
+  statutory_citation: string;
+  blur_mode: "GAUSSIAN" | "PIXELATE" | "BLACKOUT";
+  blur_intensity: number;
+  total_faces_redacted: number;
+  total_frames_processed: number;
+  avg_latency_ms: number;
+  anonymized_channels: string[];
+  redaction_strategies_available: string[];
+  edge_ready: boolean;
+}
+
+export interface PrivacyConfigPayload {
+  enabled?: boolean;
+  blur_mode?: "GAUSSIAN" | "PIXELATE" | "BLACKOUT";
+  blur_intensity?: number;
+}
+
 

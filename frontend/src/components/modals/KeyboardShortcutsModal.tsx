@@ -19,7 +19,7 @@ const SHORTCUTS: ShortcutItem[] = [
   { keys: ['3'], description: 'Jump to Road Memory & Time-Machine', category: 'Navigation' },
   { keys: ['4'], description: 'Jump to Analytics & QC Audits', category: 'Navigation' },
   { keys: ['5'], description: 'Jump to Fleet Telematics Nodes', category: 'Navigation' },
-  { keys: ['6'], description: 'Jump to Work Orders & Escrow Ledger', category: 'Navigation' },
+  { keys: ['6'], description: 'Jump to Work Orders & SLA Ledger', category: 'Navigation' },
   { keys: ['7'], description: 'Jump to Mobile Dashcam Ingest', category: 'Navigation' },
 
   // Control Room Actions

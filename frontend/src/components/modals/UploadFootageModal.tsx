@@ -334,12 +334,21 @@ export const UploadFootageModal: React.FC<UploadFootageModalProps> = ({
               ) : (
                 <AlertCircle className="w-4 h-4 text-rose-400 shrink-0 mt-0.5" />
               )}
-              <div className="space-y-1">
+              <div className="space-y-2 flex-1">
                 <div className="font-semibold">{feedback.message}</div>
                 {feedback.details?.detections_count !== undefined && (
                   <div className="font-mono text-[11px] text-emerald-300">
                     Defects Found: {feedback.details.detections_count} • Auto-Ingested: {feedback.details.ingested_count}
                   </div>
+                )}
+                {feedback.type === 'success' && (
+                  <button
+                    onClick={onClose}
+                    className="mt-1 px-3 py-1.5 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs flex items-center gap-1.5 shadow-md transition"
+                  >
+                    <Play className="w-3.5 h-3.5 fill-current" />
+                    <span>Watch Stream on {busId} CH{channel} Now</span>
+                  </button>
                 )}
               </div>
             </div>

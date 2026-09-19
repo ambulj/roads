@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import {
   Truck, Radio, Gauge, Camera, Cpu, Image as ImageIcon, SlidersVertical, Activity, CheckCircle2, Wifi,
-  Plus, Trash2, AlertTriangle, Video
+  Plus, Trash2, AlertTriangle, Video, UploadCloud
 } from 'lucide-react';
 import { FleetNode } from '../types';
 import { LiveCameraFeed } from '../components/fleet/LiveCameraFeed';
@@ -10,6 +10,7 @@ import { SensorDiagnosticsPanel } from '../components/fleet/SensorDiagnosticsPan
 import { Card, Badge } from '../components/ui';
 import { api } from '../services/api';
 import { AddBusModal } from '../components/modals/AddBusModal';
+import { UploadFootageModal } from '../components/modals/UploadFootageModal';
 
 interface FleetNodesProps {
   fleet: FleetNode[];
@@ -22,6 +23,7 @@ export const FleetNodes: React.FC<FleetNodesProps> = ({ fleet, onFleetChange }) 
   const [capturedSnapshots, setCapturedSnapshots] = useState<Array<{ id: string; url: string; time: string; busId: string }>>([]);
   const [edgeStatus, setEdgeStatus] = useState<any>(null);
   const [isAddBusModalOpen, setIsAddBusModalOpen] = useState(false);
+  const [isUploadFootageOpen, setIsUploadFootageOpen] = useState(false);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
 
@@ -76,33 +78,19 @@ export const FleetNodes: React.FC<FleetNodesProps> = ({ fleet, onFleetChange }) 
   return (
     <div className="flex-1 flex flex-col min-h-0 overflow-y-auto custom-scrollbar p-4 md:p-6 space-y-4 max-w-[1750px] mx-auto w-full select-none">
       
-      {/* 1. Sleek Fleet Control & Selection Header */}
-      <Card className="p-3.5 shadow-xs">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-blue-50 dark:bg-blue-950/60 border border-blue-200 dark:border-blue-800 flex items-center justify-center shrink-0">
+      {/* 1. Unified Sleek Fleet Control Deck */}
+      <Card className="p-3 shadow-xs">
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
+          {/* Left: Bus Selector & Status */}
+          <div className="flex flex-wrap items-center gap-2.5">
+            <div className="w-8 h-8 rounded-xl bg-blue-50 dark:bg-blue-950/60 border border-blue-200 dark:border-blue-800 flex items-center justify-center shrink-0">
               <Truck className="w-4 h-4 text-blue-600 dark:text-blue-400" />
             </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <span className="text-sm font-bold text-slate-900 dark:text-slate-100 tracking-tight">
-                  MTC Fleet Live Telemetry &amp; Vision
-                </span>
-                <Badge variant="medium" size="sm" className="font-mono font-bold">
-                  {activeBus.id}
-                </Badge>
-              </div>
-              <p className="text-[11px] text-slate-500 dark:text-slate-400">
-                Assigned Route: <b className="text-slate-700 dark:text-slate-300">{activeBus.route_name}</b> &bull; AIS-140 GPS &amp; IMU Telemetry
-              </p>
-            </div>
-          </div>
 
-          <div className="flex items-center gap-2 self-start sm:self-auto">
             <select
               value={selectedBusId}
               onChange={(e) => setSelectedBusId(e.target.value)}
-              className="text-xs font-mono font-semibold px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200 shadow-xs outline-none focus:ring-2 focus:ring-blue-500"
+              className="text-xs font-mono font-bold px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200 shadow-xs outline-none focus:ring-2 focus:ring-blue-500"
             >
               {fleet.map((bus) => (
                 <option key={bus.id} value={bus.id}>
@@ -111,17 +99,51 @@ export const FleetNodes: React.FC<FleetNodesProps> = ({ fleet, onFleetChange }) 
               ))}
             </select>
 
-            <Badge variant="success" size="md" dot className="font-semibold">
+            <Badge variant="success" size="sm" dot className="font-semibold">
               {onlineCount}/{fleet.length} Online
             </Badge>
 
+            <span className="hidden sm:inline-block text-[11px] text-slate-500 dark:text-slate-400 font-mono">
+              Route: <strong className="text-slate-700 dark:text-slate-200">{activeBus.route_name}</strong>
+            </span>
+          </div>
+
+          {/* Right: Telemetry KPI Chips & Actions */}
+          <div className="flex flex-wrap items-center gap-2 text-xs font-mono">
+            <div className="px-2.5 py-1 rounded-lg bg-slate-50 dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 flex items-center gap-1.5">
+              <Gauge className="w-3.5 h-3.5 text-blue-500" />
+              <span className="text-slate-500 text-[10.5px]">Speed:</span>
+              <strong className="text-slate-800 dark:text-slate-200">{activeBus.speed_kmh} km/h</strong>
+            </div>
+
+            <div className="px-2.5 py-1 rounded-lg bg-slate-50 dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 flex items-center gap-1.5">
+              <Activity className="w-3.5 h-3.5 text-amber-500" />
+              <span className="text-slate-500 text-[10.5px]">IMU Jerk:</span>
+              <strong className="text-slate-800 dark:text-slate-200">{activeBus.imu_jerk_gz}g</strong>
+            </div>
+
+            <div className="hidden md:flex px-2.5 py-1 rounded-lg bg-slate-50 dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 items-center gap-1.5">
+              <Wifi className="w-3.5 h-3.5 text-emerald-500" />
+              <span className="text-slate-500 text-[10.5px]">Sync:</span>
+              <strong className="text-emerald-600 dark:text-emerald-400 font-bold">{edgeStatus?.connectivity_mode || "Depot WiFi"}</strong>
+            </div>
+
+            <button
+              onClick={() => setIsUploadFootageOpen(true)}
+              className="px-2.5 py-1 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white font-semibold text-xs flex items-center gap-1 shadow-xs transition-all active:scale-95 shrink-0"
+              title="Upload custom video or road inspection footage to stream and analyze with AI"
+            >
+              <UploadCloud className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">Upload Footage</span>
+            </button>
+
             <button
               onClick={() => setIsAddBusModalOpen(true)}
-              className="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-xs flex items-center gap-1.5 shadow-sm transition-all active:scale-95 shrink-0"
+              className="px-2.5 py-1 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-xs flex items-center gap-1 shadow-xs transition-all active:scale-95 shrink-0"
               title="Commission a new transit bus node with Mobile DVR"
             >
               <Plus className="w-3.5 h-3.5" />
-              <span>Register Bus</span>
+              <span className="hidden sm:inline">Register Bus</span>
             </button>
 
             {activeBus && (
@@ -130,102 +152,12 @@ export const FleetNodes: React.FC<FleetNodesProps> = ({ fleet, onFleetChange }) 
                 className="p-1.5 rounded-xl border border-rose-200 dark:border-rose-900/60 bg-rose-50/50 dark:bg-rose-950/40 text-rose-600 dark:text-rose-400 hover:bg-rose-100 dark:hover:bg-rose-900/80 transition-colors shrink-0"
                 title={`Decommission bus ${activeBus.id}`}
               >
-                <Trash2 className="w-4 h-4" />
+                <Trash2 className="w-3.5 h-3.5" />
               </button>
             )}
           </div>
         </div>
       </Card>
-
-      {/* Edge Bandwidth & Depot Sync Architecture */}
-      <div className="p-3.5 rounded-2xl bg-gradient-to-r from-blue-50 to-indigo-50/60 dark:from-blue-950/30 dark:to-indigo-950/20 border border-blue-200 dark:border-blue-900/50 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs">
-        <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-xl bg-blue-600 text-white flex items-center justify-center font-bold shrink-0 shadow-xs">
-            <Wifi className="w-4 h-4" />
-          </div>
-          <div>
-            <div className="flex items-center gap-2">
-              <span className="font-bold text-slate-900 dark:text-white">Dual-Path Edge Telemetry Architecture</span>
-              <span className="font-mono text-[10px] font-bold px-2 py-0.5 rounded bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800">
-                {edgeStatus?.connectivity_mode || "ONLINE (Depot WiFi)"}
-              </span>
-            </div>
-            <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
-              P0 Critical Hazards &rarr; Immediate Cellular Uplink &bull; P1 Routine Vibration Spectra &rarr; Local Flash Buffer (Depot Wi-Fi Sync)
-            </p>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-4 text-[11px] font-mono shrink-0">
-          <div>
-            <span className="text-slate-500">Local Buffer Depth:</span>
-            <span className="font-bold text-slate-800 dark:text-slate-200 ml-1.5">{edgeStatus?.buffer_queue_depth || 0} pkts</span>
-          </div>
-          <div>
-            <span className="text-slate-500">Cellular Data Saved:</span>
-            <span className="font-bold text-emerald-600 dark:text-emerald-400 ml-1.5">{edgeStatus?.cumulative_bytes_saved_kb || 1420.5} KB</span>
-          </div>
-        </div>
-      </div>
-
-      {/* 2. Sleek 4-Metric Operational Stat Row */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-        <Card className="p-3.5 flex flex-col justify-between shadow-xs">
-          <div className="flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400">
-            <span className="uppercase tracking-wider font-semibold">Live Fleet Nodes</span>
-            <Truck className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
-          </div>
-          <div className="my-1 flex items-baseline gap-2">
-            <span className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white tabular-nums">{onlineCount}</span>
-            <span className="text-[10px] text-slate-500 truncate ml-auto">Active on Corridors</span>
-          </div>
-          <div className="w-full bg-slate-100 dark:bg-slate-800 rounded-full h-1 overflow-hidden">
-            <div className="h-full bg-emerald-500 rounded-full" style={{ width: `${(onlineCount / fleet.length) * 100}%` }} />
-          </div>
-        </Card>
-
-        <Card className="p-3.5 flex flex-col justify-between shadow-xs">
-          <div className="flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400">
-            <span className="uppercase tracking-wider font-semibold">Active Bus Speed</span>
-            <Gauge className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
-          </div>
-          <div className="my-1 flex items-baseline gap-2">
-            <span className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white tabular-nums">{activeBus.speed_kmh} km/h</span>
-            <span className="text-[10px] text-slate-500 truncate ml-auto">AIS-140 Speedometer</span>
-          </div>
-          <div className="w-full bg-slate-100 dark:bg-slate-800 rounded-full h-1 overflow-hidden">
-            <div className="h-full bg-blue-600 rounded-full" style={{ width: `${Math.min(100, (activeBus.speed_kmh / 80) * 100)}%` }} />
-          </div>
-        </Card>
-
-        <Card className="p-3.5 flex flex-col justify-between shadow-xs">
-          <div className="flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400">
-            <span className="uppercase tracking-wider font-semibold">IMU Shock Spike</span>
-            <Activity className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
-          </div>
-          <div className="my-1 flex items-baseline gap-2">
-            <span className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white tabular-nums">{activeBus.imu_jerk_gz}g</span>
-            <span className="text-[10px] text-slate-500 truncate ml-auto">Vertical Acceleration</span>
-          </div>
-          <div className="w-full bg-slate-100 dark:bg-slate-800 rounded-full h-1 overflow-hidden">
-            <div className="h-full bg-amber-500 rounded-full" style={{ width: `${Math.min(100, (activeBus.imu_jerk_gz / 2.5) * 100)}%` }} />
-          </div>
-        </Card>
-
-        <Card className="p-3.5 flex flex-col justify-between shadow-xs">
-          <div className="flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400">
-            <span className="uppercase tracking-wider font-semibold">Detection Ingests</span>
-            <Wifi className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" />
-          </div>
-          <div className="my-1 flex items-baseline gap-2">
-            <span className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white tabular-nums">{activeBus.raw_ingests_count || 142}</span>
-            <span className="text-[10px] text-slate-500 truncate ml-auto">Edge Telemetry Frames</span>
-          </div>
-          <div className="w-full bg-slate-100 dark:bg-slate-800 rounded-full h-1 overflow-hidden">
-            <div className="h-full bg-indigo-600 rounded-full" style={{ width: '85%' }} />
-          </div>
-        </Card>
-      </div>
 
       {/* 3. Operational Mode Tabs */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-200 dark:border-slate-800 pb-2">
@@ -477,6 +409,17 @@ export const FleetNodes: React.FC<FleetNodesProps> = ({ fleet, onFleetChange }) 
         isOpen={isAddBusModalOpen}
         onClose={() => setIsAddBusModalOpen(false)}
         onSuccess={handleSuccessAdd}
+      />
+
+      {/* Upload Footage Modal */}
+      <UploadFootageModal
+        isOpen={isUploadFootageOpen}
+        onClose={() => setIsUploadFootageOpen(false)}
+        busId={activeBus.id}
+        selectedChannel={1}
+        onUploadSuccess={() => {
+          setViewMode('camera');
+        }}
       />
     </div>
   );

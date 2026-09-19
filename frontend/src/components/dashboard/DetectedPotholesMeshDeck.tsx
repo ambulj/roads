@@ -94,14 +94,14 @@ export const DetectedPotholesMeshDeck: React.FC<DetectedPotholesMeshDeckProps> =
           <div>
             <div className="flex items-center gap-2">
               <h3 className="font-bold text-xs sm:text-sm text-slate-900 dark:text-white tracking-tight leading-none">
-                Detected Potholes &amp; 3D Depth Mesh Reconstructions
+                Detected Potholes &amp; 3D Surface Geometry
               </h3>
-              <span className="hidden sm:inline-block px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-50 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400 border border-rose-200 dark:border-rose-800">
-                ● 4 Active Cavities Surveyed
+              <span className="hidden sm:inline-block px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-50 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 border border-amber-200 dark:border-amber-800">
+                Concept Preview
               </span>
             </div>
             <p className="text-[11px] text-slate-400 leading-none mt-1">
-              Depth and volume calculated separately per defect using dual-dashcam disparity and 100Hz bus accelerometer shock
+              Depth and volume estimated using camera disparity heuristics and bus accelerometer shock simulation
             </p>
           </div>
         </div>
@@ -109,7 +109,7 @@ export const DetectedPotholesMeshDeck: React.FC<DetectedPotholesMeshDeckProps> =
         <div className="flex items-center gap-2 self-start sm:self-auto text-xs text-slate-500 dark:text-slate-400 font-mono">
           <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[#EEF2F7] dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 text-[11px]">
             <Activity className="w-3 h-3 text-emerald-500" />
-            <span>Stereo Disparity + IMU Fusion</span>
+            <span>Vision + IMU Heuristics</span>
           </span>
         </div>
       </div>

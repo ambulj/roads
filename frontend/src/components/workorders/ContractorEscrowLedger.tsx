@@ -144,7 +144,7 @@ export const ContractorEscrowLedger: React.FC<ContractorEscrowLedgerProps> = ({ 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="p-4 rounded-2xl bg-white dark:bg-[#0B101D] border border-slate-200 dark:border-slate-800 shadow-xs">
           <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 font-medium mb-1">
-            <span>Municipal Escrow Vault</span>
+            <span>Contractor Retention Vault</span>
             <Scale className="w-4 h-4 text-blue-500" />
           </div>
           <div className="text-2xl font-extrabold text-slate-900 dark:text-white font-mono">
@@ -165,7 +165,7 @@ export const ContractorEscrowLedger: React.FC<ContractorEscrowLedgerProps> = ({ 
             ₹{totalPenaltiesCollected.toLocaleString('en-IN')}
           </div>
           <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-1">
-            Statutory ₹500/hr late penalty applied
+            Calculated ₹500/hr SLA breach penalty
           </div>
         </div>
 
@@ -184,7 +184,7 @@ export const ContractorEscrowLedger: React.FC<ContractorEscrowLedgerProps> = ({ 
 
         <div className="p-4 rounded-2xl bg-white dark:bg-[#0B101D] border border-slate-200 dark:border-slate-800 shadow-xs">
           <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 font-medium mb-1">
-            <span>Avg Quality & Audit Index</span>
+            <span>Avg Quality &amp; Audit Index</span>
             <Award className="w-4 h-4 text-indigo-500" />
           </div>
           <div className="text-2xl font-extrabold text-indigo-600 dark:text-indigo-400 font-mono">
@@ -196,16 +196,16 @@ export const ContractorEscrowLedger: React.FC<ContractorEscrowLedgerProps> = ({ 
         </div>
       </div>
 
-      {/* Contractor Performance & Escrow Table */}
+      {/* Contractor Performance & SLA Ledger Table */}
       <div className="bg-white dark:bg-[#0B101D] border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden shadow-xs">
         <div className="p-4 sm:p-5 border-b border-slate-200 dark:border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div>
             <h3 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
               <Building2 className="w-4 h-4 text-blue-600" />
-              <span>Contractor Performance & Smart Escrow Ledger</span>
+              <span>Contractor SLA Compliance &amp; Performance Ledger</span>
             </h3>
             <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-              Automated SLA enforcement, liquidated damage deductions, and escrow releases under Tamil Nadu Transparency in Tenders Act.
+              Automated SLA tracking, liquidated damages accounting, and payment authorizations under MoRTH guidelines.
             </p>
           </div>
           <div className="flex items-center gap-2 text-xs font-mono">
@@ -220,8 +220,8 @@ export const ContractorEscrowLedger: React.FC<ContractorEscrowLedgerProps> = ({ 
             <thead>
               <tr className="bg-slate-50/80 dark:bg-slate-900/60 border-b border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400 font-semibold">
                 <th className="py-3 px-4">Contractor / Agency</th>
-                <th className="py-3 px-4">Assigned Corridor & Zone</th>
-                <th className="py-3 px-4 text-right">Escrow Balance</th>
+                <th className="py-3 px-4">Assigned Corridor &amp; Zone</th>
+                <th className="py-3 px-4 text-right">Retention Balance</th>
                 <th className="py-3 px-4 text-right">Penalties Deducted</th>
                 <th className="py-3 px-4 text-center">On-Time SLA</th>
                 <th className="py-3 px-4 text-center">Quality Index</th>
@@ -299,10 +299,10 @@ export const ContractorEscrowLedger: React.FC<ContractorEscrowLedgerProps> = ({ 
                           <button
                             onClick={() => handleOpenPenaltySummons(ctr)}
                             className="px-2.5 py-1 rounded-lg font-bold text-[11px] bg-rose-600 hover:bg-rose-500 text-white transition shadow-xs flex items-center gap-1"
-                            title="Generate and print official Liquidated Damages Summons"
+                            title="Generate and print Liquidated Damages Notice Draft"
                           >
                             <AlertOctagon className="w-3 h-3" />
-                            <span>Summons</span>
+                            <span>Notice</span>
                           </button>
                         )}
                         <button
@@ -323,7 +323,7 @@ export const ContractorEscrowLedger: React.FC<ContractorEscrowLedgerProps> = ({ 
         </div>
       </div>
 
-      {/* MODAL 1: CONTRACTOR PENALTY SUMMONS (PRINTABLE LEGAL NOTICE) */}
+      {/* MODAL 1: CONTRACTOR PENALTY NOTICE (PRINTABLE NOTICE DRAFT) */}
       {activeModal === 'penalty_summons' && selectedContractor && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm animate-fadeIn">
           <div className="relative w-full max-w-2xl rounded-2xl bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-800 shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
@@ -332,7 +332,7 @@ export const ContractorEscrowLedger: React.FC<ContractorEscrowLedgerProps> = ({ 
                 <AlertOctagon className="w-5 h-5 text-rose-600" />
                 <div>
                   <h3 className="text-sm font-bold text-rose-950 dark:text-rose-100">
-                    MUNICIPAL CONTRACTOR PENALTY SUMMONS
+                    MUNICIPAL CONTRACTOR LIQUIDATED DAMAGES NOTICE (DRAFT)
                   </h3>
                   <div className="text-[10px] font-mono text-rose-700 dark:text-rose-300">
                     GCC/HW/SLA-PENALTY/2026-089 • LIQUIDATED DAMAGES CLAUSE 108.4
@@ -353,7 +353,7 @@ export const ContractorEscrowLedger: React.FC<ContractorEscrowLedgerProps> = ({ 
                   GREATER CHENNAI CORPORATION • SPECIAL HIGHWAYS DIVISION
                 </div>
                 <div className="text-[10px] text-slate-500 dark:text-slate-400">
-                  Ripon Building, Chennai - 600003 | Statutory Enforcement Under Tamil Nadu Tenders Act
+                  Ripon Building, Chennai - 600003 | SLA Enforcement Draft Under MoRTH Guidelines
                 </div>
               </div>
 
@@ -376,7 +376,7 @@ export const ContractorEscrowLedger: React.FC<ContractorEscrowLedgerProps> = ({ 
 
               <div className="space-y-2">
                 <h4 className="font-bold text-slate-900 dark:text-white text-xs uppercase tracking-wide">
-                  SLA Default & Escrow Deduction Summary:
+                  SLA Default &amp; Penalty Assessment Summary:
                 </h4>
                 <div className="border border-slate-200 dark:border-slate-700 rounded-xl overflow-hidden font-mono text-[11px]">
                   <div className="grid grid-cols-3 p-2.5 bg-slate-100 dark:bg-slate-800 font-bold text-slate-700 dark:text-slate-300 border-b border-slate-200 dark:border-slate-700">
@@ -395,7 +395,7 @@ export const ContractorEscrowLedger: React.FC<ContractorEscrowLedgerProps> = ({ 
                     <span className="text-right font-bold text-rose-600">₹26,000</span>
                   </div>
                   <div className="grid grid-cols-3 p-2.5 bg-rose-50/60 dark:bg-rose-950/40 font-bold text-slate-900 dark:text-white">
-                    <span>TOTAL DEDUCTION FROM ESCROW:</span>
+                    <span>TOTAL LIQUIDATED DAMAGES ASSESSED:</span>
                     <span className="text-center">Rate: ₹500/hr</span>
                     <span className="text-right text-rose-600 font-extrabold">-₹45,000</span>
                   </div>
@@ -403,7 +403,7 @@ export const ContractorEscrowLedger: React.FC<ContractorEscrowLedgerProps> = ({ 
               </div>
 
               <p className="text-[11px] text-slate-600 dark:text-slate-400 leading-relaxed">
-                Take notice that in accordance with MoRTH Standard Specifications Clause 108.4 and GCC Contract Agreement, the aforesaid sum has been automatically debited from your Smart Escrow Retention Account. You are directed to complete rectification within <strong>12 hours</strong> of this notice, failing which debarment proceedings under Section 11 of the TNTT Act shall be initiated.
+                Take notice that in accordance with MoRTH Standard Specifications Clause 108.4 and GCC Contract Agreement, the aforesaid sum is assessed against overdue repairs. You are directed to complete rectification within <strong>12 hours</strong> of this notice.
               </p>
 
               <div className="pt-3 border-t border-slate-200 dark:border-slate-800 flex items-center justify-between text-[10px] text-slate-500 font-mono">
@@ -412,7 +412,7 @@ export const ContractorEscrowLedger: React.FC<ContractorEscrowLedgerProps> = ({ 
                   <div>ISSUING AUTHORITY: Superintending Engineer (Highways), GCC</div>
                 </div>
                 <div className="p-2 rounded border border-rose-400 bg-rose-50 dark:bg-rose-950 text-rose-700 dark:text-rose-300 font-bold uppercase text-[9px]">
-                  LEGALLY ENFORCEABLE
+                  DRAFT NOTICE
                 </div>
               </div>
             </div>
@@ -423,7 +423,7 @@ export const ContractorEscrowLedger: React.FC<ContractorEscrowLedgerProps> = ({ 
                 className="px-3.5 py-1.5 rounded-lg bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 font-semibold text-xs flex items-center gap-1.5 transition"
               >
                 <Printer className="w-3.5 h-3.5" />
-                <span>Print Official Summons</span>
+                <span>Print Notice Draft</span>
               </button>
               <button
                 onClick={() => setActiveModal(null)}
@@ -537,7 +537,7 @@ export const ContractorEscrowLedger: React.FC<ContractorEscrowLedgerProps> = ({ 
 
               <div className="pt-2 border-t border-slate-200 dark:border-slate-800 flex items-center justify-between text-[10px] text-slate-500 font-mono">
                 <div>ISSUED BY: Executive Engineer, Quality Control Wing, GCC</div>
-                <div className="text-emerald-600 font-bold uppercase">ESCROW RELEASE APPROVED</div>
+                <div className="text-emerald-600 font-bold uppercase">SLA COMPLIANCE VERIFIED / PAYMENT AUTHORIZED</div>
               </div>
             </div>
 

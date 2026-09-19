@@ -200,10 +200,10 @@ export const WorkOrders: React.FC<WorkOrdersProps> = ({ clusters, onUpdateStatus
             </div>
             <div>
               <h2 className="font-extrabold text-lg sm:text-xl text-slate-900 dark:text-white tracking-tight font-sans">
-                Municipal Work Orders &amp; Contractor Escrow
+                Municipal Work Orders &amp; SLA Compliance
               </h2>
               <p className="text-xs text-slate-500 dark:text-slate-400 leading-tight mt-0.5">
-                Autonomous contract routing, smart escrow auto-penalty ledger, and proof-of-repair verification.
+                Autonomous contract routing, SLA compliance &amp; penalty ledger, and proof-of-repair verification.
               </p>
             </div>
           </div>
@@ -239,7 +239,7 @@ export const WorkOrders: React.FC<WorkOrdersProps> = ({ clusters, onUpdateStatus
                     : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white'
                 }`}
               >
-                <span>Escrow &amp; SLA</span>
+                <span>SLA &amp; Compliance</span>
                 <span className="w-2 h-2 rounded-full bg-amber-500" />
               </button>
             </div>
@@ -429,7 +429,7 @@ export const WorkOrders: React.FC<WorkOrdersProps> = ({ clusters, onUpdateStatus
                       <div className="flex items-center justify-between gap-1.5">
                         <div className="flex-1 py-1 rounded-lg bg-emerald-100/60 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300 font-semibold text-[10.5px] text-center border border-emerald-200 dark:border-emerald-800 flex items-center justify-center gap-1">
                           <ShieldCheck className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
-                          <span>Escrow Released</span>
+                          <span>SLA Verified</span>
                         </div>
                         <button
                           onClick={() => requestStatusUpdate(c.id, 'in_progress')}

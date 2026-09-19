@@ -20,6 +20,7 @@ import { StreamModelConfigModal } from "./components/modals/StreamModelConfigMod
 import { DocumentExportModal } from "./components/modals/DocumentExportModal";
 import { KeyboardShortcutsModal } from "./components/modals/KeyboardShortcutsModal";
 import { SensorFusionModal } from "./components/modals/SensorFusionModal";
+import { FullLifecycleSimulationModal } from "./components/modals/FullLifecycleSimulationModal";
 import { audioAlerts } from "./utils/audioAlerts";
 import { useTelemetrySocket } from "./hooks/useTelemetrySocket";
 import { INITIAL_CORRIDORS, api } from "./services/api";
@@ -66,6 +67,7 @@ export const App: React.FC = () => {
   const [isDocumentModalOpen, setIsDocumentModalOpen] = useState(false);
   const [isShortcutsModalOpen, setIsShortcutsModalOpen] = useState(false);
   const [isSensorFusionModalOpen, setIsSensorFusionModalOpen] = useState(false);
+  const [isLifecycleModalOpen, setIsLifecycleModalOpen] = useState(false);
   const [selectedIncident, setSelectedIncident] = useState<TrafficIncident | null>(null);
   const { toggleTheme } = useTheme();
   const { success: showSuccessToast, info: showInfoToast, warning: showWarningToast } = useToast();
@@ -265,6 +267,7 @@ export const App: React.FC = () => {
         onOpenDocumentModal={() => setIsDocumentModalOpen(true)}
         onOpenShortcutsModal={() => setIsShortcutsModalOpen(true)}
         onOpenSensorFusionModal={() => setIsSensorFusionModalOpen(true)}
+        onOpenLifecycleDemo={() => setIsLifecycleModalOpen(true)}
         incidents={incidents}
         onSelectIncident={handleSelectIncident}
       />
@@ -307,6 +310,7 @@ export const App: React.FC = () => {
                 onOpenBriefModal={() => setIsBriefModalOpen(true)}
                 onNavigateToCapture={() => handleNavigate("capture")}
                 onNavigate={handleNavigate}
+                onOpenLifecycleDemo={() => setIsLifecycleModalOpen(true)}
                 selectedIncident={selectedIncident}
                 onSelectIncident={setSelectedIncident}
               />
@@ -383,6 +387,12 @@ export const App: React.FC = () => {
       <KeyboardShortcutsModal
         isOpen={isShortcutsModalOpen}
         onClose={() => setIsShortcutsModalOpen(false)}
+      />
+      <FullLifecycleSimulationModal
+        isOpen={isLifecycleModalOpen}
+        onClose={() => setIsLifecycleModalOpen(false)}
+        onUpdateStatus={handleUpdateStatus}
+        onAddCluster={(newCl) => setClusters((prev) => [newCl, ...prev])}
       />
     </div>
   );

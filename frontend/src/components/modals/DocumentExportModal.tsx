@@ -52,10 +52,10 @@ export const DocumentExportModal: React.FC<DocumentExportModalProps> = ({
             </div>
             <div>
               <h2 className="text-sm font-bold text-slate-900 dark:text-slate-100">
-                Statutory Document &amp; Summons Generator
+                Statutory Notice &amp; Audit Document Generator
               </h2>
               <p className="text-[11px] text-slate-500 dark:text-slate-400">
-                MoHUA / MoRTH / GCC Official Formats with Cryptographic Verification
+                MoHUA / MoRTH / GCC Aligned Draft Formats with Cryptographic Verification
               </p>
             </div>
           </div>
@@ -87,7 +87,7 @@ export const DocumentExportModal: React.FC<DocumentExportModalProps> = ({
                 : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300'
             }`}
           >
-            Contractor SLA Penalty Summons
+            Contractor SLA Default Notice (Draft)
           </button>
           <button
             onClick={() => setActiveDoc('POLICE_ECHALLAN')}
@@ -97,7 +97,7 @@ export const DocumentExportModal: React.FC<DocumentExportModalProps> = ({
                 : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300'
             }`}
           >
-            Traffic Police MVA E-Challan
+            Traffic Police MVA E-Challan Draft
           </button>
           <button
             onClick={() => setActiveDoc('MUNICIPAL_AUDIT')}
@@ -117,7 +117,7 @@ export const DocumentExportModal: React.FC<DocumentExportModalProps> = ({
           {/* Printable Sheet */}
           <div className="w-full max-w-[760px] bg-white text-slate-900 p-8 rounded-2xl shadow-xl border border-slate-300 print:shadow-none print:border-none print:p-0 font-serif leading-relaxed text-xs">
             
-            {/* 1. CONTRACTOR SUMMONS */}
+            {/* 1. CONTRACTOR NOTICE */}
             {activeDoc === 'CONTRACTOR_SUMMONS' && (
               <div className="space-y-5">
                 {/* Government Header */}
@@ -127,10 +127,10 @@ export const DocumentExportModal: React.FC<DocumentExportModalProps> = ({
                     <span>Greater Chennai Corporation &bull; Special Projects Engineering Wing</span>
                   </div>
                   <h1 className="text-base font-extrabold uppercase tracking-tight text-slate-900">
-                    Statutory Notice of Liquidated Damages &amp; Escrow Debit
+                    Draft Notice of Liquidated Damages &amp; SLA Breach
                   </h1>
                   <p className="text-[10px] font-mono text-slate-600">
-                    Issued under MoHUA IRC:SP:20 Clause 14.2 &amp; Tamil Nadu Transparency in Tenders Act
+                    Generated under MoHUA IRC:SP:20 Clause 14.2 &amp; GCC Tender Guidelines
                   </p>
                 </div>
 
@@ -188,7 +188,7 @@ export const DocumentExportModal: React.FC<DocumentExportModalProps> = ({
                       <td className="border border-slate-400 p-2 text-right font-bold">₹6,000</td>
                     </tr>
                     <tr className="bg-slate-50 font-bold">
-                      <td colSpan={2} className="border border-slate-400 p-2 text-right">TOTAL ESCROW DEDUCTION:</td>
+                      <td colSpan={2} className="border border-slate-400 p-2 text-right">TOTAL LIQUIDATED DAMAGES:</td>
                       <td className="border border-slate-400 p-2 text-right text-rose-700 font-bold text-xs">₹31,000</td>
                     </tr>
                   </tbody>
@@ -205,7 +205,7 @@ export const DocumentExportModal: React.FC<DocumentExportModalProps> = ({
                   <div className="text-right space-y-1">
                     <div className="font-bold text-slate-900">Executive Engineer (Works)</div>
                     <div className="text-[11px] text-slate-600">Greater Chennai Corporation</div>
-                    <div className="text-[10px] text-emerald-700 font-mono font-semibold">✓ Digitally Signed &amp; Escrow Locked</div>
+                    <div className="text-[10px] text-emerald-700 font-mono font-semibold">✓ Digitally Signed Draft Docket</div>
                   </div>
                 </div>
               </div>
@@ -221,7 +221,7 @@ export const DocumentExportModal: React.FC<DocumentExportModalProps> = ({
                     <span>Greater Chennai Traffic Police &bull; Automated ANPR Enforcement Wing</span>
                   </div>
                   <h1 className="text-base font-extrabold uppercase tracking-tight text-slate-900">
-                    Motor Vehicles Act (MVA) Electronic Traffic Summons
+                    Motor Vehicles Act (MVA) Electronic Traffic Violation Notice (Draft)
                   </h1>
                   <p className="text-[10px] font-mono text-slate-600">
                     Automated Camera Evidence Docket under Section 136A &amp; Rule 167A CMVR 1989

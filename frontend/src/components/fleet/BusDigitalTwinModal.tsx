@@ -260,14 +260,17 @@ export const BusDigitalTwinModal: React.FC<BusDigitalTwinModalProps> = ({
             <div>
               <div className="flex items-center gap-2">
                 <h3 className="font-bold text-sm text-white tracking-wide">
-                  3D Bus Chassis & Suspension Shock Digital Twin
+                  3D Chassis &amp; Suspension Shock Simulation
                 </h3>
+                <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                  Concept Model
+                </span>
                 <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-blue-500/20 text-blue-300 border border-blue-500/30">
                   {busId}
                 </span>
               </div>
               <p className="text-[11px] text-slate-400">
-                Real-time 6-axis IMU vertical jerk and chassis spring stress simulation
+                Interactive physics &amp; suspension shock simulation • <span className="text-amber-400/90">Illustrative telemetry mockup</span>
               </p>
             </div>
           </div>

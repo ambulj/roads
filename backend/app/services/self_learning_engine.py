@@ -8,6 +8,7 @@ from datetime import datetime, timezone
 from typing import Dict, Any, List, Optional
 import numpy as np
 import cv2
+from app.services.privacy_engine import privacy_engine
 
 try:
     from sklearn.ensemble import RandomForestClassifier
@@ -137,6 +138,10 @@ class SelfLearningEngine:
         """
         if not detections:
             return {"action": "NO_DETECTIONS_RECORDED"}
+
+        # Preserve DPDP Act 2023 privacy on any active learning frame
+        if frame is not None and frame.size > 0:
+            frame, _ = privacy_engine.anonymize_frame(frame, burn_privacy_badge=False)
 
         queued_items = []
         promoted_count = 0

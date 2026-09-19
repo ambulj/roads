@@ -278,9 +278,14 @@ export const RoadDeteriorationTimeMachine: React.FC = () => {
 
           <div className="p-3 rounded-xl bg-slate-100 dark:bg-slate-800/80 text-xs text-slate-600 dark:text-slate-300 flex items-start gap-2">
             <Building2 className="w-4 h-4 text-blue-600 shrink-0 mt-0.5" />
-            <p className="text-[11px] leading-snug">
-              <strong>MoRTH Guideline Insight:</strong> Addressing distress at Day 0 (slurry seal) preserves the structural subgrade, preventing ₹26,700 in emergency capital excavation.
-            </p>
+            <div>
+              <p className="text-[11px] leading-snug">
+                <strong>MoRTH Guideline Insight:</strong> Addressing distress at Day 0 (slurry seal) preserves the structural subgrade, preventing ₹26,700 in emergency capital excavation.
+              </p>
+              <span className="text-[10px] text-slate-500 dark:text-slate-400 block mt-1">
+                *Illustrative estimate based on typical IRC unit rates and municipal maintenance schedules.
+              </span>
+            </div>
           </div>
         </div>
       </div>

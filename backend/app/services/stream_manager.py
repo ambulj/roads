@@ -5,6 +5,7 @@ import cv2
 import numpy as np
 from typing import Dict, Any, List, Optional, Generator
 from app.services.yolo_inference import yolo_engine
+from app.services.privacy_engine import privacy_engine
 
 class RealRTSPWorker:
     """
@@ -221,17 +222,19 @@ class RealRTSPWorker:
                         hazard_res = yolo_engine.detect_road_hazards(frame, channel=self.channel, burn_overlay=True)
                         self.latest_detections = hazard_res.get("detections", [])
                         frame = hazard_res.get("annotated_frame", frame)
+                    else:
+                        frame, _ = privacy_engine.anonymize_frame(frame, burn_privacy_badge=False)
 
                     fname = self.uploaded_filename or (os.path.basename(source) if is_local_video else "")
                     if self.is_uploaded or is_local_video:
                         hud_text = f"USER UPLOADED VIDEO: {fname} | {w}x{h} | {self.fps_measured} FPS"
-                        sub_text = f"AI REAL-FRAME HAZARD DETECTION: {len(self.latest_detections)} FOUND | {time.strftime('%H:%M:%S')}"
+                        sub_text = f"AI REAL-FRAME HAZARD DETECTION: {len(self.latest_detections)} FOUND | DPDP PRIVACY PROTECTED"
                     elif isinstance(source, str) and source.startswith("srt://"):
                         hud_text = f"LIVE SRT (4G/5G CELLULAR): {self.bus_id} | CH{self.channel} | {w}x{h} | {self.fps_measured} FPS"
-                        sub_text = f"RELIABLE UDP ARQ ACTIVE | AI PERCEPTION ACTIVE | {time.strftime('%H:%M:%S')}"
+                        sub_text = f"RELIABLE UDP ARQ ACTIVE | AI PERCEPTION ACTIVE | DPDP PRIVACY PROTECTED"
                     else:
                         hud_text = f"LIVE RTSP: {self.bus_id} | CH{self.channel} | {w}x{h} | {self.fps_measured} FPS"
-                        sub_text = f"AI PERCEPTION ACTIVE (REAL-FRAME CV) | {time.strftime('%H:%M:%S')}"
+                        sub_text = f"AI PERCEPTION ACTIVE (REAL-FRAME CV) | DPDP PRIVACY PROTECTED"
                         
                     cv2.putText(frame, hud_text, (20, 35), cv2.FONT_HERSHEY_SIMPLEX, 0.65, (0, 255, 120), 2, cv2.LINE_AA)
                     cv2.putText(frame, sub_text, (20, 65), cv2.FONT_HERSHEY_SIMPLEX, 0.48, (0, 200, 255), 1, cv2.LINE_AA)

@@ -7,7 +7,6 @@ import {
 } from 'lucide-react';
 import { CorridorRisk, MetricSummary, FleetNode, SafeCorridor, DarkSpotSegment } from '../types';
 import { Card, Badge, Button } from '../components/ui';
-import { MonsoonInundationPredictor } from '../components/analytics/MonsoonInundationPredictor';
 import { SelfLearningStudio } from '../components/analytics/SelfLearningStudio';
 import { CityBrainHub } from '../components/analytics/CityBrainHub';
 import { api, INITIAL_SAFE_CORRIDORS, INITIAL_DARK_SPOTS } from '../services/api';
@@ -32,6 +31,7 @@ export const Analytics: React.FC<AnalyticsProps> = ({ metrics, corridors, fleet 
   const [trafficDensity, setTrafficDensity] = useState<any[]>([]);
   const [anprResult, setAnprResult] = useState<any | null>(null);
   const [isScanningANPR, setIsScanningANPR] = useState(false);
+  const [analyticsTab, setAnalyticsTab] = useState<'corridors' | 'citybrain' | 'selflearning'>('corridors');
 
   useEffect(() => {
     api.getSafeCorridors().then(setSafeCorridors);
@@ -232,152 +232,187 @@ export const Analytics: React.FC<AnalyticsProps> = ({ metrics, corridors, fleet 
         </Card>
       </div>
 
-      {/* 2-Column Chart Row */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
-        {/* Left: Dual Spline Time Series */}
-        <Card className="lg:col-span-8 p-4 lg:p-5 flex flex-col shadow-xs">
-          <div className="flex items-center justify-between pb-2 mb-2 border-b border-slate-100 dark:border-slate-800 text-xs">
-            <div className="flex items-center gap-2">
-              <TrendingUp className="w-4 h-4 text-blue-600 dark:text-blue-400" />
-              <span className="font-bold text-slate-900 dark:text-slate-100 uppercase tracking-tight">Defect Frequency vs Operating Velocity</span>
-            </div>
-            <Badge variant="medium" size="sm">
-              CORRELATION
-            </Badge>
-          </div>
-          <p className="text-xs text-slate-500 dark:text-slate-400 mb-2">
-            Time-series correlation between bus operating speed (km/h) and distress frequency along arterial routes
-          </p>
-          <div className="h-64">
-            <Chart options={splineOptions} series={splineSeries} type="area" height="100%" />
-          </div>
-        </Card>
+      {/* Segmented Analytical Workspace Tabs */}
+      <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-2">
+        <div className="flex items-center gap-1 bg-slate-200/60 dark:bg-slate-900/80 p-1 rounded-xl border border-slate-200 dark:border-slate-800 text-xs font-mono overflow-x-auto max-w-full">
+          <button
+            onClick={() => setAnalyticsTab('corridors')}
+            className={`px-3.5 py-1.5 rounded-lg font-bold flex items-center gap-1.5 transition ${
+              analyticsTab === 'corridors'
+                ? 'bg-white dark:bg-slate-800 text-blue-600 dark:text-blue-400 shadow-xs border border-slate-200/80 dark:border-slate-700'
+                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+            }`}
+          >
+            <TrendingUp className="w-3.5 h-3.5" />
+            <span>Transit Dynamics &amp; Corridors</span>
+          </button>
 
-        {/* Right: RPI Factor Weights Radial Bar */}
-        <Card className="lg:col-span-4 p-4 lg:p-5 flex flex-col justify-between shadow-xs">
-          <div>
-            <div className="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-slate-800 text-xs">
-              <div className="flex items-center gap-2">
-                <Sparkles className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
-                <span className="font-bold text-slate-900 dark:text-slate-100 uppercase tracking-tight">Priority Factor Weights</span>
-              </div>
-              <Badge variant="purple" size="sm">
-                DISTRIBUTION
-              </Badge>
-            </div>
-            <p className="text-xs text-slate-500 dark:text-slate-400 mt-2 mb-1">
-              Multi-radial breakdown of the 4 priority factors: Severity, Frequency, Highway, and POI proximity
-            </p>
-            <div className="h-60 flex items-center justify-center">
-              <Chart options={radialOptions} series={radialSeries} type="radialBar" height="100%" />
-            </div>
-          </div>
-          <div className="pt-2 border-t border-slate-100 dark:border-slate-800 text-[10px] text-slate-500 dark:text-slate-400 flex items-center justify-between">
-            <span>Target: Zero Accident Corridor</span>
-            <span className="text-blue-600 dark:text-blue-400 font-medium">Formula V2.6 Active</span>
-          </div>
-        </Card>
+          <button
+            onClick={() => setAnalyticsTab('citybrain')}
+            className={`px-3.5 py-1.5 rounded-lg font-bold flex items-center gap-1.5 transition ${
+              analyticsTab === 'citybrain'
+                ? 'bg-white dark:bg-slate-800 text-blue-600 dark:text-blue-400 shadow-xs border border-slate-200/80 dark:border-slate-700'
+                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+            }`}
+          >
+            <Sparkles className="w-3.5 h-3.5 text-indigo-500" />
+            <span>City Brain AI &amp; Budget</span>
+          </button>
+
+          <button
+            onClick={() => setAnalyticsTab('selflearning')}
+            className={`px-3.5 py-1.5 rounded-lg font-bold flex items-center gap-1.5 transition ${
+              analyticsTab === 'selflearning'
+                ? 'bg-white dark:bg-slate-800 text-blue-600 dark:text-blue-400 shadow-xs border border-slate-200/80 dark:border-slate-700'
+                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+            }`}
+          >
+            <Layers className="w-3.5 h-3.5 text-emerald-500" />
+            <span>Self-Learning AI Studio</span>
+          </button>
+        </div>
       </div>
 
-      {/* NEW: 2-Column Analytical Deep-Dive (Pavement Deterioration vs Contractor Expenditure) */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
-        {/* Left: 6-Month Pavement Deterioration Index by Corridor */}
-        <Card className="lg:col-span-7 p-4 lg:p-5 flex flex-col shadow-xs">
-          <div className="flex items-center justify-between pb-2 mb-2 border-b border-slate-100 dark:border-slate-800 text-xs">
-            <div className="flex items-center gap-2">
-              <TrendingUp className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-              <span className="font-bold text-slate-900 dark:text-slate-100 uppercase tracking-tight">
-                Pavement Degradation Index (PCI Decay)
-              </span>
-            </div>
-            <Badge variant="success" size="sm">
-              6-MONTH TREND
-            </Badge>
-          </div>
-          <p className="text-xs text-slate-500 dark:text-slate-400 mb-2">
-            Pavement Condition Index (PCI) decay trajectory across top 4 arterial transit corridors
-          </p>
-          <div className="h-64">
-            <Chart
-              options={{
-                chart: { type: 'bar', background: 'transparent', toolbar: { show: false } },
-                theme: { mode: isDark ? 'dark' : 'light' },
-                colors: ['#3b82f6', '#10b981', '#f59e0b', '#ef4444'],
-                plotOptions: { bar: { horizontal: false, columnWidth: '55%', borderRadius: 4 } },
-                dataLabels: { enabled: false },
-                xaxis: {
-                  categories: ['May 25', 'Jun 25', 'Jul 25', 'Aug 25', 'Sep 25'],
-                  labels: { style: { colors: isDark ? '#94a3b8' : '#64748b', fontSize: '11px' } }
-                },
-                yaxis: {
-                  title: { text: 'Pavement Quality (PCI)', style: { color: isDark ? '#94a3b8' : '#64748b' } },
-                  max: 100,
-                  labels: { style: { colors: isDark ? '#94a3b8' : '#64748b' } }
-                },
-                legend: { position: 'top', horizontalAlign: 'right', labels: { colors: isDark ? '#cbd5e1' : '#334155' } },
-                grid: { borderColor: isDark ? '#1e293b' : '#e2e8f0', strokeDashArray: 3 }
-              }}
-              series={[
-                { name: 'Anna Salai (CBD)', data: [88, 85, 82, 79, 76] },
-                { name: 'OMR IT Express', data: [92, 89, 87, 85, 83] },
-                { name: 'GST Road (NH-32)', data: [74, 69, 64, 58, 52] },
-                { name: 'Inner Ring Road', data: [80, 76, 71, 66, 61] }
-              ]}
-              type="bar"
-              height="100%"
-            />
-          </div>
-        </Card>
-
-        {/* Right: Municipal Road Repair Cost Breakdown */}
-        <Card className="lg:col-span-5 p-4 lg:p-5 flex flex-col justify-between shadow-xs">
-          <div>
-            <div className="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-slate-800 text-xs">
-              <div className="flex items-center gap-2">
-                <ShieldCheck className="w-4 h-4 text-purple-600 dark:text-purple-400" />
-                <span className="font-bold text-slate-900 dark:text-slate-100 uppercase tracking-tight">
-                  Contractor Liquidated Damages
-                </span>
+      {/* TAB 1: Transit Dynamics & Corridors */}
+      {analyticsTab === 'corridors' && (
+        <div className="space-y-5">
+          {/* 2-Column Chart Row */}
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
+            {/* Left: Dual Spline Time Series */}
+            <Card className="lg:col-span-8 p-4 lg:p-5 flex flex-col shadow-xs">
+              <div className="flex items-center justify-between pb-2 mb-2 border-b border-slate-100 dark:border-slate-800 text-xs">
+                <div className="flex items-center gap-2">
+                  <TrendingUp className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                  <span className="font-bold text-slate-900 dark:text-slate-100 uppercase tracking-tight">Defect Frequency vs Operating Velocity</span>
+                </div>
+                <Badge variant="medium" size="sm">
+                  CORRELATION
+                </Badge>
               </div>
-              <Badge variant="purple" size="sm">
-                IRC:SP:20
-              </Badge>
-            </div>
-            <p className="text-xs text-slate-500 dark:text-slate-400 mt-2 mb-2">
-              Monthly escrow debits and contractor penalties levied under MoRTH Quality Audits
-            </p>
-            <div className="h-56">
-              <Chart
-                options={{
-                  chart: { type: 'donut', background: 'transparent' },
-                  theme: { mode: isDark ? 'dark' : 'light' },
-                  colors: ['#ef4444', '#f59e0b', '#3b82f6', '#10b981'],
-                  labels: ['Pothole SLA Breaches', 'Defective Asphalt Material', 'Missing Zebra Paint', 'Waterlogging Ponding'],
-                  plotOptions: { pie: { donut: { size: '68%' } } },
-                  dataLabels: { enabled: false },
-                  legend: { position: 'bottom', labels: { colors: isDark ? '#94a3b8' : '#64748b' }, fontSize: '10.5px' }
-                }}
-                series={[45, 25, 18, 12]}
-                type="donut"
-                height="100%"
-              />
-            </div>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mb-2">
+                Time-series correlation between bus operating speed (km/h) and distress frequency along arterial routes
+              </p>
+              <div className="h-64">
+                <Chart options={splineOptions} series={splineSeries} type="area" height="100%" />
+              </div>
+            </Card>
+
+            {/* Right: RPI Factor Weights Radial Bar */}
+            <Card className="lg:col-span-4 p-4 lg:p-5 flex flex-col justify-between shadow-xs">
+              <div>
+                <div className="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-slate-800 text-xs">
+                  <div className="flex items-center gap-2">
+                    <Sparkles className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
+                    <span className="font-bold text-slate-900 dark:text-slate-100 uppercase tracking-tight">Priority Factor Weights</span>
+                  </div>
+                  <Badge variant="purple" size="sm">
+                    DISTRIBUTION
+                  </Badge>
+                </div>
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-2 mb-1">
+                  Multi-radial breakdown of the 4 priority factors: Severity, Frequency, Highway, and POI proximity
+                </p>
+                <div className="h-60 flex items-center justify-center">
+                  <Chart options={radialOptions} series={radialSeries} type="radialBar" height="100%" />
+                </div>
+              </div>
+              <div className="pt-2 border-t border-slate-100 dark:border-slate-800 text-[10px] text-slate-500 dark:text-slate-400 flex items-center justify-between">
+                <span>Target: Zero Accident Corridor</span>
+                <span className="text-blue-600 dark:text-blue-400 font-medium">Formula V2.6 Active</span>
+              </div>
+            </Card>
           </div>
-          <div className="pt-2 border-t border-slate-100 dark:border-slate-800 text-[11px] text-slate-500 flex items-center justify-between font-mono">
-            <span>Total Debited: <b className="text-rose-600 dark:text-rose-400">₹8,45,000</b></span>
-            <span className="text-emerald-600 dark:text-emerald-400 font-semibold">100% Escrow Recovery</span>
+
+          {/* 2-Column Analytical Deep-Dive (Pavement Deterioration vs Contractor Expenditure) */}
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
+            {/* Left: 6-Month Pavement Deterioration Index by Corridor */}
+            <Card className="lg:col-span-7 p-4 lg:p-5 flex flex-col shadow-xs">
+              <div className="flex items-center justify-between pb-2 mb-2 border-b border-slate-100 dark:border-slate-800 text-xs">
+                <div className="flex items-center gap-2">
+                  <TrendingUp className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                  <span className="font-bold text-slate-900 dark:text-slate-100 uppercase tracking-tight">
+                    Pavement Degradation Index (PCI Decay)
+                  </span>
+                </div>
+                <Badge variant="success" size="sm">
+                  6-MONTH TREND
+                </Badge>
+              </div>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mb-2">
+                Pavement Condition Index (PCI) decay trajectory across top 4 arterial transit corridors
+              </p>
+              <div className="h-64">
+                <Chart
+                  options={{
+                    chart: { type: 'bar', background: 'transparent', toolbar: { show: false } },
+                    theme: { mode: isDark ? 'dark' : 'light' },
+                    colors: ['#3b82f6', '#10b981', '#f59e0b', '#ef4444'],
+                    plotOptions: { bar: { horizontal: false, columnWidth: '55%', borderRadius: 4 } },
+                    dataLabels: { enabled: false },
+                    xaxis: {
+                      categories: ['May 25', 'Jun 25', 'Jul 25', 'Aug 25', 'Sep 25'],
+                      labels: { style: { colors: isDark ? '#94a3b8' : '#64748b', fontSize: '11px' } }
+                    },
+                    yaxis: {
+                      title: { text: 'Pavement Quality (PCI)', style: { color: isDark ? '#94a3b8' : '#64748b' } },
+                      max: 100,
+                      labels: { style: { colors: isDark ? '#94a3b8' : '#64748b' } }
+                    },
+                    legend: { position: 'top', horizontalAlign: 'right', labels: { colors: isDark ? '#cbd5e1' : '#334155' } },
+                    grid: { borderColor: isDark ? '#1e293b' : '#e2e8f0', strokeDashArray: 3 }
+                  }}
+                  series={[
+                    { name: 'Anna Salai (CBD)', data: [88, 85, 82, 79, 76] },
+                    { name: 'OMR IT Express', data: [92, 89, 87, 85, 83] },
+                    { name: 'GST Road (NH-32)', data: [74, 69, 64, 58, 52] },
+                    { name: 'Inner Ring Road', data: [80, 76, 71, 66, 61] }
+                  ]}
+                  type="bar"
+                  height="100%"
+                />
+              </div>
+            </Card>
+
+            {/* Right: Municipal Road Repair Cost Breakdown */}
+            <Card className="lg:col-span-5 p-4 lg:p-5 flex flex-col justify-between shadow-xs">
+              <div>
+                <div className="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-slate-800 text-xs">
+                  <div className="flex items-center gap-2">
+                    <ShieldCheck className="w-4 h-4 text-purple-600 dark:text-purple-400" />
+                    <span className="font-bold text-slate-900 dark:text-slate-100 uppercase tracking-tight">
+                      Contractor Liquidated Damages
+                    </span>
+                  </div>
+                  <Badge variant="purple" size="sm">
+                    IRC:SP:20
+                  </Badge>
+                </div>
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-2 mb-2">
+                  Monthly SLA liquidated damages and contractor penalties levied under MoRTH Quality Audits
+                </p>
+                <div className="h-56">
+                  <Chart
+                    options={{
+                      chart: { type: 'donut', background: 'transparent' },
+                      theme: { mode: isDark ? 'dark' : 'light' },
+                      colors: ['#ef4444', '#f59e0b', '#3b82f6', '#10b981'],
+                      labels: ['Pothole SLA Breaches', 'Defective Asphalt Material', 'Missing Zebra Paint', 'Waterlogging Ponding'],
+                      plotOptions: { pie: { donut: { size: '68%' } } },
+                      dataLabels: { enabled: false },
+                      legend: { position: 'bottom', labels: { colors: isDark ? '#94a3b8' : '#64748b' }, fontSize: '10.5px' }
+                    }}
+                    series={[45, 25, 18, 12]}
+                    type="donut"
+                    height="100%"
+                  />
+                </div>
+              </div>
+              <div className="pt-2 border-t border-slate-100 dark:border-slate-800 text-[11px] text-slate-500 flex items-center justify-between font-mono">
+                <span>Total Debited: <b className="text-rose-600 dark:text-rose-400">₹8,45,000</b></span>
+                <span className="text-emerald-600 dark:text-emerald-400 font-semibold">100% Penalty Recovery</span>
+              </div>
+            </Card>
           </div>
-        </Card>
-      </div>
-
-      {/* City Brain Decision AI, Knapsack Budget Optimizer, XAI & Edge MLOps (Points 51-90) */}
-      <CityBrainHub />
-
-      {/* Continuous Self-Learning AI Engine & Closed-Loop Repair Studio */}
-      <SelfLearningStudio />
-
-      {/* Monsoon Elevation & Hydroplaning 30-Min Rush-Hour Predictor */}
-      <MonsoonInundationPredictor />
 
       {/* Arterial Road Corridor Risk Matrix Table */}
       <Card className="p-4 lg:p-6 flex flex-col gap-4 shadow-xs">
@@ -867,6 +902,18 @@ export const Analytics: React.FC<AnalyticsProps> = ({ metrics, corridors, fleet 
           </table>
         </div>
       </Card>
+    </div>
+  )}
+
+  {/* TAB 2: City Brain AI, 0/1 Knapsack & XAI Hub */}
+      {analyticsTab === 'citybrain' && (
+        <CityBrainHub />
+      )}
+
+      {/* TAB 3: Continuous Self-Learning AI Studio */}
+      {analyticsTab === 'selflearning' && (
+        <SelfLearningStudio />
+      )}
     </div>
   );
 };

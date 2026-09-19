@@ -5,6 +5,7 @@ from pathlib import Path
 from typing import List, Dict, Any, Optional
 import numpy as np
 import cv2
+from app.services.privacy_engine import privacy_engine
 
 # Path to the weights directory
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -307,8 +308,11 @@ class YoloInferenceEngine:
             cv2.rectangle(img, (x1, max(0, y1 - 25)), (x1 + text_size[0] + 10, y1), box_color, -1)
             cv2.putText(img, label, (x1 + 5, y1 - 7), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 255), 2, cv2.LINE_AA)
 
+        # Apply DPDP Act 2023 optical face blurring/privacy redaction
+        sanitized_img, _ = privacy_engine.anonymize_frame(img, burn_privacy_badge=False)
+
         # Encode to JPEG base64
-        _, buffer = cv2.imencode('.jpg', img, [cv2.IMWRITE_JPEG_QUALITY, 85])
+        _, buffer = cv2.imencode('.jpg', sanitized_img, [cv2.IMWRITE_JPEG_QUALITY, 85])
         b64_str = base64.b64encode(buffer).decode('utf-8')
         return f"data:image/jpeg;base64,{b64_str}"
 
@@ -508,8 +512,11 @@ class YoloInferenceEngine:
                 cv2.rectangle(annotated, (x1, tag_y1), (x1 + text_size[0] + 8, y1), color, -1)
                 cv2.putText(annotated, tag, (x1 + 4, y1 - 6), cv2.FONT_HERSHEY_SIMPLEX, 0.50, (255, 255, 255), 1, cv2.LINE_AA)
 
+        # Apply DPDP Act 2023 optical face blurring/privacy redaction
+        sanitized_frame, _ = privacy_engine.anonymize_frame(annotated, burn_privacy_badge=False)
+
         # Base64 string for API response
-        _, buffer = cv2.imencode('.jpg', annotated, [cv2.IMWRITE_JPEG_QUALITY, 85])
+        _, buffer = cv2.imencode('.jpg', sanitized_frame, [cv2.IMWRITE_JPEG_QUALITY, 85])
         b64_str = base64.b64encode(buffer).decode('utf-8')
 
         return {
@@ -517,7 +524,7 @@ class YoloInferenceEngine:
             "detections_count": len(detections),
             "detections": detections,
             "quality_metrics": quality_metrics,
-            "annotated_frame": annotated,
+            "annotated_frame": sanitized_frame,
             "annotated_b64": f"data:image/jpeg;base64,{b64_str}"
         }
 

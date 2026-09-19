@@ -478,20 +478,23 @@ export const RoadMeshVisualizerModal: React.FC<RoadMeshVisualizerModalProps> = (
             <div>
               <div className="flex items-center gap-2">
                 <h3 className="font-bold text-sm text-white tracking-wide">
-                  Real 3D Surface Reconstruction &amp; Sensor Disparity
+                  3D Surface Defect Geometry (Concept Model)
                 </h3>
+                <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                  Concept Mockup
+                </span>
                 <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-rose-500/20 text-rose-300 border border-rose-500/30">
                   {hazardId}
                 </span>
               </div>
               <p className="text-[11px] text-slate-400 truncate max-w-md">
-                {locationName}
+                {locationName} • <span className="text-amber-400/90 font-medium">Future Scope: requires physical LiDAR/Stereo sensor hardware</span>
               </p>
             </div>
           </div>
 
           <div className="flex items-center gap-2">
-            {/* View Modes Toggle: Solid / Wireframe / LiDAR */}
+            {/* View Modes Toggle: Solid / Wireframe / Point Cloud */}
             <div className="flex items-center bg-slate-900 border border-slate-800 p-0.5 rounded-lg text-xs font-mono">
               <button
                 onClick={() => setRenderMode("solid")}
@@ -515,7 +518,7 @@ export const RoadMeshVisualizerModal: React.FC<RoadMeshVisualizerModalProps> = (
                   renderMode === "lidar" ? "bg-blue-600 text-white font-bold" : "text-slate-400 hover:text-white"
                 }`}
               >
-                LiDAR
+                Point Cloud
               </button>
             </div>
 

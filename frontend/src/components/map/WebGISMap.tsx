@@ -453,7 +453,7 @@ export const WebGISMap: React.FC<WebGISMapProps> = ({
     clusters.forEach((cluster) => {
       const isCritical = cluster.severity_level === 'critical';
       const isHigh = cluster.severity_level === 'high';
-      const isResolved = cluster.status === 'resolved';
+      const isResolved = cluster.status === 'resolved' || cluster.status === 'verified_closed';
       const color = isResolved ? '#10b981' : isCritical ? '#f43f5e' : isHigh ? '#f59e0b' : '#3b82f6';
 
       if (!markersRef.current[cluster.id]) {
@@ -516,10 +516,10 @@ export const WebGISMap: React.FC<WebGISMapProps> = ({
         el.className = 'cursor-pointer group';
         el.innerHTML = `
           <div style="position: relative; display: flex; align-items: center; justify-content: center;">
-            <div style="width: 32px; height: 32px; border-radius: 8px; background: #2563eb; color: #ffffff; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 12px rgba(37,99,235,0.4); border: 2px solid #ffffff; transform: rotate(${bus.heading || 0}deg);">
+            <div style="width: 32px; height: 32px; border-radius: 50%; background: #2563eb; border: 2.5px solid #ffffff; box-shadow: 0 4px 12px rgba(37,99,235,0.4); display: flex; align-items: center; justify-content: center; color: #ffffff; font-size: 14px;">
               🚌
             </div>
-            <div style="position: absolute; bottom: -18px; font-family: monospace; font-size: 9px; font-weight: 700; background: #0f172a; color: #ffffff; padding: 1px 4px; border-radius: 4px; white-space: nowrap; border: 1px solid #3b82f6;">
+            <div style="position: absolute; bottom: -18px; font-family: monospace; font-size: 10px; font-weight: 700; background: #0f172a; color: #38bdf8; padding: 1px 4px; border-radius: 4px; border: 1px solid #334155; white-space: nowrap;">
               ${bus.id.replace('BUS-', '')}
             </div>
           </div>
@@ -532,7 +532,7 @@ export const WebGISMap: React.FC<WebGISMapProps> = ({
         });
 
         const popupHtml = `
-          <div style="width: 250px; font-family: ui-sans-serif, system-ui, sans-serif; padding: 4px; background: #0b101d; color: #f8fafc; border-radius: 8px;">
+          <div style="font-family: system-ui, -apple-system, sans-serif; padding: 4px; min-width: 220px;">
             <div style="display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #1e293b; padding-bottom: 6px; margin-bottom: 6px;">
               <div>
                 <div style="font-weight: 800; font-size: 12px; color: #60a5fa; font-family: monospace;">${bus.id}</div>
@@ -576,10 +576,21 @@ export const WebGISMap: React.FC<WebGISMapProps> = ({
     const map = mapRef.current;
     if (!map || !isMapReady) return;
 
+    // Clear removed incident markers
+    Object.keys(incidentMarkersRef.current).forEach((id) => {
+      if (!incidents.some((inc) => inc.id === id)) {
+        incidentMarkersRef.current[id].remove();
+        delete incidentMarkersRef.current[id];
+      }
+    });
+
+    const showIncidents = layerFilter === 'all' || layerFilter === 'incidents';
+
     incidents.forEach((incident) => {
       if (!incidentMarkersRef.current[incident.id]) {
         const el = document.createElement('div');
         el.className = 'cursor-pointer group';
+        el.style.display = showIncidents ? 'block' : 'none';
         el.innerHTML = `
           <div style="position: relative; display: flex; align-items: center; justify-content: center;">
             <div style="width: 28px; height: 28px; border-radius: 50%; background: #ffffff; border: 2.5px solid #ef4444; box-shadow: 0 0 10px #ef4444; display: flex; align-items: center; justify-content: center; font-size: 13px;">
@@ -597,9 +608,12 @@ export const WebGISMap: React.FC<WebGISMapProps> = ({
           .addTo(map);
 
         incidentMarkersRef.current[incident.id] = marker;
+      } else {
+        incidentMarkersRef.current[incident.id].getElement().style.display = showIncidents ? 'block' : 'none';
+        incidentMarkersRef.current[incident.id].setLngLat([incident.lng, incident.lat]);
       }
     });
-  }, [incidents, isMapReady]);
+  }, [incidents, layerFilter, isMapReady, onSelectIncident]);
 
   return (
     <main className="flex-1 w-full h-full flex flex-col relative overflow-hidden bg-slate-100 dark:bg-slate-950 select-none">
