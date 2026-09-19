@@ -98,7 +98,7 @@ async def simulation_loop():
     """Background task advancing buses and broadcasting 5Hz telemetry pings."""
     from app.services.simulation_controller import simulation_controller
     while True:
-        await asyncio.sleep(2.0)
+        await asyncio.sleep(1.0)
         if manager.active_connections and simulation_controller.is_fleet_simulation_active():
             store.step_simulation()
             await manager.broadcast({

@@ -1579,9 +1579,11 @@ class PersistentStore:
 
     _bus_progress: Dict[str, float] = {}
     _bus_forward: Dict[str, bool] = {}
+    _sim_tick_count: int = 0
 
     def step_simulation(self):
         """Advances fleet buses smoothly along defined corridor polylines with realistic speed and bearing angles."""
+        self._sim_tick_count += 1
         db = self._get_db_session()
         try:
             from app.models.db_models import DBFleetNode
@@ -1637,7 +1639,44 @@ class PersistentStore:
                 bus.last_ping_at = "Just now"
 
             db.commit()
+
+            # Periodically append live real-time perception log every 3 ticks
+            if self._sim_tick_count % 3 == 0 and buses:
+                sample_bus = random.choice(buses)
+                log_templates = [
+                    (
+                        "FLEET TELEMETRY",
+                        f"Ingested 5Hz NavIC telemetry from {sample_bus.id} • Lat: {sample_bus.lat}, Lng: {sample_bus.lng} • Speed: {sample_bus.speed_kmh} km/h • Gz: {sample_bus.imu_jerk_gz}g"
+                    ),
+                    (
+                        "EDGE INFERENCE",
+                        f"YOLOv8n-Road edge perception inference @ {sample_bus.edge_fps} FPS on {sample_bus.id} • 0 critical anomalies detected • Privacy mask active."
+                    ),
+                    (
+                        "SPATIAL DEDUP",
+                        f"DBSCAN 15m radius filter confirmed route pass for {sample_bus.id} along {sample_bus.route_id or 'Corridor'}."
+                    ),
+                    (
+                        "ACTIVE LEARNING",
+                        f"Edge model shadow validation cycle: 99.4% agreement with cloud ground-truth on {sample_bus.id}."
+                    )
+                ]
+                log_type, log_msg = random.choice(log_templates)
+                new_log_entry = {
+                    "id": f"sim-log-{int(time.time() * 1000)}",
+                    "timestamp": "Just now",
+                    "bus_id": sample_bus.id,
+                    "corridor": sample_bus.route_id or "Metropolitan Arterial",
+                    "message": log_msg,
+                    "latency_ms": random.randint(38, 72),
+                    "type": log_type
+                }
+                self.audit_logs.insert(0, new_log_entry)
+                if len(self.audit_logs) > 50:
+                    self.audit_logs = self.audit_logs[:50]
+
         finally:
             db.close()
 
 store = PersistentStore()
+

@@ -239,8 +239,10 @@ export function useTelemetrySocket() {
 
     const progressMap: Record<string, { prog: number; fwd: boolean }> = {};
 
+    let tickCount = 0;
     const interval = setInterval(() => {
       if (document.hidden) return; // Don't update when tab is not visible
+      tickCount += 1;
 
       setFleet((prev) =>
         prev.map((bus) => {
@@ -257,7 +259,7 @@ export function useTelemetrySocket() {
           }
 
           const st = progressMap[bus.id];
-          const delta = 0.018 + Math.random() * 0.008;
+          const delta = 0.008 + Math.random() * 0.004;
           st.prog += st.fwd ? delta : -delta;
 
           if (st.prog >= 1.0) {
@@ -290,12 +292,39 @@ export function useTelemetrySocket() {
             lng: Number(newLng.toFixed(5)),
             heading: degHeading,
             speed_kmh: Math.round(30 + Math.random() * 12),
-            edge_fps: Number((26 + (Math.random() - 0.5) * 3).toFixed(1)),
+            edge_fps: Number((27 + (Math.random() - 0.5) * 2.5).toFixed(1)),
+            imu_jerk_gz: Number((0.98 + (Math.random() - 0.5) * 0.12).toFixed(2)),
           };
         })
       );
-      setLatestLatency(Math.floor(62 + Math.random() * 20));
-    }, 2500);
+
+      // Periodically generate realistic perception log every 3 seconds
+      if (tickCount % 3 === 0) {
+        const sampleBuses = ['BUS-TN01-1042', 'BUS-TN02-3891', 'BUS-TN01-2098', 'BUS-TN03-4410', 'BUS-TN02-5501'];
+        const randomBus = sampleBuses[Math.floor(Math.random() * sampleBuses.length)];
+        const events = [
+          { type: 'FLEET TELEMETRY', msg: `NavIC 5Hz locked • Gz: ${(0.96 + Math.random() * 0.1).toFixed(2)}g • 0 active DTC faults.` },
+          { type: 'EDGE INFERENCE', msg: `YOLOv8n-Road edge inference @ ${(27 + Math.random() * 2).toFixed(1)} FPS • 0 critical anomalies.` },
+          { type: 'SPATIAL DEDUP', msg: `DBSCAN 15m radius verified: continuous route pass confirmed on arterial corridor.` },
+          { type: 'ACTIVE LEARNING', msg: `Shadow model agreement: 99.4% consensus with cloud foundation model.` }
+        ];
+        const chosen = events[Math.floor(Math.random() * events.length)];
+        setAuditLogs((prev) => [
+          {
+            id: `tick-${Date.now()}`,
+            timestamp: 'Just now',
+            bus_id: randomBus,
+            corridor: 'Chennai Arterial Transit',
+            message: `${randomBus}: ${chosen.msg}`,
+            latency_ms: Math.floor(38 + Math.random() * 25),
+            type: chosen.type
+          },
+          ...prev.slice(0, 19)
+        ]);
+      }
+
+      setLatestLatency(Math.floor(40 + Math.random() * 20));
+    }, 1000);
 
     return () => clearInterval(interval);
   }, [isConnected]);
