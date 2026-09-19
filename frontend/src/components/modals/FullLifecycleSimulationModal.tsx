@@ -30,7 +30,10 @@ import {
   TrendingUp,
   Activity,
   Droplets,
-  AlertOctagon
+  AlertOctagon,
+  ArrowRight,
+  ShieldAlert,
+  Sliders
 } from 'lucide-react';
 import { HazardCluster, WorkOrderStatus } from '../../types';
 import { api } from '../../services/api';
@@ -70,15 +73,15 @@ const DEFECT_CONFIGS: Record<DemoDefectType, DefectConfig> = {
     imuShock: 1.84,
     depthStr: '-6.8 cm Depth',
     volumeStr: '54.6L (126kg DBM Hot-Mix)',
-    repairMaterial: 'VG-30 Hot-Mix Dense Bituminous Macadam',
+    repairMaterial: 'VG-30 Hot-Mix Dense Bituminous Macadam (IRC:SP:20)',
     costInr: 8568,
-    agency: 'L&T Urban Infra Ltd (State Highways)',
+    agency: 'L&T Urban Highways Ltd',
     docketCode: 'WO-2026-CHE-892',
     beforeImg: 'https://images.unsplash.com/photo-1515162816999-a0c47dc192f7?w=1200&auto=format&fit=crop&q=80',
     afterImg: 'https://images.unsplash.com/photo-1578985545062-69928b1d9587?w=1200&auto=format&fit=crop&q=80',
     beforeLabel: 'BEFORE: 6.8cm Cavity Skid Hazard',
     afterLabel: 'AFTER: VG-30 Hot-Mix Bitumen Infill',
-    verificationPassText: 'Gz = 0.96g nominal baseline vibration & 0% cavity confirmed.',
+    verificationPassText: 'Gz = 0.96g nominal baseline vibration (threshold < 1.15g) & 0% cavity confirmed.',
   },
   D20: {
     id: 'D20',
@@ -92,13 +95,13 @@ const DEFECT_CONFIGS: Record<DemoDefectType, DefectConfig> = {
     volumeStr: '18.4L (42kg Slurry Seal)',
     repairMaterial: 'IRC:SP:20 Polymer-Modified Micro-Surfacing',
     costInr: 2840,
-    agency: 'Apex Urban Infra Ltd',
+    agency: 'Chennai Corp Zone 10 (T. Nagar)',
     docketCode: 'WO-2026-CHE-441',
-    beforeImg: 'https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?w=1200&auto=format&fit=crop&q=80',
+    beforeImg: 'https://images.unsplash.com/photo-1578632767115-351597cf2477?w=1200&auto=format&fit=crop&q=80',
     afterImg: 'https://images.unsplash.com/photo-1578985545062-69928b1d9587?w=1200&auto=format&fit=crop&q=80',
     beforeLabel: 'BEFORE: Severe Alligator Webbing',
     afterLabel: 'AFTER: Polymer Slurry Seal Coating',
-    verificationPassText: 'Crack index = 0.00 / 100 per IRC:SP:20 optical verification.',
+    verificationPassText: 'Crack index = 0.00 / 100 per IRC:SP:20 optical surface scan.',
   },
   OPEN_MANHOLE: {
     id: 'OPEN_MANHOLE',
@@ -112,13 +115,13 @@ const DEFECT_CONFIGS: Record<DemoDefectType, DefectConfig> = {
     volumeStr: 'Heavy-Duty Ductile Iron Cover (Class D400)',
     repairMaterial: 'IS:1726 Grade D400 Hinged Manhole Cover & Frame',
     costInr: 4500,
-    agency: 'Chennai Metro Water & Sewerage Board (CMWSSB)',
-    docketCode: 'EMERGENCY-JAL-7712',
-    beforeImg: 'https://images.unsplash.com/photo-1577495508048-b635879837f1?w=1200&auto=format&fit=crop&q=80',
+    agency: 'CMWSSB (Metro Water & Sewerage Board)',
+    docketCode: 'EMERG-JAL-7712',
+    beforeImg: 'https://images.unsplash.com/photo-1578632767115-351597cf2477?w=1200&auto=format&fit=crop&q=80',
     afterImg: 'https://images.unsplash.com/photo-1578985545062-69928b1d9587?w=1200&auto=format&fit=crop&q=80',
     beforeLabel: 'BEFORE: Uncovered Sewer Shaft Void',
     afterLabel: 'AFTER: Heavy Ductile Iron Cover Fitted',
-    verificationPassText: 'Sewer shaft 100% sealed, safety bar flush with asphalt.',
+    verificationPassText: 'Sewer shaft 100% sealed, safety cover flush with road grade.',
   },
   WATERLOGGING: {
     id: 'WATERLOGGING',
@@ -132,13 +135,13 @@ const DEFECT_CONFIGS: Record<DemoDefectType, DefectConfig> = {
     volumeStr: '240,000 Liters Stormwater Basin',
     repairMaterial: 'GCC Dewatering 1500 LPM Submersible Pump Rig',
     costInr: 6200,
-    agency: 'Greater Chennai Corporation (GCC Stormwater Dept)',
+    agency: 'Greater Chennai Corporation (Stormwater Dept)',
     docketCode: 'GCC-FLOOD-092',
-    beforeImg: 'https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?w=1200&auto=format&fit=crop&q=80',
+    beforeImg: 'https://images.unsplash.com/photo-1515694346937-94d85e41e6f0?w=1200&auto=format&fit=crop&q=80',
     afterImg: 'https://images.unsplash.com/photo-1578985545062-69928b1d9587?w=1200&auto=format&fit=crop&q=80',
     beforeLabel: 'BEFORE: 28cm Flooded Lane Inundation',
-    afterLabel: 'AFTER: Dewatered & Storm Drain Restored',
-    verificationPassText: 'Acoustic Doppler confirms water level < 1cm. Lanes dry.',
+    afterLabel: 'AFTER: Dewatered & Storm Drain Cleared',
+    verificationPassText: 'Hydro-sensor confirms water depth < 1cm. Road clear for transit.',
   },
   UNMARKED_SPEED_BREAKER: {
     id: 'UNMARKED_SPEED_BREAKER',
@@ -154,31 +157,31 @@ const DEFECT_CONFIGS: Record<DemoDefectType, DefectConfig> = {
     costInr: 3200,
     agency: 'Chennai Traffic Engineering Division',
     docketCode: 'GCTP-IRC99-318',
-    beforeImg: 'https://images.unsplash.com/photo-1568605117036-5fe5e7bab0b7?w=1200&auto=format&fit=crop&q=80',
+    beforeImg: 'https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?w=1200&auto=format&fit=crop&q=80',
     afterImg: 'https://images.unsplash.com/photo-1578985545062-69928b1d9587?w=1200&auto=format&fit=crop&q=80',
     beforeLabel: 'BEFORE: Invisible Camouflaged Asphalt Hump',
     afterLabel: 'AFTER: Retroreflective Painted IRC:99 Markings',
-    verificationPassText: 'Retro-reflectivity > 300 mcd/lux/m² & visible warning studs.',
+    verificationPassText: 'Retro-reflectivity > 300 mcd/lux/m² & visible warning studs confirmed.',
   },
   ZEBRA_CROSSING: {
     id: 'ZEBRA_CROSSING',
-    name: 'Zebra Crossing Pedestrian Encroachment',
-    code: 'MVA:177',
-    badge: 'Zebra Blockage',
+    name: 'School Crossing Pedestrian Risk',
+    code: 'IRC:35',
+    badge: 'School Crossing',
     color: '#a855f7',
     confidence: 98.9,
     imuShock: 0.98,
-    depthStr: 'Pedestrian Path Blocked',
-    volumeStr: 'Automated ANPR e-Challan Issuance',
-    repairMaterial: 'Statutory MVA Sec 177 Penalty (₹1,500)',
-    costInr: 1500,
+    depthStr: 'Pedestrian Walkway Blockage',
+    volumeStr: 'Automated ANPR e-Challan & Walkway Clearing',
+    repairMaterial: 'Statutory MVA Sec 134/184 Penalty (₹2,000)',
+    costInr: 2000,
     agency: 'Greater Chennai Traffic Police (GCTP Enforcement)',
     docketCode: 'ECH-2026-CHE-911',
-    beforeImg: 'https://images.unsplash.com/photo-1577495508048-b635879837f1?w=1200&auto=format&fit=crop&q=80',
+    beforeImg: 'https://images.unsplash.com/photo-1570125909232-eb263c188f7e?w=1200&auto=format&fit=crop&q=80',
     afterImg: 'https://images.unsplash.com/photo-1578985545062-69928b1d9587?w=1200&auto=format&fit=crop&q=80',
-    beforeLabel: 'BEFORE: Commercial Auto blocking crossing',
-    afterLabel: 'AFTER: e-Challan Dispatched & Lane Cleared',
-    verificationPassText: 'Zebra walkway 100% unobstructed. Compliance achieved.',
+    beforeLabel: 'BEFORE: Vehicle failing to yield right-of-way',
+    afterLabel: 'AFTER: e-Challan Dispatched & Pedestrian Corridor Safe',
+    verificationPassText: 'School crossing 100% unobstructed. Zone-overlap safety verified.',
   }
 };
 
@@ -224,7 +227,6 @@ export const FullLifecycleSimulationModal: React.FC<FullLifecycleSimulationModal
       hazardZ = hazardZ + 0.008;
       if (hazardZ > 1.0) {
         hazardZ = 0.05;
-        // Shock pulse based on defect type
         const peakShock = activeDefect.imuShock;
         setShockWaveform([0.98, 1.02, peakShock, peakShock * 0.85, 1.15, 0.96, 0.98]);
         setTimeout(() => setShockWaveform([0.98, 0.99, 0.97, 0.98, 1.01, 0.98, 0.99]), 1200);
@@ -234,7 +236,7 @@ export const FullLifecycleSimulationModal: React.FC<FullLifecycleSimulationModal
       const h = canvas.height;
       const horizonY = h * 0.42;
 
-      // Sky
+      // Sky gradient
       const skyGrad = ctx.createLinearGradient(0, 0, 0, horizonY);
       skyGrad.addColorStop(0, '#0a0f1d');
       skyGrad.addColorStop(1, '#1e293b');
@@ -242,11 +244,11 @@ export const FullLifecycleSimulationModal: React.FC<FullLifecycleSimulationModal
       ctx.fillRect(0, 0, w, horizonY);
 
       // Roadway
-      const roadTopW = w * 0.2;
-      const roadBotW = w * 0.95;
+      const roadTopW = w * 0.22;
+      const roadBotW = w * 0.96;
       const vanX = w * 0.5;
 
-      ctx.fillStyle = '#1e293b';
+      ctx.fillStyle = '#1b2234';
       ctx.beginPath();
       ctx.moveTo(vanX - roadTopW / 2, horizonY);
       ctx.lineTo(vanX + roadTopW / 2, horizonY);
@@ -261,34 +263,32 @@ export const FullLifecycleSimulationModal: React.FC<FullLifecycleSimulationModal
         const p = (i / 8 + offset) % 1;
         const z = Math.pow(p, 2.2);
         const y = horizonY + (h - horizonY) * z;
-        const dashH = Math.max(3, 20 * z);
-        const curW = (roadTopW + (roadBotW - roadTopW) * z) * 0.02;
+        const dashH = Math.max(3, 22 * z);
+        const curW = (roadTopW + (roadBotW - roadTopW) * z) * 0.022;
         ctx.fillRect(vanX - curW / 2, y, curW, dashH);
       }
 
-      // Render Approaching Defect based on selected type
+      // Render Approaching Defect
       if (hazardZ > 0.05 && hazardZ <= 1.0) {
         const z = Math.pow(hazardZ, 2.2);
         const y = horizonY + (h - horizonY) * z;
         const curW = roadTopW + (roadBotW - roadTopW) * z;
-        const x = vanX + curW * (selectedDefectType === 'ZEBRA_CROSSING' ? 0.2 : 0.08);
-        const sizeW = Math.max(14, curW * (selectedDefectType === 'UNMARKED_SPEED_BREAKER' ? 0.4 : (selectedDefectType === 'WATERLOGGING' ? 0.35 : 0.2)));
+        const x = vanX + curW * (selectedDefectType === 'ZEBRA_CROSSING' ? 0.18 : 0.08);
+        const sizeW = Math.max(16, curW * (selectedDefectType === 'UNMARKED_SPEED_BREAKER' ? 0.42 : (selectedDefectType === 'WATERLOGGING' ? 0.38 : 0.22)));
         const sizeH = sizeW * (selectedDefectType === 'UNMARKED_SPEED_BREAKER' ? 0.35 : 0.55);
 
         ctx.save();
         if (selectedDefectType === 'D40') {
-          // Pothole
           ctx.fillStyle = '#05070d';
           ctx.beginPath();
           ctx.ellipse(x, y, sizeW / 2, sizeH / 2, 0, 0, Math.PI * 2);
           ctx.fill();
           ctx.strokeStyle = '#ef4444';
-          ctx.lineWidth = Math.max(1, 2.5 * z);
+          ctx.lineWidth = Math.max(1.5, 3 * z);
           ctx.stroke();
         } else if (selectedDefectType === 'D20') {
-          // Alligator Crack
           ctx.strokeStyle = '#f59e0b';
-          ctx.lineWidth = Math.max(1.5, 2.5 * z);
+          ctx.lineWidth = Math.max(1.5, 3 * z);
           ctx.beginPath();
           ctx.moveTo(x - sizeW / 2, y);
           ctx.lineTo(x - sizeW * 0.2, y - sizeH * 0.3);
@@ -296,29 +296,26 @@ export const FullLifecycleSimulationModal: React.FC<FullLifecycleSimulationModal
           ctx.lineTo(x + sizeW / 2, y);
           ctx.stroke();
         } else if (selectedDefectType === 'OPEN_MANHOLE') {
-          // Open Manhole
           ctx.fillStyle = '#000000';
           ctx.beginPath();
-          ctx.arc(x, y, sizeW * 0.4, 0, Math.PI * 2);
+          ctx.arc(x, y, sizeW * 0.42, 0, Math.PI * 2);
           ctx.fill();
           ctx.strokeStyle = '#dc2626';
           ctx.lineWidth = Math.max(2, 4 * z);
           ctx.stroke();
         } else if (selectedDefectType === 'WATERLOGGING') {
-          // Waterlogging Basin
           const waterGrad = ctx.createLinearGradient(x - sizeW / 2, y, x + sizeW / 2, y);
           waterGrad.addColorStop(0, 'rgba(6, 182, 212, 0.4)');
-          waterGrad.addColorStop(0.5, 'rgba(14, 165, 233, 0.7)');
+          waterGrad.addColorStop(0.5, 'rgba(14, 165, 233, 0.75)');
           waterGrad.addColorStop(1, 'rgba(6, 182, 212, 0.4)');
           ctx.fillStyle = waterGrad;
           ctx.beginPath();
           ctx.ellipse(x, y, sizeW * 0.6, sizeH * 0.4, 0, 0, Math.PI * 2);
           ctx.fill();
           ctx.strokeStyle = '#06b6d4';
-          ctx.lineWidth = Math.max(1, 2 * z);
+          ctx.lineWidth = Math.max(1, 2.5 * z);
           ctx.stroke();
         } else if (selectedDefectType === 'UNMARKED_SPEED_BREAKER') {
-          // Speed Breaker
           ctx.fillStyle = '#334155';
           ctx.beginPath();
           ctx.ellipse(x, y, sizeW * 0.8, sizeH * 0.4, 0, 0, Math.PI * 2);
@@ -327,7 +324,6 @@ export const FullLifecycleSimulationModal: React.FC<FullLifecycleSimulationModal
           ctx.lineWidth = Math.max(1.5, 3 * z);
           ctx.stroke();
         } else if (selectedDefectType === 'ZEBRA_CROSSING') {
-          // Zebra Crossing with Vehicle Encroachment
           ctx.fillStyle = '#ffffff';
           for (let s = -2; s <= 2; s++) {
             ctx.fillRect(x + s * 14 * z - 4, y - 10 * z, 8 * z, 20 * z);
@@ -351,10 +347,10 @@ export const FullLifecycleSimulationModal: React.FC<FullLifecycleSimulationModal
 
           // Label Tag
           ctx.fillStyle = activeDefect.color;
-          ctx.fillRect(boxX, boxY - 18, 160, 18);
+          ctx.fillRect(boxX, boxY - 18, 170, 18);
           ctx.fillStyle = '#ffffff';
           ctx.font = 'bold 10px monospace';
-          ctx.fillText(`${activeDefect.name.toUpperCase().slice(0, 16)} [${activeDefect.confidence}%]`, boxX + 4, boxY - 5);
+          ctx.fillText(`${activeDefect.name.toUpperCase().slice(0, 18)} [${activeDefect.confidence}%]`, boxX + 4, boxY - 5);
         }
       }
 
@@ -453,25 +449,25 @@ export const FullLifecycleSimulationModal: React.FC<FullLifecycleSimulationModal
         if (e.target === e.currentTarget) onClose();
       }}
     >
-      <div className="bg-[#0B101E] border border-slate-700/80 rounded-3xl w-full max-w-5xl shadow-2xl overflow-hidden flex flex-col max-h-[95vh] text-slate-100 animate-scaleIn">
+      <div className="bg-[#0b1220] border border-slate-700/80 rounded-3xl w-full max-w-5xl shadow-2xl overflow-hidden flex flex-col max-h-[94vh] text-slate-100 animate-scaleIn">
         
         {/* ── Top Header ── */}
-        <div className="px-6 py-3.5 bg-slate-900 border-b border-slate-800 flex items-center justify-between">
+        <div className="px-5 sm:px-6 py-3.5 bg-slate-900/90 border-b border-slate-800 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-lg bg-blue-700 text-white flex items-center justify-center shrink-0">
+            <div className="w-9 h-9 rounded-xl bg-blue-600 text-white flex items-center justify-center shrink-0 shadow-sm shadow-blue-500/20">
               <Sparkles className="w-5 h-5 text-amber-300" />
             </div>
             <div>
               <div className="flex items-center gap-2">
                 <h2 className="font-extrabold text-base sm:text-lg text-white tracking-tight">
-                  Multi-Defect Civic Infrastructure Simulation
+                  Civic Road Intelligence &amp; Lifecycle Simulation
                 </h2>
                 <span className="px-2 py-0.5 rounded-full bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 font-mono text-[10px] font-bold">
-                  All Hazards &amp; Incidents
+                  Autonomous Fleet Triage
                 </span>
               </div>
               <p className="text-xs text-slate-400 mt-0.5">
-                Simulate Potholes, Cracks, Open Manholes, Waterlogging, Speed Breakers, and Traffic Encroachments.
+                End-to-End Simulation: Edge Detection ➔ 15m DBSCAN Merge ➔ CAD Docket ➔ Repair Infill ➔ Autonomous Re-Pass Closure
               </p>
             </div>
           </div>
@@ -486,9 +482,9 @@ export const FullLifecycleSimulationModal: React.FC<FullLifecycleSimulationModal
         </div>
 
         {/* ── Defect Type Selector Strip ── */}
-        <div className="px-6 py-2.5 bg-slate-900/90 border-b border-slate-800 flex items-center gap-2 overflow-x-auto custom-scrollbar">
+        <div className="px-5 sm:px-6 py-2.5 bg-slate-900/60 border-b border-slate-800 flex items-center gap-2 overflow-x-auto custom-scrollbar">
           <span className="text-[11px] font-mono font-bold text-slate-400 uppercase tracking-wider shrink-0 mr-1">
-            Simulate Issue:
+            Test Scenario:
           </span>
           {(Object.keys(DEFECT_CONFIGS) as DemoDefectType[]).map((typeKey) => {
             const cfg = DEFECT_CONFIGS[typeKey];
@@ -513,11 +509,11 @@ export const FullLifecycleSimulationModal: React.FC<FullLifecycleSimulationModal
         </div>
 
         {/* ── 5-Step Pipeline Progress Bar ── */}
-        <div className="px-6 py-2.5 bg-slate-950/70 border-b border-slate-800/80">
+        <div className="px-5 sm:px-6 py-2.5 bg-slate-950/70 border-b border-slate-800/80">
           <div className="grid grid-cols-5 gap-2">
             {[
               { idx: 1, title: '1. Edge Capture', icon: Bus },
-              { idx: 2, title: '2. Model Check', icon: Layers },
+              { idx: 2, title: '2. Spatial Consensus', icon: Layers },
               { idx: 3, title: '3. CAD Docket', icon: ClipboardList },
               { idx: 4, title: '4. Repair Infill', icon: Wrench },
               { idx: 5, title: '5. Re-Pass Closure', icon: ShieldCheck },
@@ -558,7 +554,7 @@ export const FullLifecycleSimulationModal: React.FC<FullLifecycleSimulationModal
         </div>
 
         {/* ── Active Stage Visual Workspace ── */}
-        <div className="flex-1 overflow-y-auto p-5 sm:p-6 space-y-4 custom-scrollbar">
+        <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4 custom-scrollbar">
           
           {/* Main Visual Display Screen */}
           <div className="relative aspect-video max-h-[350px] w-full rounded-2xl bg-slate-950 border border-slate-800 overflow-hidden shadow-2xl flex items-center justify-center">
@@ -578,7 +574,7 @@ export const FullLifecycleSimulationModal: React.FC<FullLifecycleSimulationModal
                 {/* Live IMU Shock Accelerometer Waveform */}
                 <div className="absolute bottom-3 right-3 bg-slate-900/90 backdrop-blur-md p-2.5 rounded-xl border border-slate-700 font-mono text-xs shadow-lg flex items-center gap-3">
                   <div>
-                    <div className="text-[10px] text-slate-400 uppercase font-bold">Sensor Shock</div>
+                    <div className="text-[10px] text-slate-400 uppercase font-bold">IMU Jerk Sensor</div>
                     <div className="text-rose-400 font-extrabold text-sm">+{activeDefect.imuShock}g Spike</div>
                   </div>
                   <div className="flex items-end gap-1 h-8 w-24 px-1 bg-slate-950/80 rounded border border-slate-800">
@@ -813,7 +809,7 @@ export const FullLifecycleSimulationModal: React.FC<FullLifecycleSimulationModal
         </div>
 
         {/* ── Bottom Playback Controls ── */}
-        <div className="px-6 py-3.5 bg-slate-950 border-t border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div className="px-5 sm:px-6 py-3.5 bg-slate-950 border-t border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div className="flex items-center gap-2">
             <button
               onClick={() => setIsPlaying(!isPlaying)}
