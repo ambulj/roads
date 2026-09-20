@@ -50,7 +50,7 @@ export const LiveCameraFeed: React.FC<LiveCameraFeedProps> = ({
   const [simPace, setSimPace] = useState<number>(1.0);
   const [isPaused, setIsPaused] = useState<boolean>(false);
   const [feedMode, setFeedMode] = useState<'rtsp' | 'canvas' | 'webcam'>('rtsp');
-  const [frameTimestamp, setFrameTimestamp] = useState<number>(Date.now());
+  const [streamVersion, setStreamVersion] = useState<number>(Date.now());
   const [rtspError, setRtspError] = useState<boolean>(false);
   const [selectedChannel, setSelectedChannel] = useState<number>(1);
   const [isQuadView, setIsQuadView] = useState<boolean>(false);
@@ -76,15 +76,6 @@ export const LiveCameraFeed: React.FC<LiveCameraFeedProps> = ({
     }).catch(() => {});
   }, []);
 
-  // Poll live video frame snapshots
-  useEffect(() => {
-    if (isPaused || feedMode !== 'rtsp') return;
-    const interval = setInterval(() => {
-      setFrameTimestamp(Date.now());
-    }, 200);
-    return () => clearInterval(interval);
-  }, [isPaused, feedMode]);
-
   // Check real CV detections and uploaded media status
   useEffect(() => {
     if (feedMode !== 'rtsp') return;
@@ -105,7 +96,7 @@ export const LiveCameraFeed: React.FC<LiveCameraFeedProps> = ({
       } catch {}
     };
     checkDetections();
-    const interval = setInterval(checkDetections, 1200);
+    const interval = setInterval(checkDetections, 1000);
     return () => {
       isMounted = false;
       clearInterval(interval);
@@ -591,7 +582,7 @@ export const LiveCameraFeed: React.FC<LiveCameraFeedProps> = ({
                   await api.resetStreamSource(bus.id, selectedChannel);
                   setUploadedMediaInfo({ active: false });
                   setActiveDetections([]);
-                  setFrameTimestamp(Date.now());
+                  setStreamVersion(Date.now());
                 }}
                 title="Reset to default stream"
                 className="hover:text-white ml-0.5 cursor-pointer"
@@ -866,7 +857,7 @@ export const LiveCameraFeed: React.FC<LiveCameraFeedProps> = ({
                 className="relative group cursor-pointer bg-slate-900 rounded-xl overflow-hidden border border-slate-800 hover:border-cyan-400 transition-all flex flex-col"
               >
                 <img
-                  src={`/api/streams/snapshot/${bus.id}?channel=${ch.id}&t=${frameTimestamp}`}
+                  src={isPaused ? `/api/streams/snapshot/${bus.id}?channel=${ch.id}&t=${streamVersion}` : `/api/streams/live/${bus.id}?channel=${ch.id}&v=${streamVersion}`}
                   alt={`${bus.id} CH${ch.id}`}
                   className="w-full h-full object-cover"
                 />
@@ -887,7 +878,7 @@ export const LiveCameraFeed: React.FC<LiveCameraFeedProps> = ({
         ) : feedMode === 'rtsp' ? (
           <div className="relative w-full h-full">
             <img
-              src={`/api/streams/snapshot/${bus.id}?channel=${selectedChannel}&t=${frameTimestamp}`}
+              src={isPaused ? `/api/streams/snapshot/${bus.id}?channel=${selectedChannel}&t=${streamVersion}` : `/api/streams/live/${bus.id}?channel=${selectedChannel}&v=${streamVersion}`}
               onError={() => setRtspError(true)}
               onLoad={() => setRtspError(false)}
               alt={`Live Stream ${bus.id} CH${selectedChannel}`}
@@ -1033,7 +1024,7 @@ export const LiveCameraFeed: React.FC<LiveCameraFeedProps> = ({
             setIsQuadView(false);
             setRtspError(false);
           }
-          setFrameTimestamp(Date.now());
+          setStreamVersion(Date.now());
         }}
       />
     </div>

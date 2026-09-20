@@ -122,9 +122,23 @@ class RealRTSPWorker:
                     cv2.FONT_HERSHEY_SIMPLEX, 0.5, (140, 150, 165), 1, cv2.LINE_AA)
         return frame
 
+    def _async_infer_worker(self, frame: np.ndarray):
+        """Runs multi-model YOLO and DPDP Act 2023 privacy inference in background on CUDA."""
+        try:
+            res = yolo_engine.detect_road_hazards(frame, channel=self.channel, burn_overlay=True)
+            with self.lock:
+                self.latest_detections = res.get("detections", [])
+                self._last_rendered_overlay = res.get("annotated_frame", frame)
+        except Exception as e:
+            pass
+        finally:
+            self._infer_busy = False
+
     def _capture_loop(self):
         source = int(self.rtsp_url) if str(self.rtsp_url).isdigit() else self.rtsp_url
         cap = None
+        self._infer_busy = False
+        self._last_rendered_overlay = None
         
         # 1. Check if source is a local image file
         is_image = (
@@ -211,19 +225,20 @@ class RealRTSPWorker:
                     
                     h, w = frame.shape[:2]
                     
-                    # 1. Keyframe-accelerated Multi-Model AI Perception & DPDP Act 2023 Privacy
+                    # 1. Decoupled Asynchronous GPU Neural Perception & DPDP Act 2023 Privacy
                     if self.overlay_ai:
-                        # Run neural inference every 4th frame (or on first frame) and hold overlay smoothly
-                        if self.frame_count % 4 == 1 or not hasattr(self, '_last_rendered_overlay'):
-                            hazard_res = yolo_engine.detect_road_hazards(frame, channel=self.channel, burn_overlay=True)
-                            self.latest_detections = hazard_res.get("detections", [])
-                            self._last_rendered_overlay = hazard_res.get("annotated_frame", frame)
-                            display_frame = self._last_rendered_overlay
-                        else:
-                            display_frame = self._last_rendered_overlay if hasattr(self, '_last_rendered_overlay') else frame
+                        # Non-blocking async dispatch of GPU inference every 3rd frame
+                        if not self._infer_busy and (self.frame_count % 3 == 0 or self._last_rendered_overlay is None):
+                            self._infer_busy = True
+                            threading.Thread(
+                                target=self._async_infer_worker,
+                                args=(frame.copy(),),
+                                daemon=True
+                            ).start()
+
+                        display_frame = self._last_rendered_overlay if self._last_rendered_overlay is not None else frame
                     else:
-                        sanitized_frame, _ = privacy_engine.anonymize_frame(frame, burn_privacy_badge=False)
-                        display_frame = sanitized_frame
+                        display_frame = frame
                     
                     # Downscale for web streaming if ultra-high resolution (e.g. 4K) to eliminate browser network lag
                     if w > 1280:

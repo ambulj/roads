@@ -285,7 +285,7 @@ export const StreamModelConfigModal: React.FC<StreamModelConfigModalProps> = ({
                 <div className="relative aspect-video w-full bg-slate-950 flex items-center justify-center overflow-hidden">
                   <img
                     key={selectedLiveBusId}
-                    src={`/api/streams/snapshot/${selectedLiveBusId}?t=${frameTimestamp}`}
+                    src={`/api/streams/live/${selectedLiveBusId}`}
                     alt="Live Bus RTSP Feed"
                     className="w-full h-full object-contain"
                   />
