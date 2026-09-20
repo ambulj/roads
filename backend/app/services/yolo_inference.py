@@ -35,12 +35,12 @@ class YoloInferenceEngine:
                 self.device = "cuda"
                 self.fp16 = True
                 self.device_name = torch.cuda.get_device_name(0)
-                print(f"[YOLO ENGINE] 🚀 Hardware Accelerator Detected: {self.device_name} (CUDA). FP16 Acceleration Active.")
+                print(f"[YOLO ENGINE] [GPU] Hardware Accelerator Detected: {self.device_name} (CUDA). FP16 Acceleration Active.")
             elif hasattr(torch.backends, "mps") and torch.backends.mps.is_available():
                 self.device = "mps"
                 self.fp16 = False
                 self.device_name = "Apple Silicon (MPS)"
-                print(f"[YOLO ENGINE] 🚀 Hardware Accelerator Detected: {self.device_name}")
+                print(f"[YOLO ENGINE] [ACCEL] Hardware Accelerator Detected: {self.device_name}")
             else:
                 self.device = "cpu"
                 self.fp16 = False

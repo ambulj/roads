@@ -211,29 +211,41 @@ class RealRTSPWorker:
                     
                     h, w = frame.shape[:2]
                     
-                    # 1. Real-time Face Anonymization on frame
-                    sanitized_frame, _ = privacy_engine.anonymize_frame(frame, burn_privacy_badge=False)
-
-                    # 2. Keyframe-accelerated Multi-Model AI Perception (Run every 3rd frame for silky 30 FPS playback)
+                    # 1. Keyframe-accelerated Multi-Model AI Perception & DPDP Act 2023 Privacy
                     if self.overlay_ai:
-                        if self.frame_count % 3 == 0 or not hasattr(self, '_last_rendered_overlay'):
-                            hazard_res = yolo_engine.detect_road_hazards(sanitized_frame, channel=self.channel, burn_overlay=True)
+                        # Run neural inference every 4th frame (or on first frame) and hold overlay smoothly
+                        if self.frame_count % 4 == 1 or not hasattr(self, '_last_rendered_overlay'):
+                            hazard_res = yolo_engine.detect_road_hazards(frame, channel=self.channel, burn_overlay=True)
                             self.latest_detections = hazard_res.get("detections", [])
-                            self._last_rendered_overlay = hazard_res.get("annotated_frame", sanitized_frame)
+                            self._last_rendered_overlay = hazard_res.get("annotated_frame", frame)
                             display_frame = self._last_rendered_overlay
                         else:
-                            display_frame = self._last_rendered_overlay if hasattr(self, '_last_rendered_overlay') else sanitized_frame
+                            display_frame = self._last_rendered_overlay if hasattr(self, '_last_rendered_overlay') else frame
                     else:
+                        sanitized_frame, _ = privacy_engine.anonymize_frame(frame, burn_privacy_badge=False)
                         display_frame = sanitized_frame
                     
-                    _, buffer = cv2.imencode('.jpg', display_frame, [cv2.IMWRITE_JPEG_QUALITY, 80])
+                    # Downscale for web streaming if ultra-high resolution (e.g. 4K) to eliminate browser network lag
+                    if w > 1280:
+                        stream_w = 1280
+                        stream_h = int(h * (1280.0 / float(w)))
+                        stream_frame = cv2.resize(display_frame, (stream_w, stream_h), interpolation=cv2.INTER_LINEAR)
+                    else:
+                        stream_frame = display_frame
+
+                    _, buffer = cv2.imencode('.jpg', stream_frame, [cv2.IMWRITE_JPEG_QUALITY, 75])
                     jpeg_bytes = buffer.tobytes()
                     
                     with self.lock:
                         self.latest_frame = display_frame
                         self.latest_jpeg = jpeg_bytes
                         
-                    time.sleep(max(0.01, 1.0 / self.sampling_fps))
+                    # Precise pacing: sleep only the remaining budget to maintain target FPS without compounding lag
+                    target_delay = 1.0 / max(1.0, float(self.sampling_fps))
+                    spent = time.time() - now
+                    remaining = target_delay - spent
+                    if remaining > 0.001:
+                        time.sleep(remaining)
                 else:
                     self.is_connected = False
                     if cap is not None:

@@ -7,14 +7,24 @@ import os
 
 def test_live_api():
     print("[INTEGRATION] Launching backend process...")
+    backend_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     p = subprocess.Popen(
         [sys.executable, "run_backend.py"],
-        cwd=os.path.dirname(os.path.abspath(__file__)),
+        cwd=backend_dir,
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
         text=True
     )
-    time.sleep(3)
+    
+    # Wait for server to bind port
+    for _ in range(15):
+        time.sleep(0.5)
+        try:
+            res = urllib.request.urlopen("http://127.0.0.1:8000/health", timeout=1)
+            if res.getcode() == 200:
+                break
+        except Exception:
+            pass
 
     try:
         # 1. Health
