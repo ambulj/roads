@@ -74,3 +74,4 @@ bin/
 scratch/
 backend/uploads/*
 !backend/uploads/.gitkeep
+backend/data/test_cache/

@@ -9,6 +9,12 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
     gcc \
     libpq-dev \
+    tesseract-ocr \
+    tesseract-ocr-eng \
+    libtesseract-dev \
+    ffmpeg \
+    libsm6 \
+    libxext6 \
     && rm -rf /var/lib/apt/lists/*
 
 COPY requirements.txt .

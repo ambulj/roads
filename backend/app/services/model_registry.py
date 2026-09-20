@@ -10,55 +10,77 @@ WEIGHTS_DIR.mkdir(parents=True, exist_ok=True)
 class ModelRegistry:
     def __init__(self):
         self._model_configs: Dict[str, Dict[str, Any]] = {
+            "pothole_yolo": {
+                "name": "Neural Pothole Cavity Detector (Roboflow YOLOv8)",
+                "path": str(WEIGHTS_DIR / "potholedetection.pt"),
+                "classes": ["Pothole", "Cavity"],
+                "framework": "Ultralytics PyTorch (.pt)",
+                "device": "CUDA / CPU Fallback",
+                "has_working_code": True,
+                "fallback_pipeline": "Morphological Dark Cavity & Crack Contour Analyzer",
+                "regulatory_spec": "IRC:SP:20 & MoRTH Section 500",
+                "default_description": "Active fine-tuned YOLO model detecting asphalt cavities with depth & volume estimation."
+            },
+            "indian_roads_yolo": {
+                "name": "Indian Road Hazards & Assets Detector (YOLOv8)",
+                "path": str(WEIGHTS_DIR / "indian_roads_detection.pt"),
+                "classes": ["Bus", "Car", "Bike", "Truck", "Manhole", "Divider", "Zebra"],
+                "framework": "Ultralytics PyTorch (.pt)",
+                "device": "CUDA / CPU Fallback",
+                "has_working_code": True,
+                "fallback_pipeline": "Edge Telematics & Spatial Hazard Correlation",
+                "regulatory_spec": "IRC:35 & MoRTH Urban Road Guidelines",
+                "default_description": "Active multi-class detector for Indian traffic corridors and infrastructure assets."
+            },
             "zebra_crossing_detector": {
                 "name": "Zebra Crossing & Pedestrian Safety Detector (IRC:35)",
-                "path": str(WEIGHTS_DIR / "zebra_crossing.pt"),
-                "classes": ["Zebra_Crossing", "Faded_Crossing", "Pedestrian_Marking"],
+                "path": str(WEIGHTS_DIR / "zebra.pt"),
+                "classes": ["ZebraCrossing", "Pedestrian_Marking"],
                 "framework": "Ultralytics YOLO + Morphological Stripe CV",
                 "device": "CUDA / CPU Fallback",
                 "has_working_code": True,
                 "fallback_pipeline": "Morphological High-Contrast Horizontal Bandpass Filter",
                 "regulatory_spec": "IRC:35:2015 Code of Practice for Road Markings",
-                "default_description": "Active dual-engine perception: uses custom trained weights if present, or robust IRC:35 computer vision analyzer."
+                "default_description": "Active dual-engine perception: fine-tuned YOLO zebra model + robust IRC:35 stripe frequency analyzer."
             },
-            "pothole_yolo": {
-                "name": "YOLOv8x-RoadDefect (Potholes & Cracks)",
-                "path": str(WEIGHTS_DIR / "yolov8x_road_defect.pt"),
-                "classes": ["D40_Pothole", "D20_AlligatorCrack", "D10_TransverseCrack", "D00_LineCrack", "OpenManhole"],
+            "vehicle_detection": {
+                "name": "Traffic Vehicle & Road User Perception (YOLOv8)",
+                "path": str(WEIGHTS_DIR / "vehicle_detection.pt"),
+                "classes": ["Car", "Bus", "Bike", "Truck"],
                 "framework": "Ultralytics PyTorch (.pt)",
-                "device": "CUDA:0 / CPU Fallback",
-                "has_working_code": False,
-                "fallback_pipeline": "Edge Telematics Vertical Jerk (gz) + Spatial Heuristic",
-                "regulatory_spec": "IRC:SP:20 & MoRTH Section 500",
-                "default_description": "Awaiting custom trained .pt file drop in weights/ directory. Edge IMU telemetry acts as pipeline fallback."
+                "device": "CUDA / CPU Fallback",
+                "has_working_code": True,
+                "fallback_pipeline": "Optical Flow & Contour Motion Tracker",
+                "regulatory_spec": "AIS-140 Intelligent Transportation Systems Specifications",
+                "default_description": "Real-time road user localization for density analysis and collision risk computation."
             },
             "anpr_yolo": {
-                "name": "YOLOv8-ANPR + LPRNet (Indian High Security Plates)",
-                "path": str(WEIGHTS_DIR / "anpr_india.pt"),
-                "classes": ["Plate_HSRP", "TwoWheeler", "AutoRickshaw", "Car", "Bus", "Truck"],
-                "framework": "Ultralytics + STN-LPRNet (.pt)",
-                "device": "CUDA:0 / CPU Fallback",
-                "has_working_code": False,
-                "fallback_pipeline": "Rule-Based MoRTH Plate Regex Synthesizer",
+                "name": "YOLOv8-ANPR + Tesseract OCR (Indian HSRP Plates)",
+                "path": str(WEIGHTS_DIR / "anpr.pt"),
+                "classes": ["LicensePlate", "HSRP_Plate"],
+                "framework": "Ultralytics + Tesseract OCR (.pt)",
+                "device": "CUDA / CPU Fallback",
+                "has_working_code": True,
+                "fallback_pipeline": "Morphological Sobel Vertical Band Edge Filter + MoRTH Regex",
                 "regulatory_spec": "Central Motor Vehicles Rules (CMVR) Rule 50/51",
-                "default_description": "Awaiting Indian HSRP ANPR weights in weights/ folder. Telemetry parser formats plates according to CMVR standards."
+                "default_description": "Active neural plate detection combined with OCR and MoRTH state/RTO syntax parsing."
             },
             "depth_3d": {
-                "name": "Depth-Anything-V2 (Metric Stereo & 3D Cavity)",
-                "path": str(WEIGHTS_DIR / "depth_anything_v2_small.pt"),
-                "classes": ["Metric_Disparity_Map", "3D_Mesh_PointCloud"],
-                "framework": "PyTorch Vision Transformer (.pt)",
-                "device": "CUDA:0 / CPU Fallback",
-                "has_working_code": False,
+                "name": "Monocular 3D Volumetric Depth Geometry",
+                "path": str(WEIGHTS_DIR / "depth_pinhole_geometry"),
+                "classes": ["Metric_Disparity_Map", "3D_Cavity_Volume"],
+                "framework": "Calibrated Trigonometric Pinhole Geometry (f=3.67mm)",
+                "device": "CPU (Real-Time)",
+                "has_working_code": True,
                 "fallback_pipeline": "Calibrated Trigonometric Pinhole Geometry (f=3.67mm)",
                 "regulatory_spec": "MoRTH Section 300 Asphalt Volumetric Standards",
-                "default_description": "Disparity model weights pending. Volume and asphalt mass currently computed via calibrated focal trigonometry."
+                "default_description": "Real-time depth computation via calibrated sensor focal geometry and bounding aspect ratio."
             },
             "acoustic_imu": {
-                "name": "ResNet-1D-Acoustic (Axle Shock & Submerged Cavity)",
-                "path": str(WEIGHTS_DIR / "resnet_acoustic_imu.pt"),
+                "name": "Edge IMU & DSP Telematics Jerk Engine",
+                "path": str(WEIGHTS_DIR / "dsp_telematics_filter"),
                 "classes": ["Pothole_Drop", "Speed_Breaker", "Submerged_Trap", "Smooth_Asphalt"],
-                "framework": "1D-CNN PyTorch (.pt)",
+                "framework": "Digital Signal Processing (DSP) 3-Axis Bandpass Filter (0.5–20Hz)",
                 "device": "Edge MCU / CPU",
                 "has_working_code": True,
                 "fallback_pipeline": "Digital Signal Processing (DSP) 3-Axis Bandpass Filter (0.5–20Hz)",
@@ -72,41 +94,25 @@ class ModelRegistry:
         """Dynamically inspects filesystem and returns honest, verifiable status of all models."""
         inspected_models = {}
         
-        # Check if zebra_crossing.pt or best.pt exists
-        candidate_zebra = [
-            WEIGHTS_DIR / "zebra_crossing.pt",
-            WEIGHTS_DIR / "best.pt",
-            WEIGHTS_DIR / "zebra.pt"
-        ]
-        active_zebra_file = next((f for f in candidate_zebra if f.exists()), None)
-        
         for key, conf in self._model_configs.items():
             path = Path(conf["path"])
             exists = path.exists()
             file_size_mb = round(path.stat().st_size / (1024 * 1024), 2) if exists else 0.0
             
-            if key == "zebra_crossing_detector":
-                if active_zebra_file:
-                    status = "ready_custom_weights"
-                    msg = f"Custom YOLO weights active: {active_zebra_file.name} ({round(active_zebra_file.stat().st_size / (1024 * 1024), 2)} MB)"
-                else:
-                    status = "ready_cv_fallback"
-                    msg = "Fully operational IRC:35 Morphological stripe frequency computer vision analyzer (yolo_inference.py)."
+            if exists and path.suffix == ".pt":
+                status = "ready_trained_weights"
+                msg = f"Custom trained weights active: {path.name} ({file_size_mb} MB)."
+            elif conf["has_working_code"]:
+                status = "ready_cv_fallback"
+                msg = f"Fully operational pipeline: {conf['fallback_pipeline']}."
             else:
-                if exists:
-                    status = "ready_trained_weights"
-                    msg = f"Trained weights verified ({file_size_mb} MB)."
-                elif conf["has_working_code"]:
-                    status = "active_dsp_pipeline"
-                    msg = f"Weights absent from weights/. Working pipeline: {conf['fallback_pipeline']}."
-                else:
-                    status = "awaiting_weights"
-                    msg = f"Weights absent from weights/{path.name}. Active fallback: {conf['fallback_pipeline']}."
+                status = "awaiting_drop"
+                msg = conf["default_description"]
                     
             inspected_models[key] = {
                 "name": conf["name"],
                 "path": str(path),
-                "weights_exist_on_disk": exists or (key == "zebra_crossing_detector" and active_zebra_file is not None),
+                "weights_exist_on_disk": exists,
                 "status": status,
                 "file_size_mb": file_size_mb,
                 "classes": conf["classes"],

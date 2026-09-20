@@ -581,13 +581,19 @@ export const StreamModelConfigModal: React.FC<StreamModelConfigModalProps> = ({
                       value={modelKey}
                       onChange={(e) => {
                         setModelKey(e.target.value);
-                        if (e.target.value === 'pothole_yolo') setModelPath('backend/app/weights/yolov8x_road_defect.pt');
-                        else if (e.target.value === 'anpr_yolo') setModelPath('backend/app/weights/anpr_india.pt');
+                        if (e.target.value === 'pothole_yolo') setModelPath('backend/app/weights/potholedetection.pt');
+                        else if (e.target.value === 'anpr_yolo') setModelPath('backend/app/weights/anpr.pt');
+                        else if (e.target.value === 'indian_roads_yolo') setModelPath('backend/app/weights/indian_roads_detection.pt');
+                        else if (e.target.value === 'vehicle_detection') setModelPath('backend/app/weights/vehicle_detection.pt');
+                        else if (e.target.value === 'zebra_crossing_detector') setModelPath('backend/app/weights/zebra.pt');
                       }}
                       className="w-full text-xs rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
                     >
-                      <option value="pothole_yolo">YOLOv8x-RoadDefect (Potholes, Cracks, Manholes)</option>
-                      <option value="anpr_yolo">YOLOv8-ANPR + LPRNet (Indian High-Speed Plates)</option>
+                      <option value="pothole_yolo">Neural Pothole Cavity Detector (potholedetection.pt)</option>
+                      <option value="indian_roads_yolo">Indian Road Hazards & Assets (indian_roads_detection.pt)</option>
+                      <option value="vehicle_detection">Traffic Vehicle Perception (vehicle_detection.pt)</option>
+                      <option value="zebra_crossing_detector">Zebra Crossing Detector (zebra.pt)</option>
+                      <option value="anpr_yolo">YOLOv8-ANPR + Tesseract OCR (anpr.pt)</option>
                     </select>
                   </div>
 
