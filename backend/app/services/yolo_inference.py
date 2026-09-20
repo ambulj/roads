@@ -450,17 +450,29 @@ class YoloInferenceEngine:
         annotated = sanitized_base.copy() if burn_overlay else sanitized_base
         raw_detections = []
 
+        # For ultra-high resolution inputs (e.g. 4K / 2K), scale frame for fast neural inference
+        # and re-project detected bounding boxes onto original full-resolution frame
+        infer_img = sanitized_base
+        scale_x, scale_y = 1.0, 1.0
+        if w > 1920 or h > 1080:
+            target_w = 1280
+            target_h = int(h * (1280.0 / w))
+            infer_img = cv2.resize(sanitized_base, (target_w, target_h), interpolation=cv2.INTER_AREA)
+            scale_x = w / float(target_w)
+            scale_y = h / float(target_h)
+
         # 1. Multi-Class Vehicle Perception (Cars, Buses, Trucks)
         if self.vehicle_model is not None:
             try:
-                v_results = self.vehicle_model(sanitized_base, conf=0.35, device=self.device, verbose=False)
+                v_results = self.vehicle_model(infer_img, conf=0.35, device=self.device, verbose=False)
                 for r in v_results:
                     for box in r.boxes:
                         cls_id = int(box.cls.item())
                         cls_name = self.vehicle_model.names.get(cls_id, "Vehicle")
                         conf = float(box.conf.item())
-                        xyxy = box.xyxy[0].cpu().numpy().astype(int)
-                        bx1, by1, bx2, by2 = int(xyxy[0]), int(xyxy[1]), int(xyxy[2]), int(xyxy[3])
+                        xyxy = box.xyxy[0].cpu().numpy()
+                        bx1, by1 = int(xyxy[0] * scale_x), int(xyxy[1] * scale_y)
+                        bx2, by2 = int(xyxy[2] * scale_x), int(xyxy[3] * scale_y)
                         bw, bh = max(1, bx2 - bx1), max(1, by2 - by1)
 
                         # Filter out tiny specks (< 20px) or whole-frame artifacts
@@ -490,14 +502,15 @@ class YoloInferenceEngine:
         # 2. Indian Road Infrastructure Assets (Manholes, Dividers, Barricades, Zebra)
         if self.indian_roads_model is not None:
             try:
-                ind_results = self.indian_roads_model(sanitized_base, conf=0.32, device=self.device, verbose=False)
+                ind_results = self.indian_roads_model(infer_img, conf=0.32, device=self.device, verbose=False)
                 for r in ind_results:
                     for box in r.boxes:
                         cls_id = int(box.cls.item())
                         cls_name = self.indian_roads_model.names.get(cls_id, "Asset")
                         conf = float(box.conf.item())
-                        xyxy = box.xyxy[0].cpu().numpy().astype(int)
-                        bx1, by1, bx2, by2 = int(xyxy[0]), int(xyxy[1]), int(xyxy[2]), int(xyxy[3])
+                        xyxy = box.xyxy[0].cpu().numpy()
+                        bx1, by1 = int(xyxy[0] * scale_x), int(xyxy[1] * scale_y)
+                        bx2, by2 = int(xyxy[2] * scale_x), int(xyxy[3] * scale_y)
                         bw, bh = max(1, bx2 - bx1), max(1, by2 - by1)
 
                         if "manhole" in cls_name.lower():
@@ -534,12 +547,13 @@ class YoloInferenceEngine:
         # 3. Neural Pothole Detection (with strict Road Horizon & Aspect Ratio constraints)
         if self.pothole_model is not None:
             try:
-                p_results = self.pothole_model(sanitized_base, conf=0.30, device=self.device, verbose=False)
+                p_results = self.pothole_model(infer_img, conf=0.30, device=self.device, verbose=False)
                 for r in p_results:
                     for box in r.boxes:
                         conf = float(box.conf.item())
-                        xyxy = box.xyxy[0].cpu().numpy().astype(int)
-                        bx1, by1, bx2, by2 = int(xyxy[0]), int(xyxy[1]), int(xyxy[2]), int(xyxy[3])
+                        xyxy = box.xyxy[0].cpu().numpy()
+                        bx1, by1 = int(xyxy[0] * scale_x), int(xyxy[1] * scale_y)
+                        bx2, by2 = int(xyxy[2] * scale_x), int(xyxy[3] * scale_y)
                         bw, bh = max(1, bx2 - bx1), max(1, by2 - by1)
 
                         # Horizon Filter: Reject boxes in upper horizon / sky / trees (y1 < 28% of h, y2 < 38% of h)
