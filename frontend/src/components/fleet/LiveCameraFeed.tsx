@@ -891,7 +891,7 @@ export const LiveCameraFeed: React.FC<LiveCameraFeedProps> = ({
               onError={() => setRtspError(true)}
               onLoad={() => setRtspError(false)}
               alt={`Live Stream ${bus.id} CH${selectedChannel}`}
-              className="w-full h-full object-cover"
+              className="w-full h-full object-contain bg-black"
             />
             {/* Live AI Perception Overlay Card */}
             {showBoundingBoxes && (

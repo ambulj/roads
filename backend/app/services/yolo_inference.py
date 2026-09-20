@@ -448,243 +448,201 @@ class YoloInferenceEngine:
         h, w = sanitized_base.shape[:2]
         detections = []
         annotated = sanitized_base.copy() if burn_overlay else sanitized_base
+        raw_detections = []
 
-        if channel == 1:
-            # 1. Neural Pothole Detection Model Inference
-            if self.pothole_model is not None:
-                try:
-                    p_results = self.pothole_model(sanitized_base, conf=0.18, device=self.device, half=self.fp16, verbose=False)
-                    for r in p_results:
-                        for box in r.boxes:
-                            conf = float(box.conf.item())
-                            xyxy = box.xyxy[0].cpu().numpy().astype(int)
-                            bx1, by1, bx2, by2 = int(xyxy[0]), int(xyxy[1]), int(xyxy[2]), int(xyxy[3])
-                            bw = max(1, bx2 - bx1)
-                            bh = max(1, by2 - by1)
-                            
-                            est_depth_cm = round(min(14.8, max(4.0, (bh / float(h)) * 28.0 + 3.0)), 1)
-                            area_m2 = round((bw * bh) / float(w * h) * 4.2, 2)
-                            
-                            detections.append({
-                                "type": "POTHOLE_D40",
-                                "defect_code": "D40",
-                                "defect_name": "Pothole Cavity (Neural YOLO)",
-                                "label": f"POTHOLE D40 ({est_depth_cm}cm)",
-                                "severity": "critical" if est_depth_cm > 8.0 else ("high" if est_depth_cm > 5.5 else "medium"),
-                                "confidence": round(conf, 3),
-                                "depth_cm": est_depth_cm,
-                                "area_m2": area_m2,
-                                "volume_liters": round(est_depth_cm * area_m2 * 10, 1),
-                                "repair_cost_inr": int(1800 + est_depth_cm * 240),
-                                "bbox_normalized": {
-                                    "x": round((bx1 + bw/2.0) / float(w), 3),
-                                    "y": round((by1 + bh/2.0) / float(h), 3),
-                                    "w": round(bw / float(w), 3),
-                                    "h": round(bh / float(h), 3)
-                                },
-                                "bbox_pixels": [bx1, by1, bx2, by2]
-                            })
-                except Exception as e:
-                    print(f"[YOLO ENGINE] Pothole model inference warning: {e}")
+        # 1. Multi-Class Vehicle Perception (Cars, Buses, Trucks)
+        if self.vehicle_model is not None:
+            try:
+                v_results = self.vehicle_model(sanitized_base, conf=0.35, device=self.device, verbose=False)
+                for r in v_results:
+                    for box in r.boxes:
+                        cls_id = int(box.cls.item())
+                        cls_name = self.vehicle_model.names.get(cls_id, "Vehicle")
+                        conf = float(box.conf.item())
+                        xyxy = box.xyxy[0].cpu().numpy().astype(int)
+                        bx1, by1, bx2, by2 = int(xyxy[0]), int(xyxy[1]), int(xyxy[2]), int(xyxy[3])
+                        bw, bh = max(1, bx2 - bx1), max(1, by2 - by1)
 
-            # 2. Indian Roads Model Inference (Manhole, Barricade, Zebra, Divider)
-            if self.indian_roads_model is not None:
-                try:
-                    ind_results = self.indian_roads_model(sanitized_base, conf=0.22, device=self.device, half=self.fp16, verbose=False)
-                    for r in ind_results:
-                        for box in r.boxes:
-                            cls_id = int(box.cls.item())
-                            cls_name = self.indian_roads_model.names.get(cls_id, "Asset")
-                            conf = float(box.conf.item())
-                            xyxy = box.xyxy[0].cpu().numpy().astype(int)
-                            bx1, by1, bx2, by2 = int(xyxy[0]), int(xyxy[1]), int(xyxy[2]), int(xyxy[3])
-                            bw = max(1, bx2 - bx1)
-                            bh = max(1, by2 - by1)
+                        # Filter out tiny specks (< 20px) or whole-frame artifacts
+                        if bw < 20 or bh < 20 or (bw > w * 0.90 and bh > h * 0.90):
+                            continue
 
-                            if "manhole" in cls_name.lower():
-                                d_code = "OPEN_MANHOLE"
-                                d_label = "IS:1726 OPEN MANHOLE"
-                                d_name = "IS:1726 Open Manhole Void"
-                                sev = "critical"
-                            elif "zebra" in cls_name.lower():
-                                d_code = "ZEBRA_CROSSING"
-                                d_label = "IRC:35 ZEBRA CROSSING"
-                                d_name = "Pedestrian Crossing"
-                                sev = "medium"
-                            elif "barricade" in cls_name.lower() or "divider" in cls_name.lower():
-                                d_code = "MISSING_DIVIDER"
-                                d_label = f"{cls_name.upper()}"
-                                d_name = "Road Barrier / Divider"
-                                sev = "medium"
-                            else:
-                                continue
+                        v_label = f"{cls_name.upper()} [{int(conf*100)}%]"
+                        raw_detections.append({
+                            "type": "VEHICLE_SURFACE",
+                            "defect_code": "TRAFFIC_VEHICLE",
+                            "defect_name": f"{cls_name.capitalize()} Perception",
+                            "label": v_label,
+                            "severity": "low",
+                            "confidence": round(conf, 3),
+                            "color_bgr": (255, 185, 0), # Cyber Blue
+                            "bbox_normalized": {
+                                "x": round((bx1 + bw/2.0) / float(w), 3),
+                                "y": round((by1 + bh/2.0) / float(h), 3),
+                                "w": round(bw / float(w), 3),
+                                "h": round(bh / float(h), 3)
+                            },
+                            "bbox_pixels": [bx1, by1, bx2, by2]
+                        })
+            except Exception as e:
+                print(f"[YOLO ENGINE] Vehicle model warning: {e}")
 
-                            detections.append({
-                                "type": d_code,
-                                "defect_code": d_code,
-                                "defect_name": d_name,
-                                "label": f"{d_label} [{int(conf*100)}%]",
-                                "severity": sev,
-                                "confidence": round(conf, 3),
-                                "bbox_normalized": {
-                                    "x": round((bx1 + bw/2.0) / float(w), 3),
-                                    "y": round((by1 + bh/2.0) / float(h), 3),
-                                    "w": round(bw / float(w), 3),
-                                    "h": round(bh / float(h), 3)
-                                },
-                                "bbox_pixels": [bx1, by1, bx2, by2]
-                            })
-                except Exception as e:
-                    print(f"[YOLO ENGINE] Indian roads model warning: {e}")
+        # 2. Indian Road Infrastructure Assets (Manholes, Dividers, Barricades, Zebra)
+        if self.indian_roads_model is not None:
+            try:
+                ind_results = self.indian_roads_model(sanitized_base, conf=0.32, device=self.device, verbose=False)
+                for r in ind_results:
+                    for box in r.boxes:
+                        cls_id = int(box.cls.item())
+                        cls_name = self.indian_roads_model.names.get(cls_id, "Asset")
+                        conf = float(box.conf.item())
+                        xyxy = box.xyxy[0].cpu().numpy().astype(int)
+                        bx1, by1, bx2, by2 = int(xyxy[0]), int(xyxy[1]), int(xyxy[2]), int(xyxy[3])
+                        bw, bh = max(1, bx2 - bx1), max(1, by2 - by1)
 
-            # 3. Morphological Cavity & Crack Analysis (as complementary/fallback on real road surfaces)
-            if len(detections) == 0 and privacy_meta.get("faces_detected", 0) == 0:
-                roi_y = int(h * 0.35)
-                roi = sanitized_base[roi_y:, :]
-                gray = cv2.cvtColor(roi, cv2.COLOR_BGR2GRAY)
-                blur = cv2.GaussianBlur(gray, (7, 7), 0)
-                med_lum = float(np.median(blur))
-                
-                dark_thresh = max(10, int(med_lum - 16))
-                _, thresh = cv2.threshold(blur, dark_thresh, 255, cv2.THRESH_BINARY_INV)
-                kernel_close = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (7, 7))
-                thresh_clean = cv2.morphologyEx(thresh, cv2.MORPH_CLOSE, kernel_close)
-                contours, _ = cv2.findContours(thresh_clean, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-                
-                for cnt in contours:
-                    cx, cy, cw, ch = cv2.boundingRect(cnt)
-                    area = cw * ch
-                    aspect = cw / max(ch, 1)
-                    if (w * h * 0.0003) < area < (w * h * 0.06) and 0.35 < aspect < 2.8:
-                        patch = gray[cy:cy+ch, cx:cx+cw]
-                        if patch.size > 0 and float(np.mean(patch)) < (med_lum - 8):
-                            box_x1 = cx
-                            box_y1 = cy + roi_y
-                            box_x2 = cx + cw
-                            box_y2 = cy + ch + roi_y
-                            
-                            contrast_diff = med_lum - float(np.mean(patch))
-                            est_depth_cm = round(min(14.8, max(3.5, 4.0 + (contrast_diff * 0.18))), 1)
-                            conf = round(min(0.97, max(0.78, 0.82 + (contrast_diff / 100.0))), 2)
-                            area_m2 = round((cw * ch) / float(w * h) * 4.5, 2)
-                            
-                            detections.append({
-                                "type": "POTHOLE_D40",
-                                "defect_code": "D40",
-                                "defect_name": "Pothole Cavity (IRC:SP:20)",
-                                "label": f"POTHOLE D40 ({est_depth_cm}cm)",
-                                "severity": "high" if est_depth_cm > 6.0 else "medium",
-                                "confidence": conf,
-                                "depth_cm": est_depth_cm,
-                                "area_m2": area_m2,
-                                "volume_liters": round(est_depth_cm * area_m2 * 10, 1),
-                                "repair_cost_inr": int(1800 + est_depth_cm * 240),
-                                "bbox_normalized": {
-                                    "x": round((box_x1 + cw / 2.0) / float(w), 3),
-                                    "y": round((box_y1 + ch / 2.0) / float(h), 3),
-                                    "w": round(cw / float(w), 3),
-                                    "h": round(ch / float(h), 3)
-                                },
-                                "bbox_pixels": [box_x1, box_y1, box_x2, box_y2]
-                            })
-                
-                # Crack detection fallback
-                edges = cv2.Canny(blur, 45, 120)
-                edge_density = float(np.sum(edges > 0)) / float(edges.size)
-                if edge_density > 0.035 and len(detections) < 3:
-                    pts = np.argwhere(edges > 0)
-                    if len(pts) > 20:
-                        y_min, x_min = pts.min(axis=0)
-                        y_max, x_max = pts.max(axis=0)
-                        cw = int(x_max - x_min)
-                        ch = int(y_max - y_min)
-                        if cw > 40 and ch > 30 and (cw * ch) < (w * h * 0.15):
-                            detections.append({
-                                "type": "ALLIGATOR_CRACK_D20",
-                                "defect_code": "D20",
-                                "defect_name": "Alligator Crack (Pavement Fatigue)",
-                                "label": "ALLIGATOR CRACK D20",
-                                "severity": "medium",
-                                "confidence": 0.88,
-                                "bbox_normalized": {
-                                    "x": round((x_min + cw/2) / float(w), 3),
-                                    "y": round((y_min + roi_y + ch/2) / float(h), 3),
-                                    "w": round(cw / float(w), 3),
-                                    "h": round(ch / float(h), 3)
-                                },
-                                "bbox_pixels": [int(x_min), int(y_min + roi_y), int(x_max), int(y_max + roi_y)]
-                            })
+                        if "manhole" in cls_name.lower():
+                            d_code, d_name, d_label, sev = "OPEN_MANHOLE", "IS:1726 Open Manhole Void", "OPEN MANHOLE", "critical"
+                            c_bgr = (0, 215, 255)
+                        elif "zebra" in cls_name.lower():
+                            d_code, d_name, d_label, sev = "ZEBRA_CROSSING", "Pedestrian Crosswalk", "ZEBRA CROSSING", "medium"
+                            c_bgr = (0, 230, 110)
+                        elif "barricade" in cls_name.lower() or "divider" in cls_name.lower():
+                            d_code, d_name, d_label, sev = "MISSING_DIVIDER", "Road Barrier / Divider", cls_name.upper(), "medium"
+                            c_bgr = (0, 215, 255)
+                        else:
+                            continue
 
-        elif channel == 2:
-            # CH 2: Rear Overtake & Tailgating
-            roi_y = int(h * 0.25)
-            roi = img[roi_y:, :]
-            gray = cv2.cvtColor(roi, cv2.COLOR_BGR2GRAY)
-            blur = cv2.GaussianBlur(gray, (5, 5), 0)
-            edges = cv2.Canny(blur, 50, 150)
-            contours, _ = cv2.findContours(edges, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-            
-            for cnt in contours:
-                cx, cy, cw, ch = cv2.boundingRect(cnt)
-                area = cw * ch
-                if (w * h * 0.03) < area < (w * h * 0.40) and 0.8 < (cw / max(ch, 1)) < 2.5:
-                    est_range = round(max(4.0, 45.0 - (cw / float(w) * 50.0)), 1)
-                    detections.append({
-                        "type": "TAILGATING_VEHICLE",
-                        "defect_code": "RASH_DRIVING",
-                        "defect_name": "Trailing Vehicle (Proximity Radar)",
-                        "label": f"VEHICLE DETECTED ({est_range}m)",
-                        "severity": "high" if est_range < 12.0 else "low",
-                        "confidence": 0.93,
-                        "range_m": est_range,
-                        "bbox_normalized": {
-                            "x": round((cx + cw/2) / float(w), 3),
-                            "y": round((cy + roi_y + ch/2) / float(h), 3),
-                            "w": round(cw / float(w), 3),
-                            "h": round(ch / float(h), 3)
-                        },
-                        "bbox_pixels": [cx, cy + roi_y, cx + cw, cy + ch + roi_y]
-                    })
-                    break
+                        raw_detections.append({
+                            "type": d_code,
+                            "defect_code": d_code,
+                            "defect_name": d_name,
+                            "label": f"{d_label} [{int(conf*100)}%]",
+                            "severity": sev,
+                            "confidence": round(conf, 3),
+                            "color_bgr": c_bgr,
+                            "bbox_normalized": {
+                                "x": round((bx1 + bw/2.0) / float(w), 3),
+                                "y": round((by1 + bh/2.0) / float(h), 3),
+                                "w": round(bw / float(w), 3),
+                                "h": round(bh / float(h), 3)
+                            },
+                            "bbox_pixels": [bx1, by1, bx2, by2]
+                        })
+            except Exception as e:
+                print(f"[YOLO ENGINE] Indian roads model warning: {e}")
 
-        elif channel == 3:
-            # CH 3: Curbside / Bus Lane
-            detections.append({
-                "type": "BUS_LANE_STATUS",
-                "defect_code": "BUS_LANE_ENCROACH",
-                "defect_name": "Bus Lane Curbside Clearance",
-                "label": "DEDICATED BUS LANE (CLEAR)",
-                "severity": "low",
-                "confidence": 0.96,
-                "bbox_normalized": { "x": 0.35, "y": 0.75, "w": 0.50, "h": 0.22 },
-                "bbox_pixels": [int(w*0.10), int(h*0.64), int(w*0.60), int(h*0.86)]
-            })
+        # 3. Neural Pothole Detection (with strict Road Horizon & Aspect Ratio constraints)
+        if self.pothole_model is not None:
+            try:
+                p_results = self.pothole_model(sanitized_base, conf=0.30, device=self.device, verbose=False)
+                for r in p_results:
+                    for box in r.boxes:
+                        conf = float(box.conf.item())
+                        xyxy = box.xyxy[0].cpu().numpy().astype(int)
+                        bx1, by1, bx2, by2 = int(xyxy[0]), int(xyxy[1]), int(xyxy[2]), int(xyxy[3])
+                        bw, bh = max(1, bx2 - bx1), max(1, by2 - by1)
 
-        # Draw real annotations if requested
+                        # Horizon Filter: Reject boxes in upper horizon / sky / trees (y1 < 28% of h, y2 < 38% of h)
+                        if by1 < int(h * 0.28) or by2 < int(h * 0.38):
+                            continue
+
+                        # Size & aspect filter: Reject giant screen-filling boxes
+                        if bw > int(w * 0.75) or bh > int(h * 0.65) or (bw * bh) > (w * h * 0.40):
+                            continue
+
+                        est_depth_cm = round(min(14.8, max(4.0, (bh / float(h)) * 28.0 + 3.0)), 1)
+                        area_m2 = round((bw * bh) / float(w * h) * 4.2, 2)
+                        
+                        raw_detections.append({
+                            "type": "POTHOLE_D40",
+                            "defect_code": "D40",
+                            "defect_name": "Pothole Cavity (Neural YOLO)",
+                            "label": f"POTHOLE D40 ({est_depth_cm}cm) [{int(conf*100)}%]",
+                            "severity": "critical" if est_depth_cm > 8.0 else ("high" if est_depth_cm > 5.5 else "medium"),
+                            "confidence": round(conf, 3),
+                            "depth_cm": est_depth_cm,
+                            "area_m2": area_m2,
+                            "volume_liters": round(est_depth_cm * area_m2 * 10, 1),
+                            "repair_cost_inr": int(1800 + est_depth_cm * 240),
+                            "color_bgr": (0, 140, 255), # Neon Orange
+                            "bbox_normalized": {
+                                "x": round((bx1 + bw/2.0) / float(w), 3),
+                                "y": round((by1 + bh/2.0) / float(h), 3),
+                                "w": round(bw / float(w), 3),
+                                "h": round(bh / float(h), 3)
+                            },
+                            "bbox_pixels": [bx1, by1, bx2, by2]
+                        })
+            except Exception as e:
+                print(f"[YOLO ENGINE] Pothole model inference warning: {e}")
+
+        # 4. Non-Maximum Suppression (NMS / IOU Deduplication)
+        # Eliminates overlapping duplicate boxes for the same hazard
+        detections = []
+        if raw_detections:
+            sorted_dets = sorted(raw_detections, key=lambda d: d["confidence"], reverse=True)
+            for cand in sorted_dets:
+                cb = cand["bbox_pixels"]
+                cand_area = max(1, (cb[2] - cb[0]) * (cb[3] - cb[1]))
+                suppress = False
+                for acc in detections:
+                    ab = acc["bbox_pixels"]
+                    inter_x1 = max(cb[0], ab[0])
+                    inter_y1 = max(cb[1], ab[1])
+                    inter_x2 = min(cb[2], ab[2])
+                    inter_y2 = min(cb[3], ab[3])
+                    inter_w = max(0, inter_x2 - inter_x1)
+                    inter_h = max(0, inter_y2 - inter_y1)
+                    inter_area = inter_w * inter_h
+                    if inter_area > 0:
+                        acc_area = max(1, (ab[2] - ab[0]) * (ab[3] - ab[1]))
+                        iou = inter_area / float(cand_area + acc_area - inter_area + 1e-6)
+                        if iou > 0.35:
+                            suppress = True
+                            break
+                if not suppress:
+                    detections.append(cand)
+
+        # 5. Draw Clean, Sleek Modern HUD Visuals (Corner Brackets + Semi-Transparent Pills)
         if burn_overlay and detections:
             for d in detections:
                 x1, y1, x2, y2 = d["bbox_pixels"]
-                color = (0, 0, 235) if "POTHOLE" in d["type"] else (0, 165, 255) if "CRACK" in d["type"] else (0, 220, 80)
-                # Box
-                cv2.rectangle(annotated, (x1, y1), (x2, y2), color, 2)
-                # Corner brackets for HUD aesthetic
-                corner_len = min(18, (x2 - x1) // 4, (y2 - y1) // 4)
-                if corner_len > 4:
-                    cv2.line(annotated, (x1, y1), (x1 + corner_len, y1), color, 3)
-                    cv2.line(annotated, (x1, y1), (x1, y1 + corner_len), color, 3)
-                    cv2.line(annotated, (x2, y1), (x2 - corner_len, y1), color, 3)
-                    cv2.line(annotated, (x2, y1), (x2, y1 + corner_len), color, 3)
-                    cv2.line(annotated, (x1, y2), (x1 + corner_len, y2), color, 3)
-                    cv2.line(annotated, (x1, y2), (x1, y2 - corner_len), color, 3)
-                    cv2.line(annotated, (x2, y2), (x2 - corner_len, y2), color, 3)
-                    cv2.line(annotated, (x2, y2), (x2 - corner_len, y2), color, 3)
+                color = d.get("color_bgr", (0, 140, 255))
+                bw = x2 - x1
+                bh = y2 - y1
 
-                # Label tag
-                tag = f"{d['label']}"
-                text_size, _ = cv2.getTextSize(tag, cv2.FONT_HERSHEY_SIMPLEX, 0.50, 1)
-                tag_y1 = max(0, y1 - 22)
-                cv2.rectangle(annotated, (x1, tag_y1), (x1 + text_size[0] + 8, y1), color, -1)
-                cv2.putText(annotated, tag, (x1 + 4, y1 - 6), cv2.FONT_HERSHEY_SIMPLEX, 0.50, (255, 255, 255), 1, cv2.LINE_AA)
+                # Sleek subtle boundary
+                cv2.rectangle(annotated, (x1, y1), (x2, y2), color, 1)
+
+                # High-Tech Corner Brackets
+                k_len = min(16, max(6, bw // 5), max(6, bh // 5))
+                # Top-left
+                cv2.line(annotated, (x1, y1), (x1 + k_len, y1), color, 2)
+                cv2.line(annotated, (x1, y1), (x1, y1 + k_len), color, 2)
+                # Top-right
+                cv2.line(annotated, (x2, y1), (x2 - k_len, y1), color, 2)
+                cv2.line(annotated, (x2, y1), (x2, y1 + k_len), color, 2)
+                # Bottom-left
+                cv2.line(annotated, (x1, y2), (x1 + k_len, y2), color, 2)
+                cv2.line(annotated, (x1, y2), (x1, y2 - k_len), color, 2)
+                # Bottom-right
+                cv2.line(annotated, (x2, y2), (x2 - k_len, y2), color, 2)
+                cv2.line(annotated, (x2, y2), (x2, y2 - k_len), color, 2)
+
+                # Sleek Tag Pill
+                tag = f" {d['label']} "
+                (tw, th), baseline = cv2.getTextSize(tag, cv2.FONT_HERSHEY_SIMPLEX, 0.42, 1)
+                tag_y1 = max(2, y1 - th - 8)
+                tag_y2 = tag_y1 + th + 6
+                tag_x2 = min(w - 2, x1 + tw + 4)
+
+                # Dark background pill
+                cv2.rectangle(annotated, (x1, tag_y1), (tag_x2, tag_y2), (18, 20, 24), -1)
+                # Accent indicator bar
+                cv2.rectangle(annotated, (x1, tag_y1), (x1 + 3, tag_y2), color, -1)
+                # Text
+                cv2.putText(annotated, tag, (x1 + 3, tag_y2 - baseline - 1),
+                            cv2.FONT_HERSHEY_SIMPLEX, 0.42, (255, 255, 255), 1, cv2.LINE_AA)
 
         # Apply DPDP Act 2023 optical face blurring/privacy redaction
         sanitized_frame, _ = privacy_engine.anonymize_frame(annotated, burn_privacy_badge=False)

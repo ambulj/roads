@@ -145,12 +145,6 @@ class RealRTSPWorker:
                     self.latest_detections = hazard_res.get("detections", [])
                     annotated = hazard_res.get("annotated_frame", raw_img)
                     
-                    fname = self.uploaded_filename or os.path.basename(source)
-                    cv2.putText(annotated, f"USER UPLOADED PHOTO: {fname} | {w}x{h}", (20, 35),
-                                cv2.FONT_HERSHEY_SIMPLEX, 0.65, (0, 255, 120), 2, cv2.LINE_AA)
-                    cv2.putText(annotated, f"AI PERCEPTION: {len(self.latest_detections)} REAL HAZARD(S) DETECTED | STATIC PROTOTYPE BOXES REMOVED", 
-                                (20, 65), cv2.FONT_HERSHEY_SIMPLEX, 0.45, (0, 210, 255), 1, cv2.LINE_AA)
-                    
                     _, buffer = cv2.imencode('.jpg', annotated, [cv2.IMWRITE_JPEG_QUALITY, 85])
                     jpeg_bytes = buffer.tobytes()
                     with self.lock:
@@ -217,33 +211,26 @@ class RealRTSPWorker:
                     
                     h, w = frame.shape[:2]
                     
-                    # Execute real computer vision perception on actual frame pixels
-                    if self.overlay_ai:
-                        hazard_res = yolo_engine.detect_road_hazards(frame, channel=self.channel, burn_overlay=True)
-                        self.latest_detections = hazard_res.get("detections", [])
-                        frame = hazard_res.get("annotated_frame", frame)
-                    else:
-                        frame, _ = privacy_engine.anonymize_frame(frame, burn_privacy_badge=False)
+                    # 1. Real-time Face Anonymization on frame
+                    sanitized_frame, _ = privacy_engine.anonymize_frame(frame, burn_privacy_badge=False)
 
-                    fname = self.uploaded_filename or (os.path.basename(source) if is_local_video else "")
-                    if self.is_uploaded or is_local_video:
-                        hud_text = f"USER UPLOADED VIDEO: {fname} | {w}x{h} | {self.fps_measured} FPS"
-                        sub_text = f"AI REAL-FRAME HAZARD DETECTION: {len(self.latest_detections)} FOUND | DPDP PRIVACY PROTECTED"
-                    elif isinstance(source, str) and source.startswith("srt://"):
-                        hud_text = f"LIVE SRT (4G/5G CELLULAR): {self.bus_id} | CH{self.channel} | {w}x{h} | {self.fps_measured} FPS"
-                        sub_text = f"RELIABLE UDP ARQ ACTIVE | AI PERCEPTION ACTIVE | DPDP PRIVACY PROTECTED"
+                    # 2. Keyframe-accelerated Multi-Model AI Perception (Run every 3rd frame for silky 30 FPS playback)
+                    if self.overlay_ai:
+                        if self.frame_count % 3 == 0 or not hasattr(self, '_last_rendered_overlay'):
+                            hazard_res = yolo_engine.detect_road_hazards(sanitized_frame, channel=self.channel, burn_overlay=True)
+                            self.latest_detections = hazard_res.get("detections", [])
+                            self._last_rendered_overlay = hazard_res.get("annotated_frame", sanitized_frame)
+                            display_frame = self._last_rendered_overlay
+                        else:
+                            display_frame = self._last_rendered_overlay if hasattr(self, '_last_rendered_overlay') else sanitized_frame
                     else:
-                        hud_text = f"LIVE RTSP: {self.bus_id} | CH{self.channel} | {w}x{h} | {self.fps_measured} FPS"
-                        sub_text = f"AI PERCEPTION ACTIVE (REAL-FRAME CV) | DPDP PRIVACY PROTECTED"
-                        
-                    cv2.putText(frame, hud_text, (20, 35), cv2.FONT_HERSHEY_SIMPLEX, 0.65, (0, 255, 120), 2, cv2.LINE_AA)
-                    cv2.putText(frame, sub_text, (20, 65), cv2.FONT_HERSHEY_SIMPLEX, 0.48, (0, 200, 255), 1, cv2.LINE_AA)
+                        display_frame = sanitized_frame
                     
-                    _, buffer = cv2.imencode('.jpg', frame, [cv2.IMWRITE_JPEG_QUALITY, 80])
+                    _, buffer = cv2.imencode('.jpg', display_frame, [cv2.IMWRITE_JPEG_QUALITY, 80])
                     jpeg_bytes = buffer.tobytes()
                     
                     with self.lock:
-                        self.latest_frame = frame
+                        self.latest_frame = display_frame
                         self.latest_jpeg = jpeg_bytes
                         
                     time.sleep(max(0.01, 1.0 / self.sampling_fps))
