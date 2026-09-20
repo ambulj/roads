@@ -393,4 +393,37 @@ def flag_vehicle_compliance(payload: ComplianceFlagPayload):
         "timestamp": time.strftime("%d %b, %I:%M %p")
     }
 
+class TrafficFrameIngest(BaseModel):
+    image_base64: str
+    corridor_id: str = "corridor-annasalai"
+    road_name: str = "Anna Salai Arterial Corridor"
+    lat: float = 13.0550
+    lng: float = 80.2450
+    average_speed_kmh: float = 35.0
+    free_flow_speed_kmh: float = 50.0
+    reported_by: str = "EDGE-MDVR-CH1"
+
+@router.post("/ingest-frame")
+def ingest_frame_reading(payload: TrafficFrameIngest, db: Session = Depends(get_db)):
+    """
+    Direct Neural Dashcam Frame Ingestion & Traffic Density Extraction.
+    Runs vehicle_detection.pt on uploaded frame, extracts IRC:106 vehicle classes,
+    computes real PCU per km & HCM Level of Service (LoS), and writes to DBTrafficDensity.
+    """
+    from app.services.traffic_bridge import traffic_bridge
+    res = traffic_bridge.process_and_ingest_frame(
+        image_input=payload.image_base64,
+        corridor_id=payload.corridor_id,
+        road_name=payload.road_name,
+        lat=payload.lat,
+        lng=payload.lng,
+        average_speed_kmh=payload.average_speed_kmh,
+        free_flow_speed_kmh=payload.free_flow_speed_kmh,
+        reported_by=payload.reported_by,
+        db=db
+    )
+    if not res.get("success"):
+        raise HTTPException(status_code=400, detail=res.get("error", "Frame processing failed"))
+    return res
+
 

@@ -87,7 +87,7 @@ class HitAndRunBehavioralEngine:
 
         if is_fleeing and impact_detected:
             # High-priority Hit & Run Anomaly Detected
-            conf = plate_confidence if plate_confidence > 0 else 0.88
+            conf = plate_confidence if plate_confidence is not None else 0.0
             requires_human_review = conf < 0.90 or not plate_number
 
             return {
@@ -95,10 +95,10 @@ class HitAndRunBehavioralEngine:
                 "incident_type": "HIT_AND_RUN",
                 "severity": "critical",
                 "title": "Fleeing Vehicle Evasion Signature Clocked",
-                "description": f"Vehicle {plate_number or 'Unidentified'} accelerated sharply ({prev_speed:.1f} ➔ {current_speed_kmh:.1f} km/h) following proximity collision anomaly.",
-                "mva_section": "MVA 1988 Sec 134(a)(b) & Sec 184 (Hit & Run Causing Endangerment)",
+                "description": f"Vehicle {plate_number or 'UNIDENTIFIED'} accelerated sharply ({prev_speed:.1f} ➔ {current_speed_kmh:.1f} km/h) following proximity collision anomaly.",
+                "mva_section": "MVA 1988 Sec 134 & Sec 187 read with Sec 184 (Duty of Driver in Case of Accident & Rash Driving)",
                 "fine_amount_inr": 10000,
-                "plate_number": plate_number or "TN-01-AX-8732",
+                "plate_number": plate_number or "UNIDENTIFIED",
                 "plate_confidence": conf,
                 "initial_speed_kmh": prev_speed,
                 "fleeing_speed_kmh": current_speed_kmh,
@@ -108,8 +108,8 @@ class HitAndRunBehavioralEngine:
                 "lng": lng,
                 "reporting_bus_id": bus_id,
                 "review_status": "PENDING_REVIEW" if requires_human_review else "AUTO_ADMISSIBLE",
-                "review_flag_reason": "ANPR plate confidence below statutory threshold" if conf < 0.90 else "Verified Multi-Node Hit & Run Sequence",
-                "requires_pcr_dispatch": not requires_human_review
+                "review_flag_reason": "ANPR plate unreadable or confidence below statutory threshold (0.90)" if requires_human_review else "Verified Multi-Node Hit & Run Sequence",
+                "requires_pcr_dispatch": True
             }
 
         return None

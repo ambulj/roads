@@ -240,7 +240,7 @@ export const IncidentDossierModal: React.FC<IncidentDossierModalProps> = ({
       icon: 'challan',
       confirmLabel: 'Authorize & Issue Notice',
       details: [
-        { label: 'Registered Plate', value: incident.plate_number || 'TN-01-AX-8732', highlight: true },
+        { label: 'Registered Plate', value: incident.plate_number || 'UNIDENTIFIED', highlight: true },
         { label: 'Statutory Penalty', value: `₹${(incident.fine_amount_inr || legalCode.fineAmount).toLocaleString()}` },
         { label: 'Legal Citation', value: incident.mva_section || legalCode.section },
         { label: 'Corridor Location', value: incident.road_name }
@@ -479,12 +479,14 @@ export const IncidentDossierModal: React.FC<IncidentDossierModalProps> = ({
                 <div>
                   <div className="text-xs text-slate-500 dark:text-slate-400 font-bold uppercase tracking-wider mb-2.5 flex items-center justify-between">
                     <span>Target Vehicle Registry Record</span>
-                    <span className="text-emerald-600 dark:text-emerald-400 font-bold">Confidence Match: {Math.round((incident.plate_confidence || 0.95) * 100)}%</span>
+                    <span className="text-emerald-600 dark:text-emerald-400 font-bold">
+                      Confidence Match: {incident.plate_confidence ? `${Math.round(incident.plate_confidence * 100)}%` : 'Unidentified'}
+                    </span>
                   </div>
                   
                   <div className="flex items-center gap-3">
                     <div className="border-2 border-amber-400 bg-amber-50 dark:bg-black px-4 py-2 rounded-lg font-black text-xl text-slate-900 dark:text-yellow-300 tracking-widest font-mono">
-                      {incident.plate_number || 'TN-01-AX-8732'}
+                      {incident.plate_number || 'UNIDENTIFIED'}
                     </div>
                     <div className="text-xs space-y-1">
                       <div>Class: <b className="text-slate-800 dark:text-slate-200">{incident.vehicle_class || 'Motor Vehicle'}</b></div>
@@ -787,10 +789,10 @@ export const IncidentDossierModal: React.FC<IncidentDossierModalProps> = ({
                       INDIA • AUTOMATED PLATE RECOGNITION
                     </div>
                     <div className="text-xl sm:text-2xl font-mono font-black text-white tracking-widest">
-                      {incident.plate_number || 'TN-01-AX-8732'}
+                      {incident.plate_number || 'UNIDENTIFIED'}
                     </div>
                     <div className="text-xs font-mono text-emerald-400 font-bold mt-0.5">
-                      CONFIDENCE MATCH: {Math.round((incident.plate_confidence || 0.95) * 100)}% • TRANSIT EDGE VISION
+                      CONFIDENCE MATCH: {incident.plate_confidence ? `${Math.round(incident.plate_confidence * 100)}%` : 'UNREADABLE'} • TRANSIT EDGE VISION
                     </div>
                   </div>
 

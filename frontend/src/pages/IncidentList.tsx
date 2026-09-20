@@ -119,9 +119,9 @@ export const IncidentList: React.FC<IncidentListProps> = ({
       icon: 'challan',
       confirmLabel: 'Authorize & Dispatch E-Challan',
       details: [
-        { label: 'License Plate', value: item.plate_number || 'TN-01-AX-8732', highlight: true },
+        { label: 'License Plate', value: item.plate_number || 'UNIDENTIFIED', highlight: true },
         { label: 'Location', value: item.road_name || 'Corridor Junction' },
-        { label: 'Camera Match', value: `${Math.round((item.plate_confidence || 0.74) * 100)}% Match` },
+        { label: 'Camera Match', value: `${Math.round((item.plate_confidence || 0.0) * 100)}% Match` },
         { label: 'Statutory Action', value: 'MVA 1988 Notice Draft' }
       ]
     });

@@ -229,15 +229,16 @@ class PedestrianCrossingFusionEngine:
             # Determine scenario
             if is_school_cluster and (in_crosswalk or is_near_school_poi):
                 # 1. School Children Crossing Scenario
+                student_cnt = len(small_persons) if small_persons else len(persons)
                 events.append({
                     "event_type": "SCHOOL_CHILDREN_CROSSING_RISK",
                     "severity": "critical" if approaching_speed_kmh > 25.0 else "high",
                     "title": "School Children Crossing Zone - Mandatory Yield",
                     "description": f"Group of students detected crossing roadway near {poi_name or 'designated school zone'}. Vehicles mandated to stop.",
-                    "mva_section": "IRC:35 & CMVR Rule 138 (Vision Zero School Pedestrian Corridor Protection)",
+                    "mva_section": "IRC:35:2015 Sec 8 & Motor Vehicles (Driving) Regulations 2017 Reg 11 (Vision Zero School Pedestrian Corridor Protection)",
                     "fine_amount_inr": 2000,
-                    "student_count": max(len(small_persons), 2),
-                    "confidence": round(min(0.98, p_conf + 0.05), 2),
+                    "student_count": student_cnt,
+                    "confidence": round(p_conf, 2),
                     "bbox_pixels": p_box,
                     "approaching_speed_kmh": approaching_speed_kmh,
                     "school_poi": poi_name or "School Safety Zone",
@@ -250,8 +251,8 @@ class PedestrianCrossingFusionEngine:
                         "event_type": "CROSSWALK_PEDESTRIAN_RISK",
                         "severity": "high",
                         "title": "Pedestrian Crosswalk Active - Vehicle Approaching at Speed",
-                        "description": f"Pedestrian detected inside zebra crossing zone. Approaching bus/vehicle clocked at {approaching_speed_kmh:.1f} km/h.",
-                        "mva_section": "MVA 1988 Sec 184 & CMVR Rule 138 (Failure to Yield Pedestrian Right-of-Way)",
+                        "description": f"Pedestrian detected inside zebra crossing zone. Approaching vehicle clocked at {approaching_speed_kmh:.1f} km/h.",
+                        "mva_section": "Motor Vehicles (Driving) Regulations 2017 Reg 11(1) & MVA 1988 Sec 177A (Failure to Yield Pedestrian Right-of-Way at Crosswalk)",
                         "fine_amount_inr": 1500,
                         "confidence": round(p_conf, 2),
                         "bbox_pixels": p_box,
@@ -268,7 +269,7 @@ class PedestrianCrossingFusionEngine:
                         "severity": "high" if approaching_speed_kmh > 35.0 else "medium",
                         "title": "Unsafe Informal Midblock Road Crossing",
                         "description": "Pedestrian traversing multi-lane arterial road with no designated zebra crossing within safe stopping distance.",
-                        "mva_section": "MoRTH Urban Road Safety Guidelines (Midblock Pedestrian Hazard)",
+                        "mva_section": "MoRTH Urban Road Safety Guidelines & Motor Vehicles (Driving) Regulations 2017 Reg 15",
                         "fine_amount_inr": 500,
                         "confidence": round(p_conf, 2),
                         "bbox_pixels": p_box,
@@ -288,9 +289,9 @@ class PedestrianCrossingFusionEngine:
                         "severity": "medium",
                         "title": "Vehicle Encroachment on Pedestrian Crosswalk",
                         "description": "Vehicle halted directly on top of zebra crossing markings, obstructing pedestrian crossing corridor.",
-                        "mva_section": "MVA 1988 Sec 177 & CMVR 138 (Crosswalk Encroachment)",
+                        "mva_section": "Motor Vehicles (Driving) Regulations 2017 Reg 11(2) & MVA 1988 Sec 177A (Obstructing Pedestrian Crosswalk)",
                         "fine_amount_inr": 1000,
-                        "plate_number": veh.get("plate_number", "TN-01-AX-8732"),
+                        "plate_number": veh.get("plate_number") or "UNIDENTIFIED",
                         "confidence": veh.get("confidence", 0.94),
                         "bbox_pixels": v_box
                     })
@@ -312,15 +313,17 @@ class PedestrianCrossingFusionEngine:
 
                 # Critical proximity collision boundary (< 120 pixels in 1080p / high speed)
                 if pixel_dist < (frame_width * 0.12) and (v_speed > 35.0 or approaching_speed_kmh > 35.0):
+                    p_c = person.get("confidence", 0.9)
+                    v_c = veh.get("confidence", 0.9)
                     events.append({
                         "event_type": "HIT_AND_RUN_CRITICAL_RISK",
                         "severity": "critical",
                         "title": "High-Speed Vehicle Near-Miss / Hit & Run Corridor Alert",
                         "description": f"Vehicle moving at {v_speed:.1f} km/h detected in critical proximity ({int(pixel_dist)}px) to pedestrian. High-priority intercept broadcasted.",
-                        "mva_section": "MVA 1988 Sec 134 & Sec 187 (Duty in Case of Accident & Rash Driving)",
+                        "mva_section": "MVA 1988 Sec 134 & Sec 187 read with Sec 184 (Duty of Driver in Case of Accident & Rash Driving)",
                         "fine_amount_inr": 10000,
-                        "confidence": round(min(0.97, person.get("confidence", 0.9) * 0.5 + veh.get("confidence", 0.9) * 0.5), 2),
-                        "plate_number": veh.get("plate_number", "TN-09-BK-4091"),
+                        "confidence": round((p_c + v_c) / 2.0, 2),
+                        "plate_number": veh.get("plate_number") or "UNIDENTIFIED",
                         "vehicle_class": veh.get("label", "Motor Vehicle"),
                         "vehicle_speed_kmh": v_speed,
                         "bbox_pixels": v_box,

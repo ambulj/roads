@@ -760,7 +760,7 @@ class YoloInferenceEngine:
                         "confidence": round(conf, 3),
                         "bbox_pixels": xyxy,
                         "speed_kmh": v_speed,
-                        "plate_number": f"TN-{np.random.randint(1, 25):02d}-{''.join(np.random.choice(list('ABCDEFGHJKLMNPQRSTUVWXYZ'), 2))}-{np.random.randint(1000, 9999)}"
+                        "plate_number": None
                     })
             except Exception as e:
                 print(f"[YOLO ENGINE] Vehicle inference error: {e}")
