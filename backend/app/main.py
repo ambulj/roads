@@ -11,24 +11,20 @@ from app.services.synthetic_generator import synthetic_generator_loop
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     sim_task = None
-    synth_task = None
 
-    # 1. Start background fleet simulation loop if enabled
+    # 1. Start background fleet simulation loop if enabled (advances bus GPS positions)
     if settings.ENABLE_FLEET_SIMULATION and not settings.DEMO_MODE:
         sim_task = asyncio.create_task(websockets.simulation_loop())
     
-    # 2. Start 5-minute synthetic data generation loop if enabled
-    if settings.ENABLE_SYNTHETIC_GENERATION and not settings.DEMO_MODE:
-        synth_task = asyncio.create_task(synthetic_generator_loop(interval_seconds=settings.SYNTHETIC_INTERVAL_SECONDS))
+    # NOTE: Automatic continuous synthetic generation is disabled.
+    # Synthetic telemetry is generated strictly on-demand when the user clicks the Command Center button.
     
     yield
     
-    tasks_to_cancel = [t for t in (sim_task, synth_task) if t is not None]
-    for t in tasks_to_cancel:
-        t.cancel()
-    if tasks_to_cancel:
+    if sim_task is not None:
+        sim_task.cancel()
         try:
-            await asyncio.gather(*tasks_to_cancel, return_exceptions=True)
+            await asyncio.gather(sim_task, return_exceptions=True)
         except Exception:
             pass
 
