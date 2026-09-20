@@ -242,17 +242,26 @@ class YoloInferenceEngine:
         # If custom trained YOLO model is loaded
         if self.zebra_model is not None:
             try:
-                results = self.zebra_model.predict(img, conf=conf_threshold, device=self.device, verbose=False)[0]
+                results = self.zebra_model.predict(img, conf=max(0.45, conf_threshold), device=self.device, verbose=False)[0]
                 for box in results.boxes:
                     cls_id = int(box.cls[0].item())
                     conf = float(box.conf[0].item())
                     label = results.names.get(cls_id, "zebra_crossing")
                     
-                    # Normalized coords [x_center, y_center, width, height]
                     xywhn = box.xywhn[0].tolist()
                     xyxy = box.xyxy[0].tolist()
+                    bw = xyxy[2] - xyxy[0]
+                    bh = xyxy[3] - xyxy[1]
 
-                    is_faded = conf < 0.60
+                    # Filter out full-frame image-classification artifacts (boxes covering >80% of total screen)
+                    if bw > (w * 0.80) and bh > (h * 0.75):
+                        continue
+
+                    # Filter out boxes located entirely in the sky / upper 30% of frame, or starting at the very top edge (y1 < 10% of h)
+                    if xyxy[3] < (h * 0.35) or (xyxy[1] < h * 0.10 and bh > h * 0.60):
+                        continue
+
+                    is_faded = conf < 0.65
                     defect_code = "FADED_CROSSING" if is_faded else "ZEBRA_CROSSING"
                     defect_name = "Faded Zebra Crossing (Repaint Needed)" if is_faded else "Zebra Crossing (Pedestrian Markings)"
                     severity = "high" if is_faded else "low"
@@ -277,7 +286,7 @@ class YoloInferenceEngine:
             except Exception as e:
                 print(f"[YOLO ENGINE] Predict error: {e}")
 
-        # If no custom YOLO detections or model not loaded yet, run robust CV stripe frequency detector
+        # If no localized YOLO detections, run morphological stripe frequency detector
         if len(detections) == 0:
             cv_detections = self._detect_zebra_stripes_cv(img)
             detections.extend(cv_detections)
