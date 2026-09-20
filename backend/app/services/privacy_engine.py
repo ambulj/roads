@@ -30,6 +30,8 @@ class PrivacyEngine:
         self.total_frames_processed: int = 0
         self.avg_latency_ms: float = 1.8
         
+        import threading
+        self.lock = threading.Lock()
         # Models
         self.yunet_detector = None
         self.face_cascade = None
@@ -88,8 +90,9 @@ class PrivacyEngine:
             try:
                 # Standardize to fixed 640x640 inference canvas to prevent graph buffer reallocations
                 proc_img = cv2.resize(frame, (640, 640), interpolation=cv2.INTER_LINEAR)
-                self.yunet_detector.setInputSize((640, 640))
-                _, faces = self.yunet_detector.detect(proc_img)
+                with self.lock:
+                    self.yunet_detector.setInputSize((640, 640))
+                    _, faces = self.yunet_detector.detect(proc_img)
                 if faces is not None:
                     scale_x = float(w) / 640.0
                     scale_y = float(h) / 640.0

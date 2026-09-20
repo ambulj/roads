@@ -138,6 +138,9 @@ export const UploadFootageModal: React.FC<UploadFootageModalProps> = ({
     }
     const url = URL.createObjectURL(selectedFile);
     setPreviewUrl(url);
+    
+    // Automatically trigger real backend perception & face anonymization on upload
+    handleUploadAndAnalyze(selectedFile);
   };
 
   const handleLoadSampleScenario = (scenario: typeof SAMPLE_SCENARIOS[0]) => {
@@ -180,8 +183,9 @@ export const UploadFootageModal: React.FC<UploadFootageModalProps> = ({
     }
   };
 
-  const handleUploadAndAnalyze = async () => {
-    if (!file && !previewUrl) {
+  const handleUploadAndAnalyze = async (uploadFile?: File) => {
+    const fileToProcess = uploadFile || file;
+    if (!fileToProcess && !previewUrl) {
       setFeedback({ type: 'error', message: 'Please select a file or click a sample scenario below.' });
       return;
     }
@@ -194,54 +198,78 @@ export const UploadFootageModal: React.FC<UploadFootageModalProps> = ({
     setUploadProgress(35);
 
     try {
-      await new Promise(r => setTimeout(r, 450));
-      setProcessingStage('hazard_detection');
-      setUploadProgress(70);
-
       let res: any = null;
-      if (file) {
+      if (fileToProcess) {
         const formData = new FormData();
-        formData.append('file', file);
+        formData.append('file', fileToProcess);
         formData.append('bus_id', targetBus);
         formData.append('channel', String(channel));
         formData.append('auto_ingest', String(autoIngest));
 
-        try {
-          res = await api.uploadStreamMedia(formData);
-          if (res?.annotated_b64) {
-            setSanitizedPreviewUrl(res.annotated_b64);
-          }
-        } catch (e) {
-          console.warn('Backend fallback used', e);
+        setProcessingStage('hazard_detection');
+        setUploadProgress(65);
+
+        res = await api.uploadStreamMedia(formData);
+        
+        if (res?.annotated_b64) {
+          setSanitizedPreviewUrl(res.annotated_b64);
         }
       }
 
-      setUploadProgress(90);
+      setUploadProgress(95);
 
-      const topDet = (res?.detections && res.detections.length > 0) ? res.detections[0] : null;
-      const detectedCode = topDet?.defect_code || (channel === 2 ? "HIT_AND_RUN" : (channel === 3 ? "OPEN_MANHOLE" : "D40"));
+      const facesCount = res?.faces_detected ?? res?.privacy_meta?.faces_detected ?? 0;
+      setFacesRedactedCount(facesCount);
 
-      const detResult = {
-        success: true,
-        defectCode: detectedCode,
-        defectLabel: topDet?.defect_name || (detectedCode === "HIT_AND_RUN" ? "Hit & Run Evasion Trajectory" : "Pothole Cavity D40"),
-        confidence: topDet?.confidence || 0.95,
-        depthCm: 8.2,
-        areaM2: 0.60,
-        gzShock: 1.35,
-        morthCost: 3200,
-        facesRedacted: 1
-      };
+      if (res?.detections && res.detections.length > 0) {
+        const topDet = res.detections[0];
+        const detResult = {
+          success: true,
+          defectCode: topDet.defect_code,
+          defectLabel: topDet.defect_name || topDet.label,
+          confidence: topDet.confidence,
+          depthCm: topDet.depth_cm,
+          areaM2: topDet.area_m2,
+          gzShock: topDet.depth_cm ? Math.min(2.5, 0.9 + topDet.depth_cm * 0.08) : 1.0,
+          morthCost: topDet.repair_cost_inr || 2400,
+          facesRedacted: facesCount
+        };
 
-      setDetectionResult(detResult);
-      setProcessingStage('completed');
-      setUploadProgress(100);
-      setFeedback({ type: 'success', message: '✓ Perception analysis completed with DPDP Act 2023 forensic compliance.' });
+        setDetectionResult(detResult);
+        setProcessingStage('completed');
+        setUploadProgress(100);
+        setFeedback({ 
+          type: 'success', 
+          message: `✓ AI Perception detected ${res.detections.length} hazard(s) • ${facesCount > 0 ? `${facesCount} face(s) redacted under DPDP Act 2023.` : 'DPDP Privacy Filter active.'}` 
+        });
 
-      if (onUploadSuccess) {
-        onUploadSuccess(detResult);
+        if (onUploadSuccess) {
+          onUploadSuccess(detResult);
+        }
+      } else {
+        // Honest handling: 0 road hazards detected in clear road or non-road image
+        const clearResult = {
+          success: true,
+          defectCode: "CLEAR",
+          defectLabel: "Road Surface Clear / No Hazards Detected",
+          confidence: 1.0,
+          facesRedacted: facesCount
+        };
+
+        setDetectionResult(clearResult);
+        setProcessingStage('completed');
+        setUploadProgress(100);
+        setFeedback({ 
+          type: 'success', 
+          message: `✓ Perception analysis complete: 0 road hazards detected. ${facesCount > 0 ? `${facesCount} face(s) anonymized under DPDP Act 2023.` : 'DPDP Privacy Filter active.'}` 
+        });
+
+        if (onUploadSuccess) {
+          onUploadSuccess(clearResult);
+        }
       }
     } catch (err: any) {
+      console.error("Upload error:", err);
       setFeedback({ type: 'error', message: err?.message || 'Error processing footage' });
     } finally {
       setIsUploading(false);
@@ -370,7 +398,13 @@ export const UploadFootageModal: React.FC<UploadFootageModalProps> = ({
               {(sanitizedPreviewUrl || previewUrl) && (
                 <div className="absolute top-2.5 left-2.5 z-20 flex items-center gap-1.5 px-2.5 py-1 rounded bg-black/80 border border-white/20 text-[11px] text-emerald-400 font-mono">
                   <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
-                  <span>DPDP 2023 SANITIZED • {facesRedactedCount} FACE REDACTED</span>
+                  <span>
+                    {sanitizedPreviewUrl
+                      ? (facesRedactedCount > 0 
+                          ? `DPDP 2023 SANITIZED • ${facesRedactedCount} FACE(S) REDACTED` 
+                          : "DPDP 2023 PRIVACY FILTER ACTIVE")
+                      : (isUploading ? "ANONYMIZING & ANALYZING..." : "RAW INPUT READY")}
+                  </span>
                 </div>
               )}
             </div>
@@ -378,35 +412,49 @@ export const UploadFootageModal: React.FC<UploadFootageModalProps> = ({
 
           {/* 3. DETECTION DETAILS & PARAMETERS */}
           {detectionResult && (
-            <div className="p-4 rounded-xl border border-emerald-200 dark:border-emerald-900/60 bg-emerald-50/60 dark:bg-emerald-950/40 space-y-3">
+            <div className={`p-4 rounded-xl border space-y-3 ${
+              detectionResult.defectCode === 'CLEAR'
+                ? 'border-blue-200 dark:border-blue-900/60 bg-blue-50/60 dark:bg-blue-950/40'
+                : 'border-emerald-200 dark:border-emerald-900/60 bg-emerald-50/60 dark:bg-emerald-950/40'
+            }`}>
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-                  <span className="text-xs font-bold text-emerald-900 dark:text-emerald-200 uppercase tracking-wider">
-                    Perception Output &bull; {detectionResult.defectLabel}
+                  <CheckCircle2 className={`w-4 h-4 ${
+                    detectionResult.defectCode === 'CLEAR' ? 'text-blue-600 dark:text-blue-400' : 'text-emerald-600 dark:text-emerald-400'
+                  }`} />
+                  <span className={`text-xs font-bold uppercase tracking-wider ${
+                    detectionResult.defectCode === 'CLEAR' ? 'text-blue-900 dark:text-blue-200' : 'text-emerald-900 dark:text-emerald-200'
+                  }`}>
+                    {detectionResult.defectCode === 'CLEAR' ? 'Surface Status' : 'Perception Output'} &bull; {detectionResult.defectLabel}
                   </span>
                 </div>
-                <span className="text-xs font-mono font-bold px-2 py-0.5 rounded bg-emerald-100 dark:bg-emerald-900 text-emerald-800 dark:text-emerald-300">
-                  {Math.round(detectionResult.confidence * 100)}% Confidence Match
+                <span className={`text-xs font-mono font-bold px-2 py-0.5 rounded ${
+                  detectionResult.defectCode === 'CLEAR'
+                    ? 'bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-300'
+                    : 'bg-emerald-100 dark:bg-emerald-900 text-emerald-800 dark:text-emerald-300'
+                }`}>
+                  {detectionResult.defectCode === 'CLEAR' ? 'Surface Clear' : `${Math.round(detectionResult.confidence * 100)}% Confidence Match`}
                 </span>
               </div>
 
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
-                <div className="p-2.5 rounded-lg bg-white/80 dark:bg-slate-900 border border-emerald-100 dark:border-emerald-900/60">
-                  <span className="text-[10.5px] text-slate-500 uppercase font-semibold">Corridor:</span>
+                <div className="p-2.5 rounded-lg bg-white/80 dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
+                  <span className="text-[10.5px] text-slate-500 uppercase font-semibold">Location / Corridor:</span>
                   <p className="font-bold text-slate-900 dark:text-slate-100 truncate mt-0.5">{selectedCorridor}</p>
                 </div>
-                <div className="p-2.5 rounded-lg bg-white/80 dark:bg-slate-900 border border-emerald-100 dark:border-emerald-900/60">
+                <div className="p-2.5 rounded-lg bg-white/80 dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
                   <span className="text-[10.5px] text-slate-500 uppercase font-semibold">Camera Node:</span>
                   <p className="font-bold text-slate-900 dark:text-slate-100 font-mono mt-0.5">{targetBus}</p>
                 </div>
-                <div className="p-2.5 rounded-lg bg-white/80 dark:bg-slate-900 border border-emerald-100 dark:border-emerald-900/60">
+                <div className="p-2.5 rounded-lg bg-white/80 dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
                   <span className="text-[10.5px] text-slate-500 uppercase font-semibold">Channel:</span>
                   <p className="font-bold text-slate-900 dark:text-slate-100 mt-0.5">CH {channel} (Automotive HDR)</p>
                 </div>
-                <div className="p-2.5 rounded-lg bg-white/80 dark:bg-slate-900 border border-emerald-100 dark:border-emerald-900/60">
-                  <span className="text-[10.5px] text-slate-500 uppercase font-semibold">Forensic Privacy:</span>
-                  <p className="font-bold text-emerald-600 dark:text-emerald-400 mt-0.5">DPDP Act 2023 Verified</p>
+                <div className="p-2.5 rounded-lg bg-white/80 dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
+                  <span className="text-[10.5px] text-slate-500 uppercase font-semibold">DPDP Redactions:</span>
+                  <p className="font-bold text-emerald-600 dark:text-emerald-400 mt-0.5">
+                    {facesRedactedCount > 0 ? `${facesRedactedCount} Face(s) Blurred` : 'DPDP Filter Active'}
+                  </p>
                 </div>
               </div>
             </div>
@@ -440,7 +488,7 @@ export const UploadFootageModal: React.FC<UploadFootageModalProps> = ({
             <Button
               variant="primary"
               size="sm"
-              onClick={handleUploadAndAnalyze}
+              onClick={() => handleUploadAndAnalyze()}
               disabled={isUploading || (!file && !previewUrl)}
               isLoading={isUploading}
             >

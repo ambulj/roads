@@ -119,6 +119,8 @@ async def upload_stream_media(
         result["evidence_url"] = evidence_url
         result["evidence_id"] = evidence_id
         result["detections"] = detections
+        result["faces_detected"] = detect_res.get("faces_detected", 0) if 'detect_res' in locals() and detect_res else 0
+        result["privacy_meta"] = detect_res.get("privacy_meta", {}) if 'detect_res' in locals() and detect_res else {}
 
     return result
 

@@ -537,8 +537,8 @@ class YoloInferenceEngine:
                 except Exception as e:
                     print(f"[YOLO ENGINE] Indian roads model warning: {e}")
 
-            # 3. Morphological Cavity & Crack Analysis (as complementary/fallback)
-            if len(detections) == 0:
+            # 3. Morphological Cavity & Crack Analysis (as complementary/fallback on real road surfaces)
+            if len(detections) == 0 and privacy_meta.get("faces_detected", 0) == 0:
                 roi_y = int(h * 0.35)
                 roi = sanitized_base[roi_y:, :]
                 gray = cv2.cvtColor(roi, cv2.COLOR_BGR2GRAY)
@@ -720,6 +720,8 @@ class YoloInferenceEngine:
             "inference_time_ms": elapsed_ms,
             "detections_count": len(detections),
             "detections": detections,
+            "faces_detected": privacy_meta.get("faces_detected", 0),
+            "privacy_meta": privacy_meta,
             "quality_metrics": quality_metrics,
             "annotated_frame": sanitized_frame,
             "annotated_b64": f"data:image/jpeg;base64,{b64_str}",
