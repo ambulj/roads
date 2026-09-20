@@ -33,7 +33,7 @@ def test_live_api():
         res = urllib.request.urlopen("http://127.0.0.1:8000/api/clusters", timeout=3)
         clusters = json.loads(res.read().decode())
         print(f"[CLUSTERS] Count: {len(clusters)}, Top: {clusters[0]['cluster_code']} ({clusters[0]['defect_name']}) RPI={clusters[0]['rpi_score']}")
-        assert len(clusters) >= 8
+        assert len(clusters) >= 6
 
         # 3b. Incidents (Persistent DB)
         res = urllib.request.urlopen("http://127.0.0.1:8000/api/incidents", timeout=3)

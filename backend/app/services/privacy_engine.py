@@ -30,78 +30,104 @@ class PrivacyEngine:
         self.total_frames_processed: int = 0
         self.avg_latency_ms: float = 1.8
         
-        # Load OpenCV Haar Cascade for Frontal Face & Profile Face
+        # Models
+        self.yunet_detector = None
         self.face_cascade = None
         self.profile_cascade = None
         self._load_classifiers()
 
     def _load_classifiers(self):
-        """Initializes OpenCV face detection models."""
-        try:
-            cascade_path = cv2.data.haarcascades + "haarcascade_frontalface_default.xml"
-            if os.path.exists(cascade_path):
-                self.face_cascade = cv2.CascadeClassifier(cascade_path)
-            
-            profile_path = cv2.data.haarcascades + "haarcascade_profileface.xml"
-            if os.path.exists(profile_path):
-                self.profile_cascade = cv2.CascadeClassifier(profile_path)
-        except Exception as e:
-            print(f"[PRIVACY ENGINE] Warning loading Haar cascades: {e}")
+        """Initializes high-accuracy deep learning (YuNet) and fallback face detection models."""
+        weights_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "weights")
+        yunet_path = os.path.join(weights_dir, "face_detection_yunet.onnx")
+        
+        # 1. Initialize YuNet DNN Face Detector (SOTA, <2ms inference, accurate in any lighting)
+        if hasattr(cv2, 'FaceDetectorYN_create') and os.path.exists(yunet_path):
+            try:
+                self.yunet_detector = cv2.FaceDetectorYN_create(
+                    model=yunet_path,
+                    config='',
+                    input_size=(320, 320),
+                    score_threshold=0.55,
+                    nms_threshold=0.3,
+                    top_k=5000
+                )
+            except Exception as e:
+                print(f"[PRIVACY ENGINE] Warning initializing YuNet detector: {e}")
+
+        # 2. Fallback to Haar Cascades if available
+        if hasattr(cv2, 'CascadeClassifier'):
+            try:
+                frontal_path = os.path.join(weights_dir, "haarcascade_frontalface_default.xml")
+                if not os.path.exists(frontal_path) and hasattr(cv2, 'data') and hasattr(cv2.data, 'haarcascades'):
+                    frontal_path = cv2.data.haarcascades + "haarcascade_frontalface_default.xml"
+                if os.path.exists(frontal_path):
+                    self.face_cascade = cv2.CascadeClassifier(frontal_path)
+
+                profile_path = os.path.join(weights_dir, "haarcascade_profileface.xml")
+                if not os.path.exists(profile_path) and hasattr(cv2, 'data') and hasattr(cv2.data, 'haarcascades'):
+                    profile_path = cv2.data.haarcascades + "haarcascade_profileface.xml"
+                if os.path.exists(profile_path):
+                    self.profile_cascade = cv2.CascadeClassifier(profile_path)
+            except Exception as e:
+                print(f"[PRIVACY ENGINE] Warning loading Haar cascades: {e}")
 
     def detect_faces(self, frame: np.ndarray) -> List[Tuple[int, int, int, int]]:
         """
         Detects faces in frame and returns list of (x, y, w, h) bounding boxes.
-        Uses frontal face + profile face cascades with CLAHE/histogram equalization.
+        Uses high-performance YuNet ONNX neural detector with fallback to Haar cascades.
         """
-        if frame is None or frame.size == 0 or self.face_cascade is None:
+        if frame is None or frame.size == 0:
             return []
 
         h, w = frame.shape[:2]
-        
-        # Downscale for ultra-fast processing if 1080p or larger
-        scale = 1.0
-        if w > 960:
-            scale = 960.0 / w
-            proc_w, proc_h = 960, int(h * scale)
-            small = cv2.resize(frame, (proc_w, proc_h), interpolation=cv2.INTER_LINEAR)
-        else:
-            small = frame
+        detected_boxes: List[Tuple[int, int, int, int]] = []
 
-        gray = cv2.cvtColor(small, cv2.COLOR_BGR2GRAY) if len(small.shape) == 3 else small
-        eq_gray = cv2.equalizeHist(gray)
-        
-        # 1. Frontal face detection
-        faces = self.face_cascade.detectMultiScale(
-            eq_gray,
-            scaleFactor=1.12,
-            minNeighbors=3,
-            minSize=(20, 20)
-        )
+        # 1. Try SOTA YuNet DNN Detector
+        if self.yunet_detector is not None:
+            try:
+                # Standardize to fixed 640x640 inference canvas to prevent graph buffer reallocations
+                proc_img = cv2.resize(frame, (640, 640), interpolation=cv2.INTER_LINEAR)
+                self.yunet_detector.setInputSize((640, 640))
+                _, faces = self.yunet_detector.detect(proc_img)
+                if faces is not None:
+                    scale_x = float(w) / 640.0
+                    scale_y = float(h) / 640.0
+                    for f in faces:
+                        fx, fy, fw, fh = f[0:4]
+                        orig_x = max(0, int(fx * scale_x))
+                        orig_y = max(0, int(fy * scale_y))
+                        orig_w = int(fw * scale_x)
+                        orig_h = int(fh * scale_y)
+                        
+                        if orig_w > 10 and orig_h > 10:
+                            detected_boxes.append((orig_x, orig_y, orig_w, orig_h))
+                if len(detected_boxes) > 0:
+                    return detected_boxes
+            except Exception as e:
+                print(f"[PRIVACY ENGINE] YuNet inference error: {e}")
 
-        all_boxes = list(faces) if len(faces) > 0 else []
+        # 2. Fallback to Haar Cascade
+        if self.face_cascade is not None:
+            try:
+                scale = 1.0
+                if w > 960:
+                    scale = 960.0 / float(w)
+                    proc_w, proc_h = 960, int(h * scale)
+                    small = cv2.resize(frame, (proc_w, proc_h), interpolation=cv2.INTER_LINEAR)
+                else:
+                    small = frame
 
-        # 2. Profile face detection (pedestrians looking sideways/curbside)
-        if self.profile_cascade is not None:
-            profiles = self.profile_cascade.detectMultiScale(
-                eq_gray,
-                scaleFactor=1.15,
-                minNeighbors=3,
-                minSize=(20, 20)
-            )
-            if len(profiles) > 0:
-                all_boxes.extend(list(profiles))
-
-        detected_boxes = []
-        for (fx, fy, fw, fh) in all_boxes:
-            # Scale back up to original frame coordinates
-            if scale != 1.0:
-                orig_x = int(fx / scale)
-                orig_y = int(fy / scale)
-                orig_w = int(fw / scale)
-                orig_h = int(fh / scale)
-            else:
-                orig_x, orig_y, orig_w, orig_h = fx, fy, fw, fh
-            detected_boxes.append((orig_x, orig_y, orig_w, orig_h))
+                gray = cv2.cvtColor(small, cv2.COLOR_BGR2GRAY) if len(small.shape) == 3 else small
+                eq_gray = cv2.equalizeHist(gray)
+                faces = self.face_cascade.detectMultiScale(eq_gray, scaleFactor=1.12, minNeighbors=3, minSize=(20, 20))
+                for (fx, fy, fw, fh) in faces:
+                    if scale != 1.0:
+                        detected_boxes.append((int(fx / scale), int(fy / scale), int(fw / scale), int(fh / scale)))
+                    else:
+                        detected_boxes.append((fx, fy, fw, fh))
+            except Exception as e:
+                print(f"[PRIVACY ENGINE] Cascade inference error: {e}")
 
         return detected_boxes
 
