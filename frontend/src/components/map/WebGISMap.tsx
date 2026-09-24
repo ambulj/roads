@@ -594,10 +594,10 @@ export const WebGISMap: React.FC<WebGISMapProps> = ({
         el.style.display = showIncidents ? 'block' : 'none';
         el.innerHTML = `
           <div style="position: relative; display: flex; align-items: center; justify-content: center;">
-            <div style="width: 24px; height: 24px; border-radius: 50%; background: #09090b; border: 2px solid ${color}; box-shadow: 0 0 10px ${color}88; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: bold; font-family: monospace; color: ${color};">
+            <div style="width: 22px; height: 22px; border-radius: 50%; background: #09090b; border: 2px solid ${color}; box-shadow: 0 0 8px ${color}66; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: bold; font-family: monospace; color: ${color};">
               !
             </div>
-            <div style="position: absolute; top: -16px; font-family: monospace; font-size: 8.5px; font-weight: 700; background: #09090b; color: ${color}; padding: 1px 4px; border-radius: 3px; border: 1px solid ${color}; white-space: nowrap;">
+            <div class="opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity duration-150" style="position: absolute; top: -20px; font-family: monospace; font-size: 8.5px; font-weight: 700; background: #09090b; color: ${color}; padding: 1px 5px; border-radius: 3px; border: 1px solid ${color}; white-space: nowrap; z-index: 30;">
               ${String(incident.incident_type).replace(/_/g, ' ')}
             </div>
           </div>

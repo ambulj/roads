@@ -53,41 +53,41 @@ export const PriorityQueue: React.FC<PriorityQueueProps> = ({
   return (
     <div className="flex-1 flex flex-col min-h-0 h-full select-none bg-white dark:bg-zinc-900 overflow-hidden font-mono border-t lg:border-t-0 border-zinc-200 dark:border-zinc-800">
       {/* Header Tabs */}
-      <div className="flex items-center border-b border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950">
+      <div className="h-10 flex items-stretch border-b border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950 font-mono text-xs">
         <button
           onClick={() => setQueueTab('defects')}
-          className={`flex-1 py-2.5 px-2 text-xs font-mono font-semibold flex items-center justify-center gap-1.5 transition-colors border-b-2 ${
+          className={`flex-1 h-full px-2 font-medium flex items-center justify-center gap-1.5 transition-colors border-b-2 text-[11px] ${
             queueTab === 'defects'
-              ? 'border-cyan-500 text-cyan-600 dark:text-cyan-400 bg-white dark:bg-zinc-900'
+              ? 'border-cyan-500 text-cyan-600 dark:text-cyan-400 bg-white dark:bg-zinc-900 font-semibold'
               : 'border-transparent text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-200'
           }`}
         >
-          <TriangleAlert className="w-3.5 h-3.5" />
-          <span>Road Hazards ({clusters.length})</span>
+          <TriangleAlert className="w-3.5 h-3.5 shrink-0" />
+          <span className="truncate">Hazards ({clusters.length})</span>
         </button>
 
         <button
           onClick={() => setQueueTab('incidents')}
-          className={`flex-1 py-2.5 px-2 text-xs font-mono font-semibold flex items-center justify-center gap-1.5 transition-colors border-b-2 ${
+          className={`flex-1 h-full px-2 font-medium flex items-center justify-center gap-1.5 transition-colors border-b-2 text-[11px] ${
             queueTab === 'incidents'
-              ? 'border-rose-500 text-rose-600 dark:text-rose-400 bg-white dark:bg-zinc-900'
+              ? 'border-rose-500 text-rose-600 dark:text-rose-400 bg-white dark:bg-zinc-900 font-semibold'
               : 'border-transparent text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-200'
           }`}
         >
-          <Car className="w-3.5 h-3.5" />
-          <span>Incidents ({incidents.length})</span>
+          <Car className="w-3.5 h-3.5 shrink-0" />
+          <span className="truncate">Incidents ({incidents.length})</span>
         </button>
 
         <button
           onClick={() => setQueueTab('logs')}
-          className={`flex-1 py-2.5 px-2 text-xs font-mono font-semibold flex items-center justify-center gap-1.5 transition-colors border-b-2 ${
+          className={`flex-1 h-full px-2 font-medium flex items-center justify-center gap-1.5 transition-colors border-b-2 text-[11px] ${
             queueTab === 'logs'
-              ? 'border-purple-500 text-purple-600 dark:text-purple-400 bg-white dark:bg-zinc-900'
+              ? 'border-purple-500 text-purple-600 dark:text-purple-400 bg-white dark:bg-zinc-900 font-semibold'
               : 'border-transparent text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-200'
           }`}
         >
-          <Activity className="w-3.5 h-3.5" />
-          <span>Edge Logs</span>
+          <Activity className="w-3.5 h-3.5 shrink-0" />
+          <span className="truncate">Edge Logs</span>
         </button>
       </div>
 

@@ -338,26 +338,26 @@ export const CommandCenter: React.FC<CommandCenterProps> = ({
         <div className="w-full lg:w-[380px] xl:w-[420px] shrink-0 border-t lg:border-t-0 lg:border-l border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 flex flex-col min-h-0 h-[480px] lg:h-full z-10">
           
           {/* Dock Tab Selector */}
-          <div className="flex items-center border-b border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950 font-mono text-xs">
+          <div className="h-9 flex items-stretch border-b border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950 font-mono text-xs">
             <button
               onClick={() => setDockTab('queue')}
-              className={`flex-1 py-2.5 px-3 font-bold text-center border-b-2 transition-colors ${
+              className={`flex-1 h-full px-3 text-center border-b-2 transition-colors text-[11px] font-medium flex items-center justify-center ${
                 dockTab === 'queue'
-                  ? 'border-cyan-500 text-cyan-600 dark:text-cyan-400 bg-white dark:bg-zinc-900'
+                  ? 'border-cyan-500 text-cyan-600 dark:text-cyan-400 bg-white dark:bg-zinc-900 font-semibold'
                   : 'border-transparent text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-200'
               }`}
             >
-              Priority Triage Queue ({hazardClustersCount + incidentCount})
+              <span>Triage Queue ({hazardClustersCount + incidentCount})</span>
             </button>
             <button
               onClick={() => setDockTab('inspector')}
-              className={`flex-1 py-2.5 px-3 font-bold text-center border-b-2 transition-colors ${
+              className={`flex-1 h-full px-3 text-center border-b-2 transition-colors text-[11px] font-medium flex items-center justify-center ${
                 dockTab === 'inspector'
-                  ? 'border-cyan-500 text-cyan-600 dark:text-cyan-400 bg-white dark:bg-zinc-900'
+                  ? 'border-cyan-500 text-cyan-600 dark:text-cyan-400 bg-white dark:bg-zinc-900 font-semibold'
                   : 'border-transparent text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-200'
               }`}
             >
-              Forensic Inspector &amp; Actions
+              <span>Forensic Inspector</span>
             </button>
           </div>
 

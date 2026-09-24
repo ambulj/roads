@@ -72,7 +72,7 @@ export const SidebarNav: React.FC<SidebarNavProps> = ({
     },
     {
       id: "capture",
-      label: t("nav.capture", "Onboard Dashcam Ingest"),
+      label: t("nav.capture", "Dashcam Ingest"),
       icon: Camera,
       route: "capture",
       tier: "edge",
@@ -82,14 +82,14 @@ export const SidebarNav: React.FC<SidebarNavProps> = ({
     // ── Tier 2: Centralized Civic Platform ──
     {
       id: "command",
-      label: t("nav.command", "GIS Command Center"),
+      label: t("nav.command", "Command Center"),
       icon: LayoutDashboard,
       route: "command",
       tier: "central"
     },
     {
       id: "incidents",
-      label: t("nav.incidents", "Incidents & ANPR Docket"),
+      label: t("nav.incidents", "Incidents & ANPR"),
       icon: AlertTriangle,
       route: "incidents",
       tier: "central",
@@ -98,7 +98,7 @@ export const SidebarNav: React.FC<SidebarNavProps> = ({
     },
     {
       id: "work-orders",
-      label: t("nav.workOrders", "PWD Work Orders & SLA"),
+      label: t("nav.workOrders", "Work Orders & SLA"),
       icon: Wrench,
       route: "work-orders",
       tier: "central",
@@ -107,14 +107,14 @@ export const SidebarNav: React.FC<SidebarNavProps> = ({
     },
     {
       id: "memory",
-      label: t("nav.memory", "Road Intelligence & Twin"),
+      label: t("nav.memory", "Road Intelligence"),
       icon: Compass,
       route: "memory",
       tier: "central"
     },
     {
       id: "analytics",
-      label: user.role === "admin2" ? "Edge AI MLOps Analytics" : t("nav.analytics", "Analytics & Transit Delay"),
+      label: user.role === "admin2" ? "Edge AI Analytics" : t("nav.analytics", "Transit Analytics"),
       icon: user.role === "admin2" ? Cpu : ChartColumn,
       route: "analytics",
       tier: user.role === "admin2" ? "edge" : "central",
@@ -138,14 +138,14 @@ export const SidebarNav: React.FC<SidebarNavProps> = ({
     return (
       <div className="mb-4">
         {isExpanded && (
-          <div className="px-3 mb-1.5">
-            <div className="text-[10px] font-mono font-bold tracking-wider text-zinc-500 uppercase flex items-center justify-between">
+          <div className="px-3 mb-2">
+            <div className="text-xs font-semibold text-zinc-500 dark:text-zinc-400 flex items-center justify-between">
               <span>{title}</span>
-              <span className="text-[9px] text-zinc-400 dark:text-zinc-600 font-normal">{subtitle}</span>
+              <span className="text-[11px] text-zinc-400 dark:text-zinc-500 font-normal">{subtitle}</span>
             </div>
           </div>
         )}
-        <div className="space-y-0.5">
+        <div className="space-y-1.5">
           {items.map((item) => {
             const Icon = item.icon;
             const isActive = currentRoute === item.route;
@@ -155,7 +155,7 @@ export const SidebarNav: React.FC<SidebarNavProps> = ({
                 onClick={() => handleClick(item.route)}
                 title={!isExpanded ? item.label : undefined}
                 className={`
-                  w-full flex items-center gap-2.5 px-3 py-2 text-xs font-mono transition-colors text-left
+                  w-full min-h-[40px] flex items-center gap-2.5 px-3 py-2.5 text-xs font-mono transition-colors text-left rounded-md
                   ${isActive 
                     ? "bg-zinc-200 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 font-semibold border-l-2 border-cyan-500" 
                     : "text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800/60 hover:text-zinc-900 dark:hover:text-zinc-200"
@@ -165,12 +165,12 @@ export const SidebarNav: React.FC<SidebarNavProps> = ({
               >
                 <Icon className={`w-4 h-4 shrink-0 ${isActive ? "text-cyan-600 dark:text-cyan-400" : "text-zinc-500"}`} />
                 {isExpanded && (
-                  <span className="truncate flex-1">{item.label}</span>
+                  <span className="flex-1 whitespace-nowrap overflow-hidden text-ellipsis">{item.label}</span>
                 )}
                 {isExpanded && item.badge && (
                   <span
                     className={`
-                      text-[9px] px-1.5 py-0.5 rounded font-mono font-medium
+                      text-[10px] px-1.5 py-0.5 rounded font-mono font-medium shrink-0
                       ${item.badgeVariant === "rose" ? "bg-rose-100 dark:bg-rose-950 text-rose-700 dark:text-rose-300 border border-rose-300 dark:border-rose-900" : ""}
                       ${item.badgeVariant === "amber" ? "bg-amber-100 dark:bg-amber-950 text-amber-700 dark:text-amber-300 border border-amber-300 dark:border-amber-900" : ""}
                       ${item.badgeVariant === "cyan" ? "bg-cyan-100 dark:bg-cyan-950 text-cyan-700 dark:text-cyan-300 border border-cyan-300 dark:border-cyan-900" : ""}
@@ -207,7 +207,7 @@ export const SidebarNav: React.FC<SidebarNavProps> = ({
           border-r border-zinc-200 dark:border-zinc-800
           transition-all duration-150 ease-in-out select-none
           ${isMobileOpen ? "translate-x-0 w-64" : "-translate-x-full md:translate-x-0"}
-          ${isCollapsed && !isMobileOpen ? "md:w-[60px]" : "md:w-60"}
+          ${isCollapsed && !isMobileOpen ? "md:w-[60px]" : "md:w-64"}
         `}
       >
         {/* Mobile-only Top Close Bar */}

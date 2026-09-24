@@ -145,40 +145,37 @@ export const Header: React.FC<HeaderProps> = ({
       </div>
 
       {/* ── RIGHT: TOOLS, ROLE PROFILE & CONTROLS ─────────────────────────── */}
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-2.5 sm:gap-3">
         {/* Command Palette Trigger */}
         <button
           onClick={onOpenCommandPalette}
-          className="hidden sm:flex items-center gap-2 px-2.5 py-1 text-xs font-mono text-zinc-500 bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded hover:border-zinc-400 dark:hover:border-zinc-600 transition-colors"
+          className="hidden md:flex items-center gap-2 px-2.5 py-1 text-xs font-mono text-zinc-500 bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-md hover:border-zinc-400 dark:hover:border-zinc-600 transition-colors"
         >
           <Search className="w-3.5 h-3.5 text-zinc-400" />
-          <span>Search / Command</span>
-          <kbd className="text-[9px] bg-zinc-200 dark:bg-zinc-800 px-1 py-0.2 rounded text-zinc-600 dark:text-zinc-400">⌘K</kbd>
+          <span>Search</span>
+          <kbd className="text-[9px] bg-zinc-200 dark:bg-zinc-800 px-1 py-0.2 rounded text-zinc-600 dark:text-zinc-400 font-mono">⌘K</kbd>
         </button>
-
-        {/* Live Clock */}
-        <div className="hidden xl:block">
-          <LiveClock />
-        </div>
 
         {/* Audio Mute Toggle */}
         <button
           onClick={handleToggleMute}
-          className="p-1.5 text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded transition-colors"
-          title={isMuted ? "Unmute sirens & dispatch audio" : "Mute alerts audio"}
+          className="p-1.5 text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-md transition-colors"
+          title={isMuted ? "Unmute alerts audio" : "Mute alerts audio"}
         >
           {isMuted ? <VolumeX className="w-4 h-4 text-zinc-400" /> : <Volume2 className="w-4 h-4 text-cyan-500" />}
         </button>
 
         {/* Theme & Language Toggles */}
-        <ThemeToggle />
-        <LanguageToggle />
+        <div className="flex items-center gap-1.5">
+          <ThemeToggle />
+          <LanguageToggle />
+        </div>
 
         {/* Incident Alerts Bell */}
         <div className="relative">
           <button
             onClick={() => setIsNotificationCenterOpen(!isNotificationCenterOpen)}
-            className="p-1.5 text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded transition-colors relative"
+            className="p-1.5 text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-md transition-colors relative"
             title="Real-Time Incident Alerts"
           >
             <Bell className="w-4 h-4" />
@@ -202,17 +199,14 @@ export const Header: React.FC<HeaderProps> = ({
         <div className="relative" ref={profileMenuRef}>
           <button
             onClick={() => setIsProfileMenuOpen(!isProfileMenuOpen)}
-            className="flex items-center gap-1.5 px-2 py-1 rounded bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 hover:border-zinc-400 dark:hover:border-zinc-600 transition-colors text-left"
+            className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 hover:border-zinc-400 dark:hover:border-zinc-600 transition-colors text-left"
           >
             <div className="w-6 h-6 rounded bg-zinc-800 text-cyan-300 font-mono text-[10px] font-bold flex items-center justify-center border border-zinc-700">
               {user.avatar_initials || "AD"}
             </div>
-            <div className="hidden md:block">
+            <div className="hidden sm:block">
               <div className="text-[11px] font-mono font-bold text-zinc-900 dark:text-zinc-100 leading-tight">
                 {getRoleBadgeLabel(user.role)}
-              </div>
-              <div className="text-[9px] text-zinc-500 font-mono leading-none truncate max-w-[120px]">
-                {user.name}
               </div>
             </div>
             <ChevronDown className="w-3 h-3 text-zinc-400" />
