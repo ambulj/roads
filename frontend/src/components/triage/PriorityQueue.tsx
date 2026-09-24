@@ -131,10 +131,10 @@ export const PriorityQueue: React.FC<PriorityQueueProps> = ({
       )}
 
       {/* Items List */}
-      <div className="flex-1 min-h-0 overflow-y-auto divide-y divide-slate-100 dark:divide-slate-800/80 custom-scrollbar">
+      <div className="flex-1 min-h-0 overflow-y-auto divide-y divide-slate-200 dark:divide-slate-800 custom-scrollbar">
         {queueTab === 'defects' ? (
           sortedAndFilteredClusters.length === 0 ? (
-            <div className="p-6 text-center text-xs text-slate-400">
+            <div className="p-6 text-center text-xs text-slate-500 dark:text-slate-400">
               No matching road hazards.
             </div>
           ) : (
@@ -148,37 +148,37 @@ export const PriorityQueue: React.FC<PriorityQueueProps> = ({
                 <div
                   key={cluster.id}
                   onClick={() => onSelectCluster(cluster)}
-                  className={`p-3 transition cursor-pointer flex flex-col gap-1 ${
+                  className={`p-3 transition cursor-pointer flex flex-col gap-1.5 ${
                     isSelected
-                      ? 'bg-blue-50/80 dark:bg-slate-800/90 border-l-3 border-l-blue-600'
-                      : 'hover:bg-slate-50/80 dark:hover:bg-slate-850/60'
+                      ? 'bg-blue-50/90 dark:bg-slate-800 border-l-4 border-l-blue-600'
+                      : 'hover:bg-slate-50 dark:hover:bg-slate-800/60'
                   }`}
                 >
-                  {/* Top Line: Severity Tag + Title + RPI */}
+                  {/* Top Line: Severity Tag + Title + Priority Score */}
                   <div className="flex items-center justify-between gap-2">
                     <div className="flex items-center gap-1.5 min-w-0">
-                      <span className={`px-1.5 py-0.2 rounded text-[10px] font-mono font-bold shrink-0 ${
+                      <span className={`px-1.5 py-0.5 rounded text-[11px] font-mono font-bold shrink-0 ${
                         isCritical
-                          ? 'bg-red-50 text-red-700 border border-red-200 dark:bg-red-950/60 dark:text-red-300 dark:border-red-900'
+                          ? 'bg-rose-100 text-rose-900 border border-rose-300 dark:bg-rose-950/80 dark:text-rose-200 dark:border-rose-800'
                           : isHigh
-                            ? 'bg-amber-50 text-amber-700 border border-amber-200 dark:bg-amber-950/60 dark:text-amber-300 dark:border-amber-900'
-                            : 'bg-slate-100 text-slate-700 border border-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700'
+                            ? 'bg-amber-100 text-amber-900 border border-amber-300 dark:bg-amber-950/80 dark:text-amber-200 dark:border-amber-800'
+                            : 'bg-slate-100 text-slate-800 border border-slate-300 dark:bg-slate-800 dark:text-slate-200 dark:border-slate-700'
                       }`}>
-                        {cluster.severity_level === 'critical' ? 'P0' : cluster.severity_level === 'high' ? 'P1' : 'P2'}
+                        {cluster.severity_level === 'critical' ? 'P0 Critical' : cluster.severity_level === 'high' ? 'P1 High' : 'P2 Medium'}
                       </span>
                       <span className="font-semibold text-xs text-slate-900 dark:text-white truncate">
                         {cluster.defect_name}
                       </span>
                     </div>
                     <span className="font-mono text-xs font-bold text-slate-900 dark:text-slate-100 shrink-0">
-                      RPI {effectiveRpi}
+                      Score {effectiveRpi}
                     </span>
                   </div>
 
                   {/* Bottom Line: Corridor + Contractor + SLA */}
-                  <div className="flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400 font-mono">
+                  <div className="flex items-center justify-between text-xs text-slate-600 dark:text-slate-300 font-mono">
                     <span className="truncate max-w-[200px]">{cluster.road_name}</span>
-                    <span className="shrink-0 text-slate-400">{cluster.sla_hours || 24}h SLA</span>
+                    <span className="shrink-0 text-slate-600 dark:text-slate-400 font-medium">{cluster.sla_hours || 24}h SLA</span>
                   </div>
                 </div>
               );
@@ -186,7 +186,7 @@ export const PriorityQueue: React.FC<PriorityQueueProps> = ({
           )
         ) : queueTab === 'incidents' ? (
           incidents.length === 0 ? (
-            <div className="p-6 text-center text-xs text-slate-400">
+            <div className="p-6 text-center text-xs text-slate-500 dark:text-slate-400">
               No active safety incidents.
             </div>
           ) : (
@@ -196,23 +196,23 @@ export const PriorityQueue: React.FC<PriorityQueueProps> = ({
                 <div
                   key={incident.id}
                   onClick={() => onSelectIncident?.(incident)}
-                  className={`p-3 transition cursor-pointer flex flex-col gap-1 ${
+                  className={`p-3 transition cursor-pointer flex flex-col gap-1.5 ${
                     isSelected
-                      ? 'bg-blue-50/80 dark:bg-slate-800/90 border-l-3 border-l-blue-600'
-                      : 'hover:bg-slate-50/80 dark:hover:bg-slate-850/60'
+                      ? 'bg-blue-50/90 dark:bg-slate-800 border-l-4 border-l-blue-600'
+                      : 'hover:bg-slate-50 dark:hover:bg-slate-800/60'
                   }`}
                 >
                   <div className="flex items-center justify-between gap-2">
                     <span className="font-semibold text-xs text-slate-900 dark:text-white truncate">
-                      {incident.incident_type?.replace('_', ' ')}
+                      {incident.incident_type?.replace(/_/g, ' ')}
                     </span>
-                    <span className="px-1.5 py-0.2 rounded text-[10px] font-mono font-bold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300">
+                    <span className="px-1.5 py-0.5 rounded text-xs font-mono font-bold bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200 border border-slate-300 dark:border-slate-700">
                       {incident.plate_number || incident.id}
                     </span>
                   </div>
-                  <div className="flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400 font-mono">
+                  <div className="flex items-center justify-between text-xs text-slate-600 dark:text-slate-300 font-mono">
                     <span className="truncate max-w-[200px]">{incident.road_name}</span>
-                    <span className="capitalize">{incident.status}</span>
+                    <span className="capitalize font-medium">{incident.status}</span>
                   </div>
                 </div>
               );
@@ -221,27 +221,27 @@ export const PriorityQueue: React.FC<PriorityQueueProps> = ({
         ) : (
           /* Live AI Perception & Telemetry Stream */
           auditLogs.length === 0 ? (
-            <div className="p-6 text-center text-xs text-slate-400 font-mono">
+            <div className="p-6 text-center text-xs text-slate-500 dark:text-slate-400 font-mono">
               Listening for real-time edge telemetry events...
             </div>
           ) : (
             auditLogs.map((log) => (
-              <div key={log.id} className="p-2.5 transition hover:bg-slate-50 dark:hover:bg-slate-800/50 flex flex-col gap-1">
-                <div className="flex items-center justify-between gap-2 text-[10px] font-mono">
-                  <span className="px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300 font-bold">
+              <div key={log.id} className="p-3 transition hover:bg-slate-50 dark:hover:bg-slate-800/50 flex flex-col gap-1">
+                <div className="flex items-center justify-between gap-2 text-xs font-mono">
+                  <span className="px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-900 dark:bg-emerald-950/80 dark:text-emerald-200 font-bold border border-emerald-300 dark:border-emerald-800">
                     {log.type || 'TELEMETRY'}
                   </span>
-                  <div className="flex items-center gap-2 text-slate-400">
+                  <div className="flex items-center gap-2 text-slate-500 dark:text-slate-400">
                     <span>{log.latency_ms || 42}ms</span>
                     <span>{log.timestamp}</span>
                   </div>
                 </div>
-                <div className="text-xs text-slate-800 dark:text-slate-200 font-sans leading-relaxed">
+                <div className="text-xs text-slate-900 dark:text-slate-100 font-sans leading-relaxed">
                   {log.message}
                 </div>
                 {log.bus_id && (
-                  <div className="text-[10px] text-slate-400 font-mono flex items-center gap-1">
-                    <Radio className="w-2.5 h-2.5 text-blue-500" />
+                  <div className="text-xs text-slate-600 dark:text-slate-400 font-mono flex items-center gap-1">
+                    <Radio className="w-3 h-3 text-blue-600 dark:text-blue-400" />
                     <span>{log.bus_id}</span>
                   </div>
                 )}

@@ -11,7 +11,8 @@ import {
   FileCheck2,
   Crown,
   Sparkles,
-  ChevronRight
+  ChevronRight,
+  Cpu
 } from 'lucide-react';
 import { useAuth, OFFICER_DETAILS } from '../../context/AuthContext';
 import { CivicRole } from '../../types';
@@ -54,6 +55,27 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
       ],
       gated: [
         'Omnipotent System Master: Complete control over all civic subsystems & zero operational restrictions'
+      ]
+    },
+    admin2: {
+      title: 'Edge AI Ops Director (Admin 2 — Edge Computing)',
+      equivalent: 'Chief Director of Fleet Edge AI & Autonomous In-Bus Systems',
+      icon: Cpu,
+      iconColor: 'text-teal-400',
+      summary: 'Edge Computing Command Console controlling in-bus AI Boxes, NPU acceleration, and 98.8% bandwidth savings.',
+      sees: [
+        'Real-time Edge NPU diagnostics: Rockchip RK3588 (6 TOPS) & Jetson Orin (20 TOPS) Nodes',
+        '3-Tier telemetry streams (P0 Real-Time Cellular, P1 Batch Sync, P3 Depot Wi-Fi Ring Buffer)',
+        'Live SSD local FIFO buffers, packet transmission savings (>98.5%), and IMU shock correlation'
+      ],
+      operations: [
+        'Deploy and monitor in-vehicle Edge AI Boxes (edge_agent.py) across all transit routes',
+        'Trigger remote Over-The-Air (OTA) neural model flashing and cryptographic weight verification',
+        'Inspect in-RAM DPDP Act 2023 optical privacy blurring before cellular dispatch',
+        'Configure offline ring-buffer retention policies and high-severity P0 alert thresholds'
+      ],
+      gated: [
+        'Edge Computing Director: Master control over fleet AI boxes, neural perception models & telemetry routing'
       ]
     },
     traffic_police: {
@@ -144,7 +166,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
     }
   };
 
-  const availableRoles: CivicRole[] = ['admin', 'traffic_police', 'pwd_engineer', 'rto_officer', 'commissioner'];
+  const availableRoles: CivicRole[] = ['admin', 'admin2', 'traffic_police', 'pwd_engineer', 'rto_officer', 'commissioner'];
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-950/80 backdrop-blur-sm animate-fadeIn select-none">

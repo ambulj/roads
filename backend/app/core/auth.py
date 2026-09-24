@@ -50,6 +50,19 @@ SEEDED_USERS: Dict[str, Dict[str, Any]] = {
         "salt": DEFAULT_SALT,
         "permissions": ["all", "work_orders", "incidents", "anpr_review", "echallan", "pcr_dispatch", "vahan_compliance", "executive_oversight", "high_value_approval", "policy_reports", "command"]
     },
+    "admin2": {
+        "username": "admin2",
+        "name": "Dr. V. Arvind, Ph.D.",
+        "email": "admin2@metravue.chennai.gov.in",
+        "role": "admin2",
+        "designation": "Chief Director of Fleet Edge AI & Autonomous Systems",
+        "department": "Decentralized Edge Telematics & MLOps Command (ICCC-Edge)",
+        "agency": "State Urban Transport & Edge Intelligence Authority",
+        "badge_number": "EDGE-ADMIN-002",
+        "password_hash": DEFAULT_PW_HASH,
+        "salt": DEFAULT_SALT,
+        "permissions": ["all", "edge_mlops", "fleet_telemetry", "work_orders", "incidents", "anpr_review", "echallan", "command"]
+    },
     "traffic_police": {
         "username": "traffic_police",
         "name": "S. Priya, IPS",
@@ -108,7 +121,10 @@ SEEDED_USERS: Dict[str, Dict[str, Any]] = {
 ROLE_ALIASES: Dict[str, str] = {
     "safety": "traffic_police",
     "maintenance": "pwd_engineer",
-    "operations": "rto_officer"
+    "operations": "rto_officer",
+    "admin2": "admin2",
+    "edge_admin": "admin2",
+    "edge": "admin2"
 }
 
 def resolve_canonical_role(role_name: str) -> str:

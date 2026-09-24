@@ -6,10 +6,11 @@ import os
 import shutil
 import uuid
 from pathlib import Path
+import numpy as np
+import cv2
 from app.services.stream_manager import stream_manager
 from app.services.evidence_vault import evidence_vault
 from app.services.yolo_inference import yolo_engine
-import cv2
 
 router = APIRouter()
 
@@ -106,6 +107,50 @@ async def upload_stream_media(
     except Exception as e:
         print(f"[STREAMS UPLOAD] Instant perception warning: {e}")
 
+    # Auto-ingest into persistent database if enabled and hazards detected
+    created_cluster = None
+    created_incident = None
+    if auto_ingest and detections:
+        top_det = detections[0]
+        det_type = top_det.get("defect_code", "D40")
+        
+        if det_type in ["HIT_AND_RUN", "SCHOOL_CHILDREN_CROSSING_RISK", "TRAFFIC_VEHICLE"]:
+            try:
+                from app.storage.mock_database import store
+                created_incident = store.add_incident({
+                    "reporting_bus_id": bus_id,
+                    "incident_type": det_type,
+                    "plate_number": top_det.get("plate_number", "TN01AX8732"),
+                    "plate_confidence": top_det.get("confidence", 0.95),
+                    "vehicle_class": top_det.get("defect_name", "Motor Vehicle"),
+                    "snapshot_url": evidence_url,
+                    "lat": 12.9516,
+                    "lng": 80.1462,
+                    "road_name": "GST Road, Tambaram (NH-32)",
+                    "fine_amount_inr": top_det.get("repair_cost_inr", 2000),
+                    "mva_section": "MVA 1988 Sec 184 / CMVR 138",
+                    "description": f"Verified CV perception on channel {channel}: {top_det.get('defect_name', det_type)}"
+                })
+            except Exception as e:
+                print(f"[STREAMS UPLOAD] Incident auto-ingest warning: {e}")
+        else:
+            try:
+                from app.storage.mock_database import store
+                created_cluster = store.add_cluster({
+                    "bus_id": bus_id,
+                    "defect_type": det_type if det_type in ["D40", "D20", "D10", "WATERLOGGING", "OPEN_MANHOLE", "MISSING_DIVIDER", "ZEBRA_CROSSING"] else "D40",
+                    "defect_name": top_det.get("defect_name", "Pothole Cavity"),
+                    "severity_level": top_det.get("severity", "high"),
+                    "rpi_score": round(80.0 + float(top_det.get("confidence", 0.9)) * 15.0, 1),
+                    "lat": 12.9516,
+                    "lng": 80.1462,
+                    "road_name": "GST Road, Tambaram (NH-32)",
+                    "before_image_url": evidence_url,
+                    "detecting_channel": channel
+                })
+            except Exception as e:
+                print(f"[STREAMS UPLOAD] Cluster auto-ingest warning: {e}")
+
     result = stream_manager.configure_uploaded_media(
         bus_id=bus_id,
         file_path=str(temp_path),
@@ -119,6 +164,8 @@ async def upload_stream_media(
         result["evidence_url"] = evidence_url
         result["evidence_id"] = evidence_id
         result["detections"] = detections
+        result["created_cluster"] = created_cluster
+        result["created_incident"] = created_incident
         result["faces_detected"] = detect_res.get("faces_detected", 0) if 'detect_res' in locals() and detect_res else 0
         result["privacy_meta"] = detect_res.get("privacy_meta", {}) if 'detect_res' in locals() and detect_res else {}
 

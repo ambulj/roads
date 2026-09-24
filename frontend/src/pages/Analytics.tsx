@@ -577,7 +577,7 @@ export const Analytics: React.FC<AnalyticsProps> = ({ metrics, corridors, fleet 
                   </Badge>
                 </div>
                 <p className="text-xs text-slate-500 dark:text-slate-400">
-                  Real-time Passenger Car Unit (PCU) congestion correlated with road surface defect clusters.
+                  Real-time traffic volume and corridor vehicle density correlated with road surface defect clusters.
                 </p>
               </div>
             </div>
@@ -586,39 +586,39 @@ export const Analytics: React.FC<AnalyticsProps> = ({ metrics, corridors, fleet 
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
             {bottlenecks.map((bn) => (
-              <div key={bn.id} className="p-4 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 space-y-2.5 shadow-xs">
+              <div key={bn.id} className="p-4 rounded-md border border-slate-300 dark:border-slate-800 bg-white dark:bg-slate-900 space-y-2.5 shadow-none">
                 <div className="flex items-start justify-between gap-2">
                   <div>
                     <h3 className="text-xs font-bold text-slate-900 dark:text-white leading-snug">{bn.road_name}</h3>
-                    <span className="text-[10px] font-mono text-slate-400">Detected: {bn.detected_at}</span>
+                    <span className="text-xs font-mono text-slate-500">Detected: {bn.detected_at}</span>
                   </div>
-                  <span className={`px-2 py-0.5 rounded-md font-mono text-[10px] font-bold border ${
+                  <span className={`px-2 py-0.5 rounded-md font-mono text-xs font-bold border ${
                     bn.congestion_level === 'GRIDLOCK'
-                      ? 'bg-rose-50 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400 border-rose-300 dark:border-rose-800'
-                      : 'bg-amber-50 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 border-amber-300 dark:border-amber-800'
+                      ? 'bg-rose-100 dark:bg-rose-950/80 text-rose-900 dark:text-rose-200 border-rose-300 dark:border-rose-800'
+                      : 'bg-amber-100 dark:bg-amber-950/80 text-amber-900 dark:text-amber-200 border-amber-300 dark:border-amber-800'
                   }`}>
                     {bn.congestion_level}
                   </span>
                 </div>
 
-                <div className="grid grid-cols-3 gap-2 p-2.5 rounded-xl bg-slate-50 dark:bg-slate-950/60 border border-slate-100 dark:border-slate-800 text-center">
+                <div className="grid grid-cols-3 gap-2 p-2.5 rounded-md bg-slate-50 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800 text-center">
                   <div>
-                    <span className="block text-[9.5px] text-slate-500 uppercase">PCU Density</span>
+                    <span className="block text-xs text-slate-600 dark:text-slate-400 uppercase font-medium">Vehicle Density</span>
                     <span className="font-mono text-xs font-bold text-slate-800 dark:text-slate-200">{bn.density_pcu_per_km} /km</span>
                   </div>
                   <div>
-                    <span className="block text-[9.5px] text-slate-500 uppercase">Avg Speed</span>
-                    <span className="font-mono text-xs font-bold text-blue-600 dark:text-blue-400">{bn.average_speed_kmh} km/h</span>
+                    <span className="block text-xs text-slate-600 dark:text-slate-400 uppercase font-medium">Avg Speed</span>
+                    <span className="font-mono text-xs font-bold text-blue-700 dark:text-blue-400">{bn.average_speed_kmh} km/h</span>
                   </div>
                   <div>
-                    <span className="block text-[9.5px] text-slate-500 uppercase">Speed Drop</span>
-                    <span className="font-mono text-xs font-bold text-rose-600 dark:text-rose-400">-{bn.speed_drop_pct}%</span>
+                    <span className="block text-xs text-slate-600 dark:text-slate-400 uppercase font-medium">Speed Drop</span>
+                    <span className="font-mono text-xs font-bold text-rose-700 dark:text-rose-400">-{bn.speed_drop_pct}%</span>
                   </div>
                 </div>
 
-                <div className="text-[11px] text-slate-600 dark:text-slate-400 space-y-1">
-                  <p><b className="text-slate-700 dark:text-slate-300">Root Cause:</b> {bn.cause}</p>
-                  <p className="text-[10.5px] text-blue-600 dark:text-blue-400"><b className="text-slate-700 dark:text-slate-300">Diversion:</b> {bn.recommended_diversion}</p>
+                <div className="text-xs text-slate-700 dark:text-slate-300 space-y-1">
+                  <p><b className="text-slate-900 dark:text-slate-100">Root Cause:</b> {bn.cause}</p>
+                  <p className="text-xs text-blue-700 dark:text-blue-400"><b className="text-slate-900 dark:text-slate-100">Diversion:</b> {bn.recommended_diversion}</p>
                 </div>
               </div>
             ))}
@@ -627,23 +627,23 @@ export const Analytics: React.FC<AnalyticsProps> = ({ metrics, corridors, fleet 
       )}
 
       {/* ── ARTERIAL VEHICLE DENSITY & ANPR OCR ENGINE ─────────────────────── */}
-      <Card className="p-4 lg:p-6 flex flex-col gap-4 shadow-xs">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-slate-100 dark:border-slate-800">
+      <Card className="p-4 lg:p-6 flex flex-col gap-4 shadow-none">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-slate-200 dark:border-slate-800">
           <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-500">
+            <div className="w-8 h-8 rounded-md bg-blue-100 dark:bg-blue-950 border border-blue-300 dark:border-blue-800 flex items-center justify-center text-blue-700 dark:text-blue-300">
               <Scan className="w-4 h-4" />
             </div>
             <div>
               <div className="flex items-center gap-2">
                 <h2 className="text-sm font-bold uppercase tracking-tight text-slate-900 dark:text-slate-100">
-                  Arterial Vehicle Density (IRC:106 PCU) &amp; ANPR Engine
+                  Arterial Traffic Density &amp; Number Plate Recognition
                 </h2>
                 <Badge variant="medium" size="sm" className="font-mono font-bold">
-                  HSRP / MoRTH CMVR 50
+                  Statutory Motor Vehicle Compliance
                 </Badge>
               </div>
-              <p className="text-xs text-slate-500 dark:text-slate-400">
-                Edge Passenger Car Unit (PCU) volume metrics coupled with High Security Registration Plate (HSRP) automated reading.
+              <p className="text-xs text-slate-600 dark:text-slate-300">
+                Corridor vehicle volume metrics coupled with High Security Registration Plate (HSRP) automated reading.
               </p>
             </div>
           </div>
@@ -654,7 +654,7 @@ export const Analytics: React.FC<AnalyticsProps> = ({ metrics, corridors, fleet 
             className="flex items-center gap-1.5 font-mono text-xs font-bold shrink-0"
           >
             <Scan className="w-3.5 h-3.5" />
-            {isScanningANPR ? 'Scanning Plate...' : 'Run Live HSRP ANPR Test'}
+            {isScanningANPR ? 'Scanning Plate...' : 'Run Plate Recognition Test'}
           </Button>
         </div>
 

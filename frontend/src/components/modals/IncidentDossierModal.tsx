@@ -560,18 +560,18 @@ export const IncidentDossierModal: React.FC<IncidentDossierModalProps> = ({
                 <div className="flex items-center gap-2 flex-wrap">
                   <span className={`text-xs font-mono font-bold uppercase tracking-wider px-2.5 py-0.5 rounded border ${
                     isHitAndRun
-                      ? 'bg-rose-600 text-white border-rose-700'
+                      ? 'bg-rose-700 text-white border-rose-800'
                       : isWaterlog
-                      ? 'bg-cyan-600 text-white border-cyan-700'
+                      ? 'bg-blue-700 text-white border-blue-800'
                       : isOpenManhole
-                      ? 'bg-red-600 text-white border-red-700'
-                      : 'bg-blue-600 text-white border-blue-700'
+                      ? 'bg-rose-700 text-white border-rose-800'
+                      : 'bg-blue-700 text-white border-blue-800'
                   }`}>
-                    {isHitAndRun ? '🚨 CRITICAL HIT & RUN' :
-                     isRashDriving ? '⚡ RASH DRIVING INFRACTION' :
-                     isZebraCrossing ? '🚸 PEDESTRIAN CROSSWALK ENDANGERMENT' :
-                     isWaterlog ? '🌊 CRITICAL WATERLOGGING HAZARD' :
-                     isOpenManhole ? '⚠️ OPEN DRAIN FATALITY HAZARD' :
+                    {isHitAndRun ? 'Critical Hit & Run' :
+                     isRashDriving ? 'Rash Driving Infraction' :
+                     isZebraCrossing ? 'Pedestrian Crosswalk Obstruction' :
+                     isWaterlog ? 'Critical Stormwater Waterlogging' :
+                     isOpenManhole ? 'Open Drain Chamber Hazard' :
                      String(incident.incident_type).replace(/_/g, ' ')}
                   </span>
                   <span className="text-xs font-mono font-bold opacity-90">
@@ -579,20 +579,20 @@ export const IncidentDossierModal: React.FC<IncidentDossierModalProps> = ({
                   </span>
                 </div>
 
-                <h2 className="text-base sm:text-lg font-extrabold tracking-tight leading-snug">
+                <h2 className="text-base sm:text-lg font-bold tracking-tight leading-snug">
                   {incident.description || legalCode.title}
                 </h2>
 
                 <div className="text-xs opacity-90 flex items-center gap-3 flex-wrap font-medium pt-0.5">
-                  <span className="flex items-center gap-1">📍 <b>{incident.road_name}</b></span>
+                  <span className="flex items-center gap-1"><b>{incident.road_name}</b></span>
                   {incident.plate_number ? (
                     <span className="flex items-center gap-1">
-                      🚗 Plate: <b className="font-mono bg-white/80 dark:bg-black/40 px-2 py-0.5 rounded border border-black/10 dark:border-white/10">{incident.plate_number}</b>
+                      Plate: <b className="font-mono bg-white/80 dark:bg-black/40 px-2 py-0.5 rounded border border-black/10 dark:border-white/10">{incident.plate_number}</b>
                     </span>
                   ) : null}
                   {incident.target_speed_kmh ? (
                     <span className="flex items-center gap-1 text-rose-700 dark:text-rose-300 font-bold">
-                      ⚡ Clocked Speed: <b>{incident.target_speed_kmh} km/h</b>
+                      Recorded Speed: <b>{incident.target_speed_kmh} km/h</b>
                     </span>
                   ) : null}
                 </div>

@@ -20,7 +20,7 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(({
       )}
       <input
         ref={ref}
-        className={`w-full font-sans text-xs bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 transition-all duration-150 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 disabled:opacity-50 disabled:pointer-events-none shadow-xs ${
+        className={`w-full font-sans text-xs bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 placeholder:text-slate-500 dark:placeholder:text-slate-400 border border-slate-300 dark:border-slate-700 rounded-md px-3 py-2 transition-colors duration-150 outline-hidden focus:border-blue-600 focus:ring-1 focus:ring-blue-600 disabled:opacity-50 disabled:pointer-events-none ${
           leftIcon ? 'pl-9' : ''
         } ${rightElement ? 'pr-9' : ''} ${className}`}
         {...props}
@@ -49,13 +49,13 @@ export const Select = React.forwardRef<HTMLSelectElement, SelectProps>(({
   return (
     <div className="relative flex items-center w-full">
       {leftIcon && (
-        <div className="absolute left-3 pointer-events-none text-slate-400 dark:text-slate-500 flex items-center justify-center">
+        <div className="absolute left-3 pointer-events-none text-slate-500 dark:text-slate-400 flex items-center justify-center">
           {leftIcon}
         </div>
       )}
       <select
         ref={ref}
-        className={`w-full font-sans text-xs bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 transition-all duration-150 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 disabled:opacity-50 disabled:pointer-events-none shadow-xs appearance-none cursor-pointer ${
+        className={`w-full font-sans text-xs bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 border border-slate-300 dark:border-slate-700 rounded-md px-3 py-2 transition-colors duration-150 outline-hidden focus:border-blue-600 focus:ring-1 focus:ring-blue-600 disabled:opacity-50 disabled:pointer-events-none cursor-pointer ${
           leftIcon ? 'pl-9' : ''
         } ${className}`}
         {...props}

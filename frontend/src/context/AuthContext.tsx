@@ -36,6 +36,32 @@ export const OFFICER_DETAILS: Record<CivicRole, { profile: UserProfile; meta: Of
       ]
     }
   },
+  admin2: {
+    profile: {
+      id: 'usr-admin-02',
+      name: 'Dr. V. Arvind, Ph.D.',
+      email: 'admin2@metravue.chennai.gov.in',
+      role: 'admin2',
+      designation: 'Chief Director of Fleet Edge AI & Autonomous Systems',
+      department: 'Decentralized Edge Telematics & MLOps Command (ICCC-Edge)',
+      agency: 'State Urban Transport & Edge Intelligence Authority',
+      badge_number: 'EDGE-ADMIN-002',
+      avatar_initials: 'EA',
+      last_login: 'Active Now (Edge Computing MLOps Deck)'
+    },
+    meta: {
+      jurisdiction: 'State-Wide Autonomous Edge Fleet & Transit NPU Cluster',
+      commandFocus: 'Edge AI Nodes, 3-Tier Telemetry Routing, Onboard YOLO Optimization, SSD Ring Buffers & Bandwidth Conservation',
+      activeQueueCount: 12,
+      allowedRoutes: ['command', 'fleet', 'analytics', 'incidents', 'work-orders', 'memory', 'capture'],
+      primaryMetrics: [
+        { label: 'Edge Fleet NPU', value: '6-20 TOPS active', hint: 'Rockchip RK3588 + Jetson Orin Nodes' },
+        { label: 'Bandwidth Saved', value: '98.8% Cellular', hint: 'Metadata JSON vs raw 1080p stream' },
+        { label: 'Active Edge Nodes', value: '5 / 5 Online', hint: 'Zero-hardware RTSP + NPU sync' },
+        { label: 'Offline Ring Buffers', value: '100% Retained', hint: '128GB SSD local circular buffer' }
+      ]
+    }
+  },
   traffic_police: {
     profile: {
       id: 'usr-police-01',
@@ -144,6 +170,7 @@ export const OFFICER_DETAILS: Record<CivicRole, { profile: UserProfile; meta: Of
 
 export const SEEDED_OFFICERS: Record<CivicRole, UserProfile> = {
   admin: OFFICER_DETAILS.admin.profile,
+  admin2: OFFICER_DETAILS.admin2.profile,
   traffic_police: OFFICER_DETAILS.traffic_police.profile,
   pwd_engineer: OFFICER_DETAILS.pwd_engineer.profile,
   rto_officer: OFFICER_DETAILS.rto_officer.profile,
@@ -153,6 +180,8 @@ export const SEEDED_OFFICERS: Record<CivicRole, UserProfile> = {
 // Map legacy role strings to canonical CivicRole
 export const CANONICAL_ROLE_MAP: Record<string, CivicRole> = {
   admin: 'admin',
+  admin2: 'admin2',
+  edge_admin: 'admin2',
   commissioner: 'commissioner',
   safety: 'traffic_police',
   traffic_police: 'traffic_police',
@@ -376,7 +405,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   // 2. Road / PWD Authority: Work order approval, contractor assignment, SLA enforcement, sump pumps. No police dispatches.
   // 3. RTO / Transport Dept: VAHAN RTO lookup, compliance audits. No police dispatch, no road paving approvals.
   // 4. Transport Commissioner: Executive oversight rollup, high-value intervention sanctions, policy reports. Read-mostly in queues.
-  const isAdmin = activeRole === 'admin';
+  const isAdmin = activeRole === 'admin' || activeRole === 'admin2';
   const canDispatchWorkOrder = isAdmin || activeRole === 'pwd_engineer' || activeRole === 'commissioner';
   const canIssueEChallan = isAdmin || activeRole === 'traffic_police';
   const canDeploySumpPump = isAdmin || activeRole === 'pwd_engineer';
@@ -393,6 +422,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const getRoleBadgeLabel = (role: CivicRole): string => {
     switch (role) {
       case 'admin': return 'System Administrator (Master Control)';
+      case 'admin2': return 'Edge AI Ops Director (Admin 2)';
       case 'traffic_police': return 'Traffic Police (City Wing)';
       case 'pwd_engineer': return 'Road / PWD Maintenance Authority';
       case 'rto_officer': return 'RTO / Transport Department';
@@ -408,6 +438,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           bg: 'bg-emerald-100 dark:bg-emerald-950/80',
           text: 'text-emerald-800 dark:text-emerald-300',
           border: 'border-emerald-300 dark:border-emerald-800'
+        };
+      case 'admin2':
+        return {
+          bg: 'bg-emerald-100 dark:bg-emerald-950/90 shadow-[0_0_15px_rgba(16,185,129,0.3)]',
+          text: 'text-emerald-900 dark:text-emerald-300 font-bold',
+          border: 'border-emerald-400 dark:border-emerald-500'
         };
       case 'traffic_police':
         return {

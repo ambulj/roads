@@ -234,50 +234,50 @@ export const CommandCenter: React.FC<CommandCenterProps> = ({
         </div>
 
         {/* 2. STREAMLINED SEARCH & FILTER BAR */}
-        <div className="bg-white dark:bg-[#101726] border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-2 shadow-xs flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2">
+        <div className="bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-800 rounded-md px-3 py-2 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2 shadow-none">
           {/* Search Box */}
-          <div className="relative flex-1 min-w-[200px] max-w-md">
-            <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+          <div className="relative flex-1 min-w-[220px] max-w-md">
+            <Search className="w-4 h-4 text-slate-500 absolute left-3 top-1/2 -translate-y-1/2" />
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search roads, POIs, or defect codes..."
-              className="w-full h-8 pl-8 pr-3 text-xs bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-800 dark:text-slate-200 placeholder:text-slate-400 focus:outline-hidden focus:border-blue-500 font-mono transition"
+              placeholder="Filter by road corridor, POI, or defect type..."
+              className="w-full h-8 pl-9 pr-3 text-xs bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-md text-slate-900 dark:text-slate-100 placeholder:text-slate-500 focus:outline-hidden focus:border-blue-600 font-sans transition"
             />
           </div>
 
           {/* Filter Controls */}
-          <div className="flex items-center gap-2 text-xs font-mono justify-end">
+          <div className="flex items-center gap-2 text-xs font-sans justify-end flex-wrap">
             <select
               value={selectedStatus}
               onChange={(e) => setSelectedStatus(e.target.value)}
-              className="h-8 px-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-700 dark:text-slate-300 font-medium focus:outline-hidden focus:border-blue-500 transition text-[11px] cursor-pointer"
+              className="h-8 px-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-md text-slate-800 dark:text-slate-200 font-medium focus:outline-hidden focus:border-blue-600 transition text-xs cursor-pointer"
             >
-              <option value="ACTIVE">Active</option>
+              <option value="ACTIVE">Active Triage</option>
               <option value="ALL">All Status</option>
-              <option value="RESOLVED">Resolved</option>
+              <option value="RESOLVED">Verified Resolved</option>
             </select>
 
             <select
               value={selectedSeverity}
               onChange={(e) => setSelectedSeverity(e.target.value)}
-              className="h-8 px-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-700 dark:text-slate-300 font-medium focus:outline-hidden focus:border-blue-500 transition text-[11px] cursor-pointer"
+              className="h-8 px-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-md text-slate-800 dark:text-slate-200 font-medium focus:outline-hidden focus:border-blue-600 transition text-xs cursor-pointer"
             >
               <option value="ALL">All Severities</option>
-              <option value="critical">🔴 Critical (P0)</option>
-              <option value="high">🟠 High (P1)</option>
-              <option value="medium">🟡 Medium (P2)</option>
-              <option value="low">🟢 Low (P3)</option>
+              <option value="critical">Critical (P0)</option>
+              <option value="high">High (P1)</option>
+              <option value="medium">Medium (P2)</option>
+              <option value="low">Low (P3)</option>
             </select>
 
             {hasActiveFilters && (
               <button
                 onClick={handleResetFilters}
-                className="h-8 px-2.5 rounded-lg bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-[11px] font-semibold flex items-center gap-1 transition shrink-0 cursor-pointer"
+                className="h-8 px-2.5 rounded-md bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 text-xs font-semibold flex items-center gap-1 transition shrink-0 cursor-pointer border border-slate-300 dark:border-slate-700"
                 title="Reset filters"
               >
-                <RotateCcw className="w-3 h-3" />
+                <RotateCcw className="w-3.5 h-3.5" />
                 <span>Reset</span>
               </button>
             )}
@@ -285,20 +285,20 @@ export const CommandCenter: React.FC<CommandCenterProps> = ({
             {onOpenLifecycleDemo && (
               <button
                 onClick={onOpenLifecycleDemo}
-                className="h-8 px-3 rounded-lg bg-blue-600 hover:bg-blue-500 text-white font-semibold text-[11px] flex items-center gap-1.5 transition active:scale-95 cursor-pointer shrink-0"
-                title="Interactive Lifecycle Simulation"
+                className="h-8 px-3 rounded-md bg-blue-700 hover:bg-blue-800 text-white font-semibold text-xs flex items-center gap-1.5 transition cursor-pointer shrink-0"
+                title="Interactive Lifecycle Demonstration"
               >
                 <Sparkles className="w-3.5 h-3.5" />
-                <span>Interactive Demo</span>
+                <span>Interactive Lifecycle</span>
               </button>
             )}
           </div>
         </div>
 
         {/* 3. OPERATIONAL 3-PANE COCKPIT: ACTION QUEUE -> LIVE GIS MAP -> OPERATOR INSPECTOR */}
-        <section className="grid grid-cols-1 lg:grid-cols-[280px_minmax(0,1fr)] xl:grid-cols-[280px_minmax(0,1fr)_340px] gap-3 items-stretch">
+        <section className="grid grid-cols-1 lg:grid-cols-[300px_minmax(0,1fr)] xl:grid-cols-[300px_minmax(0,1fr)_340px] gap-3 items-stretch">
           {/* Left: Autonomous Action Queue */}
-          <aside className="border border-slate-200 dark:border-slate-800 bg-[#fbfcfb] dark:bg-[#101827] flex flex-col shadow-sm h-[580px] xl:h-[680px] rounded-xl overflow-hidden min-h-0">
+          <aside className="border border-slate-300 dark:border-slate-800 bg-white dark:bg-slate-900 flex flex-col shadow-none h-[580px] xl:h-[680px] rounded-md overflow-hidden min-h-0">
             <PriorityQueue
               clusters={filteredClusters}
               incidents={filteredIncidents}
@@ -316,7 +316,7 @@ export const CommandCenter: React.FC<CommandCenterProps> = ({
           </aside>
 
           {/* Center: Live GIS Map */}
-          <div className="border border-slate-200 dark:border-slate-800 bg-[#0c1625] flex flex-col overflow-hidden rounded-xl shadow-xs min-h-[560px]">
+          <div className="border border-slate-300 dark:border-slate-800 bg-[#0c1625] flex flex-col overflow-hidden rounded-md shadow-none min-h-[560px]">
             <div id="main-map-wrapper" className="w-full relative flex-1 flex flex-col min-h-[560px]">
               <WebGISMap
                 clusters={filteredClusters}
@@ -339,7 +339,7 @@ export const CommandCenter: React.FC<CommandCenterProps> = ({
           </div>
 
           {/* Right: Operator Forensic Inspector & 1-Click Action Dock */}
-          <aside className="border border-slate-200 dark:border-slate-800 bg-white dark:bg-[#101827] flex flex-col shadow-sm min-h-[560px] max-h-[660px] rounded-xl overflow-hidden">
+          <aside className="border border-slate-300 dark:border-slate-800 bg-white dark:bg-slate-900 flex flex-col shadow-none min-h-[560px] max-h-[660px] rounded-md overflow-hidden">
             <OperatorInspectorPanel
               selectedCluster={activeSelectedIncident ? null : selectedCluster}
               selectedIncident={activeSelectedIncident}

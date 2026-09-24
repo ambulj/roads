@@ -75,3 +75,5 @@ scratch/
 backend/uploads/*
 !backend/uploads/.gitkeep
 backend/data/test_cache/
+edge_buffer_*.json
+

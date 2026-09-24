@@ -1289,6 +1289,95 @@ class PersistentStore:
         finally:
             db.close()
 
+    def add_cluster(self, cluster_data: Dict[str, Any]) -> Dict[str, Any]:
+        """Creates a new road hazard cluster with verified evidence in the persistent database."""
+        db = self._get_db_session()
+        try:
+            from app.models.db_models import DBDistressCluster
+            lat = float(cluster_data.get("lat", 12.9516))
+            lng = float(cluster_data.get("lng", 80.1462))
+            defect_type = cluster_data.get("defect_type", "D40")
+            defect_name = cluster_data.get("defect_name") or ("Pothole Cavity" if defect_type == "D40" else "Road Surface Distress")
+            
+            total_clusters = db.query(DBDistressCluster).count()
+            cluster_id = cluster_data.get("id") or f"cl-{uuid.uuid4().hex[:8]}"
+            cluster_code = cluster_data.get("cluster_code") or f"WO-{total_clusters + 1:04d}"
+            
+            nearest_poi, poi_dist = find_nearest_poi(lat, lng)
+            rpi = float(cluster_data.get("rpi_score") or calculate_rpi(DefectType(defect_type) if defect_type in DefectType._value2member_map_ else DefectType.D40, 1, "Major Arterial", poi_dist))
+            sev = cluster_data.get("severity_level") or get_severity_label(rpi)
+            sla = int(cluster_data.get("sla_hours") or get_recommended_sla(sev))
+            now_str = datetime.now(timezone.utc).strftime("%d %b, %I:%M %p")
+
+            new_cluster = DBDistressCluster(
+                id=cluster_id,
+                cluster_code=cluster_code,
+                defect_type=defect_type,
+                defect_name=defect_name,
+                severity_level=sev,
+                rpi_score=rpi,
+                pass_count=int(cluster_data.get("pass_count", 1)),
+                road_name=cluster_data.get("road_name") or "Metropolitan Arterial Link",
+                classification=cluster_data.get("classification") or "Major Arterial",
+                nearest_poi=cluster_data.get("nearest_poi") or nearest_poi,
+                poi_distance_m=float(cluster_data.get("poi_distance_m", poi_dist)),
+                assigned_agency=cluster_data.get("assigned_agency") or "Chennai Corporation PWD Emergency",
+                agency_phone=cluster_data.get("agency_phone") or "+91 94451 90000",
+                sla_hours=sla,
+                status=cluster_data.get("status", "open"),
+                lat=lat,
+                lng=lng,
+                before_image_url=cluster_data.get("before_image_url") or cluster_data.get("evidence_url") or "https://images.unsplash.com/photo-1515162816999-a0c47dc192f7",
+                after_image_url=cluster_data.get("after_image_url"),
+                field_notes=cluster_data.get("field_notes"),
+                detecting_camera_position=cluster_data.get("detecting_camera_position", "FRONT_WINDSHIELD"),
+                detecting_channel=int(cluster_data.get("detecting_channel", 1)),
+                created_at=cluster_data.get("created_at") or now_str,
+                updated_at=cluster_data.get("updated_at") or now_str
+            )
+            db.add(new_cluster)
+            db.commit()
+
+            # Prepend to perception audit log
+            self.audit_logs.insert(0, {
+                "id": f"log-{uuid.uuid4().hex[:6]}",
+                "timestamp": "Just now",
+                "bus_id": cluster_data.get("bus_id", "MOBILE-DASHCAM"),
+                "corridor": new_cluster.road_name,
+                "message": f"Verified Road Hazard Created: {new_cluster.cluster_code} ({new_cluster.defect_name}) • RPI={new_cluster.rpi_score}",
+                "latency_ms": random.randint(45, 75),
+                "type": "HAZARD AUDIT"
+            })
+
+            return {
+                "id": new_cluster.id,
+                "cluster_code": new_cluster.cluster_code,
+                "defect_type": new_cluster.defect_type,
+                "defect_name": new_cluster.defect_name,
+                "severity_level": new_cluster.severity_level,
+                "rpi_score": new_cluster.rpi_score,
+                "pass_count": new_cluster.pass_count,
+                "road_name": new_cluster.road_name,
+                "classification": new_cluster.classification,
+                "nearest_poi": new_cluster.nearest_poi,
+                "poi_distance_m": new_cluster.poi_distance_m,
+                "assigned_agency": new_cluster.assigned_agency,
+                "agency_phone": new_cluster.agency_phone,
+                "sla_hours": new_cluster.sla_hours,
+                "status": new_cluster.status,
+                "lat": new_cluster.lat,
+                "lng": new_cluster.lng,
+                "before_image_url": new_cluster.before_image_url,
+                "after_image_url": new_cluster.after_image_url,
+                "field_notes": new_cluster.field_notes,
+                "detecting_camera_position": new_cluster.detecting_camera_position,
+                "detecting_channel": new_cluster.detecting_channel,
+                "created_at": new_cluster.created_at,
+                "updated_at": new_cluster.updated_at
+            }
+        finally:
+            db.close()
+
     def add_ingest(self, ingest: Dict[str, Any]) -> Dict[str, Any]:
         """Saves telemetry ping to DB and executes DBSCAN 15m clustering merge persistently."""
         db = self._get_db_session()

@@ -1,14 +1,14 @@
 {
   "version": "v1.1.0",
-  "release_date": "2026-09-20T03:07:17.018620+00:00",
+  "release_date": "2026-09-24T04:26:07.959678+00:00",
   "trained_samples": 121,
   "precision": 0.935,
   "recall": 0.912,
   "f1_score": 0.923,
-  "map_50": 0.919,
-  "map_delta": 0.054,
+  "map_50": 0.929,
+  "map_delta": 0.064,
   "training_loss": 0.24,
-  "training_time_seconds": 0.01,
+  "training_time_seconds": 0.0,
   "description": "Continuous active-learning checkpoint retrained on 121 Chennai road observations.",
   "hot_reloaded": true
 }

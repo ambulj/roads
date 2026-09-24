@@ -253,12 +253,8 @@ class YoloInferenceEngine:
                     bw = xyxy[2] - xyxy[0]
                     bh = xyxy[3] - xyxy[1]
 
-                    # Filter out full-frame image-classification artifacts (boxes covering >80% of total screen)
-                    if bw > (w * 0.80) and bh > (h * 0.75):
-                        continue
-
-                    # Filter out boxes located entirely in the sky / upper 30% of frame, or starting at the very top edge (y1 < 10% of h)
-                    if xyxy[3] < (h * 0.35) or (xyxy[1] < h * 0.10 and bh > h * 0.60):
+                    # Filter out full-frame or oversized artifacts (crossings are localized on road pavement)
+                    if bw > (w * 0.50) or bh > (h * 0.40) or xyxy[1] < (h * 0.15) or xyxy[3] < (h * 0.30):
                         continue
 
                     is_faded = conf < 0.65
@@ -342,7 +338,7 @@ class YoloInferenceEngine:
                 stripes.append((x, y + roi_y1, cw, ch))
 
         detections = []
-        if len(stripes) >= 2:
+        if len(stripes) >= 4:
             # Group stripes into a crossing bounding box
             min_x = min(s[0] for s in stripes)
             min_y = min(s[1] for s in stripes)
@@ -351,6 +347,10 @@ class YoloInferenceEngine:
             
             box_w = max_x - min_x
             box_h = max_y - min_y
+
+            # Reject boxes that are too huge or too small
+            if box_w > (w * 0.65) or box_h > (h * 0.40) or box_h < 25:
+                return detections
             
             # Contrast check for fading
             patch = gray[min_y:max_y, min_x:max_x]
@@ -414,6 +414,81 @@ class YoloInferenceEngine:
         b64_str = base64.b64encode(buffer).decode('utf-8')
         return f"data:image/jpeg;base64,{b64_str}"
 
+    def render_hud_overlay(self, image: np.ndarray, detections: List[Dict[str, Any]]) -> np.ndarray:
+        """Renders ultra-clean, high-contrast corner bracket bounding boxes and modern HUD pills."""
+        if image is None or not detections:
+            return image
+
+        overlay = image.copy()
+        h, w = image.shape[:2]
+
+        color_map = {
+            "D40": (30, 50, 245),          # Vibrant Crimson / Red (Pothole Cavity)
+            "D20": (20, 140, 255),         # Amber (Alligator Cracking)
+            "D10": (0, 200, 255),          # Gold / Yellow (Transverse Crack)
+            "D00": (240, 180, 0),          # Cyan / Sky
+            "D50": (220, 20, 60),          # Manhole
+            "OPEN_MANHOLE": (0, 215, 255), # Yellow/Orange
+            "ZEBRA_CROSSING": (50, 205, 50), # Lime Green
+            "MISSING_DIVIDER": (255, 105, 180), # Neon Pink
+        }
+
+        for det in detections:
+            bbox = det.get("bbox_pixels")
+            if not bbox or len(bbox) < 4:
+                continue
+            x1, y1, x2, y2 = [int(v) for v in bbox]
+            x1, y1 = max(0, x1), max(0, y1)
+            x2, y2 = min(w - 1, x2), min(h - 1, y2)
+            if x2 <= x1 or y2 <= y1:
+                continue
+
+            code = det.get("defect_code", "D40")
+            label = det.get("defect_name") or det.get("label", "Hazard")
+            conf = det.get("confidence", 0.9)
+            color = color_map.get(code, (0, 200, 255))
+
+            # 1. Subtle bounding rectangle with high-contrast corner brackets
+            cv2.rectangle(overlay, (x1, y1), (x2, y2), color, 1, cv2.LINE_AA)
+            
+            c_len = max(6, min(24, int(min(x2 - x1, y2 - y1) * 0.2)))
+            thickness = 2
+            # Top-Left
+            cv2.line(overlay, (x1, y1), (x1 + c_len, y1), color, thickness, cv2.LINE_AA)
+            cv2.line(overlay, (x1, y1), (x1, y1 + c_len), color, thickness, cv2.LINE_AA)
+            # Top-Right
+            cv2.line(overlay, (x2, y1), (x2 - c_len, y1), color, thickness, cv2.LINE_AA)
+            cv2.line(overlay, (x2, y1), (x2, y1 + c_len), color, thickness, cv2.LINE_AA)
+            # Bottom-Left
+            cv2.line(overlay, (x1, y2), (x1 + c_len, y2), color, thickness, cv2.LINE_AA)
+            cv2.line(overlay, (x1, y2), (x1, y2 - c_len), color, thickness, cv2.LINE_AA)
+            # Bottom-Right
+            cv2.line(overlay, (x2, y2), (x2 - c_len, y2), color, thickness, cv2.LINE_AA)
+            cv2.line(overlay, (x2, y2), (x2, y2 - c_len), color, thickness, cv2.LINE_AA)
+
+            # 2. Modern pill badge with label and confidence
+            clean_lbl = label.split('(')[0].strip()
+            text = f"{code}: {clean_lbl} ({int(conf * 100)}%)"
+            font = cv2.FONT_HERSHEY_SIMPLEX
+            font_scale = 0.45
+            font_thick = 1
+            (tw, th), baseline = cv2.getTextSize(text, font, font_scale, font_thick)
+
+            badge_y1 = max(0, y1 - th - 8)
+            badge_y2 = badge_y1 + th + 8
+            badge_x2 = min(w, x1 + tw + 12)
+
+            # Dark translucent backing pill
+            sub_rect = overlay[badge_y1:badge_y2, x1:badge_x2]
+            if sub_rect.size > 0:
+                dark_rect = np.full_like(sub_rect, (15, 23, 42))
+                cv2.addWeighted(dark_rect, 0.85, sub_rect, 0.15, 0, sub_rect)
+
+            cv2.rectangle(overlay, (x1, badge_y1), (badge_x2, badge_y2), color, 1, cv2.LINE_AA)
+            cv2.putText(overlay, text, (x1 + 6, badge_y1 + th + 3), font, font_scale, (255, 255, 255), font_thick, cv2.LINE_AA)
+
+        return overlay
+
     def detect_road_hazards(
         self,
         img: np.ndarray,
@@ -461,67 +536,46 @@ class YoloInferenceEngine:
             scale_x = w / float(target_w)
             scale_y = h / float(target_h)
 
-        # 1. Multi-Class Vehicle Perception (Cars, Buses, Trucks)
-        if self.vehicle_model is not None:
-            try:
-                v_results = self.vehicle_model(infer_img, conf=0.35, device=self.device, verbose=False)
-                for r in v_results:
-                    for box in r.boxes:
-                        cls_id = int(box.cls.item())
-                        cls_name = self.vehicle_model.names.get(cls_id, "Vehicle")
-                        conf = float(box.conf.item())
-                        xyxy = box.xyxy[0].cpu().numpy()
-                        bx1, by1 = int(xyxy[0] * scale_x), int(xyxy[1] * scale_y)
-                        bx2, by2 = int(xyxy[2] * scale_x), int(xyxy[3] * scale_y)
-                        bw, bh = max(1, bx2 - bx1), max(1, by2 - by1)
-
-                        # Filter out tiny specks (< 20px) or whole-frame artifacts
-                        if bw < 20 or bh < 20 or (bw > w * 0.90 and bh > h * 0.90):
-                            continue
-
-                        v_label = f"{cls_name.upper()} [{int(conf*100)}%]"
-                        raw_detections.append({
-                            "type": "VEHICLE_SURFACE",
-                            "defect_code": "TRAFFIC_VEHICLE",
-                            "defect_name": f"{cls_name.capitalize()} Perception",
-                            "label": v_label,
-                            "severity": "low",
-                            "confidence": round(conf, 3),
-                            "color_bgr": (255, 185, 0), # Cyber Blue
-                            "bbox_normalized": {
-                                "x": round((bx1 + bw/2.0) / float(w), 3),
-                                "y": round((by1 + bh/2.0) / float(h), 3),
-                                "w": round(bw / float(w), 3),
-                                "h": round(bh / float(h), 3)
-                            },
-                            "bbox_pixels": [bx1, by1, bx2, by2]
-                        })
-            except Exception as e:
-                print(f"[YOLO ENGINE] Vehicle model warning: {e}")
-
-        # 2. Indian Road Infrastructure Assets (Manholes, Dividers, Barricades, Zebra)
+        # 1. Indian Road Infrastructure Assets (High-precision Indian dataset)
         if self.indian_roads_model is not None:
             try:
-                ind_results = self.indian_roads_model(infer_img, conf=0.32, device=self.device, verbose=False)
+                ind_results = self.indian_roads_model(infer_img, conf=0.30, device=self.device, verbose=False)
                 for r in ind_results:
                     for box in r.boxes:
                         cls_id = int(box.cls.item())
-                        cls_name = self.indian_roads_model.names.get(cls_id, "Asset")
+                        cls_name = self.indian_roads_model.names.get(cls_id, "").lower()
                         conf = float(box.conf.item())
                         xyxy = box.xyxy[0].cpu().numpy()
                         bx1, by1 = int(xyxy[0] * scale_x), int(xyxy[1] * scale_y)
                         bx2, by2 = int(xyxy[2] * scale_x), int(xyxy[3] * scale_y)
                         bw, bh = max(1, bx2 - bx1), max(1, by2 - by1)
 
-                        if "manhole" in cls_name.lower():
-                            d_code, d_name, d_label, sev = "OPEN_MANHOLE", "IS:1726 Open Manhole Void", "OPEN MANHOLE", "critical"
-                            c_bgr = (0, 215, 255)
-                        elif "zebra" in cls_name.lower():
-                            d_code, d_name, d_label, sev = "ZEBRA_CROSSING", "Pedestrian Crosswalk", "ZEBRA CROSSING", "medium"
-                            c_bgr = (0, 230, 110)
-                        elif "barricade" in cls_name.lower() or "divider" in cls_name.lower():
-                            d_code, d_name, d_label, sev = "MISSING_DIVIDER", "Road Barrier / Divider", cls_name.upper(), "medium"
-                            c_bgr = (0, 215, 255)
+                        # Filter out tiny noise or full-screen bounding box artifacts
+                        if bw > w * 0.85 or bh > h * 0.85 or bw < 20 or bh < 20:
+                            continue
+
+                        # Filter out non-hazard background infrastructure
+                        if cls_name in ["building", "wall", "tree", "vegetation", "lamp post", "lamo post", 
+                                        "flag", "gate", "overbridge", "bridge", "petrol pump", "bus stop", 
+                                        "electricity pole", "footpath", "digital display", "tyre works", "board"]:
+                            continue
+
+                        if "manhole" in cls_name:
+                            d_code, d_name, d_label, sev, c_bgr = "OPEN_MANHOLE", "IS:1726 Open Manhole Void", "OPEN MANHOLE", "critical", (0, 215, 255)
+                        elif "zebra" in cls_name:
+                            d_code, d_name, d_label, sev, c_bgr = "ZEBRA_CROSSING", "Pedestrian Crosswalk Marking (IRC:35)", "ZEBRA CROSSING", "low", (50, 205, 50)
+                        elif "barricade" in cls_name or "divider" in cls_name:
+                            d_code, d_name, d_label, sev, c_bgr = "MISSING_DIVIDER", "Road Barrier / Divider", "ROAD BARRIER", "medium", (255, 105, 180)
+                        elif any(k in cls_name for k in ["cattle", "dog", "cow", "goat", "horse", "camel"]):
+                            d_code, d_name, d_label, sev, c_bgr = "STRAY_ANIMAL_HAZARD", f"Stray {cls_name.capitalize()} on Roadway", f"STRAY {cls_name.upper()}", "high", (0, 140, 255)
+                        elif "person" in cls_name or "police" in cls_name:
+                            d_code, d_name, d_label, sev, c_bgr = "PEDESTRIAN", "Pedestrian in Roadway", "PEDESTRIAN", "medium", (50, 205, 50)
+                        elif cls_name in ["car", "bus", "truck", "ambulance", "autorickshaw", "rikshaw", "tempo", "tractor"]:
+                            d_code, d_name, d_label, sev, c_bgr = "TRAFFIC_VEHICLE", f"{cls_name.capitalize()} in Traffic Flow", cls_name.upper(), "low", (255, 185, 0)
+                        elif "bike" in cls_name or "cycle" in cls_name:
+                            d_code, d_name, d_label, sev, c_bgr = "TWO_WHEELER", f"{cls_name.capitalize()} Two-Wheeler", "TWO WHEELER", "low", (0, 215, 255)
+                        elif "signal" in cls_name or "sign" in cls_name:
+                            d_code, d_name, d_label, sev, c_bgr = "TRAFFIC_SIGN", "Traffic Signal / Sign (IRC:67)", "TRAFFIC SIGN", "low", (0, 200, 255)
                         else:
                             continue
 
@@ -544,24 +598,73 @@ class YoloInferenceEngine:
             except Exception as e:
                 print(f"[YOLO ENGINE] Indian roads model warning: {e}")
 
-        # 3. Neural Pothole Detection (with strict Road Horizon & Aspect Ratio constraints)
-        if self.pothole_model is not None:
+        # 2. Supplementary Vehicle & Vulnerable Road User Detection
+        if self.vehicle_model is not None:
             try:
-                p_results = self.pothole_model(infer_img, conf=0.30, device=self.device, verbose=False)
-                for r in p_results:
+                v_results = self.vehicle_model(infer_img, conf=0.45, device=self.device, verbose=False)
+                for r in v_results:
                     for box in r.boxes:
+                        cls_id = int(box.cls.item())
+                        cls_name = self.vehicle_model.names.get(cls_id, "Vehicle").lower()
                         conf = float(box.conf.item())
                         xyxy = box.xyxy[0].cpu().numpy()
                         bx1, by1 = int(xyxy[0] * scale_x), int(xyxy[1] * scale_y)
                         bx2, by2 = int(xyxy[2] * scale_x), int(xyxy[3] * scale_y)
                         bw, bh = max(1, bx2 - bx1), max(1, by2 - by1)
 
-                        # Horizon Filter: Reject boxes in upper horizon / sky / trees (y1 < 28% of h, y2 < 38% of h)
-                        if by1 < int(h * 0.28) or by2 < int(h * 0.38):
+                        if bw > w * 0.80 or bh > h * 0.80 or bw < 25 or bh < 25 or by1 < int(h * 0.10):
                             continue
 
-                        # Size & aspect filter: Reject giant screen-filling boxes
-                        if bw > int(w * 0.75) or bh > int(h * 0.65) or (bw * bh) > (w * h * 0.40):
+                        if "pedestrian" in cls_name or "rider" in cls_name:
+                            d_code, d_name, d_label, sev, c_bgr = "PEDESTRIAN", "Pedestrian / Vulnerable Road User", "PEDESTRIAN", "medium", (50, 205, 50)
+                        elif "motorcyclist" in cls_name:
+                            d_code, d_name, d_label, sev, c_bgr = "TWO_WHEELER", "Motorcyclist / Two-Wheeler", "MOTORCYCLIST", "low", (0, 215, 255)
+                        elif "animal" in cls_name:
+                            d_code, d_name, d_label, sev, c_bgr = "STRAY_ANIMAL_HAZARD", "Stray Animal on Roadway", "STRAY ANIMAL", "high", (0, 140, 255)
+                        elif "sign" in cls_name:
+                            d_code, d_name, d_label, sev, c_bgr = "TRAFFIC_SIGN", "Road Safety Sign (IRC:67)", "ROAD SIGN", "low", (0, 200, 255)
+                        else:
+                            d_code, d_name, d_label, sev, c_bgr = "TRAFFIC_VEHICLE", f"{cls_name.capitalize()} in Flow", cls_name.upper(), "low", (255, 185, 0)
+
+                        raw_detections.append({
+                            "type": d_code,
+                            "defect_code": d_code,
+                            "defect_name": d_name,
+                            "label": f"{d_label} [{int(conf*100)}%]",
+                            "severity": sev,
+                            "confidence": round(conf, 3),
+                            "color_bgr": c_bgr,
+                            "bbox_normalized": {
+                                "x": round((bx1 + bw/2.0) / float(w), 3),
+                                "y": round((by1 + bh/2.0) / float(h), 3),
+                                "w": round(bw / float(w), 3),
+                                "h": round(bh / float(h), 3)
+                            },
+                            "bbox_pixels": [bx1, by1, bx2, by2]
+                        })
+            except Exception as e:
+                print(f"[YOLO ENGINE] Vehicle model warning: {e}")
+
+        # 3. Neural Pothole Detection (Strictly true Pothole class id 2, reject watermarks)
+        if self.pothole_model is not None:
+            try:
+                p_results = self.pothole_model(infer_img, conf=0.15, device=self.device, verbose=False)
+                for r in p_results:
+                    for box in r.boxes:
+                        cls_id = int(box.cls.item())
+                        cls_name = self.pothole_model.names.get(cls_id, "")
+                        # Strictly reject Roboflow metadata/watermark classes (0, 1, 3, 4)
+                        if cls_id != 2 and "pothole" not in cls_name.lower():
+                            continue
+
+                        conf = float(box.conf.item())
+                        xyxy = box.xyxy[0].cpu().numpy()
+                        bx1, by1 = int(xyxy[0] * scale_x), int(xyxy[1] * scale_y)
+                        bx2, by2 = int(xyxy[2] * scale_x), int(xyxy[3] * scale_y)
+                        bw, bh = max(1, bx2 - bx1), max(1, by2 - by1)
+
+                        # Horizon Filter: Reject boxes in upper horizon / sky (y1 < 20% of h)
+                        if by1 < int(h * 0.20) or bw > int(w * 0.70) or bh > int(h * 0.60) or bw < 15 or bh < 15:
                             continue
 
                         est_depth_cm = round(min(14.8, max(4.0, (bh / float(h)) * 28.0 + 3.0)), 1)
@@ -589,6 +692,41 @@ class YoloInferenceEngine:
                         })
             except Exception as e:
                 print(f"[YOLO ENGINE] Pothole model inference warning: {e}")
+
+        # 4. Neural Zebra Crossing Model (Pedestrian crosswalks & school zones)
+        if self.zebra_model is not None:
+            try:
+                z_results = self.zebra_model(infer_img, conf=0.45, device=self.device, verbose=False)
+                for r in z_results:
+                    for box in r.boxes:
+                        conf = float(box.conf.item())
+                        xyxy = box.xyxy[0].cpu().numpy()
+                        bx1, by1 = int(xyxy[0] * scale_x), int(xyxy[1] * scale_y)
+                        bx2, by2 = int(xyxy[2] * scale_x), int(xyxy[3] * scale_y)
+                        bw, bh = max(1, bx2 - bx1), max(1, by2 - by1)
+
+                        # Strictly reject full-frame boxes (> 50% screen width or > 40% screen height)
+                        if bw > int(w * 0.50) or bh > int(h * 0.40) or by1 < int(h * 0.20):
+                            continue
+
+                        raw_detections.append({
+                            "type": "ZEBRA_CROSSING",
+                            "defect_code": "ZEBRA_CROSSING",
+                            "defect_name": "Pedestrian Crosswalk Marking (IRC:35)",
+                            "label": f"ZEBRA CROSSING [{int(conf*100)}%]",
+                            "severity": "low",
+                            "confidence": round(conf, 3),
+                            "color_bgr": (50, 205, 50),
+                            "bbox_normalized": {
+                                "x": round((bx1 + bw/2.0) / float(w), 3),
+                                "y": round((by1 + bh/2.0) / float(h), 3),
+                                "w": round(bw / float(w), 3),
+                                "h": round(bh / float(h), 3)
+                            },
+                            "bbox_pixels": [bx1, by1, bx2, by2]
+                        })
+            except Exception as e:
+                print(f"[YOLO ENGINE] Zebra model inference warning: {e}")
 
         # 4. Non-Maximum Suppression (NMS / IOU Deduplication)
         # Eliminates overlapping duplicate boxes for the same hazard
@@ -619,44 +757,7 @@ class YoloInferenceEngine:
 
         # 5. Draw Clean, Sleek Modern HUD Visuals (Corner Brackets + Semi-Transparent Pills)
         if burn_overlay and detections:
-            for d in detections:
-                x1, y1, x2, y2 = d["bbox_pixels"]
-                color = d.get("color_bgr", (0, 140, 255))
-                bw = x2 - x1
-                bh = y2 - y1
-
-                # Sleek subtle boundary
-                cv2.rectangle(annotated, (x1, y1), (x2, y2), color, 1)
-
-                # High-Tech Corner Brackets
-                k_len = min(16, max(6, bw // 5), max(6, bh // 5))
-                # Top-left
-                cv2.line(annotated, (x1, y1), (x1 + k_len, y1), color, 2)
-                cv2.line(annotated, (x1, y1), (x1, y1 + k_len), color, 2)
-                # Top-right
-                cv2.line(annotated, (x2, y1), (x2 - k_len, y1), color, 2)
-                cv2.line(annotated, (x2, y1), (x2, y1 + k_len), color, 2)
-                # Bottom-left
-                cv2.line(annotated, (x1, y2), (x1 + k_len, y2), color, 2)
-                cv2.line(annotated, (x1, y2), (x1, y2 - k_len), color, 2)
-                # Bottom-right
-                cv2.line(annotated, (x2, y2), (x2 - k_len, y2), color, 2)
-                cv2.line(annotated, (x2, y2), (x2, y2 - k_len), color, 2)
-
-                # Sleek Tag Pill
-                tag = f" {d['label']} "
-                (tw, th), baseline = cv2.getTextSize(tag, cv2.FONT_HERSHEY_SIMPLEX, 0.42, 1)
-                tag_y1 = max(2, y1 - th - 8)
-                tag_y2 = tag_y1 + th + 6
-                tag_x2 = min(w - 2, x1 + tw + 4)
-
-                # Dark background pill
-                cv2.rectangle(annotated, (x1, tag_y1), (tag_x2, tag_y2), (18, 20, 24), -1)
-                # Accent indicator bar
-                cv2.rectangle(annotated, (x1, tag_y1), (x1 + 3, tag_y2), color, -1)
-                # Text
-                cv2.putText(annotated, tag, (x1 + 3, tag_y2 - baseline - 1),
-                            cv2.FONT_HERSHEY_SIMPLEX, 0.42, (255, 255, 255), 1, cv2.LINE_AA)
+            annotated = self.render_hud_overlay(annotated, detections)
 
         # Apply DPDP Act 2023 optical face blurring/privacy redaction
         sanitized_frame, _ = privacy_engine.anonymize_frame(annotated, burn_privacy_badge=False)

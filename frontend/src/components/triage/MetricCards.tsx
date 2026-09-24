@@ -61,17 +61,17 @@ export const MetricCards: React.FC<MetricCardsProps> = ({
         return (
           <div
             key={idx}
-            className="flex items-center justify-between p-3 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-2xs"
+            className="flex items-center justify-between p-3 rounded-md border border-slate-300 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-none"
           >
             <div>
-              <span className="text-[11px] font-medium text-slate-500 dark:text-slate-400 block">
+              <span className="text-xs font-medium text-slate-600 dark:text-slate-300 block">
                 {item.label}
               </span>
               <span className="text-lg font-bold font-mono text-slate-900 dark:text-white block leading-tight mt-0.5">
                 {item.value}
               </span>
             </div>
-            <div className="w-8 h-8 rounded-lg bg-slate-50 dark:bg-slate-850 border border-slate-100 dark:border-slate-800 flex items-center justify-center text-slate-600 dark:text-slate-400">
+            <div className="w-8 h-8 rounded-md bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-center text-slate-700 dark:text-slate-300">
               <Icon className="w-4 h-4" />
             </div>
           </div>
@@ -80,3 +80,4 @@ export const MetricCards: React.FC<MetricCardsProps> = ({
     </div>
   );
 };
+

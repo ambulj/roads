@@ -72,7 +72,7 @@ const CHANNELS: CameraChannel[] = [
     tag: 'CH 1',
     resolution: '4K UHD • 30 FPS',
     icon: School,
-    previewUrl: 'https://images.unsplash.com/photo-1577495508048-b635879837f1?w=1200&auto=format&fit=crop&q=80',
+    previewUrl: '/uploads/sample_clips/clip_crosswalk_safety.mp4',
     detection: {
       title: 'School Children Crossing Zone',
       description: '3 Pedestrians detected on marked crosswalk. Mandatory vehicle yield active (IRC:35 & Vision Zero).',
@@ -90,7 +90,7 @@ const CHANNELS: CameraChannel[] = [
     tag: 'CH 2',
     resolution: '1080p • 60 FPS',
     icon: ShieldAlert,
-    previewUrl: 'https://images.unsplash.com/photo-1568605117036-5fe5e7bab0b7?w=1200&auto=format&fit=crop&q=80',
+    previewUrl: '/uploads/sample_clips/clip_urban_traffic.mp4',
     detection: {
       title: 'Hit & Run Evasion Trajectory',
       description: 'Vehicle clocked at 78.4 km/h with sudden acceleration spike. License plate TN-01-AX-8732 extracted for 112 intercept.',
@@ -105,38 +105,38 @@ const CHANNELS: CameraChannel[] = [
   },
   {
     id: 'curbside',
-    name: 'Left Curbside & Drain',
+    name: 'Left Curbside & Pothole Scan',
     tag: 'CH 3',
     resolution: '1080p • 30 FPS',
     icon: Droplets,
-    previewUrl: 'https://images.unsplash.com/photo-1515162816999-a0c47dc192f7?w=1200&auto=format&fit=crop&q=80',
+    previewUrl: '/uploads/sample_clips/clip_pothole_nh32.mp4',
     detection: {
-      title: 'Open Manhole Cavity (IS:1726)',
-      description: 'Uncovered sewer rim detected on curb shoulder. High risk for two-wheelers and pedestrians.',
-      confidence: 94,
-      badgeText: 'Hazard P0',
+      title: 'NH-32 Pothole Cavity (8.4cm Depth)',
+      description: 'Severe road cavity identified on NH-32 Tambaram link. Direct MoRTH schedule repair required.',
+      confidence: 96,
+      badgeText: 'Hazard D40',
       badgeColor: 'rose',
-      incidentType: 'OPEN_MANHOLE',
-      defectType: 'OPEN_MANHOLE',
-      imuShock: '+0.12g'
+      incidentType: 'D40',
+      defectType: 'D40',
+      imuShock: '+1.48g'
     }
   },
   {
     id: 'lane',
-    name: 'Right Dedicated Bus Lane',
+    name: 'OMR 4K Expressway Corridor',
     tag: 'CH 4',
-    resolution: '1080p • 60 FPS',
+    resolution: '4K UHD • 60 FPS',
     icon: Bus,
-    previewUrl: 'https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?w=1200&auto=format&fit=crop&q=80',
+    previewUrl: '/uploads/sample_clips/clip_omr_expressway.mp4',
     detection: {
-      title: 'Bus Lane Encroachment (MVA 177)',
-      description: 'Unauthorized commercial vehicle blocking designated rapid transit corridor.',
-      confidence: 98,
-      badgeText: 'Traffic Violation',
+      title: 'Expressway Barrier & Lane Radar',
+      description: 'High-speed highway corridor scan with lane marking integrity and barrier defect audit.',
+      confidence: 94,
+      badgeText: 'Highway Radar',
       badgeColor: 'blue',
-      incidentType: 'BUS_LANE_ENCROACH',
+      incidentType: 'MISSING_DIVIDER',
       plateNumber: 'TN-09-BK-4012',
-      speedKmh: 42.0,
+      speedKmh: 65.0,
       imuShock: '+0.15g'
     }
   }
@@ -159,6 +159,7 @@ export const MobileDashcam: React.FC<MobileDashcamProps> = ({
   // WebRTC Device Camera Mode
   const [useDeviceWebcam, setUseDeviceWebcam] = useState<boolean>(false);
   const videoRef = useRef<HTMLVideoElement | null>(null);
+  const sampleVideoRef = useRef<HTMLVideoElement | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
   // Modals
@@ -167,10 +168,20 @@ export const MobileDashcam: React.FC<MobileDashcamProps> = ({
 
   const activeChannel = CHANNELS.find(c => c.id === activeChannelId) || CHANNELS[0];
 
-  // Clean, Smooth Animated Road Canvas
+  // Sync play/pause with native video element
+  useEffect(() => {
+    if (sampleVideoRef.current) {
+      if (isPlaying) {
+        sampleVideoRef.current.play().catch(() => {});
+      } else {
+        sampleVideoRef.current.pause();
+      }
+    }
+  }, [isPlaying, activeChannelId]);
+
+  // Clean, Smooth Transparent HUD Canvas Overlay
   useEffect(() => {
     let animFrame: number;
-    let tick = 0;
 
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -178,78 +189,25 @@ export const MobileDashcam: React.FC<MobileDashcamProps> = ({
     if (!ctx) return;
 
     const render = () => {
-      tick++;
       const w = canvas.width;
       const h = canvas.height;
-
-      // Clean Dark Gradient Background
-      const skyGrad = ctx.createLinearGradient(0, 0, 0, h * 0.45);
-      skyGrad.addColorStop(0, '#0b1120');
-      skyGrad.addColorStop(1, '#1e293b');
-      ctx.fillStyle = skyGrad;
-      ctx.fillRect(0, 0, w, h * 0.45);
-
-      // Road Asphalt
-      const roadGrad = ctx.createLinearGradient(0, h * 0.45, 0, h);
-      roadGrad.addColorStop(0, '#1e293b');
-      roadGrad.addColorStop(1, '#090d16');
-      ctx.fillStyle = roadGrad;
-      ctx.fillRect(0, h * 0.45, w, h * 0.55);
-
-      const horizonY = h * 0.45;
-
-      // Road Edges
-      ctx.strokeStyle = '#475569';
-      ctx.lineWidth = 2.5;
-      ctx.beginPath();
-      ctx.moveTo(w * 0.44, horizonY);
-      ctx.lineTo(w * 0.08, h);
-      ctx.stroke();
-
-      ctx.beginPath();
-      ctx.moveTo(w * 0.56, horizonY);
-      ctx.lineTo(w * 0.92, h);
-      ctx.stroke();
-
-      // Moving Center Lane Markings
-      ctx.strokeStyle = '#facc15';
-      ctx.lineWidth = 3.5;
-      const laneOffset = isPlaying ? (tick * 4) % 60 : 0;
-      for (let y = horizonY; y < h; y += 38) {
-        const progress = (y + laneOffset - horizonY) / (h - horizonY);
-        if (progress > 0 && progress < 1) {
-          const cy = horizonY + Math.pow(progress, 1.4) * (h - horizonY);
-          const cx = w * 0.5;
-          const segLen = 14 * progress;
-          ctx.beginPath();
-          ctx.moveTo(cx, cy);
-          ctx.lineTo(cx, cy + segLen);
-          ctx.stroke();
-        }
-      }
+      ctx.clearRect(0, 0, w, h);
 
       // Feature specific overlays
       if (activeChannel.id === 'front') {
-        // Zebra Crosswalk
-        ctx.fillStyle = 'rgba(255, 255, 255, 0.75)';
-        for (let s = -3; s <= 3; s++) {
-          const sx = w * 0.5 + s * (w * 0.06);
-          ctx.fillRect(sx - 10, h * 0.65, 20, h * 0.1);
-        }
-
         // Bounding Box
         if (showAiBoxes) {
           const bx = w * 0.43;
           const by = h * 0.52;
-          const bw = 100;
-          const bh = 115;
+          const bw = 140;
+          const bh = 135;
 
           ctx.strokeStyle = '#f59e0b';
           ctx.lineWidth = 2.5;
           ctx.strokeRect(bx, by, bw, bh);
 
           ctx.fillStyle = '#f59e0b';
-          ctx.fillRect(bx, by - 22, 180, 22);
+          ctx.fillRect(bx, by - 22, 200, 22);
           ctx.fillStyle = '#000000';
           ctx.font = 'bold 11px sans-serif';
           ctx.fillText('PEDESTRIAN CROSSING [96%]', bx + 5, by - 7);
@@ -283,43 +241,38 @@ export const MobileDashcam: React.FC<MobileDashcamProps> = ({
           ctx.fillText('TN-01-AX-8732', bx + 26, by + 84);
         }
       } else if (activeChannel.id === 'curbside') {
-        // Open Manhole
-        const mx = w * 0.35;
-        const my = h * 0.65;
-        const mw = 130;
-        const mh = 65;
-
-        ctx.fillStyle = '#090d16';
-        ctx.beginPath();
-        ctx.ellipse(mx + mw / 2, my + mh / 2, mw / 2, mh / 2, 0, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.strokeStyle = '#dc2626';
-        ctx.lineWidth = 3;
-        ctx.stroke();
-
         if (showAiBoxes) {
+          const mx = w * 0.35;
+          const my = h * 0.60;
+          const mw = 160;
+          const mh = 90;
+
+          ctx.strokeStyle = '#dc2626';
+          ctx.lineWidth = 2.5;
+          ctx.strokeRect(mx, my, mw, mh);
+
           ctx.fillStyle = '#dc2626';
-          ctx.fillRect(mx, my - 22, 180, 22);
+          ctx.fillRect(mx, my - 22, 210, 22);
           ctx.fillStyle = '#ffffff';
           ctx.font = 'bold 11px sans-serif';
-          ctx.fillText('OPEN MANHOLE VOID [94%]', mx + 5, my - 7);
+          ctx.fillText('POTHOLE CAVITY D40 [96%]', mx + 5, my - 7);
         }
       } else if (activeChannel.id === 'lane') {
         if (showAiBoxes) {
-          const bx = w * 0.50;
-          const by = h * 0.50;
-          const bw = 160;
-          const bh = 115;
+          const bx = w * 0.30;
+          const by = h * 0.45;
+          const bw = 240;
+          const bh = 160;
 
           ctx.strokeStyle = '#3b82f6';
           ctx.lineWidth = 2.5;
           ctx.strokeRect(bx, by, bw, bh);
 
           ctx.fillStyle = '#3b82f6';
-          ctx.fillRect(bx, by - 22, 175, 22);
+          ctx.fillRect(bx, by - 22, 205, 22);
           ctx.fillStyle = '#ffffff';
           ctx.font = 'bold 11px sans-serif';
-          ctx.fillText('BUS LANE VIOLATION [98%]', bx + 5, by - 7);
+          ctx.fillText('HIGHWAY RADAR ACTIVE [94%]', bx + 5, by - 7);
         }
       }
 
@@ -538,8 +491,8 @@ export const MobileDashcam: React.FC<MobileDashcamProps> = ({
             </div>
           </div>
 
-          {/* Screen / Canvas */}
-          <div className="relative aspect-video max-h-[440px] w-full bg-black flex items-center justify-center">
+          {/* Screen / Video Viewport */}
+          <div className="relative aspect-video max-h-[440px] w-full bg-black flex items-center justify-center overflow-hidden">
             {useDeviceWebcam ? (
               <video 
                 ref={videoRef} 
@@ -549,12 +502,24 @@ export const MobileDashcam: React.FC<MobileDashcamProps> = ({
                 className="w-full h-full object-cover"
               />
             ) : (
-              <canvas 
-                ref={canvasRef} 
-                width={880} 
-                height={460} 
-                className="w-full h-full object-contain bg-slate-950"
-              />
+              <div className="relative w-full h-full flex items-center justify-center">
+                <video
+                  ref={sampleVideoRef}
+                  key={activeChannel.previewUrl}
+                  src={activeChannel.previewUrl}
+                  autoPlay
+                  loop
+                  muted
+                  playsInline
+                  className="w-full h-full object-cover"
+                />
+                <canvas 
+                  ref={canvasRef} 
+                  width={880} 
+                  height={460} 
+                  className="absolute inset-0 w-full h-full pointer-events-none"
+                />
+              </div>
             )}
 
             {/* Bottom Playback Toggle */}

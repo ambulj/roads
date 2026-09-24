@@ -21,69 +21,68 @@ interface UploadFootageModalProps {
 
 const SAMPLE_SCENARIOS = [
   {
-    id: "scen-school",
-    title: "School Children Crossing",
-    subtext: "D.A.V. Senior Secondary • Zone-Overlap Fusion",
-    icon: School,
-    color: "amber",
-    defectCode: "SCHOOL_CHILDREN_CROSSING_RISK",
-    defectLabel: "School Children Crossing Zone (Vision Zero)",
-    imageUrl: "https://images.unsplash.com/photo-1577495508048-b635879837f1?w=1200&auto=format&fit=crop&q=80",
-    corridor: "Avvai Shanmugam Salai & Anna Salai Link",
-    channel: 1,
-    confidence: 0.96,
-    speedKmh: 24.5,
-    mvaSection: "IRC:35 & CMVR Rule 138 (Mandatory Yield)",
-    fineInr: 2000
-  },
-  {
-    id: "scen-hitrun",
-    title: "Hit & Run Evasion Trajectory",
-    subtext: "Anna Salai Arterial • ANPR + Acceleration Spike",
-    icon: ShieldAlert,
-    color: "rose",
-    defectCode: "HIT_AND_RUN",
-    defectLabel: "Hit & Run Behavioral Evasion Sequence",
-    imageUrl: "https://images.unsplash.com/photo-1568605117036-5fe5e7bab0b7?w=1200&auto=format&fit=crop&q=80",
-    corridor: "Anna Salai (Mount Road CBD)",
-    channel: 2,
-    confidence: 0.97,
-    plate: "TN-01-AX-8732",
-    speedKmh: 78.4,
-    mvaSection: "MVA 1988 Sec 134(a)(b) & Sec 184",
-    fineInr: 10000
-  },
-  {
-    id: "scen-waterlog",
-    title: "Monsoon Waterlogging Basin",
-    subtext: "Velachery Main Road • 28cm Hydro Pooling",
-    icon: Droplets,
-    color: "cyan",
-    defectCode: "WATERLOGGING",
-    defectLabel: "Severe Roadway Waterlogging & Cavity",
-    imageUrl: "https://images.unsplash.com/photo-1515694346937-94d85e41e6f0?w=1200&auto=format&fit=crop&q=80",
-    corridor: "Velachery Main Road & 100ft Bypass",
-    channel: 1,
-    confidence: 0.94,
-    waterDepthCm: 28,
-    mvaSection: "GCC Stormwater Disaster Protocol P0",
-    fineInr: 0
-  },
-  {
     id: "scen-pothole",
-    title: "Deep Pothole Cavity Scan",
+    title: "NH-32 Highway Pothole Scan",
     subtext: "GST Road Tambaram • IRC:SP:20 3D Mesh",
     icon: Wrench,
     color: "emerald",
     defectCode: "D40",
     defectLabel: "Pothole Cavity (8.4cm Depth)",
-    imageUrl: "https://images.unsplash.com/photo-1515162816999-a0c47dc192f7?w=1200&auto=format&fit=crop&q=80",
+    videoUrl: "/uploads/sample_clips/clip_pothole_nh32.mp4",
     corridor: "GST Road, Tambaram (NH-32)",
     channel: 1,
     confidence: 0.96,
     depthCm: 8.4,
     mvaSection: "IRC:SP:20 Schedule Rate ₹3,450",
     fineInr: 3450
+  },
+  {
+    id: "scen-traffic",
+    title: "Urban Highway Traffic & Assets",
+    subtext: "Anna Salai Arterial • Multi-Class Perception",
+    icon: ShieldAlert,
+    color: "rose",
+    defectCode: "TRAFFIC_VEHICLE",
+    defectLabel: "Multi-Vehicle Traffic Flow & Asset Radar",
+    videoUrl: "/uploads/sample_clips/clip_urban_traffic.mp4",
+    corridor: "Anna Salai (Mount Road CBD)",
+    channel: 1,
+    confidence: 0.94,
+    plate: "TN-01-AX-8732",
+    speedKmh: 48.0,
+    mvaSection: "MVA 1988 Sec 184 / CMVR 138",
+    fineInr: 2000
+  },
+  {
+    id: "scen-expressway",
+    title: "OMR 4K Expressway Corridor",
+    subtext: "OMR IT Highway • Lane & Barrier Perception",
+    icon: Droplets,
+    color: "cyan",
+    defectCode: "MISSING_DIVIDER",
+    defectLabel: "Highway Barrier & Infrastructure Radar",
+    videoUrl: "/uploads/sample_clips/clip_omr_expressway.mp4",
+    corridor: "Old Mahabalipuram Road (OMR IT Corridor)",
+    channel: 1,
+    confidence: 0.92,
+    mvaSection: "IRC:SP:84 Highway Operations",
+    fineInr: 5000
+  },
+  {
+    id: "scen-crosswalk",
+    title: "Pedestrian Crosswalk Zone",
+    subtext: "School Zone Crossing • IRC:35 Compliance",
+    icon: School,
+    color: "amber",
+    defectCode: "ZEBRA_CROSSING",
+    defectLabel: "Pedestrian Safety Crosswalk (IRC:35)",
+    videoUrl: "/uploads/sample_clips/clip_crosswalk_safety.mp4",
+    corridor: "Avvai Shanmugam Salai & Anna Salai Link",
+    channel: 1,
+    confidence: 0.97,
+    speedKmh: 25.0,
+    mvaSection: "IRC:35 & CMVR Rule 138 (Mandatory Yield)",
+    fineInr: 2000
   }
 ];
 
@@ -99,6 +98,7 @@ export const UploadFootageModal: React.FC<UploadFootageModalProps> = ({
   const [file, setFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [sanitizedPreviewUrl, setSanitizedPreviewUrl] = useState<string | null>(null);
+  const [isVideoPreview, setIsVideoPreview] = useState<boolean>(false);
   const [channel, setChannel] = useState<number>(selectedChannel);
   const [targetBus, setTargetBus] = useState<string>(busId);
   const [autoIngest, setAutoIngest] = useState<boolean>(true);
@@ -133,6 +133,7 @@ export const UploadFootageModal: React.FC<UploadFootageModalProps> = ({
     setSanitizedPreviewUrl(null);
     setProcessingStage('idle');
     setFile(selectedFile);
+    setIsVideoPreview(selectedFile.type.startsWith('video/') || selectedFile.name.endsWith('.mp4'));
     if (previewUrl) {
       URL.revokeObjectURL(previewUrl);
     }
@@ -143,10 +144,11 @@ export const UploadFootageModal: React.FC<UploadFootageModalProps> = ({
     handleUploadAndAnalyze(selectedFile);
   };
 
-  const handleLoadSampleScenario = (scenario: typeof SAMPLE_SCENARIOS[0]) => {
+  const handleLoadSampleScenario = async (scenario: typeof SAMPLE_SCENARIOS[0]) => {
     setFeedback(null);
-    setPreviewUrl(scenario.imageUrl);
-    setSanitizedPreviewUrl(scenario.imageUrl);
+    setIsVideoPreview(true);
+    setPreviewUrl(scenario.videoUrl);
+    setSanitizedPreviewUrl(null);
     setSelectedCorridor(scenario.corridor);
     setChannel(scenario.channel);
     setProcessingStage('completed');
@@ -168,8 +170,40 @@ export const UploadFootageModal: React.FC<UploadFootageModalProps> = ({
     setDetectionResult(detRes);
     setFeedback({
       type: 'success',
-      message: `✓ Loaded sample scenario: ${scenario.title} (${scenario.corridor})`
+      message: `✓ Loaded sample video scenario: ${scenario.title} (${scenario.corridor})`
     });
+
+    try {
+      // Connect live stream manager to sample clip so bus camera immediately streams the video
+      await fetch('/api/streams/configure', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          bus_id: targetBus,
+          stream_type: "UPLOADED_VIDEO",
+          video_url: scenario.videoUrl.replace('/uploads/', 'backend/uploads/'),
+          sampling_fps: 30.0
+        })
+      });
+      // Also register cluster in database so it shows up in safety and hazards
+      if (scenario.defectCode === "D40" || scenario.defectCode === "MISSING_DIVIDER" || scenario.defectCode === "ZEBRA_CROSSING") {
+        await fetch('/api/clusters', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            bus_id: targetBus,
+            defect_type: scenario.defectCode,
+            defect_name: scenario.defectLabel,
+            severity_level: "high",
+            rpi_score: Math.round(scenario.confidence * 95),
+            road_name: scenario.corridor,
+            lat: 12.9516,
+            lng: 80.1462,
+            before_image_url: scenario.videoUrl
+          })
+        });
+      }
+    } catch {}
 
     if (autoIngest && onUploadSuccess) {
       onUploadSuccess({
@@ -221,6 +255,8 @@ export const UploadFootageModal: React.FC<UploadFootageModalProps> = ({
       const facesCount = res?.faces_detected ?? res?.privacy_meta?.faces_detected ?? 0;
       setFacesRedactedCount(facesCount);
 
+      const isVid = isVideoPreview || (fileToProcess && (fileToProcess.type.startsWith('video/') || fileToProcess.name.endsWith('.mp4')));
+
       if (res?.detections && res.detections.length > 0) {
         const topDet = res.detections[0];
         const detResult = {
@@ -232,7 +268,11 @@ export const UploadFootageModal: React.FC<UploadFootageModalProps> = ({
           areaM2: topDet.area_m2,
           gzShock: topDet.depth_cm ? Math.min(2.5, 0.9 + topDet.depth_cm * 0.08) : 1.0,
           morthCost: topDet.repair_cost_inr || 2400,
-          facesRedacted: facesCount
+          facesRedacted: facesCount,
+          filename: res?.filename || fileToProcess?.name,
+          media_type: res?.media_type || (isVid ? 'video' : 'image'),
+          channel: res?.channel || channel,
+          detections_count: res?.detections_count ?? res?.detections?.length ?? 0
         };
 
         setDetectionResult(detResult);
@@ -253,7 +293,11 @@ export const UploadFootageModal: React.FC<UploadFootageModalProps> = ({
           defectCode: "CLEAR",
           defectLabel: "Road Surface Clear / No Hazards Detected",
           confidence: 1.0,
-          facesRedacted: facesCount
+          facesRedacted: facesCount,
+          filename: res?.filename || fileToProcess?.name,
+          media_type: res?.media_type || (isVid ? 'video' : 'image'),
+          channel: res?.channel || channel,
+          detections_count: 0
         };
 
         setDetectionResult(clearResult);
@@ -381,9 +425,25 @@ export const UploadFootageModal: React.FC<UploadFootageModalProps> = ({
 
             {/* Live Video / Annotated Preview Box */}
             <div className="relative rounded-2xl border border-slate-200 dark:border-slate-800 bg-black overflow-hidden flex items-center justify-center min-h-[220px]">
-              {sanitizedPreviewUrl || previewUrl ? (
+              {previewUrl && isVideoPreview ? (
+                <video
+                  src={previewUrl}
+                  autoPlay
+                  loop
+                  muted
+                  controls
+                  playsInline
+                  className="w-full h-full object-cover max-h-[220px]"
+                />
+              ) : sanitizedPreviewUrl ? (
                 <img
-                  src={sanitizedPreviewUrl || previewUrl!}
+                  src={sanitizedPreviewUrl}
+                  alt="Frame Preview"
+                  className="w-full h-full object-cover max-h-[220px]"
+                />
+              ) : previewUrl ? (
+                <img
+                  src={previewUrl}
                   alt="Frame Preview"
                   className="w-full h-full object-cover max-h-[220px]"
                 />

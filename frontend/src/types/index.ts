@@ -493,7 +493,7 @@ export interface AsphaltQualityAudit {
 }
 
 // ── Civic Roles & RBAC (Government Profiles + Admin Superuser) ───────────────
-export type CivicRole = "admin" | "traffic_police" | "pwd_engineer" | "rto_officer" | "commissioner";
+export type CivicRole = "admin" | "admin2" | "traffic_police" | "pwd_engineer" | "rto_officer" | "commissioner";
 
 export interface UserProfile {
   id: string;

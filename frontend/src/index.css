@@ -35,6 +35,19 @@
     --accent-hover: #c5ccff;
   }
 
+  html.theme-edge, html.dark.theme-edge {
+    /* Cyber-Quantum Edge Computing Theme (Obsidian & Emerald) */
+    --bg-canvas:    #020617;
+    --bg-surface:   #090d1f;
+    --bg-elevated:  #0f172a;
+    --text-primary: #f8fafc;
+    --text-muted:   #94a3b8;
+    --border-base:  #1e293b;
+    --border-subtle:#0f172a;
+    --accent:       #10b981;
+    --accent-hover: #34d399;
+  }
+
 
 
   html {

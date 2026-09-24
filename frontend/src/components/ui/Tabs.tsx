@@ -1,4 +1,4 @@
-﻿import React, { createContext, useContext } from "react";
+import React, { createContext, useContext } from "react";
 
 interface TabsContextType {
   value: string;
@@ -26,7 +26,7 @@ export const TabsList: React.FC<React.HTMLAttributes<HTMLDivElement>> = ({
 }) => (
   <div
     role="tablist"
-    className={`inline-flex items-center p-0.5 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 gap-0.5 ${className}`}
+    className={`inline-flex items-center p-0.5 rounded-md bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 gap-0.5 ${className}`}
     {...props}
   >
     {children}
@@ -50,18 +50,18 @@ export const TabsTrigger: React.FC<{
       disabled={disabled}
       onClick={() => ctx.onChange(value)}
       className={`
-        flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium font-sans
-        transition-all duration-150 select-none focus-visible:outline-none
-        focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-1
-        disabled:opacity-50 disabled:pointer-events-none
+        flex items-center gap-1.5 px-3 py-1.5 rounded-sm text-xs font-medium font-sans
+        transition-colors duration-150 select-none focus-visible:outline-hidden
+        focus-visible:ring-2 focus-visible:ring-blue-500
+        disabled:opacity-50 disabled:pointer-events-none cursor-pointer
         ${isActive
-          ? "bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 shadow-xs border border-slate-200 dark:border-slate-700 font-semibold"
-          : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-white/60 dark:hover:bg-slate-700/50"
+          ? "bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 border border-slate-300 dark:border-slate-700 font-semibold"
+          : "text-slate-700 dark:text-slate-300 hover:text-slate-950 dark:hover:text-white hover:bg-slate-200/60 dark:hover:bg-slate-700/60"
         } ${className}
       `}
     >
       {icon && <span className="shrink-0">{icon}</span>}
-      {children}
+      <span>{children}</span>
     </button>
   );
 };

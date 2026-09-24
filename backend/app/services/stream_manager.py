@@ -125,10 +125,9 @@ class RealRTSPWorker:
     def _async_infer_worker(self, frame: np.ndarray):
         """Runs multi-model YOLO and DPDP Act 2023 privacy inference in background on CUDA."""
         try:
-            res = yolo_engine.detect_road_hazards(frame, channel=self.channel, burn_overlay=True)
+            res = yolo_engine.detect_road_hazards(frame, channel=self.channel, burn_overlay=False)
             with self.lock:
                 self.latest_detections = res.get("detections", [])
-                self._last_rendered_overlay = res.get("annotated_frame", frame)
         except Exception as e:
             pass
         finally:
@@ -138,7 +137,24 @@ class RealRTSPWorker:
         source = int(self.rtsp_url) if str(self.rtsp_url).isdigit() else self.rtsp_url
         cap = None
         self._infer_busy = False
-        self._last_rendered_overlay = None
+
+        # Resolve relative local file paths to absolute disk paths
+        if isinstance(source, str) and not source.isdigit() and not source.startswith(("rtsp://", "srt://", "http://", "https://")):
+            if not os.path.isfile(source):
+                clean_rel = source.replace("\\", "/").lstrip("/")
+                if clean_rel.startswith("backend/"):
+                    clean_rel = clean_rel[len("backend/"):]
+                cand_paths = [
+                    os.path.abspath(source),
+                    os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", clean_rel)),
+                    os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "uploads", os.path.basename(source))),
+                    os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "uploads", "sample_clips", os.path.basename(source))),
+                    os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "uploads", "temp", os.path.basename(source))),
+                ]
+                for cp in cand_paths:
+                    if os.path.isfile(cp):
+                        source = cp
+                        break
         
         # 1. Check if source is a local image file
         is_image = (
@@ -200,9 +216,11 @@ class RealRTSPWorker:
                     else:
                         self.is_connected = False
                         self.last_error = f"Awaiting video/SRT/RTSP signal from: {self.rtsp_url}"
+                        time.sleep(2.0)
                 except Exception as e:
                     self.is_connected = False
                     self.last_error = str(e)
+                    time.sleep(2.0)
             
             if self.is_connected and cap is not None:
                 ret, frame = cap.read()
@@ -227,8 +245,8 @@ class RealRTSPWorker:
                     
                     # 1. Decoupled Asynchronous GPU Neural Perception & DPDP Act 2023 Privacy
                     if self.overlay_ai:
-                        # Non-blocking async dispatch of GPU inference every 3rd frame
-                        if not self._infer_busy and (self.frame_count % 3 == 0 or self._last_rendered_overlay is None):
+                        # Non-blocking async dispatch of GPU inference every 4th frame
+                        if not self._infer_busy and (self.frame_count % 4 == 0 or not self.latest_detections):
                             self._infer_busy = True
                             threading.Thread(
                                 target=self._async_infer_worker,
@@ -236,7 +254,11 @@ class RealRTSPWorker:
                                 daemon=True
                             ).start()
 
-                        display_frame = self._last_rendered_overlay if self._last_rendered_overlay is not None else frame
+                        # Dynamically project latest detections onto the live moving frame
+                        if self.latest_detections:
+                            display_frame = yolo_engine.render_hud_overlay(frame.copy(), self.latest_detections)
+                        else:
+                            display_frame = frame
                     else:
                         display_frame = frame
                     

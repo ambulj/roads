@@ -80,54 +80,53 @@ export const OperatorInspectorPanel: React.FC<OperatorInspectorPanelProps> = ({
     return (
       <div className="flex flex-col h-full bg-white dark:bg-[#101827] border-l border-slate-200 dark:border-slate-800 select-none overflow-y-auto custom-scrollbar">
         {/* Header Ribbon */}
-        <div className="p-3.5 border-b border-slate-200 dark:border-slate-800 bg-red-50/70 dark:bg-red-950/30 flex items-center justify-between">
+        <div className="p-3.5 border-b border-slate-200 dark:border-slate-800 bg-rose-50/70 dark:bg-rose-950/40 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <div className="w-7 h-7 rounded-lg bg-red-600 text-white flex items-center justify-center shrink-0 shadow-xs">
+            <div className="w-7 h-7 rounded-md bg-rose-700 text-white flex items-center justify-center shrink-0">
               <ShieldAlert className="w-4 h-4" />
             </div>
             <div>
-              <div className="text-[11px] font-bold text-red-700 dark:text-red-400 tracking-wide uppercase font-mono flex items-center gap-1.5">
-                <span>🚨 {user.role === 'rto_officer' ? 'VEHICLE COMPLIANCE' : 'SAFETY INCIDENT'}</span>
-                <span className="inline-block w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />
+              <div className="text-xs font-bold text-rose-800 dark:text-rose-300 uppercase font-mono flex items-center gap-1.5">
+                <span>{user.role === 'rto_officer' ? 'Vehicle Compliance' : 'Safety Incident'}</span>
               </div>
               <h3 className="text-xs font-bold text-slate-900 dark:text-white truncate max-w-[190px]">
                 {String(selectedIncident.incident_type).replace(/_/g, ' ')}
               </h3>
             </div>
           </div>
-          <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase font-mono ${
+          <span className={`px-2 py-0.5 rounded text-[11px] font-bold uppercase font-mono ${
             isCritical 
-              ? 'bg-red-600 text-white' 
-              : 'bg-amber-100 text-amber-800 dark:bg-amber-900/60 dark:text-amber-200'
+              ? 'bg-rose-700 text-white' 
+              : 'bg-amber-100 text-amber-900 dark:bg-amber-900/60 dark:text-amber-200'
           }`}>
-            {isCritical ? 'P0 CRITICAL' : 'P1 HIGH'}
+            {isCritical ? 'P0 Critical' : 'P1 High'}
           </span>
         </div>
 
         {/* Evidence Snapshot */}
         <div className="p-3.5 space-y-3">
-          <div className="relative rounded-lg overflow-hidden border border-slate-200 dark:border-slate-700 bg-slate-950 group">
+          <div className="relative rounded-md overflow-hidden border border-slate-300 dark:border-slate-700 bg-slate-950 group">
             <img 
               src={evidenceImg} 
               alt="Forensic Evidence" 
               className="w-full h-36 object-cover"
             />
-            {/* DPDP Act Badge Overlay */}
-            <div className="absolute top-2 left-2 px-2 py-0.5 rounded bg-slate-900/90 text-emerald-400 border border-emerald-500/40 text-[9px] font-mono flex items-center gap-1 backdrop-blur-xs">
-              <ShieldCheck className="w-2.5 h-2.5 text-emerald-400" />
-              <span>🔒 DPDP 2023 FACE BLURRED</span>
+            {/* DPDP Privacy Badge Overlay */}
+            <div className="absolute top-2 left-2 px-2 py-0.5 rounded bg-slate-900/90 text-emerald-300 border border-emerald-500/40 text-[10px] font-mono flex items-center gap-1">
+              <ShieldCheck className="w-3 h-3 text-emerald-400" />
+              <span>Privacy Blur Active</span>
             </div>
             {/* Timestamp Badge */}
-            <div className="absolute bottom-2 left-2 px-2 py-0.5 rounded bg-slate-900/80 text-slate-200 text-[9px] font-mono">
-              {selectedIncident.occurred_at || 'Live Stream Ingest'}
+            <div className="absolute bottom-2 left-2 px-2 py-0.5 rounded bg-slate-900/80 text-slate-200 text-[10px] font-mono">
+              {selectedIncident.occurred_at || 'Live Ingest'}
             </div>
             {onOpenDossierModal && (
               <button 
                 onClick={onOpenDossierModal}
-                className="absolute top-2 right-2 p-1 rounded bg-slate-900/80 hover:bg-slate-800 text-white text-[10px] flex items-center gap-1 transition cursor-pointer"
-                title="Open Full Screen Legal Dossier"
+                className="absolute top-2 right-2 p-1 rounded bg-slate-900/80 hover:bg-slate-800 text-white text-xs flex items-center gap-1 transition cursor-pointer"
+                title="Open Full Legal Evidence Dossier"
               >
-                <Eye className="w-3 h-3" />
+                <Eye className="w-3.5 h-3.5" />
               </button>
             )}
           </div>
@@ -190,21 +189,21 @@ export const OperatorInspectorPanel: React.FC<OperatorInspectorPanelProps> = ({
                     if (onEscalateIncident) {
                       onEscalateIncident(selectedIncident.id);
                     } else {
-                      showSuccessToast('🚓 Police PCR Dispatched: 112 Patrol Interceptor Rolling.');
+                      showSuccessToast('Police Patrol Dispatched: 112 Patrol Unit notified.');
                     }
                   }}
-                  className="w-full py-2 px-3 rounded-lg bg-red-600 hover:bg-red-500 active:scale-98 text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow-sm transition cursor-pointer"
+                  className="w-full py-2 px-3 rounded-md bg-rose-700 hover:bg-rose-800 text-white font-semibold text-xs flex items-center justify-center gap-1.5 transition cursor-pointer"
                 >
                   <Send className="w-3.5 h-3.5" />
-                  <span>🚓 Approve PCR / 112 Patrol Dispatch</span>
+                  <span>Dispatch 112 Police Patrol</span>
                 </button>
 
                 {canIssueEChallan && (
                   <button
                     onClick={() => {
-                      showSuccessToast(`📜 Draft e-Challan Generated for ${plate}: ₹${selectedIncident.fine_amount_inr || 5000} (MVA Sec 184/134).`);
+                      showSuccessToast(`Draft e-Challan Generated for ${plate}: ₹${selectedIncident.fine_amount_inr || 5000} (MVA Notice).`);
                     }}
-                    className="w-full py-1.5 px-3 rounded-lg bg-amber-600 hover:bg-amber-500 text-white font-semibold text-xs flex items-center justify-center gap-1.5 transition cursor-pointer"
+                    className="w-full py-1.5 px-3 rounded-md bg-amber-700 hover:bg-amber-800 text-white font-semibold text-xs flex items-center justify-center gap-1.5 transition cursor-pointer"
                   >
                     <FileText className="w-3.5 h-3.5" />
                     <span>Issue Draft e-Challan Notice</span>
@@ -218,25 +217,25 @@ export const OperatorInspectorPanel: React.FC<OperatorInspectorPanelProps> = ({
               <button
                 onClick={handleRTOCheck}
                 disabled={isLookingUpRTO}
-                className="w-full py-2 px-3 rounded-lg bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs flex items-center justify-center gap-1.5 transition cursor-pointer disabled:opacity-50"
+                className="w-full py-2 px-3 rounded-md bg-blue-700 hover:bg-blue-800 text-white font-semibold text-xs flex items-center justify-center gap-1.5 transition cursor-pointer disabled:opacity-50"
               >
                 <FileText className="w-3.5 h-3.5" />
-                <span>{isLookingUpRTO ? 'Querying VAHAN Gateway...' : '🔍 Cross-Reference VAHAN Registry'}</span>
+                <span>{isLookingUpRTO ? 'Querying Registry Gateway...' : 'Verify Registration Registry'}</span>
               </button>
             )}
 
             {canFlagRTOCompliance && (
               <button
                 onClick={handleFlagRTO}
-                className="w-full py-1.5 px-3 rounded-lg bg-amber-600 hover:bg-amber-500 text-white font-semibold text-xs flex items-center justify-center gap-1.5 transition cursor-pointer"
+                className="w-full py-1.5 px-3 rounded-md bg-amber-700 hover:bg-amber-800 text-white font-semibold text-xs flex items-center justify-center gap-1.5 transition cursor-pointer"
               >
-                <span>🚩 Flag Vehicle for Compliance Follow-Up</span>
+                <span>Flag Vehicle for Compliance Follow-Up</span>
               </button>
             )}
 
             {/* 3. PWD Engineer View (Gated Notice) */}
             {user.role === 'pwd_engineer' && (
-              <div className="p-2 rounded-lg bg-slate-100 dark:bg-slate-800 text-[11px] text-slate-500 text-center">
+              <div className="p-2 rounded-md bg-slate-100 dark:bg-slate-800 text-xs text-slate-600 dark:text-slate-300 text-center">
                 Traffic enforcement is routed to Greater Chennai Police Wing.
               </div>
             )}
@@ -245,7 +244,7 @@ export const OperatorInspectorPanel: React.FC<OperatorInspectorPanelProps> = ({
             {onOpenDossierModal && (
               <button
                 onClick={onOpenDossierModal}
-                className="w-full py-1.5 px-3 rounded-lg bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 font-semibold text-xs flex items-center justify-center gap-1.5 transition cursor-pointer"
+                className="w-full py-1.5 px-3 rounded-md bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 font-semibold text-xs flex items-center justify-center gap-1.5 border border-slate-300 dark:border-slate-750 transition cursor-pointer"
               >
                 <Eye className="w-3.5 h-3.5" />
                 <span>Inspect Full Evidence Dossier</span>
@@ -275,28 +274,28 @@ export const OperatorInspectorPanel: React.FC<OperatorInspectorPanelProps> = ({
             : 'bg-slate-50 dark:bg-slate-900/50'
         }`}>
           <div className="flex items-center gap-2">
-            <div className={`w-7 h-7 rounded-lg text-white flex items-center justify-center shrink-0 shadow-xs ${
-              isCritical ? 'bg-amber-600' : 'bg-blue-600'
+            <div className={`w-7 h-7 rounded-md text-white flex items-center justify-center shrink-0 ${
+              isCritical ? 'bg-amber-700' : 'bg-blue-700'
             }`}>
               <AlertTriangle className="w-4 h-4" />
             </div>
             <div>
-              <div className="text-[10px] font-bold text-slate-500 dark:text-slate-400 tracking-wide uppercase font-mono">
-                {selectedCluster.cluster_code || selectedCluster.id} • RPI {(selectedCluster.rpi_boosted || selectedCluster.rpi_score || 85).toFixed(0)}/100
+              <div className="text-[11px] font-bold text-slate-600 dark:text-slate-300 uppercase font-mono">
+                {selectedCluster.cluster_code || selectedCluster.id} • Priority Score {(selectedCluster.rpi_boosted || selectedCluster.rpi_score || 85).toFixed(0)}/100
               </div>
               <h3 className="text-xs font-bold text-slate-900 dark:text-white truncate max-w-[180px]">
                 {selectedCluster.defect_name || 'Road Surface Distress'}
               </h3>
             </div>
           </div>
-          <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase font-mono ${
+          <span className={`px-2 py-0.5 rounded text-[11px] font-bold uppercase font-mono ${
             isResolved
-              ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/80 dark:text-emerald-300'
+              ? 'bg-emerald-100 text-emerald-900 dark:bg-emerald-950/80 dark:text-emerald-200'
               : isAssigned
-              ? 'bg-blue-100 text-blue-800 dark:bg-blue-950/80 dark:text-blue-300'
+              ? 'bg-blue-100 text-blue-900 dark:bg-blue-950/80 dark:text-blue-200'
               : isCritical
-              ? 'bg-red-600 text-white'
-              : 'bg-amber-100 text-amber-800 dark:bg-amber-900/60 dark:text-amber-200'
+              ? 'bg-rose-700 text-white'
+              : 'bg-amber-100 text-amber-900 dark:bg-amber-900/60 dark:text-amber-200'
           }`}>
             {selectedCluster.status?.replace('_', ' ') || 'OPEN'}
           </span>
@@ -304,34 +303,34 @@ export const OperatorInspectorPanel: React.FC<OperatorInspectorPanelProps> = ({
 
         {/* Evidence Snapshot */}
         <div className="p-3.5 space-y-3">
-          <div className="relative rounded-lg overflow-hidden border border-slate-200 dark:border-slate-700 bg-slate-950 group">
+          <div className="relative rounded-md overflow-hidden border border-slate-300 dark:border-slate-700 bg-slate-950 group">
             <img 
               src={evidenceImg} 
               alt="Forensic Evidence" 
               className="w-full h-36 object-cover"
             />
-            {/* DPDP Act Badge Overlay */}
-            <div className="absolute top-2 left-2 px-2 py-0.5 rounded bg-slate-900/90 text-emerald-400 border border-emerald-500/40 text-[9px] font-mono flex items-center gap-1 backdrop-blur-xs">
-              <ShieldCheck className="w-2.5 h-2.5 text-emerald-400" />
-              <span>🔒 DPDP 2023 FACE BLURRED</span>
+            {/* DPDP Privacy Badge Overlay */}
+            <div className="absolute top-2 left-2 px-2 py-0.5 rounded bg-slate-900/90 text-emerald-300 border border-emerald-500/40 text-[10px] font-mono flex items-center gap-1">
+              <ShieldCheck className="w-3 h-3 text-emerald-400" />
+              <span>Privacy Blur Active</span>
             </div>
             {/* Multi-Pass Tag */}
-            <div className="absolute bottom-2 left-2 px-2 py-0.5 rounded bg-blue-600/90 text-white text-[9px] font-mono font-bold">
+            <div className="absolute bottom-2 left-2 px-2 py-0.5 rounded bg-blue-700/90 text-white text-[10px] font-mono font-bold">
               {selectedCluster.pass_count || 5} Bus Detections (Confirmed)
             </div>
           </div>
 
           {/* Location & Nearest Critical POI */}
-          <div className="bg-slate-50 dark:bg-slate-900/70 border border-slate-200 dark:border-slate-800 rounded-lg p-2.5 space-y-2">
+          <div className="bg-slate-50 dark:bg-slate-900/70 border border-slate-200 dark:border-slate-800 rounded-md p-2.5 space-y-2">
             <div className="flex items-start gap-1.5 text-xs text-slate-800 dark:text-slate-200 font-semibold">
-              <MapPin className="w-3.5 h-3.5 text-blue-500 shrink-0 mt-0.5" />
+              <MapPin className="w-3.5 h-3.5 text-blue-600 shrink-0 mt-0.5" />
               <span>{selectedCluster.road_name || 'GST Road, Tambaram (NH-32)'}</span>
             </div>
 
             {selectedCluster.nearest_poi && (
-              <div className="flex items-center justify-between text-[11px] font-mono pt-1 border-t border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300">
-                <span className="text-slate-400">Proximity Risk:</span>
-                <span className="font-bold text-amber-600 dark:text-amber-400">
+              <div className="flex items-center justify-between text-xs font-mono pt-1 border-t border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300">
+                <span className="text-slate-500">Zone Proximity:</span>
+                <span className="font-bold text-amber-700 dark:text-amber-400">
                   {selectedCluster.nearest_poi} ({selectedCluster.poi_distance_m || 180}m)
                 </span>
               </div>
@@ -339,23 +338,23 @@ export const OperatorInspectorPanel: React.FC<OperatorInspectorPanelProps> = ({
           </div>
 
           {/* Contractor & SLA Assignment */}
-          <div className="bg-slate-50 dark:bg-slate-900/70 border border-slate-200 dark:border-slate-800 rounded-lg p-2.5 space-y-2">
+          <div className="bg-slate-50 dark:bg-slate-900/70 border border-slate-200 dark:border-slate-800 rounded-md p-2.5 space-y-2">
             <div className="flex items-center justify-between text-xs">
-              <div className="flex items-center gap-1.5 text-slate-600 dark:text-slate-400">
-                <Building2 className="w-3.5 h-3.5 text-slate-400" />
-                <span className="text-[11px] font-mono">Assigned PWD Agency:</span>
+              <div className="flex items-center gap-1.5 text-slate-600 dark:text-slate-300">
+                <Building2 className="w-3.5 h-3.5 text-slate-500" />
+                <span className="text-xs font-mono">Assigned PWD Agency:</span>
               </div>
-              <span className="font-bold text-[11px] text-slate-800 dark:text-slate-200 truncate max-w-[150px]">
+              <span className="font-bold text-xs text-slate-800 dark:text-slate-200 truncate max-w-[150px]">
                 {selectedCluster.assigned_agency || 'L&T Highways Infra Ltd'}
               </span>
             </div>
 
             <div className="flex items-center justify-between text-xs">
-              <div className="flex items-center gap-1.5 text-slate-600 dark:text-slate-400">
-                <Clock className="w-3.5 h-3.5 text-slate-400" />
-                <span className="text-[11px] font-mono">SLA Window:</span>
+              <div className="flex items-center gap-1.5 text-slate-600 dark:text-slate-300">
+                <Clock className="w-3.5 h-3.5 text-slate-500" />
+                <span className="text-xs font-mono">SLA Window:</span>
               </div>
-              <span className="font-bold font-mono text-[11px] text-red-600 dark:text-red-400">
+              <span className="font-bold font-mono text-xs text-rose-700 dark:text-rose-400">
                 {selectedCluster.sla_hours || 24}h ({isResolved ? 'Met on Time' : 'Active Countdown'})
               </span>
             </div>
@@ -371,13 +370,13 @@ export const OperatorInspectorPanel: React.FC<OperatorInspectorPanelProps> = ({
                       if (onDispatchWorkOrder) {
                         onDispatchWorkOrder(selectedCluster.id);
                       } else {
-                        showSuccessToast(`🚨 Work Order Approved & Dispatched to ${selectedCluster.assigned_agency || 'PWD Contractor'}. SLA active.`);
+                        showSuccessToast(`Work Order Approved & Dispatched to ${selectedCluster.assigned_agency || 'PWD Contractor'}. SLA active.`);
                       }
                     }}
-                    className="w-full py-2 px-3 rounded-lg bg-blue-600 hover:bg-blue-500 active:scale-98 text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow-sm transition cursor-pointer"
+                    className="w-full py-2 px-3 rounded-md bg-blue-700 hover:bg-blue-800 text-white font-semibold text-xs flex items-center justify-center gap-1.5 transition cursor-pointer"
                   >
                     <Send className="w-3.5 h-3.5" />
-                    <span>🚨 Approve Work Order &amp; Dispatch ({selectedCluster.sla_hours || 24}h SLA)</span>
+                    <span>Approve Work Order &amp; Dispatch ({selectedCluster.sla_hours || 24}h SLA)</span>
                   </button>
 
                   <button
@@ -385,28 +384,28 @@ export const OperatorInspectorPanel: React.FC<OperatorInspectorPanelProps> = ({
                       if (onResolveCluster) {
                         onResolveCluster(selectedCluster.id);
                       } else {
-                        showSuccessToast('✅ Defect marked as Resolved & Verified.');
+                        showSuccessToast('Road defect marked as verified & resolved.');
                       }
                     }}
-                    className="w-full py-1.5 px-3 rounded-lg bg-emerald-600 hover:bg-emerald-500 active:scale-98 text-white font-semibold text-xs flex items-center justify-center gap-1.5 transition cursor-pointer"
+                    className="w-full py-1.5 px-3 rounded-md bg-emerald-700 hover:bg-emerald-800 text-white font-semibold text-xs flex items-center justify-center gap-1.5 transition cursor-pointer"
                   >
                     <CheckCircle2 className="w-3.5 h-3.5" />
                     <span>Mark Repave Verified &amp; Close</span>
                   </button>
                 </>
               ) : (
-                <div className="p-2.5 rounded-lg bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 text-center space-y-1">
-                  <div className="flex items-center justify-center gap-1 text-emerald-700 dark:text-emerald-300 font-bold text-xs">
+                <div className="p-2.5 rounded-md bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 text-center space-y-1">
+                  <div className="flex items-center justify-center gap-1 text-emerald-800 dark:text-emerald-300 font-bold text-xs">
                     <CheckCircle2 className="w-4 h-4" />
                     <span>Work Order Verified & Closed</span>
                   </div>
-                  <p className="text-[10px] text-emerald-600 dark:text-emerald-400 font-mono">
-                    Repass audit confirmed smooth road profile.
+                  <p className="text-xs text-emerald-700 dark:text-emerald-400 font-mono">
+                    Subsequent fleet inspection confirmed road smoothness.
                   </p>
                 </div>
               )
             ) : (
-              <div className="p-2.5 rounded-lg bg-slate-100 dark:bg-slate-800 text-[11px] text-slate-500 text-center">
+              <div className="p-2.5 rounded-md bg-slate-100 dark:bg-slate-800 text-xs text-slate-600 dark:text-slate-300 text-center">
                 Road work orders and contractor assignment require Road / PWD Maintenance Authority clearance.
               </div>
             )}
@@ -414,10 +413,10 @@ export const OperatorInspectorPanel: React.FC<OperatorInspectorPanelProps> = ({
             {onNavigateToWorkOrders && (
               <button
                 onClick={onNavigateToWorkOrders}
-                className="w-full py-1.5 px-3 rounded-lg bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 font-semibold text-xs flex items-center justify-center gap-1.5 transition cursor-pointer"
+                className="w-full py-1.5 px-3 rounded-md bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 font-semibold text-xs flex items-center justify-center gap-1.5 border border-slate-300 dark:border-slate-700 transition cursor-pointer"
               >
                 <QrCode className="w-3.5 h-3.5" />
-                <span>Open CAD Work Order &amp; QR Ledger</span>
+                <span>Open Work Order Ledger</span>
               </button>
             )}
           </div>
