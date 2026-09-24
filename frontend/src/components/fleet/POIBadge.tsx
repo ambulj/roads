@@ -1,4 +1,4 @@
-﻿import React from "react";
+import React from "react";
 import { Hospital, GraduationCap, Siren, Bus, ShoppingBag, Landmark } from "lucide-react";
 import { POICategory } from "../../types";
 
@@ -78,7 +78,7 @@ export const POIBadge: React.FC<POIBadgeProps> = ({
 
   return (
     <span
-      title={`${cfg.label}: ${name}${distanceM !== undefined ? ` (~${Math.round(distanceM)}m away)` : ""} - RPI Priority Boost +${boostVal}`}
+      title={`${cfg.label}: ${name}${distanceM !== undefined ? ` (~${Math.round(distanceM)}m away)` : ""} - Priority Boost +${boostVal}`}
       className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md border text-[10.5px] font-semibold tracking-tight shadow-xs ${cfg.bg}`}
     >
       <Icon className={`w-3 h-3 shrink-0 ${cfg.iconColor}`} />

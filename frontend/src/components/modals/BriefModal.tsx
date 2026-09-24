@@ -54,10 +54,10 @@ export const BriefModal: React.FC<BriefModalProps> = ({ isOpen, onClose }) => {
           <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-700/70 flex flex-col gap-1.5">
             <div className="flex items-center gap-2 text-amber-600 dark:text-amber-400 font-semibold">
               <Database className="w-4 h-4" />
-              <span>15m DBSCAN Spatial Deduplication</span>
+              <span>Multi-Pass Spatial Deduplication</span>
             </div>
             <p className="text-[11px] text-slate-600 dark:text-slate-400 leading-relaxed">
-              PostGIS geodesic clustering prevents duplicate tickets when 50 buses encounter the same pothole. Rejects 85.9% of telemetry noise and duplicate detections.
+              PostGIS geodesic coordinate clustering prevents duplicate tickets when 50 buses encounter the same pothole. Rejects 85.9% of telemetry noise and duplicate detections.
             </p>
           </div>
 

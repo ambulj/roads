@@ -148,7 +148,7 @@ export const SelfLearningStudio: React.FC = () => {
               </Badge>
             </div>
             <p className="text-sm text-slate-400 mt-0.5">
-              Closed-loop continuous training: Active uncertainty sampling (0.35–0.72), Officer HITL queue, and post-repair audit verification (IRC:SP:20).
+              Closed-loop continuous training: Active uncertainty sampling (0.35–0.72), Officer Review queue, and post-repair audit verification (IRC:SP:20).
             </p>
           </div>
         </div>

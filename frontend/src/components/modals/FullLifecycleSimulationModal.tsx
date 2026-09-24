@@ -395,7 +395,7 @@ export const FullLifecycleSimulationModal: React.FC<FullLifecycleSimulationModal
       if (onAddCluster) onAddCluster(newCluster);
       showInfoToast(`Simulation: ${activeDefect.name} Detected`, `Bus MTC-19B detected ${activeDefect.name} with Gz=+${activeDefect.imuShock}g.`);
     } else if (newStep === 2) {
-      showInfoToast('Simulation: Model Verification', `DBSCAN merged 4 observation pings for ${activeDefect.name}.`);
+      showInfoToast('Simulation: Spatial Consensus', `Spatial consensus merged 4 multi-bus observation pings for ${activeDefect.name}.`);
     } else if (newStep === 3) {
       if (onUpdateStatus) {
         onUpdateStatus(simulatedClusterId, 'assigned', undefined, `Docket ${activeDefect.docketCode} routed to ${activeDefect.agency}.`);
@@ -467,7 +467,7 @@ export const FullLifecycleSimulationModal: React.FC<FullLifecycleSimulationModal
                 </span>
               </div>
               <p className="text-xs text-slate-400 mt-0.5">
-                End-to-End Simulation: Edge Detection ➔ 15m DBSCAN Merge ➔ CAD Docket ➔ Repair Infill ➔ Autonomous Re-Pass Closure
+                End-to-End Simulation: Edge Detection ➔ Multi-Pass Spatial Consensus ➔ CAD Docket ➔ Repair Infill ➔ Autonomous Re-Pass Closure
               </p>
             </div>
           </div>
@@ -595,13 +595,13 @@ export const FullLifecycleSimulationModal: React.FC<FullLifecycleSimulationModal
               </div>
             )}
 
-            {/* STAGE 2 VISUAL: 3D Depth Cavity Profile & DBSCAN Fusion Animation */}
+            {/* STAGE 2 VISUAL: 3D Depth Cavity Profile & Spatial Consensus Fusion Animation */}
             {currentStep === 2 && (
               <div className="w-full h-full p-5 bg-[#0B1222] flex flex-col justify-between">
                 <div className="flex items-center justify-between border-b border-slate-800 pb-2">
                   <div className="flex items-center gap-2 font-mono text-xs text-indigo-300 font-bold">
                     <Box className="w-4 h-4 text-indigo-400" />
-                    <span>3D Cavity Depth Profile &amp; Multi-Bus DBSCAN Spatial Fusion</span>
+                    <span>3D Cavity Depth Profile &amp; Multi-Bus Spatial Consensus</span>
                   </div>
                   <span className="px-2 py-0.5 rounded bg-indigo-900/40 text-indigo-300 font-mono text-[10px] border border-indigo-700/50">
                     {activeDefect.code} Standard
@@ -633,7 +633,7 @@ export const FullLifecycleSimulationModal: React.FC<FullLifecycleSimulationModal
                   </div>
 
                   <div className="p-4 rounded-xl bg-slate-900/80 border border-slate-800 space-y-2.5 font-mono text-xs">
-                    <div className="text-slate-400 text-[11px]">DBSCAN Spatial Consensus:</div>
+                    <div className="text-slate-400 text-[11px]">Multi-Pass Spatial Consensus:</div>
                     <div className="flex items-center justify-between p-2 rounded-lg bg-slate-950 border border-slate-800 text-[11px]">
                       <span className="text-slate-300">Fused Bus Observations:</span>
                       <span className="text-emerald-400 font-bold">4 Buses (15m Radius)</span>

@@ -391,9 +391,9 @@ export const CityBrainHub: React.FC = () => {
                     <th className="py-3 px-4">Defect Code</th>
                     <th className="py-3 px-4">Corridor & Vulnerable POI</th>
                     <th className="py-3 px-4">Category</th>
-                    <th className="py-3 px-4">Severity / RPI</th>
+                    <th className="py-3 px-4">Severity / Priority</th>
                     <th className="py-3 px-4">Estimated Cost</th>
-                    <th className="py-3 px-4">Safety Gain (ΔRPI)</th>
+                    <th className="py-3 px-4">Safety Gain (Δ Priority)</th>
                     <th className="py-3 px-4 text-right">Audit & XAI</th>
                   </tr>
                 </thead>
@@ -423,7 +423,7 @@ export const CityBrainHub: React.FC = () => {
                           item.severity === 'CRITICAL' ? 'bg-rose-500/20 text-rose-400' :
                           item.severity === 'HIGH' ? 'bg-amber-500/20 text-amber-400' : 'bg-slate-500/20 text-slate-400'
                         }`}>
-                          {item.severity} (RPI {item.rpi_score})
+                          {item.severity} (Score {item.rpi_score})
                         </span>
                       </td>
                       <td className="py-3 px-4 font-semibold text-slate-300">
@@ -431,7 +431,7 @@ export const CityBrainHub: React.FC = () => {
                       </td>
                       <td className="py-3 px-4 font-bold text-emerald-400">
                         +{item.benefit_value} pts
-                        <span className="text-xs text-slate-400 font-normal block">ΔRPI -{item.delta_rpi}</span>
+                        <span className="text-xs text-slate-400 font-normal block">Risk Reduction -{item.delta_rpi}</span>
                       </td>
                       <td className="py-3 px-4 text-right">
                         <Button

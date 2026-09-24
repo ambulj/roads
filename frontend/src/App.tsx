@@ -232,7 +232,7 @@ export const App: React.FC = () => {
 
   const handleTriggerDedup = async () => {
     await api.triggerDeduplication();
-    alert("15-meter DBSCAN Spatial Clustering executed. Redundant telemetry merged.");
+    showSuccessToast("Spatial Deduplication Complete", "Corroborated multi-pass bus sightings and merged duplicate hazard coordinates.");
   };
 
   // Render Dedicated Municipal Login Portal if not authenticated or on #login route

@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect, useRef, useCallback } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import {
   Search, LayoutDashboard, ChartColumn, Truck, ClipboardList, Smartphone,
   Cpu, Calculator, Award, History, ShieldAlert, X, Sun, Moon, Keyboard
@@ -40,7 +40,7 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
     { id: "nav-fleet",     label: "Fleet Nodes & Telemetry",            icon: Truck,           category: "Navigate", shortcut: "5",   action: () => { onNavigate("fleet");       onClose(); } },
     { id: "nav-orders",    label: "Work Orders",                        icon: ClipboardList,   category: "Navigate", shortcut: "6",   action: () => { onNavigate("work-orders"); onClose(); } },
     { id: "nav-capture",   label: "Report Issue / Field Camera",        icon: Smartphone,      category: "Navigate", shortcut: "7",   action: () => { onNavigate("capture");     onClose(); } },
-    { id: "act-dedup",     label: "Run Spatial Deduplication (DBSCAN)", icon: Cpu,             category: "Action",   shortcut: "",    action: () => { onTriggerDedup();          onClose(); } },
+    { id: "act-dedup",     label: "Run Spatial Multi-Pass Deduplication", icon: Cpu,             category: "Action",   shortcut: "",    action: () => { onTriggerDedup();          onClose(); } },
     { id: "act-theme",     label: `Toggle Theme (currently ${theme === "dark" ? "Dark" : "Light"})`, icon: theme === "dark" ? Sun : Moon, category: "Action", shortcut: "T", action: () => { toggleTheme(); onClose(); } },
     { id: "act-rpi",       label: "Road Priority Index Formula",        icon: Calculator,      category: "Info",     shortcut: "",    action: () => { onOpenRPIModal();          onClose(); } },
     { id: "act-brief",     label: "Architecture & Project Brief",       icon: Award,           category: "Info",     shortcut: "",    action: () => { onOpenBriefModal();        onClose(); } },

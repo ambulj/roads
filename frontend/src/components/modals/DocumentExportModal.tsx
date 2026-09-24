@@ -309,7 +309,7 @@ export const DocumentExportModal: React.FC<DocumentExportModalProps> = ({
                     <strong className="text-sm font-bold text-slate-900">4,290</strong>
                   </div>
                   <div className="p-2.5 bg-slate-50 border border-slate-300 rounded-xl">
-                    <span className="text-[10px] text-slate-500 block">DBSCAN Clusters</span>
+                    <span className="text-[10px] text-slate-500 block">Hazard Clusters</span>
                     <strong className="text-sm font-bold text-slate-900">9 Active</strong>
                   </div>
                   <div className="p-2.5 bg-slate-50 border border-slate-300 rounded-xl">

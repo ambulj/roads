@@ -43,7 +43,20 @@ try:
     HAVE_YOLO = True
 except ImportError:
     HAVE_YOLO = False
-    print("[EDGE NOTICE] 'ultralytics' not found. Operating in High-Speed Computer Vision Edge Mode.")
+
+# Gracefully import Rockchip RKNNLite (RK3588 / RK3568 NPU runtime)
+try:
+    from rknnlite.api import RKNNLite
+    HAVE_RKNN = True
+except ImportError:
+    HAVE_RKNN = False
+
+# Gracefully import ONNX Runtime
+try:
+    import onnxruntime as ort
+    HAVE_ORT = True
+except ImportError:
+    HAVE_ORT = False
 
 
 class OnboardEdgeNode:
@@ -103,10 +116,8 @@ class OnboardEdgeNode:
             pass
 
     def _init_edge_models(self) -> Dict[str, Any]:
-        """Loads quantized edge YOLO models with hardware acceleration probe."""
+        """Loads quantized edge YOLO models with hardware acceleration probe (RKNN / TensorRT / ONNX / PT)."""
         loaded = {}
-        if not HAVE_YOLO:
-            return loaded
 
         # Search for weights in common relative directories
         cand_dirs = [
@@ -116,22 +127,56 @@ class OnboardEdgeNode:
             Path.cwd() / "weights"
         ]
 
-        found_weights = {}
+        found_rknn = {}
+        found_onnx = {}
+        found_pt = {}
+
         for d in cand_dirs:
             if d.exists():
-                for pt in d.glob("*.pt"):
-                    found_weights[pt.stem] = pt
+                for f in d.glob("*.rknn"):
+                    found_rknn[f.stem] = f
+                for f in d.glob("*.onnx"):
+                    found_onnx[f.stem] = f
+                for f in d.glob("*.pt"):
+                    found_pt[f.stem] = f
 
-        # Load Indian road model or pothole model
-        for name, path in found_weights.items():
-            try:
-                model = YOLO(str(path))
-                if self.device != "auto":
-                    model.to(self.device)
-                loaded[name] = model
-                print(f"[EDGE NPU] Loaded Neural Engine: {path.name} on {model.device}")
-            except Exception as e:
-                print(f"[EDGE NPU] Notice loading {path.name}: {e}")
+        # 1. Probe for Rockchip RK3588 NPU acceleration (.rknn)
+        if HAVE_RKNN and found_rknn:
+            for name, path in found_rknn.items():
+                try:
+                    rknn_node = RKNNLite()
+                    ret = rknn_node.load_rknn(str(path))
+                    if ret == 0:
+                        rknn_node.init_runtime(core_mask=RKNNLite.NPU_CORE_AUTO)
+                        loaded[name] = {"engine": "rknn", "model": rknn_node, "path": path}
+                        print(f"[EDGE NPU - RK3588] Accelerated via Rockchip NPU Core: {path.name}")
+                except Exception as e:
+                    print(f"[EDGE NPU] Notice loading RKNN model {path.name}: {e}")
+
+        # 2. Probe for ONNX Runtime acceleration (.onnx)
+        if HAVE_ORT and found_onnx:
+            for name, path in found_onnx.items():
+                if name not in loaded:
+                    try:
+                        providers = ['CUDAExecutionProvider', 'CPUExecutionProvider'] if self.device != 'cpu' else ['CPUExecutionProvider']
+                        session = ort.InferenceSession(str(path), providers=providers)
+                        loaded[name] = {"engine": "onnx", "model": session, "path": path}
+                        print(f"[EDGE ONNX] Loaded ONNX Runtime Engine: {path.name} ({session.get_providers()})")
+                    except Exception as e:
+                        print(f"[EDGE ONNX] Notice loading ONNX model {path.name}: {e}")
+
+        # 3. Standard PyTorch / Ultralytics YOLO models (.pt)
+        if HAVE_YOLO and found_pt:
+            for name, path in found_pt.items():
+                if name not in loaded:
+                    try:
+                        model = YOLO(str(path))
+                        if self.device != "auto":
+                            model.to(self.device)
+                        loaded[name] = {"engine": "ultralytics", "model": model, "path": path}
+                        print(f"[EDGE NPU] Loaded Neural Engine: {path.name} on {getattr(model, 'device', 'cpu')}")
+                    except Exception as e:
+                        print(f"[EDGE NPU] Notice loading {path.name}: {e}")
 
         return loaded
 
@@ -148,10 +193,13 @@ class OnboardEdgeNode:
         detections = []
 
         # 1. Neural Model Perception
-        indian_m = self.models.get("indian_roads_detection")
-        pothole_m = self.models.get("potholedetection")
+        indian_entry = self.models.get("indian_roads_detection")
+        pothole_entry = self.models.get("potholedetection")
 
-        if indian_m:
+        indian_m = indian_entry["model"] if isinstance(indian_entry, dict) else indian_entry
+        pothole_m = pothole_entry["model"] if isinstance(pothole_entry, dict) else pothole_entry
+
+        if indian_m and hasattr(indian_m, "predict"):
             try:
                 res = indian_m.predict(frame, conf=self.conf_threshold, verbose=False)[0]
                 for box in res.boxes:
@@ -179,7 +227,7 @@ class OnboardEdgeNode:
             except Exception:
                 pass
 
-        if pothole_m:
+        if pothole_m and hasattr(pothole_m, "predict"):
             try:
                 p_res = pothole_m.predict(frame, conf=0.15, verbose=False)[0]
                 for box in p_res.boxes:

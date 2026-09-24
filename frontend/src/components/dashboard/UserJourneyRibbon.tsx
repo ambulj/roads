@@ -10,7 +10,7 @@ export const UserJourneyRibbon: React.FC<UserJourneyRibbonProps> = ({ onNavigate
     { num: 1, label: "Fleet Bus Mounted Dashcam", sub: "IMX335 1080p 60fps", icon: Camera, color: "text-blue-400 bg-blue-500/10 border-blue-500/30" },
     { num: 2, label: "Edge AI YOLOv8 Detection", sub: "6-TOPS INT8 NPU", icon: Cpu, color: "text-amber-400 bg-amber-500/10 border-amber-500/30" },
     { num: 3, label: "GPS + Telemetry Tagging", sub: "NavIC ±1.2m & Gz IMU", icon: Navigation, color: "text-cyan-400 bg-cyan-500/10 border-cyan-500/30" },
-    { num: 4, label: "Cloud Ingestion & DBSCAN", sub: "15m Spatial Clustering", icon: CloudLightning, color: "text-purple-400 bg-purple-500/10 border-purple-500/30" },
+    { num: 4, label: "Cloud Ingestion & Consensus", sub: "Spatial Multi-Pass Clustering", icon: CloudLightning, color: "text-purple-400 bg-purple-500/10 border-purple-500/30" },
     { num: 5, label: "Automated Work Order", sub: "MoHUA IRC:SP:20 SLA", icon: Wrench, color: "text-rose-400 bg-rose-500/10 border-rose-500/30" },
     { num: 6, label: "Contractor Repair & Audit", sub: "AI Before/After QC", icon: CheckCircle2, color: "text-emerald-400 bg-emerald-500/10 border-emerald-500/30" },
   ];

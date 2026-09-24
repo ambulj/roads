@@ -2,3 +2,6 @@ opencv-python>=4.8.0
 numpy>=1.24.0
 ultralytics>=8.0.0
 requests>=2.28.0
+onnxruntime>=1.15.0
+# For Rockchip RK3588 onboard NPU acceleration:
+# pip install rknnlite

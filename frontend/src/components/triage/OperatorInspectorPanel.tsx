@@ -18,6 +18,7 @@ import { HazardCluster, TrafficIncident } from '../../types';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
 import { api } from '../../services/api';
+import { ConfirmationModal, ConfirmationModalProps } from '../common/ConfirmationModal';
 
 interface OperatorInspectorPanelProps {
   selectedCluster: HazardCluster | null;
@@ -51,6 +52,7 @@ export const OperatorInspectorPanel: React.FC<OperatorInspectorPanelProps> = ({
   const { success: showSuccessToast, warning: showWarningToast, info: showInfoToast } = useToast();
   const [rtoLookupData, setRtoLookupData] = React.useState<any | null>(null);
   const [isLookingUpRTO, setIsLookingUpRTO] = React.useState(false);
+  const [confirmConfig, setConfirmConfig] = React.useState<ConfirmationModalProps | null>(null);
 
   // If a Traffic Safety Incident is selected
   if (selectedIncident) {
@@ -186,11 +188,29 @@ export const OperatorInspectorPanel: React.FC<OperatorInspectorPanelProps> = ({
               <>
                 <button
                   onClick={() => {
-                    if (onEscalateIncident) {
-                      onEscalateIncident(selectedIncident.id);
-                    } else {
-                      showSuccessToast('Police Patrol Dispatched: 112 Patrol Unit notified.');
-                    }
+                    setConfirmConfig({
+                      isOpen: true,
+                      onClose: () => setConfirmConfig(null),
+                      title: "Authorize 112 Police Patrol Dispatch",
+                      description: `Trigger priority emergency police dispatch for incident: ${selectedIncident.incident_type?.replace(/_/g, ' ')}?`,
+                      variant: "danger",
+                      icon: "pcr",
+                      confirmLabel: "Dispatch 112 Unit",
+                      details: [
+                        { label: "Incident ID", value: selectedIncident.id },
+                        { label: "Location", value: selectedIncident.road_name || "Chennai Corridor", highlight: true },
+                        { label: "License Plate", value: plate },
+                        { label: "Section", value: selectedIncident.mva_section || "MVA Sec 134/187" },
+                      ],
+                      onConfirm: async () => {
+                        if (onEscalateIncident) {
+                          onEscalateIncident(selectedIncident.id);
+                        } else {
+                          showSuccessToast('Police Patrol Dispatched: 112 Patrol Unit notified.');
+                        }
+                        setConfirmConfig(null);
+                      }
+                    });
                   }}
                   className="w-full py-2 px-3 rounded-md bg-rose-700 hover:bg-rose-800 text-white font-semibold text-xs flex items-center justify-center gap-1.5 transition cursor-pointer"
                 >
@@ -201,7 +221,24 @@ export const OperatorInspectorPanel: React.FC<OperatorInspectorPanelProps> = ({
                 {canIssueEChallan && (
                   <button
                     onClick={() => {
-                      showSuccessToast(`Draft e-Challan Generated for ${plate}: ₹${selectedIncident.fine_amount_inr || 5000} (MVA Notice).`);
+                      setConfirmConfig({
+                        isOpen: true,
+                        onClose: () => setConfirmConfig(null),
+                        title: `Issue Statutory e-Challan: ${plate}`,
+                        description: "Generate and transmit an official electronic challan to the vehicle owner via VAHAN/Parivahan gateway.",
+                        variant: "warning",
+                        icon: "challan",
+                        confirmLabel: "Issue e-Challan",
+                        details: [
+                          { label: "Plate Number", value: plate, highlight: true },
+                          { label: "Penalty Amount", value: `₹${selectedIncident.fine_amount_inr || 5000}` },
+                          { label: "Citation", value: selectedIncident.mva_section || "MVA Sec 134/187" },
+                        ],
+                        onConfirm: async () => {
+                          showSuccessToast(`Draft e-Challan Generated for ${plate}: ₹${selectedIncident.fine_amount_inr || 5000} (MVA Notice).`);
+                          setConfirmConfig(null);
+                        }
+                      });
                     }}
                     className="w-full py-1.5 px-3 rounded-md bg-amber-700 hover:bg-amber-800 text-white font-semibold text-xs flex items-center justify-center gap-1.5 transition cursor-pointer"
                   >
@@ -252,6 +289,8 @@ export const OperatorInspectorPanel: React.FC<OperatorInspectorPanelProps> = ({
             )}
           </div>
         </div>
+
+        {confirmConfig && <ConfirmationModal {...confirmConfig} />}
       </div>
     );
   }
@@ -367,11 +406,29 @@ export const OperatorInspectorPanel: React.FC<OperatorInspectorPanelProps> = ({
                 <>
                   <button
                     onClick={() => {
-                      if (onDispatchWorkOrder) {
-                        onDispatchWorkOrder(selectedCluster.id);
-                      } else {
-                        showSuccessToast(`Work Order Approved & Dispatched to ${selectedCluster.assigned_agency || 'PWD Contractor'}. SLA active.`);
-                      }
+                      setConfirmConfig({
+                        isOpen: true,
+                        onClose: () => setConfirmConfig(null),
+                        title: "Approve PWD Work Order & Dispatch",
+                        description: `Authorize contractor mobilization and start the statutory ${selectedCluster.sla_hours || 24}h SLA clock?`,
+                        variant: "primary",
+                        icon: "alert",
+                        confirmLabel: "Approve & Dispatch",
+                        details: [
+                          { label: "Defect", value: selectedCluster.defect_name || "Pothole", highlight: true },
+                          { label: "Agency", value: selectedCluster.assigned_agency || "PWD Contractor" },
+                          { label: "SLA Window", value: `${selectedCluster.sla_hours || 24} Hours` },
+                          { label: "Corridor", value: selectedCluster.road_name || "Chennai Road" },
+                        ],
+                        onConfirm: async () => {
+                          if (onDispatchWorkOrder) {
+                            onDispatchWorkOrder(selectedCluster.id);
+                          } else {
+                            showSuccessToast(`Work Order Approved & Dispatched to ${selectedCluster.assigned_agency || 'PWD Contractor'}. SLA active.`);
+                          }
+                          setConfirmConfig(null);
+                        }
+                      });
                     }}
                     className="w-full py-2 px-3 rounded-md bg-blue-700 hover:bg-blue-800 text-white font-semibold text-xs flex items-center justify-center gap-1.5 transition cursor-pointer"
                   >
@@ -381,11 +438,34 @@ export const OperatorInspectorPanel: React.FC<OperatorInspectorPanelProps> = ({
 
                   <button
                     onClick={() => {
-                      if (onResolveCluster) {
-                        onResolveCluster(selectedCluster.id);
-                      } else {
-                        showSuccessToast('Road defect marked as verified & resolved.');
-                      }
+                      setConfirmConfig({
+                        isOpen: true,
+                        onClose: () => setConfirmConfig(null),
+                        title: "Verify Road Repair & Close Work Order",
+                        description: "Mark this road hazard as repaved and close the docket. This action audits contractor performance.",
+                        variant: "success",
+                        icon: "resolve",
+                        confirmLabel: "Mark Repaved & Close",
+                        requireReason: true,
+                        reasonPlaceholder: "Inspection remarks (e.g. Verified by bus re-pass or site engineer)...",
+                        reasonOptions: [
+                          "Verified smooth via bus re-pass (Gz < 1.05g)",
+                          "Manual on-site engineer QC passed",
+                          "MoRTH bitumen compaction standard met"
+                        ],
+                        details: [
+                          { label: "Docket Code", value: anyCl.docket_number || selectedCluster.id },
+                          { label: "Agency", value: selectedCluster.assigned_agency || "PWD Contractor" },
+                        ],
+                        onConfirm: async (remarks) => {
+                          if (onResolveCluster) {
+                            onResolveCluster(selectedCluster.id);
+                          } else {
+                            showSuccessToast(`Road defect marked as verified & resolved. Remarks: ${remarks || 'Standard QC passed'}`);
+                          }
+                          setConfirmConfig(null);
+                        }
+                      });
                     }}
                     className="w-full py-1.5 px-3 rounded-md bg-emerald-700 hover:bg-emerald-800 text-white font-semibold text-xs flex items-center justify-center gap-1.5 transition cursor-pointer"
                   >
@@ -421,6 +501,8 @@ export const OperatorInspectorPanel: React.FC<OperatorInspectorPanelProps> = ({
             )}
           </div>
         </div>
+
+        {confirmConfig && <ConfirmationModal {...confirmConfig} />}
       </div>
     );
   }
@@ -437,6 +519,7 @@ export const OperatorInspectorPanel: React.FC<OperatorInspectorPanelProps> = ({
       <p className="text-[11px] leading-relaxed max-w-[200px]">
         Click any road hazard or incident from the Action Queue to inspect forensic evidence and dispatch repair crews.
       </p>
+      {confirmConfig && <ConfirmationModal {...confirmConfig} />}
     </div>
   );
 };
