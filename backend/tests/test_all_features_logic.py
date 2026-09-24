@@ -247,7 +247,7 @@ def test_work_order_lifecycle():
     res1 = store.update_cluster_status(
         cluster_id=c_id,
         new_status='in_progress',
-        before_image_url='https://images.unsplash.com/photo-1515162816999-a0c47dc192f7',
+        before_image_url='https://upload.wikimedia.org/wikipedia/commons/thumb/1/14/Broken_Roads_in_India%27s_Capital_New_Delhi.jpg/1280px-Broken_Roads_in_India%27s_Capital_New_Delhi.jpg',
         field_notes='PWD Crew dispatched with 120kg hot-mix asphalt.'
     )
     assert res1 is not None

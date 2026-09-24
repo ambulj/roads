@@ -77,7 +77,7 @@ const DEFECT_CONFIGS: Record<DemoDefectType, DefectConfig> = {
     costInr: 8568,
     agency: 'L&T Urban Highways Ltd',
     docketCode: 'WO-2026-CHE-892',
-    beforeImg: 'https://images.unsplash.com/photo-1515162816999-a0c47dc192f7?w=1200&auto=format&fit=crop&q=80',
+    beforeImg: 'https://upload.wikimedia.org/wikipedia/commons/thumb/1/14/Broken_Roads_in_India%27s_Capital_New_Delhi.jpg/1280px-Broken_Roads_in_India%27s_Capital_New_Delhi.jpg',
     afterImg: 'https://images.unsplash.com/photo-1541888946425-d0fbb186156f?w=1200&auto=format&fit=crop&q=80',
     beforeLabel: 'BEFORE: 6.8cm Cavity Skid Hazard',
     afterLabel: 'AFTER: VG-30 Hot-Mix Bitumen Infill',

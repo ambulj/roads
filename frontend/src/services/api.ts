@@ -55,7 +55,7 @@ export const INITIAL_CLUSTERS: HazardCluster[] = [
     status: "open",
     lat: 12.9516,
     lng: 80.1462,
-    before_image_url: "https://images.unsplash.com/photo-1515162816999-a0c47dc192f7?w=800&auto=format&fit=crop&q=80",
+    before_image_url: "https://upload.wikimedia.org/wikipedia/commons/thumb/1/14/Broken_Roads_in_India%27s_Capital_New_Delhi.jpg/1280px-Broken_Roads_in_India%27s_Capital_New_Delhi.jpg",
     after_image_url: "https://images.unsplash.com/photo-1541888946425-d0fbb186156f?w=800&auto=format&fit=crop&q=80",
     created_at: "5 Sept, 05:04 am",
     updated_at: "5 Sept, 05:04 am",

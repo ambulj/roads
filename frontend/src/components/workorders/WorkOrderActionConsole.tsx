@@ -312,7 +312,7 @@ export const WorkOrderActionConsole: React.FC<WorkOrderActionConsoleProps> = ({
                     className="relative w-full h-64 rounded-lg overflow-hidden border border-slate-700 bg-slate-950 cursor-ew-resize select-none"
                   >
                     <img
-                      src={cluster.before_image_url || (cluster as any).image_url || "https://images.unsplash.com/photo-1515162816999-a0c47dc192f7?w=800"}
+                      src={cluster.before_image_url || (cluster as any).image_url || "https://upload.wikimedia.org/wikipedia/commons/thumb/1/14/Broken_Roads_in_India%27s_Capital_New_Delhi.jpg/1280px-Broken_Roads_in_India%27s_Capital_New_Delhi.jpg"}
                       alt="Before"
                       className="absolute inset-0 w-full h-full object-cover pointer-events-none"
                     />
