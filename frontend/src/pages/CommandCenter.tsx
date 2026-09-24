@@ -190,9 +190,9 @@ export const CommandCenter: React.FC<CommandCenterProps> = ({
       if (ok && selectedCluster && selectedCluster.id === clusterId) {
         setSelectedCluster({ ...selectedCluster, status: 'assigned' });
       }
-      showSuccessToast(`🚨 Work Order Dispatched: Contractor assigned with active SLA countdown.`);
+      showSuccessToast(`Work Order Dispatched: Contractor assigned with active SLA countdown.`);
     } catch {
-      showSuccessToast(`🚨 Work Order Dispatched: Contractor assigned with active SLA countdown.`);
+      showSuccessToast(`Work Order Dispatched: Contractor assigned with active SLA countdown.`);
     }
   };
 
@@ -202,18 +202,18 @@ export const CommandCenter: React.FC<CommandCenterProps> = ({
       if (ok && selectedCluster && selectedCluster.id === clusterId) {
         setSelectedCluster({ ...selectedCluster, status: 'resolved' });
       }
-      showSuccessToast(`✅ Road Defect Verified & Marked as Resolved.`);
+      showSuccessToast(`Road Defect Verified & Marked as Resolved.`);
     } catch {
-      showSuccessToast(`✅ Road Defect Verified & Marked as Resolved.`);
+      showSuccessToast(`Road Defect Verified & Marked as Resolved.`);
     }
   };
 
   const handleEscalateIncident = async (incidentId: string) => {
     try {
       await api.dispatchIncidentAlert(incidentId, 'POLICE_PCR');
-      showSuccessToast(`🚓 Police PCR Alert Dispatched: E-Challan & ANPR Evidence transmitted.`);
+      showSuccessToast(`Police PCR Alert Dispatched: E-Challan & ANPR Evidence transmitted.`);
     } catch {
-      showSuccessToast(`🚓 Police PCR Alert Dispatched: E-Challan & ANPR Evidence transmitted.`);
+      showSuccessToast(`Police PCR Alert Dispatched: E-Challan & ANPR Evidence transmitted.`);
     }
   };
 

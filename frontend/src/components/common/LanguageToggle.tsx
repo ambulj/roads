@@ -7,9 +7,9 @@ interface LanguageToggleProps {
 }
 
 const LANGUAGES: { code: Language; label: string; nativeName: string; flag: string }[] = [
-  { code: 'en', label: 'English', nativeName: 'English (EN)', flag: '🇬🇧' },
-  { code: 'hi', label: 'हिन्दी', nativeName: 'हिन्दी (Hindi)', flag: '🇮🇳' },
-  { code: 'ta', label: 'தமிழ்', nativeName: 'தமிழ் (Tamil)', flag: '🏛️' }
+  { code: 'en', label: 'English', nativeName: 'English (EN)', flag: 'EN' },
+  { code: 'hi', label: 'हिन्दी', nativeName: 'हिन्दी (Hindi)', flag: 'HI' },
+  { code: 'ta', label: 'தமிழ்', nativeName: 'தமிழ் (Tamil)', flag: 'TA' }
 ];
 
 export const LanguageToggle: React.FC<LanguageToggleProps> = ({ className = '' }) => {

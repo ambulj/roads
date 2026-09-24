@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session
 from app.models.schemas import TrafficDensityRecord, TrafficDensityIngest, BottleneckAlert
 from app.models.db_models import DBTrafficDensity, DBDistressCluster
 from app.storage.database import get_db
+from app.core.traffic_scoring import calculate_irc106_pcu, classify_congestion
 
 router = APIRouter()
 
@@ -175,28 +176,20 @@ def ingest_traffic_reading(payload: TrafficDensityIngest, db: Session = Depends(
     PCU = (2W * 0.5) + (3W * 1.0) + (Car * 1.0) + (Bus * 3.0) + (Truck * 3.0)
     """
     total_vehicles = payload.counts_2w + payload.counts_3w + payload.counts_4w + payload.counts_bus + payload.counts_truck
-    pcu = (payload.counts_2w * 0.5) + (payload.counts_3w * 1.0) + (payload.counts_4w * 1.0) + (payload.counts_bus * 3.0) + (payload.counts_truck * 3.0)
+    pcu = calculate_irc106_pcu(
+        counts_2w=payload.counts_2w,
+        counts_3w=payload.counts_3w,
+        counts_4w=payload.counts_4w,
+        counts_bus=payload.counts_bus,
+        counts_truck=payload.counts_truck
+    )
     
-    # Calculate speed drop
-    free_speed = max(20.0, payload.free_flow_speed_kmh)
-    speed_ratio = payload.average_speed_kmh / free_speed
-    
-    if speed_ratio >= 0.80:
-        congestion = "FREE_FLOW"
-        is_bottleneck = False
-        cause = None
-    elif speed_ratio >= 0.50:
-        congestion = "MODERATE"
-        is_bottleneck = False
-        cause = None
-    elif speed_ratio >= 0.30:
-        congestion = "CONGESTED"
-        is_bottleneck = True
-        cause = "Carriageway impedance / Traffic volume saturation"
-    else:
-        congestion = "GRIDLOCK"
-        is_bottleneck = True
-        cause = "Severe flow stall / Road hazard constriction"
+    congestion_res = classify_congestion(
+        average_speed_kmh=payload.average_speed_kmh,
+        free_flow_speed_kmh=payload.free_flow_speed_kmh,
+        vehicle_count=total_vehicles,
+        pcu_count=pcu
+    )
         
     record_id = f"dens-{uuid.uuid4().hex[:8]}"
     
@@ -208,11 +201,11 @@ def ingest_traffic_reading(payload: TrafficDensityIngest, db: Session = Depends(
         lng=payload.lng,
         vehicle_count=total_vehicles,
         density_pcu_per_km=round(pcu, 1),
-        average_speed_kmh=round(payload.average_speed_kmh, 1),
-        free_flow_speed_kmh=round(free_speed, 1),
-        congestion_level=congestion,
-        is_bottleneck=is_bottleneck,
-        bottleneck_cause=cause,
+        average_speed_kmh=congestion_res["average_speed_kmh"],
+        free_flow_speed_kmh=congestion_res["free_flow_speed_kmh"],
+        congestion_level=congestion_res["congestion_level"],
+        is_bottleneck=congestion_res["is_bottleneck"],
+        bottleneck_cause=congestion_res["bottleneck_cause"],
         reported_by=payload.reported_by,
         measured_at="Just now"
     )

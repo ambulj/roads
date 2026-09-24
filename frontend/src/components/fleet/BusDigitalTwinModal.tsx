@@ -287,7 +287,7 @@ export const BusDigitalTwinModal: React.FC<BusDigitalTwinModalProps> = ({
               }`}
             >
               <Zap className="w-3.5 h-3.5" />
-              <span>{isSimulatingShock ? "SHOCKWAVE ACTIVE (+3.2g)" : "💥 Simulate Pothole Shock (+3.2g)"}</span>
+              <span>{isSimulatingShock ? "SHOCKWAVE ACTIVE (+3.2g)" : "Simulate Pothole Shock (+3.2g)"}</span>
             </button>
 
             <button 

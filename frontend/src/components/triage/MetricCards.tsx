@@ -1,5 +1,5 @@
 import React from "react";
-import { Bus, AlertTriangle, Droplets, Car, Wrench } from "lucide-react";
+import { Bus, AlertTriangle, Droplets, Car, Wrench, ShieldAlert } from "lucide-react";
 import { MetricSummary } from "../../types";
 import { useLanguage } from "../../context/LanguageContext";
 
@@ -13,44 +13,49 @@ interface MetricCardsProps {
 }
 
 export const MetricCards: React.FC<MetricCardsProps> = ({
-  fleetCount = 24,
+  fleetCount = 5,
   clustersCount = 8,
-  incidentsCount = 5,
+  incidentsCount = 7,
   waterloggingCount = 3,
-  workOrdersCount = 12,
+  workOrdersCount = 8,
 }) => {
   const { t } = useLanguage();
 
   const items = [
     {
-      label: t("kpi.activeBuses", "Active Buses"),
-      value: `${fleetCount}/32`,
+      label: t("kpi.activeBuses", "Active Edge Buses"),
+      value: `${fleetCount} / 5`,
       icon: Bus,
-      detail: "Live telemetry",
+      tag: "T1 Edge Sensing",
+      color: "text-cyan-500"
     },
     {
-      label: t("kpi.roadHazards", "Road Hazards"),
+      label: t("kpi.roadHazards", "15m DBSCAN Clusters"),
       value: clustersCount,
       icon: AlertTriangle,
-      detail: "Active triage",
-    },
-    {
-      label: t("kpi.waterlogging", "Waterlogging"),
-      value: waterloggingCount,
-      icon: Droplets,
-      detail: "Monsoon grid",
+      tag: "T2 Multi-Bus",
+      color: "text-amber-500"
     },
     {
       label: t("kpi.congestionZones", "Traffic Incidents"),
       value: incidentsCount,
       icon: Car,
-      detail: "Enforcement",
+      tag: "Hit & Run / ANPR",
+      color: "text-rose-500"
     },
     {
-      label: t("kpi.workOrders", "Work Orders"),
+      label: t("kpi.workOrders", "Active PWD Orders"),
       value: workOrdersCount,
       icon: Wrench,
-      detail: "SLA tracked",
+      tag: "48h SLA Tracking",
+      color: "text-blue-500"
+    },
+    {
+      label: t("kpi.waterlogging", "Life-Safety Hazards"),
+      value: waterloggingCount,
+      icon: ShieldAlert,
+      tag: "IS:1726 / Flood",
+      color: "text-purple-500"
     },
   ];
 
@@ -61,18 +66,21 @@ export const MetricCards: React.FC<MetricCardsProps> = ({
         return (
           <div
             key={idx}
-            className="flex items-center justify-between p-3 rounded-md border border-slate-300 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-none"
+            className="flex items-center justify-between p-3 rounded bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 transition-colors"
           >
             <div>
-              <span className="text-xs font-medium text-slate-600 dark:text-slate-300 block">
+              <div className="text-[10px] font-mono text-zinc-500 uppercase tracking-wider">
+                {item.tag}
+              </div>
+              <div className="text-xs font-medium text-zinc-700 dark:text-zinc-300 mt-0.5">
                 {item.label}
-              </span>
-              <span className="text-lg font-bold font-mono text-slate-900 dark:text-white block leading-tight mt-0.5">
+              </div>
+              <div className="text-lg font-bold font-mono text-zinc-900 dark:text-zinc-100 mt-0.5 leading-tight">
                 {item.value}
-              </span>
+              </div>
             </div>
-            <div className="w-8 h-8 rounded-md bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-center text-slate-700 dark:text-slate-300">
-              <Icon className="w-4 h-4" />
+            <div className="w-8 h-8 rounded bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 flex items-center justify-center shrink-0">
+              <Icon className={`w-4 h-4 ${item.color}`} />
             </div>
           </div>
         );
@@ -80,4 +88,3 @@ export const MetricCards: React.FC<MetricCardsProps> = ({
     </div>
   );
 };
-

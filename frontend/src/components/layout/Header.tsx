@@ -18,7 +18,10 @@ import {
   Sparkles,
   KeyRound,
   ShieldCheck,
-  UploadCloud
+  UploadCloud,
+  Layers,
+  Activity,
+  HardDrive
 } from "lucide-react";
 import { ThemeToggle } from "../common/ThemeToggle";
 import { LanguageToggle } from "../common/LanguageToggle";
@@ -29,8 +32,6 @@ import { TrafficIncident } from "../../types";
 import { NotificationCenter } from "./NotificationCenter";
 import { audioAlerts } from "../../utils/audioAlerts";
 import { api } from "../../services/api";
-import { SyntheticGeneratorControl } from "../common/SyntheticGeneratorControl";
-
 
 interface HeaderProps {
   currentRoute: string;
@@ -68,7 +69,8 @@ export const Header: React.FC<HeaderProps> = ({
   onOpenLifecycleDemo,
   onOpenUploadModal,
   incidents = [],
-  onSelectIncident
+  onSelectIncident,
+  isBackendConnected
 }) => {
   const { user, logout, canRunInterventions, getRoleBadgeLabel } = useAuth();
   const { t } = useLanguage();
@@ -76,7 +78,6 @@ export const Header: React.FC<HeaderProps> = ({
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
   const [isToolsMenuOpen, setIsToolsMenuOpen] = useState(false);
   const [isMuted, setIsMuted] = useState(audioAlerts.getIsMuted());
-  const [simStatus, setSimStatus] = useState<{ demo_mode: boolean; fleet_simulation_active: boolean; synthetic_generation_active: boolean } | null>(null);
 
   const profileMenuRef = useRef<HTMLDivElement>(null);
   const toolsMenuRef = useRef<HTMLDivElement>(null);
@@ -85,26 +86,11 @@ export const Header: React.FC<HeaderProps> = ({
   const unreadAlertsCount = incidents.length;
 
   useEffect(() => {
-    api.getSimulationStatus().then((status) => {
-      if (status) setSimStatus(status);
-    }).catch(() => {});
-  }, []);
-
-  const handleToggleSimulation = async () => {
-    const nextDemoMode = !(simStatus?.demo_mode);
-    const res = await api.toggleSimulation({ demo_mode: nextDemoMode });
-    if (res?.status) {
-      setSimStatus(res.status);
-    }
-  };
-
-
-  useEffect(() => {
-    const handleClickOutside = (e: MouseEvent) => {
-      if (profileMenuRef.current && !profileMenuRef.current.contains(e.target as Node)) {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (profileMenuRef.current && !profileMenuRef.current.contains(event.target as Node)) {
         setIsProfileMenuOpen(false);
       }
-      if (toolsMenuRef.current && !toolsMenuRef.current.contains(e.target as Node)) {
+      if (toolsMenuRef.current && !toolsMenuRef.current.contains(event.target as Node)) {
         setIsToolsMenuOpen(false);
       }
     };
@@ -112,146 +98,173 @@ export const Header: React.FC<HeaderProps> = ({
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  const handleLogout = () => {
-    setIsProfileMenuOpen(false);
-    logout();
-  };
-
-  const handleOpenSwitcher = () => {
-    setIsProfileMenuOpen(false);
-    onOpenAuthModal?.();
+  const handleToggleMute = () => {
+    const nextMuted = audioAlerts.toggleMute();
+    setIsMuted(nextMuted);
   };
 
   return (
-    <header className="relative z-40 h-[64px] shrink-0 border-b border-[#d9d5ce] bg-[#fcfbf8] px-3 text-[#20232a] dark:border-[#2b303d] dark:bg-[#11141c] dark:text-[#f3f0e9] sm:px-5">
-      <div className="flex h-full items-center gap-3">
-        {/* Mobile / Sidebar Menu Toggle */}
+    <header className="h-14 border-b border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 px-3 md:px-4 flex items-center justify-between z-30 select-none">
+      {/* ── LEFT: BRAND & ARCHITECTURAL TIERS ──────────────────────────────── */}
+      <div className="flex items-center gap-3">
         <button
           onClick={toggleNav}
-          aria-label="Toggle Sidebar"
-          title="Toggle navigation sidebar"
-          className="grid h-9 w-9 place-items-center rounded-lg border border-transparent text-[#5f6470] transition hover:border-[#d9d5ce] hover:bg-[#f1efe9] dark:text-[#a6a8b0] dark:hover:border-[#30323b] dark:hover:bg-[#1d2028]"
+          className="p-1.5 text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded transition-colors"
+          title="Toggle Navigation Menu"
         >
-          <Menu className="h-4 w-4" />
+          <Menu className="w-5 h-5" />
         </button>
 
-        {/* Brand Logo & Name */}
-        <button
-          onClick={() => onNavigate("command")}
-          aria-label="SheherSaathi command center"
-          className="group flex items-center gap-2.5 text-left shrink-0"
-        >
-          <span className="grid h-9 w-9 place-items-center rounded-lg bg-[#252a3a] text-[#f5c552] shadow-[2px_2px_0_#f5c552] dark:bg-[#f5c552] dark:text-[#20232a]">
-            <BusFront className="h-4 w-4" />
-          </span>
-          <span className="hidden min-[480px]:block">
-            <span className="block font-serif text-[16px] font-bold leading-none tracking-tight">
-              SheherSaathi
-            </span>
-          </span>
-        </button>
+        <div className="flex items-center gap-2 cursor-pointer" onClick={() => onNavigate("command")}>
+          <div className="w-7 h-7 bg-cyan-950 border border-cyan-700 rounded flex items-center justify-center">
+            <Cpu className="w-4 h-4 text-cyan-400" />
+          </div>
+          <div>
+            <div className="flex items-center gap-1.5 leading-none">
+              <span className="font-mono font-bold text-sm text-zinc-900 dark:text-zinc-100 tracking-tight">RoadSaarthi</span>
+              <span className="text-[9px] font-mono px-1 py-0.2 rounded bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 border border-zinc-200 dark:border-zinc-700">v2.6</span>
+            </div>
+            <div className="text-[9.5px] text-zinc-500 font-mono hidden sm:block">
+              AI Transit Sensing &amp; Municipal Platform
+            </div>
+          </div>
+        </div>
 
-        <div className="hidden h-6 w-px bg-[#d9d5ce] sm:block dark:bg-[#2b303d]" />
+        {/* Two-Tier Status Badges */}
+        <div className="hidden lg:flex items-center gap-2 ml-3 pl-3 border-l border-zinc-200 dark:border-zinc-800 font-mono text-[10px]">
+          <div className="flex items-center gap-1.5 px-2 py-0.5 rounded bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-zinc-700 dark:text-zinc-300">
+            <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse"></span>
+            <span>T1 Edge: <strong>{activeNodesCount}/5 Nodes</strong></span>
+          </div>
 
-        {/* Global Omnibox Search (Ctrl+K) */}
+          <div className="flex items-center gap-1.5 px-2 py-0.5 rounded bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-zinc-700 dark:text-zinc-300">
+            <span className={`w-1.5 h-1.5 rounded-full ${isBackendConnected ? "bg-emerald-400" : "bg-rose-400"}`}></span>
+            <span>T2 Central: <strong>{isBackendConnected ? "Sync OK" : "Offline"}</strong></span>
+          </div>
+        </div>
+      </div>
+
+      {/* ── RIGHT: TOOLS, ROLE PROFILE & CONTROLS ─────────────────────────── */}
+      <div className="flex items-center gap-2">
+        {/* Command Palette Trigger */}
         <button
           onClick={onOpenCommandPalette}
-          title={t("header.searchPlaceholder", "Search buses, roads, hazards... (Ctrl+K)")}
-          className="flex h-9 max-w-[380px] flex-1 items-center gap-2 rounded-lg border border-[#d9d5ce] bg-white px-3 text-left font-mono text-[11px] text-[#737783] transition hover:border-[#777b86] dark:border-[#2b303d] dark:bg-[#161a24] dark:text-[#a6a8b0]"
+          className="hidden sm:flex items-center gap-2 px-2.5 py-1 text-xs font-mono text-zinc-500 bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded hover:border-zinc-400 dark:hover:border-zinc-600 transition-colors"
         >
-          <Search className="h-3.5 w-3.5" />
-          <span className="truncate">{t("header.searchPlaceholder", "Search buses, corridors, incidents...")}</span>
-          <kbd className="ml-auto hidden rounded border border-[#d9d5ce] px-1.5 py-0.5 text-[9px] sm:block dark:border-[#424550]">
-            Ctrl K
-          </kbd>
+          <Search className="w-3.5 h-3.5 text-zinc-400" />
+          <span>Search / Command</span>
+          <kbd className="text-[9px] bg-zinc-200 dark:bg-zinc-800 px-1 py-0.2 rounded text-zinc-600 dark:text-zinc-400">⌘K</kbd>
         </button>
 
-        {/* Right Header Navigation & Actions */}
-        <div className="ml-auto flex items-center gap-2">
-          {/* On-Demand Synthetic Generator Button */}
-          <SyntheticGeneratorControl />
+        {/* Live Clock */}
+        <div className="hidden xl:block">
+          <LiveClock />
+        </div>
 
-          {/* Universal AI Upload & Detect Button */}
-          {onOpenUploadModal && (
-            <button
-              onClick={onOpenUploadModal}
-              title="Upload Custom Road Video/Photo for Real AI Defect Detection & Ingest"
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold shadow-xs transition active:scale-95 cursor-pointer"
-            >
-              <UploadCloud className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">Upload &amp; Detect</span>
-            </button>
-          )}
+        {/* Audio Mute Toggle */}
+        <button
+          onClick={handleToggleMute}
+          className="p-1.5 text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded transition-colors"
+          title={isMuted ? "Unmute sirens & dispatch audio" : "Mute alerts audio"}
+        >
+          {isMuted ? <VolumeX className="w-4 h-4 text-zinc-400" /> : <Volume2 className="w-4 h-4 text-cyan-500" />}
+        </button>
 
-          {/* Notification Center */}
-          <div className="relative">
-            <button
-              onClick={() => setIsNotificationCenterOpen((p) => !p)}
-              title="Notifications"
-              className="relative p-2 rounded-lg border border-slate-200 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300 transition"
-            >
-              <Bell className="w-4 h-4" />
-              {unreadAlertsCount > 0 && (
-                <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-rose-500" />
-              )}
-            </button>
+        {/* Theme & Language Toggles */}
+        <ThemeToggle />
+        <LanguageToggle />
 
-            {isNotificationCenterOpen && (
-              <NotificationCenter
-                isOpen={isNotificationCenterOpen}
-                incidents={incidents}
-                onNavigate={onNavigate}
-                onSelectIncident={(inc) => {
-                  setIsNotificationCenterOpen(false);
-                  onSelectIncident?.(inc);
-                }}
-                onClose={() => setIsNotificationCenterOpen(false)}
-              />
+        {/* Incident Alerts Bell */}
+        <div className="relative">
+          <button
+            onClick={() => setIsNotificationCenterOpen(!isNotificationCenterOpen)}
+            className="p-1.5 text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded transition-colors relative"
+            title="Real-Time Incident Alerts"
+          >
+            <Bell className="w-4 h-4" />
+            {unreadAlertsCount > 0 && (
+              <span className="absolute -top-0.5 -right-0.5 w-4 h-4 bg-rose-600 text-white text-[9px] font-mono font-bold rounded-full flex items-center justify-center">
+                {unreadAlertsCount}
+              </span>
             )}
-          </div>
+          </button>
 
-          {/* Theme Toggle */}
-          <ThemeToggle />
+          <NotificationCenter
+            isOpen={isNotificationCenterOpen}
+            onClose={() => setIsNotificationCenterOpen(false)}
+            incidents={incidents}
+            onSelectIncident={onSelectIncident}
+            onNavigate={onNavigate}
+          />
+        </div>
 
-          {/* Officer Persona & Account Menu */}
-          <div className="relative" ref={profileMenuRef}>
-            <button
-              onClick={() => setIsProfileMenuOpen((p) => !p)}
-              className="flex items-center gap-1.5 p-1 rounded-lg border border-slate-200 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-800 transition text-xs font-medium cursor-pointer"
-              title={`${user.name} (${getRoleBadgeLabel(user.role)})`}
-            >
-              <div className="w-7 h-7 rounded-lg bg-slate-800 dark:bg-slate-700 text-white flex items-center justify-center font-bold text-[11px]">
-                {user.name.charAt(0)}
+        {/* Active Role Persona Selector */}
+        <div className="relative" ref={profileMenuRef}>
+          <button
+            onClick={() => setIsProfileMenuOpen(!isProfileMenuOpen)}
+            className="flex items-center gap-1.5 px-2 py-1 rounded bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 hover:border-zinc-400 dark:hover:border-zinc-600 transition-colors text-left"
+          >
+            <div className="w-6 h-6 rounded bg-zinc-800 text-cyan-300 font-mono text-[10px] font-bold flex items-center justify-center border border-zinc-700">
+              {user.avatar_initials || "AD"}
+            </div>
+            <div className="hidden md:block">
+              <div className="text-[11px] font-mono font-bold text-zinc-900 dark:text-zinc-100 leading-tight">
+                {getRoleBadgeLabel(user.role)}
               </div>
-              <ChevronDown className="w-3 h-3 text-slate-400 mr-0.5" />
-            </button>
+              <div className="text-[9px] text-zinc-500 font-mono leading-none truncate max-w-[120px]">
+                {user.name}
+              </div>
+            </div>
+            <ChevronDown className="w-3 h-3 text-zinc-400" />
+          </button>
 
-            {isProfileMenuOpen && (
-              <div className="absolute right-0 top-full mt-2 w-64 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-xl p-2 z-50 text-xs space-y-1">
-                <div className="px-3 py-2 border-b border-slate-100 dark:border-slate-800">
-                  <div className="font-bold text-slate-900 dark:text-white">{user.name}</div>
-                  <div className="text-[11px] text-slate-500">{user.designation}</div>
-                  <div className="text-[10px] font-mono text-blue-600 dark:text-blue-400 mt-0.5">{user.agency}</div>
+          {isProfileMenuOpen && (
+            <div className="absolute right-0 mt-1 w-64 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded shadow-lg py-1.5 z-50 font-mono text-xs">
+              <div className="px-3 py-2 border-b border-zinc-200 dark:border-zinc-800">
+                <div className="text-[10px] text-zinc-400 uppercase tracking-wider">Logged In Officer</div>
+                <div className="font-bold text-zinc-900 dark:text-zinc-100 text-sm mt-0.5">{user.name}</div>
+                <div className="text-[10px] text-zinc-500">{user.designation}</div>
+                <div className="text-[9.5px] text-zinc-400 mt-1">{user.department}</div>
+                <div className="mt-1.5 inline-block text-[9px] bg-cyan-950 text-cyan-300 px-1.5 py-0.5 rounded border border-cyan-800">
+                  Badge: {user.badge_number}
                 </div>
+              </div>
 
+              <div className="py-1">
                 <button
-                  onClick={handleOpenSwitcher}
-                  className="w-full px-3 py-2 text-left rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center gap-2 text-slate-700 dark:text-slate-300 font-medium"
+                  onClick={() => { setIsProfileMenuOpen(false); onOpenAuthModal?.(); }}
+                  className="w-full px-3 py-1.5 text-left hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-700 dark:text-zinc-300 flex items-center gap-2"
                 >
-                  <KeyRound className="w-3.5 h-3.5 text-blue-500" />
-                  <span>Switch Officer Role</span>
+                  <ShieldCheck className="w-3.5 h-3.5 text-cyan-400" />
+                  <span>Switch Officer Role Persona</span>
                 </button>
-
                 <button
-                  onClick={handleLogout}
-                  className="w-full px-3 py-2 text-left rounded-lg hover:bg-rose-50 dark:hover:bg-rose-950/40 text-rose-600 dark:text-rose-400 flex items-center gap-2 font-medium"
+                  onClick={() => { setIsProfileMenuOpen(false); onOpenShortcutsModal?.(); }}
+                  className="w-full px-3 py-1.5 text-left hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-700 dark:text-zinc-300 flex items-center gap-2"
                 >
-                  <LogOut className="w-3.5 h-3.5 text-rose-500" />
-                  <span>Sign Out</span>
+                  <Keyboard className="w-3.5 h-3.5 text-zinc-400" />
+                  <span>Keyboard Shortcuts (1–7)</span>
+                </button>
+                <button
+                  onClick={() => { setIsProfileMenuOpen(false); onOpenDocumentModal?.(); }}
+                  className="w-full px-3 py-1.5 text-left hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-700 dark:text-zinc-300 flex items-center gap-2"
+                >
+                  <Printer className="w-3.5 h-3.5 text-zinc-400" />
+                  <span>Export Statutory Reports</span>
                 </button>
               </div>
-            )}
-          </div>
+
+              <div className="border-t border-zinc-200 dark:border-zinc-800 pt-1">
+                <button
+                  onClick={() => { setIsProfileMenuOpen(false); logout(); }}
+                  className="w-full px-3 py-1.5 text-left hover:bg-rose-50 dark:hover:bg-rose-950/40 text-rose-600 dark:text-rose-400 flex items-center gap-2"
+                >
+                  <LogOut className="w-3.5 h-3.5" />
+                  <span>Sign Out Session</span>
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </header>

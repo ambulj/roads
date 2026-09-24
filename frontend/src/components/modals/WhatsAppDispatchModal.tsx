@@ -63,22 +63,22 @@ export const WhatsAppDispatchModal: React.FC<WhatsAppDispatchModalProps> = ({
   const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${cluster.lat},${cluster.lng}`;
   const portalUrl = `https://SheherSaathi.gov.in/#/capture?order=${cluster.cluster_code}`;
 
-  const messageText = `*🚨 SheherSaathi AUTONOMOUS EMERGENCY DISPATCH*
+  const messageText = `*[OFFICIAL DISPATCH] SheherSaathi MUNICIPAL WORK ORDER*
 *Ministry of Road Transport & Highways (MoRTH)*
 --------------------------------------------
 *Ticket Code:* ${cluster.cluster_code}
 *Hazard:* ${cluster.defect_name} (RPI Score: ${cluster.rpi_boosted ?? cluster.rpi_score})
 *Corridor:* ${cluster.road_name}
-${isHospital ? `*⚠️ CRITICAL HOSPITAL ZONE:* Near ${poiName} (+15 Priority Boost)\n*Ambulance corridor clearance required immediately!*` : isSchool ? `*⚠️ SCHOOL ZONE ALERT:* Near ${poiName} (+10 Priority Boost)\n*School bus commute protection priority.*` : `*Nearest POI:* ${cluster.nearest_poi}`}
+${isHospital ? `*[HOSPITAL ZONE]:* Near ${poiName} (+15 Priority Boost)\n*Ambulance corridor clearance required immediately!*` : isSchool ? `*[SCHOOL ZONE ALERT]:* Near ${poiName} (+10 Priority Boost)\n*School bus commute protection priority.*` : `*Nearest POI:* ${cluster.nearest_poi}`}
 
 *SLA Requirement:* ${cluster.sla_hours} Hours Max Turnaround
 *Assigned Contractor:* ${cluster.assigned_agency}
 *Estimated Bitumen:* ~${Math.round(cluster.rpi_score * 0.65)} kg Cold-Mix Asphalt
 
-*📍 GPS Location:* ${cluster.lat.toFixed(5)}°N, ${cluster.lng.toFixed(5)}°E
+*GPS Coordinates:* ${cluster.lat.toFixed(5)}°N, ${cluster.lng.toFixed(5)}°E
 *Google Maps Nav:* ${mapsUrl}
 
-*📷 Field Repair & Evidence Upload Portal:*
+*Field Repair & Evidence Upload Portal:*
 ${portalUrl}
 
 _This is an automated dispatch from SheherSaathi Edge-AI Fleet Telemetry. Reply ACK to acknowledge receipt._`;

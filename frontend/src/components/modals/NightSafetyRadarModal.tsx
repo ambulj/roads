@@ -162,9 +162,9 @@ export const NightSafetyRadarModal: React.FC<NightSafetyRadarModalProps> = ({
             <span className="text-slate-400 font-medium mr-1">Filter:</span>
             {[
               { id: "ALL", label: "All Hazards (4)" },
-              { id: "DARK_ZONE", label: "💡 Dark Corridors (2)" },
-              { id: "UNMARKED_BUMP", label: "⚠️ Unmarked Bumps (1)" },
-              { id: "MISSING_STUDS", label: "🔘 Missing Studs (1)" },
+              { id: "DARK_ZONE", label: "Dark Corridors (2)" },
+              { id: "UNMARKED_BUMP", label: "Unmarked Bumps (1)" },
+              { id: "MISSING_STUDS", label: "Missing Studs (1)" },
             ].map((f) => (
               <button
                 key={f.id}

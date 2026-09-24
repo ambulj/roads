@@ -178,9 +178,13 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({
               >
                 <div className="flex items-start justify-between gap-2">
                   <div className="flex items-center gap-1.5 min-w-0">
-                    <span className="text-sm">
-                      {isWaterlog ? '💧' : isZebra ? '🚶' : isHitAndRun ? '🚨' : isManhole ? '⚠️' : '⚡'}
-                    </span>
+                    {isWaterlog ? (
+                      <Droplets className="w-3.5 h-3.5 text-blue-500 shrink-0" />
+                    ) : isHitAndRun ? (
+                      <ShieldAlert className="w-3.5 h-3.5 text-rose-500 shrink-0" />
+                    ) : (
+                      <AlertTriangle className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+                    )}
                     <span className={`rounded px-1.5 py-0.5 text-[10px] font-bold border ${badgeColor}`}>
                       {incident.incident_type.replace(/_/g, ' ')}
                     </span>

@@ -8,7 +8,8 @@ import {
   Droplets,
   RefreshCw,
   CheckCircle2,
-  Loader2
+  Loader2,
+  RotateCcw
 } from "lucide-react";
 import { api } from "../../services/api";
 
@@ -240,7 +241,7 @@ export const SyntheticGeneratorControl: React.FC<SyntheticGeneratorControlProps>
               onClick={handleResetBaseline}
               className="w-full px-3 py-1.5 text-left rounded-lg hover:bg-rose-50 dark:hover:bg-rose-950/40 flex items-center gap-2 transition text-rose-600 dark:text-rose-400 font-semibold cursor-pointer text-[11px]"
             >
-              <span className="text-xs">🧹</span>
+              <RotateCcw className="w-3.5 h-3.5 text-rose-500" />
               <span>Minimize Issues to Clean Baseline</span>
             </button>
           </div>

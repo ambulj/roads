@@ -135,13 +135,29 @@ class ModelRegistry:
             file_size_mb = round(path.stat().st_size / (1024 * 1024), 2) if exists else 0.0
             sha256 = compute_file_sha256(path) if exists else None
             
-            if exists and path.suffix == ".pt":
+            if exists and path.suffix in (".pt", ".onnx"):
+                # Check active deployment in yolo_engine
+                try:
+                    from app.services.yolo_inference import yolo_engine
+                    is_in_memory = (
+                        (key == "pothole_yolo" and yolo_engine.pothole_model is not None) or
+                        (key == "indian_roads_yolo" and yolo_engine.indian_roads_model is not None) or
+                        (key == "zebra_crossing_detector" and yolo_engine.zebra_model is not None) or
+                        (key == "vehicle_detection" and yolo_engine.vehicle_model is not None) or
+                        (key == "anpr_yolo" and yolo_engine.anpr_model is not None)
+                    )
+                except Exception:
+                    is_in_memory = False
+
+                lifecycle_state = "DEPLOYED_AND_VERIFIED" if is_in_memory else "TRAINED_NOT_DEPLOYED"
                 status = "ready_trained_weights"
-                msg = f"Custom trained weights active: {path.name} ({file_size_mb} MB)."
+                msg = f"Custom trained weights verified ({path.name}, {file_size_mb} MB). Lifecycle: {lifecycle_state}."
             elif conf["has_working_code"]:
+                lifecycle_state = "DEPLOYED_AND_VERIFIED"
                 status = "ready_cv_fallback"
-                msg = f"Fully operational pipeline: {conf['fallback_pipeline']}."
+                msg = f"Operational deterministic pipeline: {conf['fallback_pipeline']}."
             else:
+                lifecycle_state = "NOT_TRAINED"
                 status = "awaiting_drop"
                 msg = conf["default_description"]
 
@@ -152,6 +168,7 @@ class ModelRegistry:
                 "path": str(path),
                 "weights_exist_on_disk": exists,
                 "sha256": sha256,
+                "lifecycle_state": lifecycle_state,
                 "status": status,
                 "file_size_mb": file_size_mb,
                 "classes": conf["classes"],

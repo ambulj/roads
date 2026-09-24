@@ -8,6 +8,7 @@ from sqlalchemy.orm import Session
 from app.services.yolo_inference import yolo_engine
 from app.services.pedestrian_safety import pedestrian_safety_engine
 from app.models.db_models import DBTrafficDensity
+from app.core.traffic_scoring import calculate_irc106_pcu, classify_congestion
 
 class VehicleDetectionTrafficBridge:
     """
@@ -96,26 +97,14 @@ class VehicleDetectionTrafficBridge:
         # 2. Compute Density & Level of Service (IRC:106 / HCM)
         density_metrics = pedestrian_safety_engine.compute_vehicle_density(w, h, detected_vehicles)
         
-        # 3. Calculate Congestion Level & Bottleneck Impedance
-        free_speed = max(20.0, free_flow_speed_kmh)
-        speed_ratio = average_speed_kmh / free_speed
-        
-        if speed_ratio >= 0.80:
-            congestion = "FREE_FLOW"
-            is_bottleneck = False
-            cause = None
-        elif speed_ratio >= 0.50:
-            congestion = "MODERATE"
-            is_bottleneck = False
-            cause = None
-        elif speed_ratio >= 0.30:
-            congestion = "CONGESTED"
-            is_bottleneck = True
-            cause = f"High Vehicle Volume ({len(detected_vehicles)} vehicles, PCU: {density_metrics['pcu_count']})"
-        else:
-            congestion = "GRIDLOCK"
-            is_bottleneck = True
-            cause = f"Corridor Saturation / Stall (LoS: {density_metrics['los_grade']})"
+        # 3. Calculate Congestion Level & Bottleneck Impedance using canonical scoring
+        congestion_result = classify_congestion(
+            average_speed_kmh=average_speed_kmh,
+            free_flow_speed_kmh=free_flow_speed_kmh,
+            vehicle_count=len(detected_vehicles),
+            pcu_count=density_metrics.get("pcu_count"),
+            los_grade=density_metrics.get("los_grade")
+        )
 
         record_id = f"dens-bridge-{uuid.uuid4().hex[:8]}"
         record_data = {
@@ -126,11 +115,11 @@ class VehicleDetectionTrafficBridge:
             "lng": lng,
             "vehicle_count": len(detected_vehicles),
             "density_pcu_per_km": density_metrics["pcu_count"],
-            "average_speed_kmh": round(average_speed_kmh, 1),
-            "free_flow_speed_kmh": round(free_speed, 1),
-            "congestion_level": congestion,
-            "is_bottleneck": is_bottleneck,
-            "bottleneck_cause": cause,
+            "average_speed_kmh": congestion_result["average_speed_kmh"],
+            "free_flow_speed_kmh": congestion_result["free_flow_speed_kmh"],
+            "congestion_level": congestion_result["congestion_level"],
+            "is_bottleneck": congestion_result["is_bottleneck"],
+            "bottleneck_cause": congestion_result["bottleneck_cause"],
             "reported_by": reported_by,
             "measured_at": "Just now"
         }

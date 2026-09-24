@@ -47,11 +47,11 @@ interface WebGISMapProps {
 }
 
 const CHENNAI_QUICK_CORRIDORS = [
-  { name: "GST Road", lat: 12.9516, lng: 80.1462, zoom: 15.0, icon: "📍" },
-  { name: "Kathipara Cloverleaf", lat: 13.0067, lng: 80.2030, zoom: 15.2, icon: "🏛️" },
-  { name: "OMR IT Expressway", lat: 12.9719, lng: 80.2500, zoom: 14.8, icon: "⚡" },
-  { name: "Anna Salai CBD", lat: 13.0604, lng: 80.2496, zoom: 15.0, icon: "🏙️" },
-  { name: "Central Station Link", lat: 13.0827, lng: 80.2707, zoom: 15.4, icon: "🚉" },
+  { name: "GST Road", lat: 12.9516, lng: 80.1462, zoom: 15.0 },
+  { name: "Kathipara Cloverleaf", lat: 13.0067, lng: 80.2030, zoom: 15.2 },
+  { name: "OMR IT Expressway", lat: 12.9719, lng: 80.2500, zoom: 14.8 },
+  { name: "Anna Salai CBD", lat: 13.0604, lng: 80.2496, zoom: 15.0 },
+  { name: "Central Station Link", lat: 13.0827, lng: 80.2707, zoom: 15.4 },
 ];
 
 const SAMPLE_BREADCRUMBS = [
@@ -512,10 +512,10 @@ export const WebGISMap: React.FC<WebGISMapProps> = ({
         el.className = 'cursor-pointer group';
         el.innerHTML = `
           <div style="position: relative; display: flex; align-items: center; justify-content: center;">
-            <div style="width: 32px; height: 32px; border-radius: 50%; background: #2563eb; border: 2.5px solid #ffffff; box-shadow: 0 4px 12px rgba(37,99,235,0.4); display: flex; align-items: center; justify-content: center; color: #ffffff; font-size: 14px;">
-              🚌
+            <div style="width: 32px; height: 32px; border-radius: 50%; background: #0284c7; border: 2px solid #ffffff; box-shadow: 0 4px 12px rgba(2,132,199,0.4); display: flex; align-items: center; justify-content: center; color: #ffffff; font-size: 10px; font-weight: bold; font-family: monospace;">
+              BUS
             </div>
-            <div style="position: absolute; bottom: -18px; font-family: monospace; font-size: 10px; font-weight: 700; background: #0f172a; color: #38bdf8; padding: 1px 4px; border-radius: 4px; border: 1px solid #334155; white-space: nowrap;">
+            <div style="position: absolute; bottom: -18px; font-family: monospace; font-size: 10px; font-weight: 700; background: #09090b; color: #38bdf8; padding: 1px 4px; border-radius: 4px; border: 1px solid #27272a; white-space: nowrap;">
               ${bus.id.replace('BUS-', '')}
             </div>
           </div>
@@ -594,30 +594,30 @@ export const WebGISMap: React.FC<WebGISMapProps> = ({
         el.style.display = showIncidents ? 'block' : 'none';
         el.innerHTML = `
           <div style="position: relative; display: flex; align-items: center; justify-content: center;">
-            <div style="width: 28px; height: 28px; border-radius: 50%; background: #ffffff; border: 2.5px solid ${color}; box-shadow: 0 0 12px ${color}88; display: flex; align-items: center; justify-content: center; font-size: 13px;">
-              ${isWaterlog ? '🌊' : '🚨'}
+            <div style="width: 24px; height: 24px; border-radius: 50%; background: #09090b; border: 2px solid ${color}; box-shadow: 0 0 10px ${color}88; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: bold; font-family: monospace; color: ${color};">
+              !
             </div>
-            <div style="position: absolute; top: -18px; font-family: system-ui, -apple-system, sans-serif; font-size: 9px; font-weight: 700; background: #ffffff; color: ${color}; padding: 1px 5px; border-radius: 4px; border: 1.5px solid ${color}; box-shadow: 0 1px 4px rgba(0,0,0,0.2); white-space: nowrap;">
+            <div style="position: absolute; top: -16px; font-family: monospace; font-size: 8.5px; font-weight: 700; background: #09090b; color: ${color}; padding: 1px 4px; border-radius: 3px; border: 1px solid ${color}; white-space: nowrap;">
               ${String(incident.incident_type).replace(/_/g, ' ')}
             </div>
           </div>
         `;
 
         const popupHtml = `
-          <div style="font-family: system-ui, -apple-system, sans-serif; font-size: 11px; padding: 2px; min-width: 200px;">
-            <div style="display: flex; items-center; justify-content: space-between; gap: 4px; margin-bottom: 3px;">
-              <span style="font-weight: 800; color: ${color}; font-size: 12px; text-transform: uppercase;">
-                ${isWaterlog ? '🌊 Waterlog Hazard' : '🚨 Safety Violation'}
+          <div style="font-family: monospace; font-size: 11px; padding: 2px; min-width: 200px;">
+            <div style="display: flex; align-items: center; justify-content: space-between; gap: 4px; margin-bottom: 3px;">
+              <span style="font-weight: 800; color: ${color}; font-size: 11px; text-transform: uppercase;">
+                ${isWaterlog ? 'Waterlog Hazard' : 'Safety Violation'}
               </span>
               <span style="font-family: monospace; font-size: 9.5px; background: ${color}20; color: ${color}; padding: 1px 4px; border-radius: 3px; font-weight: bold;">
                 ${incident.id}
               </span>
             </div>
-            <div style="font-weight: 700; font-size: 11.5px; margin-bottom: 2px; color: #1e293b;">
+            <div style="font-weight: 700; font-size: 11px; margin-bottom: 2px; color: #18181b;">
               ${String(incident.incident_type).replace(/_/g, ' ')}
             </div>
-            <div style="font-size: 10.5px; color: #64748b; margin-bottom: 4px;">
-              📍 <b>${incident.road_name}</b>
+            <div style="font-size: 10px; color: #71717a; margin-bottom: 4px;">
+              <b>${incident.road_name}</b>
             </div>
             <div style="font-size: 10px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 4px 6px; margin-bottom: 4px; line-height: 1.4;">
               ${incident.plate_number ? `<div>Plate: <b style="font-family: monospace; color: #0284c7;">${incident.plate_number}</b> (${Math.round((incident.plate_confidence || 0.95) * 100)}% Conf)</div>` : ''}

@@ -779,8 +779,8 @@ export const IncidentDossierModal: React.FC<IncidentDossierModalProps> = ({
 
             {/* 4. TRAFFIC / VEHICULAR MOVING VIOLATION VIEW */}
             {isTrafficViolation && (
-              <div className="relative h-48 w-full rounded-xl overflow-hidden border border-slate-200 dark:border-slate-800 bg-slate-900 flex items-center justify-center">
-                <div className="absolute inset-0 bg-gradient-to-t from-black via-slate-950/80 to-transparent z-10" />
+              <div className="relative h-48 w-full rounded-xl overflow-hidden border border-zinc-200 dark:border-zinc-800 bg-zinc-950 flex items-center justify-center">
+                <div className="absolute inset-0 bg-zinc-950/80 z-10" />
                 <div className="absolute inset-0 opacity-20 bg-[radial-gradient(#38bdf8_1px,transparent_1px)] [background-size:16px_16px]" />
 
                 <div className="relative z-20 flex flex-col items-center gap-2">

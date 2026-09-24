@@ -612,10 +612,10 @@ export const WorkOrders: React.FC<WorkOrdersProps> = ({ clusters, onUpdateStatus
                   className="h-9 px-3 rounded-lg bg-slate-50 dark:bg-slate-850 border border-slate-200 dark:border-slate-700 text-xs text-slate-700 dark:text-slate-200 outline-none cursor-pointer"
                 >
                   <option value="all">All Severities</option>
-                  <option value="critical">🔴 Critical P0</option>
-                  <option value="high">🟠 High (P1)</option>
-                  <option value="medium">🟡 Medium (P2)</option>
-                  <option value="low">🟢 Low (P3)</option>
+                  <option value="critical">Critical (P0)</option>
+                  <option value="high">High (P1)</option>
+                  <option value="medium">Medium (P2)</option>
+                  <option value="low">Low (P3)</option>
                 </select>
               </div>
             </div>

@@ -76,7 +76,7 @@ export const OperatorInspectorPanel: React.FC<OperatorInspectorPanelProps> = ({
 
     const handleFlagRTO = async () => {
       await api.flagVehicleCompliance(plate, 'Suspected Vehicle in Active Transit Violation / Fitness Audit');
-      showSuccessToast(`🚩 Compliance Notice Issued: ${plate} flagged in RTO Registry.`);
+      showSuccessToast(`Compliance Notice Issued: ${plate} flagged in RTO Registry.`);
     };
 
     return (
