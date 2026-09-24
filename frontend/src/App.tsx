@@ -250,7 +250,7 @@ export const App: React.FC = () => {
   }
 
   return (
-    <div className="flex flex-col h-[100dvh] w-screen overflow-hidden font-sans select-none relative transition-colors duration-200 bg-[#f0efea] dark:bg-[#111319] text-[#20232a] dark:text-[#f3f0e9]">
+    <div className="flex flex-col h-[100dvh] w-screen overflow-hidden font-sans select-none relative transition-colors duration-200 bg-zinc-100 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100">
       {/* Full-width Top Header */}
       <Header
         currentRoute={currentRoute}
@@ -292,7 +292,7 @@ export const App: React.FC = () => {
         />
 
         {/* Page Area */}
-        <main className="flex-1 flex flex-col overflow-hidden min-h-0 bg-[#f0efea] dark:bg-[#111319] pb-14 md:pb-0 transition-colors" aria-label="Operations workspace">
+        <main className="flex-1 flex flex-col overflow-hidden min-h-0 bg-zinc-100 dark:bg-zinc-950 pb-14 md:pb-0 transition-colors" aria-label="Operations workspace">
           <React.Suspense fallback={
             <div className="flex-1 flex items-center justify-center h-full">
               <div className="flex flex-col items-center gap-3">

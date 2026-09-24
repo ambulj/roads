@@ -217,142 +217,177 @@ export const CommandCenter: React.FC<CommandCenterProps> = ({
     }
   };
 
+  // Right dock tab state: 'queue' or 'inspector'
+  const [dockTab, setDockTab] = useState<'queue' | 'inspector'>('queue');
+
+  const handleSelectClusterItem = (c: HazardCluster) => {
+    setSelectedCluster(c);
+    handleSelectIncident(null);
+    setDockTab('inspector');
+  };
+
+  const handleSelectIncidentItem = (inc: TrafficIncident) => {
+    handleSelectIncident(inc);
+    setDockTab('inspector');
+  };
+
   return (
-    <div className="flex-1 flex flex-col min-h-0 overflow-y-auto custom-scrollbar bg-zinc-100 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 select-none transition-colors">
-      <div className="px-3 py-3 md:px-5 md:py-3.5 xl:px-6 max-w-[1920px] mx-auto w-full space-y-3">
+    <div className="flex-1 flex flex-col min-h-0 bg-zinc-100 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 select-none overflow-hidden">
+      
+      {/* 1. SLIM INTEGRATED TOP COMMAND & FILTER BAR */}
+      <div className="bg-white dark:bg-zinc-900 border-b border-zinc-200 dark:border-zinc-800 px-3 py-2 flex flex-col md:flex-row items-stretch md:items-center justify-between gap-2.5 shrink-0 z-10">
         
-        {/* 1. EXECUTIVE KPI SUMMARY RIBBON */}
-        <div className="w-full">
-          <MetricCards
-            metrics={metrics}
-            fleetCount={onlineFleetCount}
-            clustersCount={hazardClustersCount}
-            incidentsCount={incidentCount}
-            waterloggingCount={3}
-            workOrdersCount={12}
+        {/* Left: Quick Search */}
+        <div className="relative flex-1 min-w-[220px] max-w-sm">
+          <Search className="w-3.5 h-3.5 text-zinc-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Search corridor, POI, or defect..."
+            className="w-full h-7 pl-8 pr-2.5 text-xs bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-500 focus:outline-hidden focus:border-cyan-500 font-mono transition"
           />
         </div>
 
-        {/* 2. STREAMLINED SEARCH & FILTER BAR */}
-        <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-md px-3 py-2 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2 shadow-none">
-          {/* Search Box */}
-          <div className="relative flex-1 min-w-[220px] max-w-md">
-            <Search className="w-4 h-4 text-zinc-500 absolute left-3 top-1/2 -translate-y-1/2" />
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Filter by road corridor, POI, or defect type..."
-              className="w-full h-8 pl-9 pr-3 text-xs bg-zinc-50 dark:bg-zinc-950 border border-zinc-300 dark:border-zinc-700 rounded-md text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-500 focus:outline-hidden focus:border-blue-600 font-sans transition"
-            />
+        {/* Center: Real-Time Live Metric Chips */}
+        <div className="flex items-center gap-1.5 overflow-x-auto text-[11px] font-mono">
+          <div className="flex items-center gap-1 px-2 py-0.5 rounded bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-700">
+            <span className="text-zinc-400">Fleet:</span>
+            <strong className="text-cyan-600 dark:text-cyan-400">{onlineFleetCount}/5 Active</strong>
           </div>
-
-          {/* Filter Controls */}
-          <div className="flex items-center gap-2 text-xs font-sans justify-end flex-wrap">
-            <select
-              value={selectedStatus}
-              onChange={(e) => setSelectedStatus(e.target.value)}
-              className="h-8 px-2.5 bg-zinc-50 dark:bg-zinc-950 border border-zinc-300 dark:border-zinc-700 rounded-md text-zinc-800 dark:text-zinc-200 font-medium focus:outline-hidden focus:border-blue-600 transition text-xs cursor-pointer"
-            >
-              <option value="ACTIVE">Active Triage</option>
-              <option value="ALL">All Status</option>
-              <option value="RESOLVED">Verified Resolved</option>
-            </select>
-
-            <select
-              value={selectedSeverity}
-              onChange={(e) => setSelectedSeverity(e.target.value)}
-              className="h-8 px-2.5 bg-zinc-50 dark:bg-zinc-950 border border-zinc-300 dark:border-zinc-700 rounded-md text-zinc-800 dark:text-zinc-200 font-medium focus:outline-hidden focus:border-blue-600 transition text-xs cursor-pointer"
-            >
-              <option value="ALL">All Severities</option>
-              <option value="critical">Critical (P0)</option>
-              <option value="high">High (P1)</option>
-              <option value="medium">Medium (P2)</option>
-              <option value="low">Low (P3)</option>
-            </select>
-
-            {hasActiveFilters && (
-              <button
-                onClick={handleResetFilters}
-                className="h-8 px-2.5 rounded-md bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-750 text-zinc-800 dark:text-zinc-200 text-xs font-semibold flex items-center gap-1 transition shrink-0 cursor-pointer border border-zinc-300 dark:border-zinc-700"
-                title="Reset filters"
-              >
-                <RotateCcw className="w-3.5 h-3.5" />
-                <span>Reset</span>
-              </button>
-            )}
-
-            {onOpenLifecycleDemo && (
-              <button
-                onClick={onOpenLifecycleDemo}
-                className="h-8 px-3 rounded-md bg-blue-700 hover:bg-blue-800 text-white font-semibold text-xs flex items-center gap-1.5 transition cursor-pointer shrink-0"
-                title="Interactive Lifecycle Demonstration"
-              >
-                <Sparkles className="w-3.5 h-3.5" />
-                <span>Interactive Lifecycle</span>
-              </button>
-            )}
+          <div className="flex items-center gap-1 px-2 py-0.5 rounded bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-700">
+            <span className="text-zinc-400">Hazards:</span>
+            <strong className="text-amber-600 dark:text-amber-400">{hazardClustersCount}</strong>
+          </div>
+          <div className="flex items-center gap-1 px-2 py-0.5 rounded bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-700">
+            <span className="text-zinc-400">Incidents:</span>
+            <strong className="text-rose-600 dark:text-rose-400">{incidentCount}</strong>
           </div>
         </div>
 
-        {/* 3. OPERATIONAL 3-PANE COCKPIT: ACTION QUEUE -> LIVE GIS MAP -> OPERATOR INSPECTOR */}
-        <section className="grid grid-cols-1 lg:grid-cols-[300px_minmax(0,1fr)] xl:grid-cols-[300px_minmax(0,1fr)_340px] gap-3 items-stretch">
-          {/* Left: Autonomous Action Queue */}
-          <aside className="border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 flex flex-col shadow-none h-[580px] xl:h-[680px] rounded-md overflow-hidden min-h-0">
-            <PriorityQueue
-              clusters={filteredClusters}
-              incidents={filteredIncidents}
-              selectedClusterId={selectedCluster?.id || null}
-              selectedIncidentId={activeSelectedIncident?.id || null}
-              onSelectCluster={(c) => {
-                setSelectedCluster(c);
-                handleSelectIncident(null);
-              }}
-              onSelectIncident={(inc) => {
-                handleSelectIncident(inc);
-              }}
-              auditLogs={auditLogs}
-            />
-          </aside>
+        {/* Right: Quick Filters & Actions */}
+        <div className="flex items-center gap-1.5 justify-end flex-wrap text-xs font-mono">
+          <select
+            value={selectedStatus}
+            onChange={(e) => setSelectedStatus(e.target.value)}
+            className="h-7 px-2 bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded text-zinc-800 dark:text-zinc-200 text-[11px] font-medium focus:outline-hidden focus:border-cyan-500 transition cursor-pointer"
+          >
+            <option value="ACTIVE">Active Triage</option>
+            <option value="ALL">All Status</option>
+            <option value="RESOLVED">Verified Resolved</option>
+          </select>
 
-          {/* Center: Live GIS Map */}
-          <div className="border border-zinc-200 dark:border-zinc-800 bg-zinc-950 flex flex-col overflow-hidden rounded-md shadow-none min-h-[560px]">
-            <div id="main-map-wrapper" className="w-full relative flex-1 flex flex-col min-h-[560px]">
-              <WebGISMap
-                clusters={filteredClusters}
-                fleet={fleet}
-                incidents={filteredIncidents}
-                selectedCluster={selectedCluster}
-                selectedIncident={activeSelectedIncident}
-                onSelectCluster={(c) => { 
-                  setSelectedCluster(c); 
-                  handleSelectIncident(null);
-                }}
-                onSelectIncident={(inc) => { handleSelectIncident(inc); }}
-                isSplitView={false}
-                onToggleSplitView={() => {}}
-                onOpenRPIModal={onOpenRPIModal}
-                onOpenBriefModal={onOpenBriefModal}
-                onNavigateToCapture={onNavigateToCapture}
-              />
-            </div>
+          <select
+            value={selectedSeverity}
+            onChange={(e) => setSelectedSeverity(e.target.value)}
+            className="h-7 px-2 bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded text-zinc-800 dark:text-zinc-200 text-[11px] font-medium focus:outline-hidden focus:border-cyan-500 transition cursor-pointer"
+          >
+            <option value="ALL">All Severities</option>
+            <option value="critical">Critical (P0)</option>
+            <option value="high">High (P1)</option>
+            <option value="medium">Medium (P2)</option>
+            <option value="low">Low (P3)</option>
+          </select>
+
+          {hasActiveFilters && (
+            <button
+              onClick={handleResetFilters}
+              className="h-7 px-2 rounded bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-750 text-zinc-700 dark:text-zinc-300 text-[11px] font-semibold flex items-center gap-1 transition cursor-pointer border border-zinc-200 dark:border-zinc-700"
+              title="Reset filters"
+            >
+              <RotateCcw className="w-3 h-3" />
+              <span>Reset</span>
+            </button>
+          )}
+
+          {onOpenLifecycleDemo && (
+            <button
+              onClick={onOpenLifecycleDemo}
+              className="h-7 px-2.5 rounded bg-cyan-700 hover:bg-cyan-800 text-white font-bold text-[11px] flex items-center gap-1 transition cursor-pointer shrink-0"
+              title="Interactive Lifecycle Demonstration"
+            >
+              <Sparkles className="w-3 h-3" />
+              <span>Lifecycle Demo</span>
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* 2. SPATIAL 2-COLUMN COCKPIT (65% MAP / 35% ACTION DOCK) */}
+      <div className="flex-1 flex flex-col lg:flex-row min-h-0 items-stretch overflow-hidden">
+        
+        {/* Left / Center Canvas: Full-Size WebGIS Map */}
+        <div className="flex-1 flex flex-col relative min-h-[420px] bg-zinc-950 overflow-hidden">
+          <WebGISMap
+            clusters={filteredClusters}
+            fleet={fleet}
+            incidents={filteredIncidents}
+            selectedCluster={selectedCluster}
+            selectedIncident={activeSelectedIncident}
+            onSelectCluster={handleSelectClusterItem}
+            onSelectIncident={handleSelectIncidentItem}
+            isSplitView={false}
+            onToggleSplitView={() => {}}
+            onOpenRPIModal={onOpenRPIModal}
+            onOpenBriefModal={onOpenBriefModal}
+            onNavigateToCapture={onNavigateToCapture}
+          />
+        </div>
+
+        {/* Right: Unified Triage Queue & Inspector Dock */}
+        <div className="w-full lg:w-[380px] xl:w-[420px] shrink-0 border-t lg:border-t-0 lg:border-l border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 flex flex-col min-h-0 h-[480px] lg:h-full z-10">
+          
+          {/* Dock Tab Selector */}
+          <div className="flex items-center border-b border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950 font-mono text-xs">
+            <button
+              onClick={() => setDockTab('queue')}
+              className={`flex-1 py-2.5 px-3 font-bold text-center border-b-2 transition-colors ${
+                dockTab === 'queue'
+                  ? 'border-cyan-500 text-cyan-600 dark:text-cyan-400 bg-white dark:bg-zinc-900'
+                  : 'border-transparent text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-200'
+              }`}
+            >
+              Priority Triage Queue ({hazardClustersCount + incidentCount})
+            </button>
+            <button
+              onClick={() => setDockTab('inspector')}
+              className={`flex-1 py-2.5 px-3 font-bold text-center border-b-2 transition-colors ${
+                dockTab === 'inspector'
+                  ? 'border-cyan-500 text-cyan-600 dark:text-cyan-400 bg-white dark:bg-zinc-900'
+                  : 'border-transparent text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-200'
+              }`}
+            >
+              Forensic Inspector &amp; Actions
+            </button>
           </div>
 
-          {/* Right: Operator Forensic Inspector & 1-Click Action Dock */}
-          <aside className="border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 flex flex-col shadow-none min-h-[560px] max-h-[660px] rounded-md overflow-hidden">
-            <OperatorInspectorPanel
-              selectedCluster={activeSelectedIncident ? null : selectedCluster}
-              selectedIncident={activeSelectedIncident}
-              onDispatchWorkOrder={handleDispatchWorkOrder}
-              onResolveCluster={handleResolveCluster}
-              onEscalateIncident={handleEscalateIncident}
-              onNavigateToWorkOrders={() => onNavigate?.("work-orders")}
-              onOpenDossierModal={() => {
-                if (activeSelectedIncident) setIsDossierOpen(true);
-              }}
-            />
-          </aside>
-        </section>
+          {/* Dock Content */}
+          <div className="flex-1 min-h-0 overflow-hidden flex flex-col">
+            {dockTab === 'queue' ? (
+              <PriorityQueue
+                clusters={filteredClusters}
+                incidents={filteredIncidents}
+                selectedClusterId={selectedCluster?.id || null}
+                selectedIncidentId={activeSelectedIncident?.id || null}
+                onSelectCluster={handleSelectClusterItem}
+                onSelectIncident={handleSelectIncidentItem}
+                auditLogs={auditLogs}
+              />
+            ) : (
+              <OperatorInspectorPanel
+                selectedCluster={activeSelectedIncident ? null : selectedCluster}
+                selectedIncident={activeSelectedIncident}
+                onDispatchWorkOrder={handleDispatchWorkOrder}
+                onResolveCluster={handleResolveCluster}
+                onEscalateIncident={handleEscalateIncident}
+                onNavigateToWorkOrders={() => onNavigate?.("work-orders")}
+                onOpenDossierModal={() => {
+                  if (activeSelectedIncident) setIsDossierOpen(true);
+                }}
+              />
+            )}
+          </div>
+        </div>
 
       </div>
 
