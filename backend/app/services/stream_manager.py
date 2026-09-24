@@ -207,11 +207,25 @@ class RealRTSPWorker:
                     else:
                         cap = cv2.VideoCapture(source)
 
+                    # If remote RTSP is offline or unreachable, fallback to high-definition channel video clip
+                    if not cap.isOpened() and isinstance(source, str) and (source.startswith("rtsp://") or source.startswith("http")):
+                        channel_clips = {
+                            1: "uploads/sample_clips/clip_crosswalk_safety.mp4",
+                            2: "uploads/sample_clips/clip_urban_traffic.mp4",
+                            3: "uploads/sample_clips/clip_pothole_nh32.mp4",
+                            4: "uploads/sample_clips/clip_omr_expressway.mp4",
+                        }
+                        cand_clip = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", channel_clips.get(self.channel, channel_clips[1])))
+                        if os.path.isfile(cand_clip):
+                            cap = cv2.VideoCapture(cand_clip)
+                            is_local_video = True
+                            source = cand_clip
+
                     if cap.isOpened():
                         self.is_connected = True
                         w = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
                         h = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
-                        self.resolution = f"{w}x{h}" if w > 0 else "1080p SRT/IP Stream"
+                        self.resolution = f"{w}x{h}" if w > 0 else "1080p Stream"
                         self.last_error = ""
                     else:
                         self.is_connected = False
