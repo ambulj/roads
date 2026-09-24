@@ -194,7 +194,7 @@ export const WorkOrders: React.FC<WorkOrdersProps> = ({ clusters, onUpdateStatus
 
 
   return (
-    <div className="flex-1 flex flex-col min-h-0 overflow-y-auto custom-scrollbar bg-[#edf1f3] dark:bg-[#090e18] text-slate-900 dark:text-slate-100 select-none transition-colors">
+    <div className="flex-1 flex flex-col min-h-0 overflow-y-auto custom-scrollbar bg-zinc-100 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 select-none transition-colors">
       <div className="p-4 sm:p-5 md:p-6 space-y-4 max-w-[1700px] mx-auto w-full">
         
         {/* 1. TOP TITLE & ACTIONS BAR */}
@@ -204,23 +204,23 @@ export const WorkOrders: React.FC<WorkOrdersProps> = ({ clusters, onUpdateStatus
               <ClipboardList className="w-5 h-5" />
             </div>
             <div>
-              <h2 className="font-extrabold text-lg sm:text-xl text-slate-900 dark:text-white tracking-tight">
+              <h2 className="font-extrabold text-lg sm:text-xl text-zinc-900 dark:text-white tracking-tight">
                 Municipal Work Orders &amp; SLA Compliance
               </h2>
-              <p className="text-xs text-slate-500 dark:text-slate-400 leading-tight mt-0.5">
+              <p className="text-xs text-zinc-500 dark:text-zinc-400 leading-tight mt-0.5">
                 Autonomous contract routing, SLA compliance &amp; penalty ledger, and proof-of-repair verification.
               </p>
             </div>
           </div>
 
           <div className="flex items-center gap-2 shrink-0 self-start sm:self-auto">
-            <div className="flex bg-white dark:bg-slate-900 p-1 rounded-lg border border-slate-200 dark:border-slate-800 text-xs font-semibold">
+            <div className="flex bg-white dark:bg-zinc-900 p-1 rounded-lg border border-zinc-200 dark:border-zinc-800 text-xs font-semibold">
               <button
                 onClick={() => setActiveTab('cad')}
                 className={`px-3 py-1.5 rounded-md transition ${
                   activeTab === 'cad'
                     ? 'bg-blue-700 text-white shadow-xs font-bold'
-                    : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white'
+                    : 'text-zinc-600 dark:text-zinc-300 hover:text-zinc-900 dark:hover:text-white'
                 }`}
               >
                 CAD Table
@@ -230,7 +230,7 @@ export const WorkOrders: React.FC<WorkOrdersProps> = ({ clusters, onUpdateStatus
                 className={`px-3 py-1.5 rounded-md transition flex items-center gap-1.5 ${
                   activeTab === 'kanban'
                     ? 'bg-blue-700 text-white shadow-xs font-bold'
-                    : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white'
+                    : 'text-zinc-600 dark:text-zinc-300 hover:text-zinc-900 dark:hover:text-white'
                 }`}
               >
                 <span>Kanban Board</span>
@@ -241,7 +241,7 @@ export const WorkOrders: React.FC<WorkOrdersProps> = ({ clusters, onUpdateStatus
                 className={`px-3 py-1.5 rounded-md transition flex items-center gap-1.5 ${
                   activeTab === 'sla'
                     ? 'bg-blue-700 text-white shadow-xs font-bold'
-                    : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white'
+                    : 'text-zinc-600 dark:text-zinc-300 hover:text-zinc-900 dark:hover:text-white'
                 }`}
               >
                 <span>SLA &amp; Compliance</span>
@@ -253,7 +253,7 @@ export const WorkOrders: React.FC<WorkOrdersProps> = ({ clusters, onUpdateStatus
 
             <button
               onClick={() => openConsole(clusters[0] || null, 'repass')}
-              className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-800 text-xs font-semibold text-slate-700 dark:text-slate-200 transition"
+              className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 hover:bg-zinc-100 dark:hover:bg-zinc-800 text-xs font-semibold text-zinc-700 dark:text-zinc-200 transition"
             >
               <Sparkles className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
               <span>Fleet Re-Pass</span>
@@ -276,11 +276,11 @@ export const WorkOrders: React.FC<WorkOrdersProps> = ({ clusters, onUpdateStatus
           <div className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
               {/* Lane 1: Auto-Detected (Open) */}
-              <div className="flex flex-col bg-slate-100/80 dark:bg-[#0c101c] rounded-2xl border border-slate-200 dark:border-slate-800 p-3.5 space-y-3">
-                <div className="flex items-center justify-between pb-2 border-b border-slate-200 dark:border-slate-800">
+              <div className="flex flex-col bg-zinc-100/80 dark:bg-zinc-900/60 rounded-xl border border-zinc-200 dark:border-zinc-800 p-3.5 space-y-3">
+                <div className="flex items-center justify-between pb-2 border-b border-zinc-200 dark:border-zinc-800">
                   <div className="flex items-center gap-2">
-                    <span className="w-2.5 h-2.5 rounded-full bg-rose-500 animate-pulse" />
-                    <h4 className="font-bold text-xs uppercase tracking-wider text-slate-800 dark:text-slate-200">1. Auto-Detected (Open)</h4>
+                    <span className="w-2.5 h-2.5 rounded-full bg-rose-500" />
+                    <h4 className="font-bold text-xs uppercase tracking-wider text-zinc-800 dark:text-zinc-200">1. Auto-Detected (Open)</h4>
                   </div>
                   <span className="text-[11px] font-mono font-bold px-2 py-0.5 rounded-full bg-rose-100 dark:bg-rose-950/60 text-rose-700 dark:text-rose-300">
                     {clusters.filter(c => c.status === 'open').length}
@@ -289,21 +289,21 @@ export const WorkOrders: React.FC<WorkOrdersProps> = ({ clusters, onUpdateStatus
 
                 <div className="space-y-2.5 flex-1 overflow-y-auto max-h-[68vh] custom-scrollbar pr-1">
                   {clusters.filter(c => c.status === 'open').map(c => (
-                    <div key={c.id} className="p-3.5 rounded-xl bg-white dark:bg-[#131826] border border-rose-200 dark:border-rose-900/40 shadow-xs space-y-2.5 hover:shadow-md transition">
+                    <div key={c.id} className="p-3.5 rounded-lg bg-white dark:bg-zinc-900 border border-rose-200 dark:border-rose-900/40 shadow-xs space-y-2.5 hover:shadow-md transition">
                       <div className="flex items-center justify-between">
                         <span className="font-mono font-extrabold text-xs text-rose-600 dark:text-rose-400">{c.cluster_code || c.id}</span>
                         <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded bg-rose-50 dark:bg-rose-900/30 text-rose-600 border border-rose-200 dark:border-rose-800">
                           RPI {c.rpi_boosted ?? c.rpi_score}
                         </span>
                       </div>
-                      <div className="text-xs font-bold text-slate-900 dark:text-white truncate">{c.road_name}</div>
-                      <div className="flex items-center justify-between text-[11px] text-slate-500">
+                      <div className="text-xs font-bold text-zinc-900 dark:text-white truncate">{c.road_name}</div>
+                      <div className="flex items-center justify-between text-[11px] text-zinc-500">
                         <span>{c.defect_name}</span>
                         <span className="text-rose-600 font-semibold font-mono">SLA: {c.sla_hours}h</span>
                       </div>
                       <button
                         onClick={() => requestStatusUpdate(c.id, 'assigned')}
-                        className="w-full py-1.5 rounded-lg bg-blue-50 dark:bg-blue-900/30 hover:bg-blue-600 hover:text-white text-blue-700 dark:text-blue-300 font-bold text-[11px] border border-blue-200 dark:border-blue-800 transition flex items-center justify-center gap-1 cursor-pointer"
+                        className="w-full py-1.5 rounded-md bg-blue-50 dark:bg-blue-900/30 hover:bg-blue-600 hover:text-white text-blue-700 dark:text-blue-300 font-bold text-[11px] border border-blue-200 dark:border-blue-800 transition flex items-center justify-center gap-1 cursor-pointer"
                       >
                         <span>Assign to Contractor</span>
                         <ChevronRight className="w-3 h-3" />
@@ -314,11 +314,11 @@ export const WorkOrders: React.FC<WorkOrdersProps> = ({ clusters, onUpdateStatus
               </div>
 
               {/* Lane 2: Assigned to Contractor */}
-              <div className="flex flex-col bg-slate-100/80 dark:bg-[#0c101c] rounded-2xl border border-slate-200 dark:border-slate-800 p-3.5 space-y-3">
-                <div className="flex items-center justify-between pb-2 border-b border-slate-200 dark:border-slate-800">
+              <div className="flex flex-col bg-zinc-100/80 dark:bg-zinc-900/60 rounded-xl border border-zinc-200 dark:border-zinc-800 p-3.5 space-y-3">
+                <div className="flex items-center justify-between pb-2 border-b border-zinc-200 dark:border-zinc-800">
                   <div className="flex items-center gap-2">
                     <span className="w-2.5 h-2.5 rounded-full bg-amber-500" />
-                    <h4 className="font-bold text-xs uppercase tracking-wider text-slate-800 dark:text-slate-200">2. Contractor Assigned</h4>
+                    <h4 className="font-bold text-xs uppercase tracking-wider text-zinc-800 dark:text-zinc-200">2. Contractor Assigned</h4>
                   </div>
                   <span className="text-[11px] font-mono font-bold px-2 py-0.5 rounded-full bg-amber-100 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300">
                     {clusters.filter(c => c.status === 'assigned').length}
@@ -327,29 +327,29 @@ export const WorkOrders: React.FC<WorkOrdersProps> = ({ clusters, onUpdateStatus
 
                 <div className="space-y-2.5 flex-1 overflow-y-auto max-h-[68vh] custom-scrollbar pr-1">
                   {clusters.filter(c => c.status === 'assigned').map(c => (
-                    <div key={c.id} className="p-3.5 rounded-xl bg-white dark:bg-[#131826] border border-amber-200 dark:border-amber-900/40 shadow-xs space-y-2.5 hover:shadow-md transition">
+                    <div key={c.id} className="p-3.5 rounded-lg bg-white dark:bg-zinc-900 border border-amber-200 dark:border-amber-900/40 shadow-xs space-y-2.5 hover:shadow-md transition">
                       <div className="flex items-center justify-between">
                         <span className="font-mono font-extrabold text-xs text-amber-600 dark:text-amber-400">{c.cluster_code || c.id}</span>
                         <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800">
                           {c.assigned_agency}
                         </span>
                       </div>
-                      <div className="text-xs font-bold text-slate-900 dark:text-white truncate">{c.road_name}</div>
-                      <div className="flex items-center justify-between text-[11px] text-slate-500">
+                      <div className="text-xs font-bold text-zinc-900 dark:text-white truncate">{c.road_name}</div>
+                      <div className="flex items-center justify-between text-[11px] text-zinc-500">
                         <span>Est: ₹{calculateMaterial(c).costInr}</span>
                         <span className="text-amber-600 font-mono font-semibold">24h Active</span>
                       </div>
                       <div className="flex items-center gap-1.5">
                         <button
                           onClick={() => requestStatusUpdate(c.id, 'open')}
-                          className="px-2 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 font-semibold text-[10.5px] border border-slate-200 dark:border-slate-700 transition cursor-pointer"
+                          className="px-2 py-1.5 rounded-md bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-600 dark:text-zinc-300 font-semibold text-[10.5px] border border-zinc-200 dark:border-zinc-700 transition cursor-pointer"
                           title="Return to Open pool"
                         >
                           ← Open
                         </button>
                         <button
                           onClick={() => requestStatusUpdate(c.id, 'in_progress')}
-                          className="flex-1 py-1.5 rounded-lg bg-amber-50 dark:bg-amber-900/30 hover:bg-amber-600 hover:text-white text-amber-800 dark:text-amber-300 font-bold text-[11px] border border-amber-200 dark:border-amber-800 transition flex items-center justify-center gap-1 cursor-pointer"
+                          className="flex-1 py-1.5 rounded-md bg-amber-50 dark:bg-amber-900/30 hover:bg-amber-600 hover:text-white text-amber-800 dark:text-amber-300 font-bold text-[11px] border border-amber-200 dark:border-amber-800 transition flex items-center justify-center gap-1 cursor-pointer"
                         >
                           <span>Commence Repair</span>
                           <ChevronRight className="w-3 h-3" />
@@ -361,11 +361,11 @@ export const WorkOrders: React.FC<WorkOrdersProps> = ({ clusters, onUpdateStatus
               </div>
 
               {/* Lane 3: Under Repair (SLA Active) */}
-              <div className="flex flex-col bg-slate-100/80 dark:bg-[#0c101c] rounded-2xl border border-slate-200 dark:border-slate-800 p-3.5 space-y-3">
-                <div className="flex items-center justify-between pb-2 border-b border-slate-200 dark:border-slate-800">
+              <div className="flex flex-col bg-zinc-100/80 dark:bg-zinc-900/60 rounded-xl border border-zinc-200 dark:border-zinc-800 p-3.5 space-y-3">
+                <div className="flex items-center justify-between pb-2 border-b border-zinc-200 dark:border-zinc-800">
                   <div className="flex items-center gap-2">
-                    <span className="w-2.5 h-2.5 rounded-full bg-blue-500 animate-pulse" />
-                    <h4 className="font-bold text-xs uppercase tracking-wider text-slate-800 dark:text-slate-200">3. Under Repair (In Progress)</h4>
+                    <span className="w-2.5 h-2.5 rounded-full bg-blue-500" />
+                    <h4 className="font-bold text-xs uppercase tracking-wider text-zinc-800 dark:text-zinc-200">3. Under Repair (In Progress)</h4>
                   </div>
                   <span className="text-[11px] font-mono font-bold px-2 py-0.5 rounded-full bg-blue-100 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300">
                     {clusters.filter(c => c.status === 'in_progress' || c.status === 'reinspection_pending').length}
@@ -374,29 +374,29 @@ export const WorkOrders: React.FC<WorkOrdersProps> = ({ clusters, onUpdateStatus
 
                 <div className="space-y-2.5 flex-1 overflow-y-auto max-h-[68vh] custom-scrollbar pr-1">
                   {clusters.filter(c => c.status === 'in_progress' || c.status === 'reinspection_pending').map(c => (
-                    <div key={c.id} className="p-3.5 rounded-xl bg-white dark:bg-[#131826] border border-blue-200 dark:border-blue-900/40 shadow-xs space-y-2.5 hover:shadow-md transition">
+                    <div key={c.id} className="p-3.5 rounded-lg bg-white dark:bg-zinc-900 border border-blue-200 dark:border-blue-900/40 shadow-xs space-y-2.5 hover:shadow-md transition">
                       <div className="flex items-center justify-between">
                         <span className="font-mono font-extrabold text-xs text-blue-600 dark:text-blue-400">{c.cluster_code || c.id}</span>
                         <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-blue-50 dark:bg-blue-900/30 text-blue-600 border border-blue-200 dark:border-blue-800">
                           {c.status === 'reinspection_pending' ? 'Reinspection' : 'VG-30 Hot Mix'}
                         </span>
                       </div>
-                      <div className="text-xs font-bold text-slate-900 dark:text-white truncate">{c.road_name}</div>
-                      <div className="flex items-center justify-between text-[11px] text-slate-500">
+                      <div className="text-xs font-bold text-zinc-900 dark:text-white truncate">{c.road_name}</div>
+                      <div className="flex items-center justify-between text-[11px] text-zinc-500">
                         <span>{c.assigned_agency}</span>
                         <span className="text-blue-600 font-mono font-semibold">Rolling In Progress</span>
                       </div>
                       <div className="flex items-center gap-1.5">
                         <button
                           onClick={() => requestStatusUpdate(c.id, 'assigned')}
-                          className="px-2 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 font-semibold text-[10.5px] border border-slate-200 dark:border-slate-700 transition cursor-pointer"
+                          className="px-2 py-1.5 rounded-md bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-600 dark:text-zinc-300 font-semibold text-[10.5px] border border-zinc-200 dark:border-zinc-700 transition cursor-pointer"
                           title="Return to Assigned"
                         >
                           ← Assigned
                         </button>
                         <button
                           onClick={() => requestStatusUpdate(c.id, 'verified_closed', 'https://images.unsplash.com/photo-1578985545062-69928b1d9587?w=800&auto=format&fit=crop&q=80', '[AUTONOMOUS_FLEET_CLOSURE] Verified closed by Fleet Node BUS-MTC-19B on re-pass patrol. Gz=0.98g normal.')}
-                          className="flex-1 py-1.5 rounded-lg bg-emerald-50 dark:bg-emerald-900/30 hover:bg-emerald-600 hover:text-white text-emerald-800 dark:text-emerald-300 font-bold text-[11px] border border-emerald-200 dark:border-emerald-800 transition flex items-center justify-center gap-1 cursor-pointer"
+                          className="flex-1 py-1.5 rounded-md bg-emerald-50 dark:bg-emerald-900/30 hover:bg-emerald-600 hover:text-white text-emerald-800 dark:text-emerald-300 font-bold text-[11px] border border-emerald-200 dark:border-emerald-800 transition flex items-center justify-center gap-1 cursor-pointer"
                         >
                           <Sparkles className="w-3 h-3 text-emerald-500" />
                           <span>Simulate Re-Pass Close</span>
@@ -408,11 +408,11 @@ export const WorkOrders: React.FC<WorkOrdersProps> = ({ clusters, onUpdateStatus
               </div>
 
               {/* Lane 4: Fleet Re-Pass Verified & Closed */}
-              <div className="flex flex-col bg-slate-100/80 dark:bg-[#0c101c] rounded-2xl border border-slate-200 dark:border-slate-800 p-3.5 space-y-3">
-                <div className="flex items-center justify-between pb-2 border-b border-slate-200 dark:border-slate-800">
+              <div className="flex flex-col bg-zinc-100/80 dark:bg-zinc-900/60 rounded-xl border border-zinc-200 dark:border-zinc-800 p-3.5 space-y-3">
+                <div className="flex items-center justify-between pb-2 border-b border-zinc-200 dark:border-zinc-800">
                   <div className="flex items-center gap-2">
                     <span className="w-2.5 h-2.5 rounded-full bg-emerald-500" />
-                    <h4 className="font-bold text-xs uppercase tracking-wider text-slate-800 dark:text-slate-200">4. Re-Pass Verified &amp; Closed</h4>
+                    <h4 className="font-bold text-xs uppercase tracking-wider text-zinc-800 dark:text-zinc-200">4. Re-Pass Verified &amp; Closed</h4>
                   </div>
                   <span className="text-[11px] font-mono font-bold px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300">
                     {clusters.filter(c => c.status === 'verified_closed' || c.status === 'resolved').length}
@@ -421,26 +421,26 @@ export const WorkOrders: React.FC<WorkOrdersProps> = ({ clusters, onUpdateStatus
 
                 <div className="space-y-2.5 flex-1 overflow-y-auto max-h-[68vh] custom-scrollbar pr-1">
                   {clusters.filter(c => c.status === 'verified_closed' || c.status === 'resolved').map(c => (
-                    <div key={c.id} className="p-3.5 rounded-xl bg-white dark:bg-[#131826] border border-emerald-200 dark:border-emerald-900/40 shadow-xs space-y-2.5 hover:shadow-md transition">
+                    <div key={c.id} className="p-3.5 rounded-lg bg-white dark:bg-zinc-900 border border-emerald-200 dark:border-emerald-900/40 shadow-xs space-y-2.5 hover:shadow-md transition">
                       <div className="flex items-center justify-between">
                         <span className="font-mono font-extrabold text-xs text-emerald-600 dark:text-emerald-400">{c.cluster_code || c.id}</span>
                         <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
-                          ✓ Gz = 0.98g
+                          Gz = 0.98g
                         </span>
                       </div>
-                      <div className="text-xs font-bold text-slate-900 dark:text-white truncate">{c.road_name}</div>
-                      <div className="flex items-center justify-between text-[11px] text-slate-500">
+                      <div className="text-xs font-bold text-zinc-900 dark:text-white truncate">{c.road_name}</div>
+                      <div className="flex items-center justify-between text-[11px] text-zinc-500">
                         <span className="text-emerald-600 font-semibold font-mono">MoHUA Hash Verified</span>
                         <span>Passes: {c.pass_count}</span>
                       </div>
                       <div className="flex items-center justify-between gap-1.5">
-                        <div className="flex-1 py-1 rounded-lg bg-emerald-100/60 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300 font-semibold text-[10.5px] text-center border border-emerald-200 dark:border-emerald-800 flex items-center justify-center gap-1">
+                        <div className="flex-1 py-1 rounded-md bg-emerald-100/60 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300 font-semibold text-[10.5px] text-center border border-emerald-200 dark:border-emerald-800 flex items-center justify-center gap-1">
                           <ShieldCheck className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
                           <span>SLA Verified</span>
                         </div>
                         <button
                           onClick={() => requestStatusUpdate(c.id, 'in_progress')}
-                          className="px-2 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 font-semibold text-[10px] border border-slate-200 dark:border-slate-700 transition cursor-pointer"
+                          className="px-2 py-1 rounded-md bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-600 dark:text-zinc-300 font-semibold text-[10px] border border-zinc-200 dark:border-zinc-700 transition cursor-pointer"
                           title="Reopen for maintenance"
                         >
                           Reopen

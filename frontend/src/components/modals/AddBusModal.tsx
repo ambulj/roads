@@ -419,7 +419,7 @@ export const AddBusModal: React.FC<AddBusModalProps> = ({
                   }}
                   className="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-2 text-xs text-white focus:outline-none font-medium"
                 >
-                  <option value="SRT">⚡ 1. SRT 4G/5G Cellular Stream (Reliable ARQ)</option>
+                  <option value="SRT">1. SRT 4G/5G Cellular Stream (Reliable ARQ)</option>
                   <option value="RTSP">2. Direct RTSP Stream (CP Plus / IP Camera)</option>
                   <option value="WEBCAM">3. Local USB Webcam / Dashcam (0)</option>
                   <option value="UPLOAD">4. Upload Recorded MP4/JPG Video File</option>
@@ -437,7 +437,7 @@ export const AddBusModal: React.FC<AddBusModalProps> = ({
                     disabled={isProbing}
                     className="text-[10px] text-cyan-400 hover:text-cyan-300 font-mono font-bold hover:underline flex items-center gap-1 cursor-pointer disabled:opacity-50"
                   >
-                    <span>{isProbing ? 'Testing Signal...' : '⚡ Test Signal Reachability'}</span>
+                    <span>{isProbing ? 'Testing Signal...' : 'Test Signal Reachability'}</span>
                   </button>
                 </div>
                 <input

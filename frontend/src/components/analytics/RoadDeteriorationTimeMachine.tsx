@@ -139,13 +139,13 @@ export const RoadDeteriorationTimeMachine: React.FC = () => {
           <span className="text-slate-400">Monsoon Factor:</span>
           <button
             onClick={() => setMonsoonIntensity(monsoonIntensity === 'normal' ? 'heavy' : 'normal')}
-            className={`px-3 py-1 rounded-xl font-bold border transition ${
+            className={`px-3 py-1 rounded-md font-bold border transition ${
               monsoonIntensity === 'heavy'
                 ? 'bg-blue-600 text-white border-blue-500'
-                : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700'
+                : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 border-zinc-200 dark:border-zinc-700'
             }`}
           >
-            {monsoonIntensity === 'heavy' ? '⛈️ Heavy Monsoon (2.2x Decay)' : '☀️ Dry Weather (1.0x)'}
+            {monsoonIntensity === 'heavy' ? 'Heavy Monsoon (2.2x Decay)' : 'Dry Weather (1.0x)'}
           </button>
         </div>
       </div>

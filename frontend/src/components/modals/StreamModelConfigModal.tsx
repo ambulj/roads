@@ -344,7 +344,7 @@ export const StreamModelConfigModal: React.FC<StreamModelConfigModalProps> = ({
                       }}
                       className="px-2 py-0.5 rounded bg-emerald-100 dark:bg-emerald-950/80 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-200 dark:hover:bg-emerald-900 font-mono font-bold border border-emerald-300 dark:border-emerald-800"
                     >
-                      ⚡ SRT 4G/5G Cellular
+                      SRT 4G/5G Cellular
                     </button>
                     <button
                       type="button"
@@ -408,7 +408,7 @@ export const StreamModelConfigModal: React.FC<StreamModelConfigModalProps> = ({
                       onChange={(e) => setStreamType(e.target.value)}
                       className="w-full text-xs rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-500 font-medium"
                     >
-                      <option value="SRT_CELLULAR_STREAM">⚡ 1. SRT 4G/5G Cellular Stream (Reliable ARQ Packet Recovery)</option>
+                      <option value="SRT_CELLULAR_STREAM">1. SRT 4G/5G Cellular Stream (Reliable ARQ Packet Recovery)</option>
                       <option value="RTSP_IP_CAMERA">2. RTSP Live Stream (CP Plus DVR / Hikvision / Dahua / Nirbhaya)</option>
                       <option value="HTTP_DASHCAM_FEED">3. Smartphone / Tablet In-Cabin Dashcam (Webcam / USB)</option>
                       <option value="AIS140_TELEMATICS_ONLY">4. AIS-140 eSIM Telematics Only (GPS + Accelerometer Gz)</option>
@@ -542,7 +542,7 @@ export const StreamModelConfigModal: React.FC<StreamModelConfigModalProps> = ({
                             ? 'bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 border-blue-300 dark:border-blue-800'
                             : 'bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 border-amber-300 dark:border-amber-800'
                         }`}>
-                          {isReady ? '✓ Operational (CV Fallback)' : isDsp ? '⚡ Active (DSP Filter)' : '⏳ Awaiting Weights'}
+                          {isReady ? 'Operational (CV Fallback)' : isDsp ? 'Active (DSP Filter)' : 'Awaiting Weights'}
                         </span>
                       </div>
 
