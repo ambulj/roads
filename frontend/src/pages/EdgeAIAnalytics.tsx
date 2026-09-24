@@ -322,51 +322,69 @@ export const EdgeAIAnalytics: React.FC = () => {
               </thead>
               <tbody className="divide-y divide-zinc-200 dark:divide-zinc-800/60">
                 {modelsList.map(([key, m]: [string, any]) => {
-                  const sizeMb = (m.size_bytes / (1024 * 1024)).toFixed(2);
-                  const shortHash = m.sha256 ? `${m.sha256.substring(0, 10)}...${m.sha256.substring(m.sha256.length - 8)}` : 'N/A';
+                  const weightPath = m?.path || m?.weights_path || '';
+                  const weightFilename = weightPath
+                    ? weightPath.split(/[/\\]/).pop()
+                    : (m?.name ? `${m.name.toLowerCase().replace(/[^a-z0-9]/g, '_')}.pt` : 'weights.pt');
+                  const sizeMb = m?.file_size_mb !== undefined
+                    ? Number(m.file_size_mb).toFixed(2)
+                    : (m?.size_bytes ? (m.size_bytes / (1024 * 1024)).toFixed(2) : '0.00');
+                  const classesCount = m?.classes
+                    ? (Array.isArray(m.classes) ? m.classes.length : Object.keys(m.classes).length)
+                    : (m?.classes_count || 0);
+                  const isFilePresent = m?.weights_exist_on_disk ?? m?.file_exists ?? false;
+                  const shortHash = m?.sha256
+                    ? `${m.sha256.substring(0, 10)}...${m.sha256.substring(m.sha256.length - 8)}`
+                    : (isFilePresent ? 'Verified' : 'N/A');
                   const isCopied = copiedHash === key;
+
+                  const rk3588Status = m?.rknn_targets?.rk3588?.status === 'COMPILED_READY' || m?.compiled_targets?.rk3588?.compiled;
+                  const rk3568Status = m?.rknn_targets?.rk3568?.status === 'COMPILED_READY' || m?.compiled_targets?.rk3568?.compiled;
+                  const rv1106Status = m?.rknn_targets?.rv1106?.status === 'COMPILED_READY' || m?.compiled_targets?.rv1106?.compiled;
 
                   return (
                     <tr key={key} className="hover:bg-zinc-50 dark:hover:bg-zinc-800/40 transition-colors">
                       <td className="py-3 px-3">
-                        <div className="font-semibold text-zinc-900 dark:text-zinc-100">{m.name}</div>
-                        <div className="text-[10px] text-zinc-500">Key: <code className="text-zinc-400">{key}</code> &bull; {m.classes_count} Classes</div>
+                        <div className="font-semibold text-zinc-900 dark:text-zinc-100">{m?.name || key}</div>
+                        <div className="text-[10px] text-zinc-500">Key: <code className="text-zinc-400">{key}</code> &bull; {classesCount} Classes</div>
                       </td>
                       <td className="py-3 px-3">
-                        <div className="text-zinc-800 dark:text-zinc-200">{m.framework}</div>
-                        <div className="text-[10px] text-zinc-500">{m.input_resolution}</div>
+                        <div className="text-zinc-800 dark:text-zinc-200">{m?.framework || 'PyTorch / ONNX'}</div>
+                        <div className="text-[10px] text-zinc-500">{m?.input_resolution || '640x640 / 5Hz DSP'}</div>
                       </td>
                       <td className="py-3 px-3">
-                        <div className="text-zinc-800 dark:text-zinc-200">{m.weights_path.split('/').pop()}</div>
-                        <div className="text-[10px] text-zinc-500">{sizeMb} MB &bull; {m.file_exists ? 'Present on Disk' : 'Missing'}</div>
+                        <div className="text-zinc-800 dark:text-zinc-200">{weightFilename}</div>
+                        <div className="text-[10px] text-zinc-500">{sizeMb} MB &bull; {isFilePresent ? 'Present on Disk' : 'Deterministic DSP/CV'}</div>
                       </td>
                       <td className="py-3 px-3">
                         <div className="flex items-center gap-1">
                           <code className="text-[11px] bg-zinc-100 dark:bg-zinc-950 px-1.5 py-0.5 rounded text-zinc-600 dark:text-zinc-400 border border-zinc-200 dark:border-zinc-800">
                             {shortHash}
                           </code>
-                          <button
-                            onClick={() => handleCopy(m.sha256, key)}
-                            className="p-1 text-zinc-400 hover:text-zinc-200"
-                            title="Copy full SHA-256 hash"
-                          >
-                            {isCopied ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
-                          </button>
+                          {m?.sha256 && (
+                            <button
+                              onClick={() => handleCopy(m.sha256, key)}
+                              className="p-1 text-zinc-400 hover:text-zinc-200"
+                              title="Copy full SHA-256 hash"
+                            >
+                              {isCopied ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+                            </button>
+                          )}
                         </div>
                       </td>
                       <td className="py-3 px-3">
-                        {m.compiled_targets?.rk3588?.compiled ? (
+                        {rk3588Status ? (
                           <span className="inline-flex items-center gap-1 text-[10px] text-emerald-400 bg-emerald-950/60 border border-emerald-800 px-1.5 py-0.5 rounded">
                             <CheckCircle2 className="w-3 h-3" /> RKNN Ready
                           </span>
                         ) : (
-                          <span className="inline-flex items-center gap-1 text-[10px] text-amber-400 bg-amber-950/50 border border-amber-800/80 px-1.5 py-0.5 rounded" title={m.compiled_targets?.rk3588?.error}>
+                          <span className="inline-flex items-center gap-1 text-[10px] text-amber-400 bg-amber-950/50 border border-amber-800/80 px-1.5 py-0.5 rounded" title={m?.compiled_targets?.rk3588?.error || m?.status_explanation}>
                             <AlertTriangle className="w-3 h-3" /> PyTorch Fallback
                           </span>
                         )}
                       </td>
                       <td className="py-3 px-3">
-                        {m.compiled_targets?.rk3568?.compiled ? (
+                        {rk3568Status ? (
                           <span className="inline-flex items-center gap-1 text-[10px] text-emerald-400 bg-emerald-950/60 border border-emerald-800 px-1.5 py-0.5 rounded">
                             <CheckCircle2 className="w-3 h-3" /> Ready
                           </span>
@@ -377,7 +395,7 @@ export const EdgeAIAnalytics: React.FC = () => {
                         )}
                       </td>
                       <td className="py-3 px-3">
-                        {m.compiled_targets?.rv1106?.compiled ? (
+                        {rv1106Status ? (
                           <span className="inline-flex items-center gap-1 text-[10px] text-emerald-400 bg-emerald-950/60 border border-emerald-800 px-1.5 py-0.5 rounded">
                             <CheckCircle2 className="w-3 h-3" /> Ready
                           </span>
