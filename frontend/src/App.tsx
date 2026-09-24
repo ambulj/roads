@@ -6,6 +6,7 @@ import { CommandCenter } from "./pages/CommandCenter";
 import { LoginPortal } from "./pages/LoginPortal";
 // Lazy-loaded routes — each page is a separate JS chunk downloaded on first visit
 const Analytics    = React.lazy(() => import("./pages/Analytics").then(m => ({ default: m.Analytics })));
+const EdgeAIAnalytics = React.lazy(() => import("./pages/EdgeAIAnalytics").then(m => ({ default: m.EdgeAIAnalytics })));
 const WorkOrders   = React.lazy(() => import("./pages/WorkOrders").then(m => ({ default: m.WorkOrders })));
 const FleetNodes   = React.lazy(() => import("./pages/FleetNodes").then(m => ({ default: m.FleetNodes })));
 const MobileDashcam = React.lazy(() => import("./pages/MobileDashcam").then(m => ({ default: m.MobileDashcam })));
@@ -335,7 +336,11 @@ export const App: React.FC = () => {
               />
             )}
             {currentRoute === "analytics" && hasAccessToRoute("analytics") && (
-              <Analytics metrics={metrics} corridors={INITIAL_CORRIDORS} fleet={fleet} />
+              user?.role === "admin2" ? (
+                <EdgeAIAnalytics />
+              ) : (
+                <Analytics metrics={metrics} corridors={INITIAL_CORRIDORS} fleet={fleet} />
+              )
             )}
             {currentRoute === "work-orders" && hasAccessToRoute("work-orders") && (
               <WorkOrders clusters={clusters} onUpdateStatus={handleUpdateStatus} />

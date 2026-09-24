@@ -7,6 +7,18 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 WEIGHTS_DIR = BASE_DIR / "weights"
 WEIGHTS_DIR.mkdir(parents=True, exist_ok=True)
 
+import hashlib
+
+def compute_file_sha256(file_path: Path) -> Optional[str]:
+    """Computes real SHA-256 hash of on-disk model weight binary."""
+    if not file_path.exists() or not file_path.is_file():
+        return None
+    h = hashlib.sha256()
+    with open(file_path, "rb") as f:
+        while chunk := f.read(65536):
+            h.update(chunk)
+    return h.hexdigest()
+
 class ModelRegistry:
     def __init__(self):
         self._model_configs: Dict[str, Dict[str, Any]] = {
@@ -90,6 +102,29 @@ class ModelRegistry:
         }
         self.custom_models: Dict[str, Dict[str, Any]] = {}
 
+    def _check_rknn_targets(self, model_stem: str) -> Dict[str, Any]:
+        """Checks on-disk RKNN compilation status across target Rockchip NPU platforms."""
+        edge_weights_dir = BASE_DIR.parent / "edge" / "weights"
+        targets = {
+            "rk3588": {"platform": "Rockchip RK3588 (6.0 TOPS)", "status": "NOT_COMPILED", "artifact": None},
+            "rk3568": {"platform": "Rockchip RK3568 (1.0 TOPS)", "status": "NOT_COMPILED", "artifact": None},
+            "rv1106": {"platform": "Rockchip RV1106 (0.5 TOPS)", "status": "NOT_COMPILED", "artifact": None},
+        }
+        for plat in targets:
+            candidates = [
+                WEIGHTS_DIR / f"{model_stem}_{plat}.rknn",
+                WEIGHTS_DIR / f"{model_stem}_{plat}_i8.rknn",
+                edge_weights_dir / f"{model_stem}_{plat}.rknn",
+                edge_weights_dir / f"{model_stem}_{plat}_i8.rknn",
+            ]
+            for cand in candidates:
+                if cand.exists():
+                    targets[plat]["status"] = "COMPILED_READY"
+                    targets[plat]["artifact"] = cand.name
+                    targets[plat]["size_kb"] = round(cand.stat().st_size / 1024, 1)
+                    break
+        return targets
+
     def get_status(self) -> Dict[str, Any]:
         """Dynamically inspects filesystem and returns honest, verifiable status of all models."""
         inspected_models = {}
@@ -98,6 +133,7 @@ class ModelRegistry:
             path = Path(conf["path"])
             exists = path.exists()
             file_size_mb = round(path.stat().st_size / (1024 * 1024), 2) if exists else 0.0
+            sha256 = compute_file_sha256(path) if exists else None
             
             if exists and path.suffix == ".pt":
                 status = "ready_trained_weights"
@@ -108,11 +144,14 @@ class ModelRegistry:
             else:
                 status = "awaiting_drop"
                 msg = conf["default_description"]
+
+            rknn_targets = self._check_rknn_targets(path.stem)
                     
             inspected_models[key] = {
                 "name": conf["name"],
                 "path": str(path),
                 "weights_exist_on_disk": exists,
+                "sha256": sha256,
                 "status": status,
                 "file_size_mb": file_size_mb,
                 "classes": conf["classes"],
@@ -120,6 +159,7 @@ class ModelRegistry:
                 "device": conf["device"],
                 "regulatory_spec": conf["regulatory_spec"],
                 "fallback_pipeline": conf["fallback_pipeline"],
+                "rknn_targets": rknn_targets,
                 "status_explanation": msg,
                 "verified_at": time.strftime("%Y-%m-%d %H:%M:%S")
             }

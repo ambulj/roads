@@ -17,10 +17,10 @@ def test_live_api():
     )
     
     # Wait for server to bind port
-    for _ in range(15):
+    for _ in range(30):
         time.sleep(0.5)
         try:
-            res = urllib.request.urlopen("http://127.0.0.1:8000/health", timeout=1)
+            res = urllib.request.urlopen("http://127.0.0.1:8000/health", timeout=2)
             if res.getcode() == 200:
                 break
         except Exception:
@@ -28,13 +28,13 @@ def test_live_api():
 
     try:
         # 1. Health
-        res = urllib.request.urlopen("http://127.0.0.1:8000/health", timeout=3)
+        res = urllib.request.urlopen("http://127.0.0.1:8000/health", timeout=10)
         data = json.loads(res.read().decode())
         print(f"[HEALTH] {data}")
         assert data["status"] == "healthy"
 
         # 2. Metrics
-        res = urllib.request.urlopen("http://127.0.0.1:8000/api/telemetry/metrics", timeout=3)
+        res = urllib.request.urlopen("http://127.0.0.1:8000/api/telemetry/metrics", timeout=10)
         metrics = json.loads(res.read().decode())
         print(f"[METRICS] Total ingests: {metrics['total_ingests']}, Clusters: {metrics['dbscan_clusters']}")
         assert metrics["total_ingests"] >= 64

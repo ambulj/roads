@@ -128,6 +128,14 @@ def get_edge_node_status(bus_id: str):
     from app.services.edge_sync_engine import edge_sync_engine
     return edge_sync_engine.get_node_status(bus_id)
 
+@router.get("/edge/fleet-summary")
+def get_edge_fleet_summary():
+    """
+    Returns fleet-wide edge buffer health, P0/P1 statistics, and cumulative bandwidth reduction.
+    """
+    from app.services.edge_sync_engine import edge_sync_engine
+    return edge_sync_engine.get_fleet_summary()
+
 
 # ── YOLO INFERENCE & WEIGHTS MANAGEMENT ─────────────────────────────────────
 

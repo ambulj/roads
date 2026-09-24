@@ -57,6 +57,9 @@ class IncidentType(str, Enum):
     UNMARKED_SPEED_BREAKER = "UNMARKED_SPEED_BREAKER"
     DARK_SPOT_OUTAGE = "DARK_SPOT_OUTAGE"
     NO_PARKING_OBSTRUCTION = "NO_PARKING_OBSTRUCTION"
+    MISSING_DIVIDER = "MISSING_DIVIDER"
+    DIVIDER_DAMAGED = "DIVIDER_DAMAGED"
+    STRAY_ANIMAL = "STRAY_ANIMAL"
 
 class IncidentStatus(str, Enum):
     ACTIVE_ALERT = "ACTIVE_ALERT"
@@ -120,7 +123,7 @@ class HazardCluster(BaseModel):
 
 class TrafficIncidentCreate(BaseModel):
     reporting_bus_id: str = "MOBILE-DASHCAM-01"
-    incident_type: IncidentType
+    incident_type: Union[IncidentType, str]
     plate_number: Optional[str] = None
     plate_confidence: float = 0.95
     vehicle_color: Optional[str] = None
@@ -140,7 +143,7 @@ class TrafficIncidentCreate(BaseModel):
 class TrafficIncident(BaseModel):
     id: str
     reporting_bus_id: str
-    incident_type: IncidentType
+    incident_type: Union[IncidentType, str]
     plate_number: Optional[str] = None
     plate_confidence: float = 0.95
     vehicle_color: Optional[str] = None
