@@ -473,6 +473,23 @@ export const IncidentDossierModal: React.FC<IncidentDossierModalProps> = ({
               </div>
             </div>
 
+            {/* Optical Violation Frame */}
+            {incident.snapshot_url && (
+              <div className="relative rounded-xl overflow-hidden border border-slate-300 dark:border-slate-700 aspect-video max-h-52 bg-slate-950">
+                <img
+                  src={incident.snapshot_url}
+                  alt="Optical Violation Evidence"
+                  className="w-full h-full object-cover"
+                />
+                <div className="absolute top-2 left-2 bg-black/80 px-2.5 py-1 rounded text-[10.5px] font-mono text-cyan-300 border border-slate-700">
+                  STATUTORY OPTICAL EVIDENCE LOCK &bull; {incident.reporting_bus_id || 'FLEET CAMERA'}
+                </div>
+                <div className="absolute bottom-2 right-2 bg-black/80 px-2.5 py-1 rounded text-[10.5px] font-mono text-emerald-400 border border-slate-700">
+                  SEC 65B CERTIFIED &bull; {incident.occurred_at}
+                </div>
+              </div>
+            )}
+
             {/* Target Vehicle Details */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <div className="sm:col-span-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-4 flex flex-col justify-between shadow-xs">
@@ -624,6 +641,19 @@ export const IncidentDossierModal: React.FC<IncidentDossierModalProps> = ({
                   </span>
                 </div>
 
+                {incident.snapshot_url && (
+                  <div className="relative rounded-xl overflow-hidden border border-cyan-300 dark:border-cyan-800 aspect-16/9 max-h-48 bg-slate-950">
+                    <img
+                      src={incident.snapshot_url}
+                      alt="Waterlogging Evidence"
+                      className="w-full h-full object-cover"
+                    />
+                    <div className="absolute top-2 left-2 bg-black/80 px-2 py-0.5 rounded text-[10px] text-cyan-300 font-mono border border-cyan-800">
+                      HYDRO SENSOR LOCK &bull; {incident.water_depth_cm || 28}cm INUNDATION
+                    </div>
+                  </div>
+                )}
+
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 bg-white/90 dark:bg-slate-900/90 p-3.5 rounded-xl border border-cyan-100 dark:border-cyan-900 text-xs">
                   <div>
                     <span className="text-xs text-slate-500 dark:text-slate-400 uppercase font-bold">Hydroplaning Risk:</span>
@@ -675,6 +705,19 @@ export const IncidentDossierModal: React.FC<IncidentDossierModalProps> = ({
                     P0 EMERGENCY DISPATCH
                   </span>
                 </div>
+
+                {incident.snapshot_url && (
+                  <div className="relative rounded-xl overflow-hidden border border-amber-300 dark:border-amber-800 aspect-16/9 max-h-48 bg-slate-950">
+                    <img
+                      src={incident.snapshot_url}
+                      alt="Open Manhole Defect Evidence"
+                      className="w-full h-full object-cover"
+                    />
+                    <div className="absolute top-2 left-2 bg-black/80 px-2 py-0.5 rounded text-[10px] text-amber-300 font-mono border border-amber-800">
+                      OPTICAL VOID LOCK &bull; UNCOVERED STORM DRAIN
+                    </div>
+                  </div>
+                )}
 
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 bg-white/90 dark:bg-slate-900/90 p-3.5 rounded-xl border border-amber-100 dark:border-amber-900 text-xs">
                   <div>
@@ -779,9 +822,16 @@ export const IncidentDossierModal: React.FC<IncidentDossierModalProps> = ({
 
             {/* 4. TRAFFIC / VEHICULAR MOVING VIOLATION VIEW */}
             {isTrafficViolation && (
-              <div className="relative h-48 w-full rounded-xl overflow-hidden border border-zinc-200 dark:border-zinc-800 bg-zinc-950 flex items-center justify-center">
-                <div className="absolute inset-0 bg-zinc-950/80 z-10" />
-                <div className="absolute inset-0 opacity-20 bg-[radial-gradient(#38bdf8_1px,transparent_1px)] [background-size:16px_16px]" />
+              <div className="relative h-56 w-full rounded-xl overflow-hidden border border-zinc-200 dark:border-zinc-800 bg-zinc-950 flex items-center justify-center">
+                {incident.snapshot_url && (
+                  <img
+                    src={incident.snapshot_url}
+                    alt="Optical Moving Violation Evidence"
+                    className="absolute inset-0 w-full h-full object-cover opacity-75"
+                  />
+                )}
+                <div className="absolute inset-0 bg-zinc-950/60 z-10" />
+                <div className="absolute inset-0 opacity-20 bg-[radial-gradient(#38bdf8_1px,transparent_1px)] [background-size:16px_16px] z-10" />
 
                 <div className="relative z-20 flex flex-col items-center gap-2">
                   <div className="border-2 border-blue-500 bg-black/90 px-6 py-2.5 rounded-xl shadow-lg flex flex-col items-center">
