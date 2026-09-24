@@ -115,31 +115,31 @@ export const Header: React.FC<HeaderProps> = ({
           <Menu className="w-5 h-5" />
         </button>
 
-        <div className="flex items-center gap-2 cursor-pointer" onClick={() => onNavigate("command")}>
-          <div className="w-7 h-7 bg-cyan-950 border border-cyan-700 rounded flex items-center justify-center">
-            <Cpu className="w-4 h-4 text-cyan-400" />
+        <div className="flex items-center gap-2.5 cursor-pointer" onClick={() => onNavigate("command")}>
+          <div className="w-8 h-8 bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-950 rounded-lg flex items-center justify-center font-semibold text-sm shadow-xs">
+            RS
           </div>
           <div>
-            <div className="flex items-center gap-1.5 leading-none">
-              <span className="font-mono font-bold text-sm text-zinc-900 dark:text-zinc-100 tracking-tight">RoadSaarthi</span>
-              <span className="text-[9px] font-mono px-1 py-0.2 rounded bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 border border-zinc-200 dark:border-zinc-700">v2.6</span>
+            <div className="flex items-center gap-1.5 leading-tight">
+              <span className="font-semibold text-sm text-zinc-900 dark:text-zinc-100 tracking-tight">RoadSaarthi</span>
+              <span className="text-xs px-1.5 py-0.5 rounded bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 font-medium">v2.6</span>
             </div>
-            <div className="text-[9.5px] text-zinc-500 font-mono hidden sm:block">
-              AI Transit Sensing &amp; Municipal Platform
+            <div className="text-xs text-zinc-500 hidden sm:block font-normal">
+              Civic Road Intelligence
             </div>
           </div>
         </div>
 
-        {/* Two-Tier Status Badges */}
-        <div className="hidden lg:flex items-center gap-2 ml-3 pl-3 border-l border-zinc-200 dark:border-zinc-800 font-mono text-[10px]">
-          <div className="flex items-center gap-1.5 px-2 py-0.5 rounded bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-zinc-700 dark:text-zinc-300">
-            <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse"></span>
-            <span>T1 Edge: <strong>{activeNodesCount}/5 Nodes</strong></span>
+        {/* System Status Indicator */}
+        <div className="hidden lg:flex items-center gap-2 ml-4 pl-4 border-l border-zinc-200 dark:border-zinc-800 text-xs text-zinc-500">
+          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-zinc-100 dark:bg-zinc-900 text-zinc-700 dark:text-zinc-300 font-medium">
+            <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
+            <span>{activeNodesCount} Fleet Nodes Online</span>
           </div>
 
-          <div className="flex items-center gap-1.5 px-2 py-0.5 rounded bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-zinc-700 dark:text-zinc-300">
-            <span className={`w-1.5 h-1.5 rounded-full ${isBackendConnected ? "bg-emerald-400" : "bg-rose-400"}`}></span>
-            <span>T2 Central: <strong>{isBackendConnected ? "Sync OK" : "Offline"}</strong></span>
+          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-zinc-100 dark:bg-zinc-900 text-zinc-700 dark:text-zinc-300 font-medium">
+            <span className={`w-2 h-2 rounded-full ${isBackendConnected ? "bg-emerald-500" : "bg-rose-500"}`}></span>
+            <span>{isBackendConnected ? "Central Live" : "Offline"}</span>
           </div>
         </div>
       </div>
@@ -149,20 +149,20 @@ export const Header: React.FC<HeaderProps> = ({
         {/* Command Palette Trigger */}
         <button
           onClick={onOpenCommandPalette}
-          className="hidden md:flex items-center gap-2 px-2.5 py-1 text-xs font-mono text-zinc-500 bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-md hover:border-zinc-400 dark:hover:border-zinc-600 transition-colors"
+          className="hidden md:flex items-center gap-2 px-3 py-1.5 text-xs text-zinc-500 dark:text-zinc-400 bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-lg hover:border-zinc-300 dark:hover:border-zinc-700 transition-colors"
         >
           <Search className="w-3.5 h-3.5 text-zinc-400" />
-          <span>Search</span>
-          <kbd className="text-[9px] bg-zinc-200 dark:bg-zinc-800 px-1 py-0.2 rounded text-zinc-600 dark:text-zinc-400 font-mono">⌘K</kbd>
+          <span>Search command...</span>
+          <kbd className="text-xs bg-zinc-200 dark:bg-zinc-800 px-1.5 py-0.5 rounded text-zinc-600 dark:text-zinc-400 font-mono">⌘K</kbd>
         </button>
 
         {/* Audio Mute Toggle */}
         <button
           onClick={handleToggleMute}
-          className="p-1.5 text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-md transition-colors"
+          className="p-2 text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-lg transition-colors"
           title={isMuted ? "Unmute alerts audio" : "Mute alerts audio"}
         >
-          {isMuted ? <VolumeX className="w-4 h-4 text-zinc-400" /> : <Volume2 className="w-4 h-4 text-cyan-500" />}
+          {isMuted ? <VolumeX className="w-4 h-4 text-zinc-400" /> : <Volume2 className="w-4 h-4 text-zinc-700 dark:text-zinc-300" />}
         </button>
 
         {/* Theme & Language Toggles */}
@@ -175,14 +175,12 @@ export const Header: React.FC<HeaderProps> = ({
         <div className="relative">
           <button
             onClick={() => setIsNotificationCenterOpen(!isNotificationCenterOpen)}
-            className="p-1.5 text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-md transition-colors relative"
-            title="Real-Time Incident Alerts"
+            className="p-2 text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-lg transition-colors relative"
+            title="Real-Time Alerts"
           >
             <Bell className="w-4 h-4" />
             {unreadAlertsCount > 0 && (
-              <span className="absolute -top-0.5 -right-0.5 w-4 h-4 bg-rose-600 text-white text-[9px] font-mono font-bold rounded-full flex items-center justify-center">
-                {unreadAlertsCount}
-              </span>
+              <span className="absolute 1 top-1.5 right-1.5 w-2 h-2 bg-rose-500 rounded-full"></span>
             )}
           </button>
 
@@ -199,62 +197,61 @@ export const Header: React.FC<HeaderProps> = ({
         <div className="relative" ref={profileMenuRef}>
           <button
             onClick={() => setIsProfileMenuOpen(!isProfileMenuOpen)}
-            className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 hover:border-zinc-400 dark:hover:border-zinc-600 transition-colors text-left"
+            className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 hover:border-zinc-300 dark:hover:border-zinc-700 transition-colors text-left cursor-pointer"
           >
-            <div className="w-6 h-6 rounded bg-zinc-800 text-cyan-300 font-mono text-[10px] font-bold flex items-center justify-center border border-zinc-700">
+            <div className="w-6 h-6 rounded-full bg-zinc-800 dark:bg-zinc-200 text-white dark:text-zinc-900 text-xs font-semibold flex items-center justify-center">
               {user.avatar_initials || "AD"}
             </div>
             <div className="hidden sm:block">
-              <div className="text-[11px] font-mono font-bold text-zinc-900 dark:text-zinc-100 leading-tight">
+              <div className="text-xs font-semibold text-zinc-900 dark:text-zinc-100 leading-tight">
                 {getRoleBadgeLabel(user.role)}
               </div>
             </div>
-            <ChevronDown className="w-3 h-3 text-zinc-400" />
+            <ChevronDown className="w-3.5 h-3.5 text-zinc-400" />
           </button>
 
           {isProfileMenuOpen && (
-            <div className="absolute right-0 mt-1 w-64 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded shadow-lg py-1.5 z-50 font-mono text-xs">
-              <div className="px-3 py-2 border-b border-zinc-200 dark:border-zinc-800">
-                <div className="text-[10px] text-zinc-400 uppercase tracking-wider">Logged In Officer</div>
-                <div className="font-bold text-zinc-900 dark:text-zinc-100 text-sm mt-0.5">{user.name}</div>
-                <div className="text-[10px] text-zinc-500">{user.designation}</div>
-                <div className="text-[9.5px] text-zinc-400 mt-1">{user.department}</div>
-                <div className="mt-1.5 inline-block text-[9px] bg-cyan-950 text-cyan-300 px-1.5 py-0.5 rounded border border-cyan-800">
-                  Badge: {user.badge_number}
+            <div className="absolute right-0 mt-1.5 w-64 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl shadow-xl py-1.5 z-50 text-xs">
+              <div className="px-3.5 py-2.5 border-b border-zinc-100 dark:border-zinc-800">
+                <div className="font-semibold text-zinc-900 dark:text-zinc-100 text-sm">{user.name}</div>
+                <div className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">{user.designation}</div>
+                <div className="text-xs text-zinc-400 dark:text-zinc-500">{user.department}</div>
+                <div className="mt-2 inline-block text-xs bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 px-2 py-0.5 rounded-md font-mono">
+                  ID: {user.badge_number}
                 </div>
               </div>
 
               <div className="py-1">
                 <button
                   onClick={() => { setIsProfileMenuOpen(false); onOpenAuthModal?.(); }}
-                  className="w-full px-3 py-1.5 text-left hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-700 dark:text-zinc-300 flex items-center gap-2"
+                  className="w-full px-3.5 py-2 text-left hover:bg-zinc-50 dark:hover:bg-zinc-800 text-zinc-700 dark:text-zinc-300 flex items-center gap-2.5 transition-colors cursor-pointer"
                 >
-                  <ShieldCheck className="w-3.5 h-3.5 text-cyan-400" />
-                  <span>Switch Officer Role Persona</span>
+                  <ShieldCheck className="w-4 h-4 text-zinc-500" />
+                  <span>Switch Officer Role</span>
                 </button>
                 <button
                   onClick={() => { setIsProfileMenuOpen(false); onOpenShortcutsModal?.(); }}
-                  className="w-full px-3 py-1.5 text-left hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-700 dark:text-zinc-300 flex items-center gap-2"
+                  className="w-full px-3.5 py-2 text-left hover:bg-zinc-50 dark:hover:bg-zinc-800 text-zinc-700 dark:text-zinc-300 flex items-center gap-2.5 transition-colors cursor-pointer"
                 >
-                  <Keyboard className="w-3.5 h-3.5 text-zinc-400" />
-                  <span>Keyboard Shortcuts (1–7)</span>
+                  <Keyboard className="w-4 h-4 text-zinc-500" />
+                  <span>Keyboard Shortcuts</span>
                 </button>
                 <button
                   onClick={() => { setIsProfileMenuOpen(false); onOpenDocumentModal?.(); }}
-                  className="w-full px-3 py-1.5 text-left hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-700 dark:text-zinc-300 flex items-center gap-2"
+                  className="w-full px-3.5 py-2 text-left hover:bg-zinc-50 dark:hover:bg-zinc-800 text-zinc-700 dark:text-zinc-300 flex items-center gap-2.5 transition-colors cursor-pointer"
                 >
-                  <Printer className="w-3.5 h-3.5 text-zinc-400" />
-                  <span>Export Statutory Reports</span>
+                  <Printer className="w-4 h-4 text-zinc-500" />
+                  <span>Export Reports</span>
                 </button>
               </div>
 
-              <div className="border-t border-zinc-200 dark:border-zinc-800 pt-1">
+              <div className="border-t border-zinc-100 dark:border-zinc-800 pt-1">
                 <button
                   onClick={() => { setIsProfileMenuOpen(false); logout(); }}
-                  className="w-full px-3 py-1.5 text-left hover:bg-rose-50 dark:hover:bg-rose-950/40 text-rose-600 dark:text-rose-400 flex items-center gap-2"
+                  className="w-full px-3.5 py-2 text-left hover:bg-rose-50 dark:hover:bg-rose-950/40 text-rose-600 dark:text-rose-400 flex items-center gap-2.5 transition-colors cursor-pointer font-medium"
                 >
-                  <LogOut className="w-3.5 h-3.5" />
-                  <span>Sign Out Session</span>
+                  <LogOut className="w-4 h-4" />
+                  <span>Sign Out</span>
                 </button>
               </div>
             </div>

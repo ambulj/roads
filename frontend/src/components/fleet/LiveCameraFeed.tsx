@@ -801,9 +801,9 @@ export const LiveCameraFeed: React.FC<LiveCameraFeedProps> = ({
 
       {/* ── 2. MOBILE DVR CHANNEL SELECTOR STRIP ───────────────────────────── */}
       <div className="z-20 px-4 py-2 bg-zinc-900 border-b border-zinc-800 flex flex-wrap items-center justify-between gap-2 text-xs">
-        <div className="flex items-center gap-1.5 overflow-x-auto py-0.5 custom-scrollbar font-mono">
-          <div className="flex items-center gap-1 text-xs text-zinc-400 font-semibold mr-1">
-            <Video className="w-3.5 h-3.5" />
+        <div className="flex items-center gap-1.5 overflow-x-auto py-0.5 custom-scrollbar">
+          <div className="flex items-center gap-1.5 text-xs text-zinc-400 font-medium mr-1">
+            <Video className="w-4 h-4 text-zinc-500" />
             <span>Channel:</span>
           </div>
           {DVR_CHANNELS.slice(0, Math.max(1, Math.min(4, bus.dvr_channels || 4))).map((ch) => (
@@ -813,10 +813,10 @@ export const LiveCameraFeed: React.FC<LiveCameraFeedProps> = ({
                 setSelectedChannel(ch.id);
                 setIsQuadView(false);
               }}
-              className={`px-3 py-1 rounded-md text-xs font-mono font-medium transition-colors cursor-pointer ${
+              className={`px-3 py-1 rounded-lg text-xs font-medium transition-all cursor-pointer ${
                 !isQuadView && selectedChannel === ch.id
-                  ? "bg-cyan-600 text-white font-semibold"
-                  : "bg-zinc-800 hover:bg-zinc-700 text-zinc-300 border border-zinc-700"
+                  ? "bg-zinc-100 text-zinc-950 font-semibold shadow-xs"
+                  : "bg-zinc-800/80 hover:bg-zinc-750 text-zinc-300 border border-zinc-700/60"
               }`}
             >
               {ch.name}
@@ -824,10 +824,10 @@ export const LiveCameraFeed: React.FC<LiveCameraFeedProps> = ({
           ))}
           <button
             onClick={() => setIsQuadView(true)}
-            className={`px-3 py-1 rounded-md text-xs font-mono font-medium flex items-center gap-1 transition-colors cursor-pointer ${
+            className={`px-3 py-1 rounded-lg text-xs font-medium flex items-center gap-1.5 transition-all cursor-pointer ${
               isQuadView
-                ? "bg-cyan-600 text-white font-semibold"
-                : "bg-zinc-800 hover:bg-zinc-700 text-zinc-300 border border-zinc-700"
+                ? "bg-zinc-100 text-zinc-950 font-semibold shadow-xs"
+                : "bg-zinc-800/80 hover:bg-zinc-750 text-zinc-300 border border-zinc-700/60"
             }`}
             title="View all 4 DVR cameras simultaneously in 2x2 split-screen"
           >
@@ -836,7 +836,7 @@ export const LiveCameraFeed: React.FC<LiveCameraFeedProps> = ({
           </button>
         </div>
 
-        <div className="hidden sm:flex items-center gap-2 text-xs font-mono text-zinc-400">
+        <div className="hidden sm:flex items-center gap-2 text-xs text-zinc-400">
           <span className="text-zinc-300 font-medium truncate max-w-[280px]">
             {isQuadView ? "4 Cameras Synchronized" : DVR_CHANNELS[selectedChannel - 1]?.subtitle}
           </span>

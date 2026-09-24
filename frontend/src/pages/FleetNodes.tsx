@@ -75,102 +75,89 @@ export const FleetNodes: React.FC<FleetNodesProps> = ({ fleet, onFleetChange }) 
   };
 
   return (
-    <div className="flex-1 flex flex-col min-h-0 overflow-y-auto custom-scrollbar p-4 md:p-6 space-y-4 max-w-[1750px] mx-auto w-full select-none">
+    <div className="flex-1 flex flex-col min-h-0 overflow-y-auto custom-scrollbar p-4 md:p-6 space-y-5 max-w-[1700px] mx-auto w-full select-none">
       
-      {/* 1. Sleek Fleet Executive Command Ribbon */}
-      <Card className="p-3 shadow-xs">
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
-          {/* Left: Active Bus Selector + Route Info */}
-          <div className="flex flex-wrap items-center gap-2.5">
-            <div className="w-8 h-8 rounded-xl bg-blue-50 dark:bg-blue-950/60 border border-blue-200 dark:border-blue-800 flex items-center justify-center shrink-0">
-              <Truck className="w-4 h-4 text-blue-600 dark:text-blue-400" />
-            </div>
+      {/* 1. Fleet Overview Header Bar */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-2 border-b border-zinc-200 dark:border-zinc-800">
+        <div>
+          <h1 className="text-xl font-bold text-zinc-900 dark:text-zinc-100 tracking-tight">Fleet Overview</h1>
+          <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5 font-normal">
+            Real-time multi-camera video streams, telematics telemetry, and on-vehicle edge health.
+          </p>
+        </div>
 
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setIsUploadFootageOpen(true)}
+            className="px-3.5 py-1.5 rounded-lg bg-zinc-900 hover:bg-zinc-800 dark:bg-zinc-100 dark:hover:bg-white text-white dark:text-zinc-900 font-medium text-xs flex items-center gap-1.5 transition-all shadow-xs cursor-pointer"
+          >
+            <UploadCloud className="w-4 h-4" />
+            <span>Upload Footage</span>
+          </button>
+
+          <button
+            onClick={() => setIsAddBusModalOpen(true)}
+            className="px-3.5 py-1.5 rounded-lg bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-zinc-900 dark:text-zinc-100 font-medium text-xs flex items-center gap-1.5 transition-all cursor-pointer border border-zinc-200 dark:border-zinc-750"
+          >
+            <Plus className="w-4 h-4" />
+            <span>Add Vehicle</span>
+          </button>
+        </div>
+      </div>
+
+      {/* 2. Vehicle Selector & Mode Navigation */}
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 bg-zinc-50 dark:bg-zinc-900/60 p-2.5 rounded-xl border border-zinc-200 dark:border-zinc-800">
+        <div className="flex flex-wrap items-center gap-3">
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-zinc-500 dark:text-zinc-400 font-medium">Selected Vehicle:</span>
             <select
               value={selectedBusId}
               onChange={(e) => setSelectedBusId(e.target.value)}
-              className="text-xs font-mono font-bold px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200 shadow-xs outline-hidden focus:ring-2 focus:ring-blue-500 cursor-pointer"
+              className="text-xs font-semibold px-3 py-1.5 rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 shadow-xs outline-hidden focus:ring-2 focus:ring-zinc-400 cursor-pointer"
             >
               {fleet.map((bus) => (
                 <option key={bus.id} value={bus.id}>
-                  {bus.id} — {bus.speed_kmh} km/h ({bus.route_name.split('·')[0].trim()})
+                  {bus.id} — {bus.route_name.split('·')[0].trim()} ({bus.speed_kmh} km/h)
                 </option>
               ))}
             </select>
-
-            <Badge variant="success" size="sm" dot className="font-semibold">
-              {onlineCount}/{fleet.length} Fleet Online
-            </Badge>
-
-            <span className="hidden sm:inline-block text-xs text-slate-500 dark:text-slate-400 font-mono">
-              Route: <strong className="text-slate-700 dark:text-slate-200">{activeBus.route_name}</strong>
-            </span>
           </div>
 
-          {/* Right: Quick Operational Actions */}
-          <div className="flex flex-wrap items-center gap-2 text-xs font-mono">
-            <button
-              onClick={() => setIsUploadFootageOpen(true)}
-              className="px-3 py-1.5 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white font-semibold text-xs flex items-center gap-1.5 shadow-xs transition-all active:scale-95 shrink-0 cursor-pointer"
-              title="Upload custom video or road inspection footage to stream and analyze with AI"
-            >
-              <UploadCloud className="w-3.5 h-3.5" />
-              <span>Upload Video</span>
-            </button>
+          <span className="inline-flex items-center gap-1.5 text-xs text-emerald-600 dark:text-emerald-400 font-medium px-2 py-0.5 rounded-md bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-200 dark:border-emerald-800">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+            <span>{onlineCount} of {fleet.length} Online</span>
+          </span>
 
-            <button
-              onClick={() => setIsAddBusModalOpen(true)}
-              className="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-xs flex items-center gap-1.5 shadow-xs transition-all active:scale-95 shrink-0 cursor-pointer"
-              title="Commission a new transit bus node with Mobile DVR"
-            >
-              <Plus className="w-3.5 h-3.5" />
-              <span>Register Bus</span>
-            </button>
-
-            {activeBus && (
-              <button
-                onClick={() => setConfirmDeleteId(activeBus.id)}
-                className="p-1.5 rounded-xl border border-rose-200 dark:border-rose-900/60 bg-rose-50/50 dark:bg-rose-950/40 text-rose-600 dark:text-rose-400 hover:bg-rose-100 dark:hover:bg-rose-900/80 transition-colors shrink-0 cursor-pointer"
-                title={`Decommission bus ${activeBus.id}`}
-              >
-                <Trash2 className="w-3.5 h-3.5" />
-              </button>
-            )}
-          </div>
+          <span className="text-xs text-zinc-500 dark:text-zinc-400">
+            Corridor: <span className="font-semibold text-zinc-800 dark:text-zinc-200">{activeBus.route_name}</span>
+          </span>
         </div>
-      </Card>
 
-      {/* 2. Operational Mode Sub-Tabs */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-200 dark:border-slate-800 pb-2">
-        <div className="flex items-center gap-1 p-1 bg-slate-100 dark:bg-slate-800/80 rounded-xl w-fit">
+        {/* View Switcher Tabs */}
+        <div className="flex items-center gap-1 p-1 bg-zinc-200/70 dark:bg-zinc-800 rounded-lg">
           <button
             onClick={() => setViewMode('camera')}
-            className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+            className={`flex items-center gap-2 px-3 py-1 rounded-md text-xs font-medium transition-all cursor-pointer ${
               viewMode === 'camera'
-                ? 'bg-white dark:bg-slate-900 text-blue-600 dark:text-blue-400 shadow-xs font-bold'
-                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
+                ? 'bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 shadow-xs font-semibold'
+                : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100'
             }`}
           >
-            <Camera className="w-3.5 h-3.5 text-rose-500" />
-            <span>Live Video &amp; Telemetry Stream</span>
+            <Camera className="w-3.5 h-3.5" />
+            <span>Camera Stream</span>
           </button>
 
           <button
             onClick={() => setViewMode('sensors')}
-            className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+            className={`flex items-center gap-2 px-3 py-1 rounded-md text-xs font-medium transition-all cursor-pointer ${
               viewMode === 'sensors'
-                ? 'bg-white dark:bg-slate-900 text-blue-600 dark:text-blue-400 shadow-xs font-bold'
-                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
+                ? 'bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 shadow-xs font-semibold'
+                : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100'
             }`}
           >
-            <Cpu className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
-            <span>7-Sensor Diagnostic Fusion</span>
+            <Cpu className="w-3.5 h-3.5" />
+            <span>Sensor Diagnostics</span>
           </button>
-        </div>
-
-        <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400 font-mono">
-          <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-          <span>Active Edge Ingest: <b>{activeBus.id}</b> (5Hz Lock)</span>
         </div>
       </div>
 
@@ -220,93 +207,77 @@ export const FleetNodes: React.FC<FleetNodesProps> = ({ fleet, onFleetChange }) 
           <div className="lg:col-span-4 flex flex-col gap-3">
             <Card className="p-4 flex flex-col justify-between shadow-xs">
               <div>
-                <div className="flex items-center justify-between pb-2.5 border-b border-slate-100 dark:border-slate-800 text-xs">
-                  <div className="flex items-center gap-1.5 font-bold text-slate-900 dark:text-slate-100">
-                    <SlidersVertical className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
-                    <span>Live Telemetry Dynamics</span>
+                <div className="flex items-center justify-between pb-3 border-b border-zinc-200 dark:border-zinc-800 text-xs">
+                  <div className="font-semibold text-zinc-900 dark:text-zinc-100 flex items-center gap-2">
+                    <SlidersVertical className="w-4 h-4 text-zinc-500" />
+                    <span>Vehicle Telemetry</span>
                   </div>
-                  <Badge variant="medium" size="sm" className="font-bold font-mono">
+                  <span className="font-semibold px-2 py-0.5 rounded bg-zinc-100 dark:bg-zinc-800 text-zinc-800 dark:text-zinc-200">
                     {activeBus.id}
-                  </Badge>
+                  </span>
                 </div>
 
                 <div className="space-y-3 mt-3 text-xs">
                   {/* Route & Corridor */}
-                  <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 flex items-center justify-between">
-                    <span className="text-slate-500 text-xs font-mono">Monitored Route</span>
-                    <span className="font-semibold text-slate-800 dark:text-slate-200 text-right truncate max-w-[180px]">
+                  <div className="p-3 rounded-lg bg-zinc-50 dark:bg-zinc-850/50 border border-zinc-200/80 dark:border-zinc-800 flex items-center justify-between">
+                    <span className="text-zinc-500">Route</span>
+                    <span className="font-semibold text-zinc-900 dark:text-zinc-100 text-right truncate max-w-[190px]">
                       {activeBus.route_name}
                     </span>
                   </div>
 
                   {/* IMU Accelerometer Jerk (G_z) */}
-                  <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700">
-                    <div className="flex justify-between mb-1.5 text-xs font-mono">
-                      <span className="text-slate-600 dark:text-slate-400 flex items-center gap-1">
-                        <Zap className="w-3 h-3 text-amber-500" />
-                        <span>Vertical Shock (G_z):</span>
-                      </span>
-                      <span className={`font-bold ${activeBus.imu_jerk_gz >= 1.30 ? 'text-rose-500' : activeBus.imu_jerk_gz > 1.08 ? 'text-amber-500' : 'text-emerald-500'}`}>
-                        {activeBus.imu_jerk_gz}g
-                      </span>
-                    </div>
-                    <div className="w-full bg-slate-200 dark:bg-slate-700 rounded-full h-1.5 overflow-hidden">
-                      <div 
-                        className={`h-full rounded-full transition-all duration-300 ${activeBus.imu_jerk_gz >= 1.30 ? 'bg-rose-500' : activeBus.imu_jerk_gz > 1.08 ? 'bg-amber-500' : 'bg-emerald-500'}`} 
-                        style={{ width: `${Math.min(100, (activeBus.imu_jerk_gz / 2.0) * 100)}%` }} 
-                      />
-                    </div>
+                  <div className="p-3 rounded-lg bg-zinc-50 dark:bg-zinc-850/50 border border-zinc-200/80 dark:border-zinc-800 flex items-center justify-between">
+                    <span className="text-zinc-500 flex items-center gap-1.5">
+                      <Zap className="w-3.5 h-3.5 text-zinc-400" />
+                      <span>Vertical Shock</span>
+                    </span>
+                    <span className={`font-semibold ${activeBus.imu_jerk_gz >= 1.30 ? 'text-rose-500' : activeBus.imu_jerk_gz > 1.08 ? 'text-amber-500' : 'text-zinc-900 dark:text-zinc-100'}`}>
+                      {activeBus.imu_jerk_gz} g
+                    </span>
                   </div>
 
                   {/* Velocity */}
-                  <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700">
-                    <div className="flex justify-between mb-1.5 text-xs font-mono">
-                      <span className="text-slate-600 dark:text-slate-400 flex items-center gap-1">
-                        <Gauge className="w-3 h-3 text-blue-500" />
-                        <span>Transit Velocity:</span>
-                      </span>
-                      <span className="text-amber-600 dark:text-amber-400 font-bold">
-                        {activeBus.speed_kmh} km/h
-                      </span>
-                    </div>
-                    <div className="w-full bg-slate-200 dark:bg-slate-700 rounded-full h-1.5 overflow-hidden">
-                      <div className="bg-amber-500 h-full rounded-full transition-all duration-300" style={{ width: `${Math.min(100, (activeBus.speed_kmh / 80) * 100)}%` }} />
-                    </div>
+                  <div className="p-3 rounded-lg bg-zinc-50 dark:bg-zinc-850/50 border border-zinc-200/80 dark:border-zinc-800 flex items-center justify-between">
+                    <span className="text-zinc-500 flex items-center gap-1.5">
+                      <Gauge className="w-3.5 h-3.5 text-zinc-400" />
+                      <span>Speed</span>
+                    </span>
+                    <span className="font-semibold text-zinc-900 dark:text-zinc-100">
+                      {activeBus.speed_kmh} km/h
+                    </span>
                   </div>
 
                   {/* Edge Vision Rate */}
-                  <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700">
-                    <div className="flex justify-between mb-1.5 text-xs font-mono">
-                      <span className="text-slate-600 dark:text-slate-400 flex items-center gap-1">
-                        <Activity className="w-3 h-3 text-blue-500" />
-                        <span>Inference Rate:</span>
-                      </span>
-                      <span className="text-blue-600 dark:text-blue-400 font-bold">
-                        {activeBus.edge_fps || 28.4} FPS
-                      </span>
-                    </div>
-                    <div className="w-full bg-slate-200 dark:bg-slate-700 rounded-full h-1.5 overflow-hidden">
-                      <div className="bg-blue-600 h-full rounded-full transition-all duration-300" style={{ width: '92%' }} />
-                    </div>
+                  <div className="p-3 rounded-lg bg-zinc-50 dark:bg-zinc-850/50 border border-zinc-200/80 dark:border-zinc-800 flex items-center justify-between">
+                    <span className="text-zinc-500 flex items-center gap-1.5">
+                      <Activity className="w-3.5 h-3.5 text-zinc-400" />
+                      <span>Edge Inference</span>
+                    </span>
+                    <span className="font-semibold text-zinc-900 dark:text-zinc-100">
+                      {activeBus.edge_fps || 28.4} FPS
+                    </span>
                   </div>
 
                   {/* Edge Sync Status */}
-                  <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 flex items-center justify-between text-xs font-mono">
-                    <span className="text-slate-500">Sync Pipeline:</span>
-                    <span className="font-bold text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
-                      <Wifi className="w-3 h-3" />
-                      <span>{edgeStatus?.connectivity_mode || "Depot 5GHz WiFi"}</span>
+                  <div className="p-3 rounded-lg bg-zinc-50 dark:bg-zinc-850/50 border border-zinc-200/80 dark:border-zinc-800 flex items-center justify-between">
+                    <span className="text-zinc-500 flex items-center gap-1.5">
+                      <Wifi className="w-3.5 h-3.5 text-zinc-400" />
+                      <span>Sync Mode</span>
+                    </span>
+                    <span className="font-semibold text-zinc-900 dark:text-zinc-100">
+                      {edgeStatus?.connectivity_mode || "5GHz Depot WiFi"}
                     </span>
                   </div>
                 </div>
               </div>
 
-              <div className="mt-4 pt-3 border-t border-slate-100 dark:border-slate-800 text-xs text-slate-500 flex items-center justify-between font-mono">
-                <div className="flex items-center gap-1">
-                  <MapPin className="w-3.5 h-3.5 text-blue-500" />
-                  <span>{activeBus.lat.toFixed(4)}° N, {activeBus.lng.toFixed(4)}° E</span>
+              <div className="mt-4 pt-3 border-t border-zinc-200 dark:border-zinc-800 text-xs text-zinc-500 flex items-center justify-between">
+                <div className="flex items-center gap-1.5">
+                  <MapPin className="w-3.5 h-3.5 text-zinc-400" />
+                  <span className="font-mono">{activeBus.lat.toFixed(4)}° N, {activeBus.lng.toFixed(4)}° E</span>
                 </div>
-                <span className="text-emerald-600 dark:text-emerald-400 font-semibold">● 5Hz Locked</span>
+                <span className="text-emerald-600 dark:text-emerald-400 font-medium">GPS Locked</span>
               </div>
             </Card>
           </div>
@@ -319,34 +290,33 @@ export const FleetNodes: React.FC<FleetNodesProps> = ({ fleet, onFleetChange }) 
 
       {/* 4. Active Fleet Unit Roster Grid */}
       <div className="flex flex-col gap-3 pt-2">
-        <div className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider flex items-center gap-2">
-          <Truck className="w-4 h-4 text-blue-600 dark:text-blue-400" />
-          <span>Active Transit Fleet Unit Roster ({fleet.length})</span>
+        <div className="flex items-center justify-between">
+          <h2 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
+            Registered Fleet Vehicles ({fleet.length})
+          </h2>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3.5">
           {fleet.map((bus) => (
-            <Card
+            <div
               key={bus.id}
               onClick={() => setSelectedBusId(bus.id)}
-              className={`p-3.5 flex flex-col justify-between gap-2.5 cursor-pointer transition ${
+              className={`p-4 rounded-xl border bg-white dark:bg-zinc-900 flex flex-col justify-between gap-3 cursor-pointer transition-all ${
                 selectedBusId === bus.id
-                  ? 'border-blue-500 bg-blue-50/40 dark:bg-slate-800/80 ring-1 ring-blue-500/20 shadow-xs'
-                  : 'hover:border-slate-300 dark:hover:border-slate-700'
+                  ? 'border-zinc-900 dark:border-zinc-100 ring-1 ring-zinc-900 dark:ring-zinc-100 shadow-sm'
+                  : 'border-zinc-200 dark:border-zinc-800 hover:border-zinc-300 dark:hover:border-zinc-700'
               }`}
             >
               <div className="flex items-start justify-between">
                 <div>
                   <div className="flex items-center gap-2">
-                    <span className="font-bold text-slate-900 dark:text-slate-100 text-sm font-mono">{bus.id}</span>
-                    <Badge variant="success" size="sm" dot>
-                      ONLINE
-                    </Badge>
-                    <span className="text-[10px] font-mono font-medium px-1.5 py-0.5 rounded bg-cyan-100 dark:bg-cyan-950/70 text-cyan-700 dark:text-cyan-300 border border-cyan-300 dark:border-cyan-800">
-                      {bus.dvr_channels || 4} CH MDVR
+                    <span className="font-semibold text-zinc-900 dark:text-zinc-100 text-sm">{bus.id}</span>
+                    <span className="inline-flex items-center gap-1 text-xs text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-800 px-1.5 py-0.5 rounded font-medium">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                      Online
                     </span>
                   </div>
-                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">{bus.vehicle_type}</p>
+                  <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5 font-normal">{bus.vehicle_type}</p>
                 </div>
                 <div className="flex items-center gap-1.5">
                   <button
@@ -354,27 +324,24 @@ export const FleetNodes: React.FC<FleetNodesProps> = ({ fleet, onFleetChange }) 
                       e.stopPropagation();
                       setConfirmDeleteId(bus.id);
                     }}
-                    title={`Decommission bus ${bus.id}`}
-                    className="p-1.5 rounded-lg hover:bg-rose-50 dark:hover:bg-rose-950/60 text-slate-400 hover:text-rose-500 border border-transparent hover:border-rose-200 dark:hover:border-rose-900 transition-colors cursor-pointer"
+                    title={`Decommission vehicle ${bus.id}`}
+                    className="p-1.5 rounded-lg text-zinc-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/60 transition-colors cursor-pointer"
                   >
                     <Trash2 className="w-3.5 h-3.5" />
                   </button>
-                  <div className="p-1.5 rounded-lg bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-blue-600 dark:text-blue-400">
-                    <Radio className="w-3.5 h-3.5" />
-                  </div>
                 </div>
               </div>
 
-              <div className="bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 p-2 rounded-lg text-xs">
-                <span className="text-xs text-slate-400 uppercase font-semibold block">Corridor</span>
-                <span className="text-slate-800 dark:text-slate-200 font-medium text-xs truncate block">{bus.route_name}</span>
+              <div className="bg-zinc-50 dark:bg-zinc-850/60 border border-zinc-100 dark:border-zinc-800/80 p-2.5 rounded-lg text-xs">
+                <span className="text-zinc-400 font-medium block">Route Corridor</span>
+                <span className="text-zinc-800 dark:text-zinc-200 font-semibold text-xs truncate block mt-0.5">{bus.route_name}</span>
               </div>
 
-              <div className="pt-2 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-xs font-mono">
-                <span className="text-slate-600 dark:text-slate-400">Speed: <b className="text-slate-900 dark:text-slate-100">{bus.speed_kmh} km/h</b></span>
-                <span className="text-blue-600 dark:text-blue-400 font-semibold">IMU: {bus.imu_jerk_gz}g</span>
+              <div className="pt-2.5 border-t border-zinc-100 dark:border-zinc-800 text-xs flex items-center justify-between text-zinc-500">
+                <span>Speed: <strong className="text-zinc-900 dark:text-zinc-100 font-medium">{bus.speed_kmh} km/h</strong></span>
+                <span>Shock: <strong className="text-zinc-900 dark:text-zinc-100 font-medium">{bus.imu_jerk_gz} g</strong></span>
               </div>
-            </Card>
+            </div>
           ))}
         </div>
       </div>
