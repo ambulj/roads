@@ -220,18 +220,6 @@ export const SidebarNav: React.FC<SidebarNavProps> = ({
           </button>
         </div>
 
-        {/* Active Role Persona Tag */}
-        {isExpanded && (
-          <div className="px-3.5 py-3 border-b border-zinc-200 dark:border-zinc-800 bg-zinc-100/40 dark:bg-zinc-950/40">
-            <div className="text-xs font-semibold text-zinc-900 dark:text-zinc-100 truncate">
-              {getRoleBadgeLabel(user.role)}
-            </div>
-            <div className="text-xs text-zinc-500 truncate mt-0.5 font-normal">
-              {user.name}
-            </div>
-          </div>
-        )}
-
         {/* Navigation Sections */}
         <div className="flex-1 overflow-y-auto py-3 px-2 space-y-1">
           {renderNavGroup("Onboard Edge", "Onboard", edgeItems)}

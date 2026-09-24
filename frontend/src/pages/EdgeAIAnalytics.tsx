@@ -181,7 +181,7 @@ export const EdgeAIAnalytics: React.FC = () => {
             size="sm"
             onClick={handleRunLatencyBenchmark}
             disabled={isBenchmarking}
-            className="text-xs bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 hover:bg-zinc-800 dark:hover:bg-white border-none shadow-xs"
+            className="text-xs"
           >
             <Play className={`w-3.5 h-3.5 mr-1.5 ${isBenchmarking ? 'animate-spin' : ''}`} />
             Run Latency Benchmark
@@ -251,7 +251,7 @@ export const EdgeAIAnalytics: React.FC = () => {
             {bandwidthReductionPct}%
           </div>
           <div className="text-xs text-zinc-400 mt-0.5">
-            {totalBandwidthSavedMb} MB Cellular Saved
+            {totalBandwidthSavedMb} MB Saved
           </div>
         </div>
 
@@ -290,33 +290,33 @@ export const EdgeAIAnalytics: React.FC = () => {
       {(activeTab === 'all' || activeTab === 'models') && (
         <div className="p-5 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-xs">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4">
-            <div>
+            <div className="flex flex-wrap items-center gap-2.5">
               <h2 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
                 Model Registry &amp; NPU Target Compilation
               </h2>
-              <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5 font-normal">
-                On-disk weight files with live SHA-256 signatures and Rockchip NPU readiness.
-              </p>
+              <span className="text-xs text-zinc-500 bg-zinc-100 dark:bg-zinc-800 px-2 py-0.5 rounded-md font-medium">
+                Device: <strong className="text-zinc-800 dark:text-zinc-200">{modelsData?.device?.toUpperCase() || 'CPU'}</strong>
+              </span>
             </div>
-            <span className="text-xs text-zinc-500 bg-zinc-100 dark:bg-zinc-800 px-2.5 py-1 rounded-md font-medium">
-              Device: <strong className="text-zinc-800 dark:text-zinc-200">{modelsData?.device?.toUpperCase() || 'CPU'}</strong>
-            </span>
+            <p className="text-xs text-zinc-500 dark:text-zinc-400 font-normal">
+              On-disk weight files with live SHA-256 signatures and Rockchip NPU readiness.
+            </p>
           </div>
 
           <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs font-mono border-collapse">
+            <table className="w-full text-left text-xs border-collapse">
               <thead>
-                <tr className="border-b border-zinc-200 dark:border-zinc-800 text-zinc-500 bg-zinc-50 dark:bg-zinc-950/50">
+                <tr className="border-b border-zinc-200 dark:border-zinc-800 text-zinc-500 font-medium">
                   <th className="py-2.5 px-3">Model Subsystem</th>
                   <th className="py-2.5 px-3">Framework / Res</th>
                   <th className="py-2.5 px-3">Weight File & Size</th>
-                  <th className="py-2.5 px-3">SHA-256 Hash</th>
+                  <th className="py-2.5 px-3">SHA-256 Signature</th>
                   <th className="py-2.5 px-3">RK3588 (6T)</th>
                   <th className="py-2.5 px-3">RK3568 (1T)</th>
                   <th className="py-2.5 px-3">RV1106 (0.5T)</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-zinc-200 dark:divide-zinc-800/60">
+              <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800/60">
                 {modelsList.map(([key, m]: [string, any]) => {
                   const weightPath = m?.path || m?.weights_path || '';
                   const weightFilename = weightPath
@@ -329,9 +329,6 @@ export const EdgeAIAnalytics: React.FC = () => {
                     ? (Array.isArray(m.classes) ? m.classes.length : Object.keys(m.classes).length)
                     : (m?.classes_count || 0);
                   const isFilePresent = m?.weights_exist_on_disk ?? m?.file_exists ?? false;
-                  const shortHash = m?.sha256
-                    ? `${m.sha256.substring(0, 10)}...${m.sha256.substring(m.sha256.length - 8)}`
-                    : (isFilePresent ? 'Verified' : 'N/A');
                   const isCopied = copiedHash === key;
 
                   const rk3588Status = m?.rknn_targets?.rk3588?.status === 'COMPILED_READY' || m?.compiled_targets?.rk3588?.compiled;
@@ -342,61 +339,68 @@ export const EdgeAIAnalytics: React.FC = () => {
                     <tr key={key} className="hover:bg-zinc-50 dark:hover:bg-zinc-800/40 transition-colors">
                       <td className="py-3 px-3">
                         <div className="font-semibold text-zinc-900 dark:text-zinc-100">{m?.name || key}</div>
-                        <div className="text-[10px] text-zinc-500">Key: <code className="text-zinc-400">{key}</code> &bull; {classesCount} Classes</div>
+                        <div className="text-xs text-zinc-400">{classesCount} Classes</div>
                       </td>
                       <td className="py-3 px-3">
                         <div className="text-zinc-800 dark:text-zinc-200">{m?.framework || 'PyTorch / ONNX'}</div>
-                        <div className="text-[10px] text-zinc-500">{m?.input_resolution || '640x640 / 5Hz DSP'}</div>
+                        <div className="text-xs text-zinc-400">{m?.input_resolution || '640x640 / 5Hz DSP'}</div>
                       </td>
                       <td className="py-3 px-3">
                         <div className="text-zinc-800 dark:text-zinc-200">{weightFilename}</div>
-                        <div className="text-[10px] text-zinc-500">{sizeMb} MB &bull; {isFilePresent ? 'Present on Disk' : 'Deterministic DSP/CV'}</div>
+                        <div className="text-xs text-zinc-400">{sizeMb} MB &bull; {isFilePresent ? 'On Disk' : 'DSP/CV'}</div>
                       </td>
                       <td className="py-3 px-3">
-                        <div className="flex items-center gap-1">
-                          <code className="text-[11px] bg-zinc-100 dark:bg-zinc-950 px-1.5 py-0.5 rounded text-zinc-600 dark:text-zinc-400 border border-zinc-200 dark:border-zinc-800">
-                            {shortHash}
-                          </code>
-                          {m?.sha256 && (
-                            <button
-                              onClick={() => handleCopy(m.sha256, key)}
-                              className="p-1 text-zinc-400 hover:text-zinc-200"
-                              title="Copy full SHA-256 hash"
-                            >
-                              {isCopied ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
-                            </button>
-                          )}
-                        </div>
+                        {m?.sha256 ? (
+                          <button
+                            onClick={() => handleCopy(m.sha256, key)}
+                            className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-600 dark:text-zinc-300 text-xs font-mono transition cursor-pointer"
+                            title={`Click to copy SHA-256: ${m.sha256}`}
+                          >
+                            {isCopied ? (
+                              <>
+                                <Check className="w-3 h-3 text-emerald-500" />
+                                <span className="text-emerald-500 font-sans">Copied</span>
+                              </>
+                            ) : (
+                              <>
+                                <Copy className="w-3 h-3 text-zinc-400" />
+                                <span>{m.sha256.substring(0, 8)}...</span>
+                              </>
+                            )}
+                          </button>
+                        ) : (
+                          <span className="text-xs text-zinc-400">Verified</span>
+                        )}
                       </td>
                       <td className="py-3 px-3">
                         {rk3588Status ? (
-                          <span className="inline-flex items-center gap-1 text-[10px] text-emerald-400 bg-emerald-950/60 border border-emerald-800 px-1.5 py-0.5 rounded">
-                            <CheckCircle2 className="w-3 h-3" /> RKNN Ready
+                          <span className="inline-flex items-center gap-1 text-xs text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-800 px-1.5 py-0.5 rounded font-medium">
+                            <CheckCircle2 className="w-3 h-3" /> Ready
                           </span>
                         ) : (
-                          <span className="inline-flex items-center gap-1 text-[10px] text-amber-400 bg-amber-950/50 border border-amber-800/80 px-1.5 py-0.5 rounded" title={m?.compiled_targets?.rk3588?.error || m?.status_explanation}>
-                            <AlertTriangle className="w-3 h-3" /> PyTorch Fallback
+                          <span className="inline-flex items-center gap-1 text-xs text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/50 border border-amber-200 dark:border-amber-800/80 px-1.5 py-0.5 rounded font-medium" title={m?.compiled_targets?.rk3588?.error || m?.status_explanation}>
+                            Fallback
                           </span>
                         )}
                       </td>
                       <td className="py-3 px-3">
                         {rk3568Status ? (
-                          <span className="inline-flex items-center gap-1 text-[10px] text-emerald-400 bg-emerald-950/60 border border-emerald-800 px-1.5 py-0.5 rounded">
+                          <span className="inline-flex items-center gap-1 text-xs text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-800 px-1.5 py-0.5 rounded font-medium">
                             <CheckCircle2 className="w-3 h-3" /> Ready
                           </span>
                         ) : (
-                          <span className="text-[10px] text-zinc-500 bg-zinc-800/40 px-1.5 py-0.5 rounded">
+                          <span className="text-xs text-zinc-400 bg-zinc-100 dark:bg-zinc-800 px-1.5 py-0.5 rounded">
                             Pre-RKNN
                           </span>
                         )}
                       </td>
                       <td className="py-3 px-3">
                         {rv1106Status ? (
-                          <span className="inline-flex items-center gap-1 text-[10px] text-emerald-400 bg-emerald-950/60 border border-emerald-800 px-1.5 py-0.5 rounded">
+                          <span className="inline-flex items-center gap-1 text-xs text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-800 px-1.5 py-0.5 rounded font-medium">
                             <CheckCircle2 className="w-3 h-3" /> Ready
                           </span>
                         ) : (
-                          <span className="text-[10px] text-zinc-500 bg-zinc-800/40 px-1.5 py-0.5 rounded">
+                          <span className="text-xs text-zinc-400 bg-zinc-100 dark:bg-zinc-800 px-1.5 py-0.5 rounded">
                             Pre-RKNN
                           </span>
                         )}
