@@ -102,7 +102,7 @@ export const FleetNodes: React.FC<FleetNodesProps> = ({ fleet, onFleetChange }) 
               {onlineCount}/{fleet.length} Fleet Online
             </Badge>
 
-            <span className="hidden sm:inline-block text-[11px] text-slate-500 dark:text-slate-400 font-mono">
+            <span className="hidden sm:inline-block text-xs text-slate-500 dark:text-slate-400 font-mono">
               Route: <strong className="text-slate-700 dark:text-slate-200">{activeBus.route_name}</strong>
             </span>
           </div>
@@ -233,7 +233,7 @@ export const FleetNodes: React.FC<FleetNodesProps> = ({ fleet, onFleetChange }) 
                 <div className="space-y-3 mt-3 text-xs">
                   {/* Route & Corridor */}
                   <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 flex items-center justify-between">
-                    <span className="text-slate-500 text-[11px] font-mono">Monitored Route</span>
+                    <span className="text-slate-500 text-xs font-mono">Monitored Route</span>
                     <span className="font-semibold text-slate-800 dark:text-slate-200 text-right truncate max-w-[180px]">
                       {activeBus.route_name}
                     </span>
@@ -241,7 +241,7 @@ export const FleetNodes: React.FC<FleetNodesProps> = ({ fleet, onFleetChange }) 
 
                   {/* IMU Accelerometer Jerk (G_z) */}
                   <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700">
-                    <div className="flex justify-between mb-1.5 text-[11px] font-mono">
+                    <div className="flex justify-between mb-1.5 text-xs font-mono">
                       <span className="text-slate-600 dark:text-slate-400 flex items-center gap-1">
                         <Zap className="w-3 h-3 text-amber-500" />
                         <span>Vertical Shock (G_z):</span>
@@ -260,7 +260,7 @@ export const FleetNodes: React.FC<FleetNodesProps> = ({ fleet, onFleetChange }) 
 
                   {/* Velocity */}
                   <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700">
-                    <div className="flex justify-between mb-1.5 text-[11px] font-mono">
+                    <div className="flex justify-between mb-1.5 text-xs font-mono">
                       <span className="text-slate-600 dark:text-slate-400 flex items-center gap-1">
                         <Gauge className="w-3 h-3 text-blue-500" />
                         <span>Transit Velocity:</span>
@@ -276,7 +276,7 @@ export const FleetNodes: React.FC<FleetNodesProps> = ({ fleet, onFleetChange }) 
 
                   {/* Edge Vision Rate */}
                   <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700">
-                    <div className="flex justify-between mb-1.5 text-[11px] font-mono">
+                    <div className="flex justify-between mb-1.5 text-xs font-mono">
                       <span className="text-slate-600 dark:text-slate-400 flex items-center gap-1">
                         <Activity className="w-3 h-3 text-blue-500" />
                         <span>Inference Rate:</span>
@@ -291,7 +291,7 @@ export const FleetNodes: React.FC<FleetNodesProps> = ({ fleet, onFleetChange }) 
                   </div>
 
                   {/* Edge Sync Status */}
-                  <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 flex items-center justify-between text-[11px] font-mono">
+                  <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 flex items-center justify-between text-xs font-mono">
                     <span className="text-slate-500">Sync Pipeline:</span>
                     <span className="font-bold text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
                       <Wifi className="w-3 h-3" />
@@ -301,7 +301,7 @@ export const FleetNodes: React.FC<FleetNodesProps> = ({ fleet, onFleetChange }) 
                 </div>
               </div>
 
-              <div className="mt-4 pt-3 border-t border-slate-100 dark:border-slate-800 text-[11px] text-slate-500 flex items-center justify-between font-mono">
+              <div className="mt-4 pt-3 border-t border-slate-100 dark:border-slate-800 text-xs text-slate-500 flex items-center justify-between font-mono">
                 <div className="flex items-center gap-1">
                   <MapPin className="w-3.5 h-3.5 text-blue-500" />
                   <span>{activeBus.lat.toFixed(4)}° N, {activeBus.lng.toFixed(4)}° E</span>
@@ -346,7 +346,7 @@ export const FleetNodes: React.FC<FleetNodesProps> = ({ fleet, onFleetChange }) 
                       {bus.dvr_channels || 4} CH MDVR
                     </span>
                   </div>
-                  <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">{bus.vehicle_type}</p>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">{bus.vehicle_type}</p>
                 </div>
                 <div className="flex items-center gap-1.5">
                   <button
@@ -366,11 +366,11 @@ export const FleetNodes: React.FC<FleetNodesProps> = ({ fleet, onFleetChange }) 
               </div>
 
               <div className="bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 p-2 rounded-lg text-xs">
-                <span className="text-[10px] text-slate-400 uppercase font-semibold block">Corridor</span>
-                <span className="text-slate-800 dark:text-slate-200 font-medium text-[11px] truncate block">{bus.route_name}</span>
+                <span className="text-xs text-slate-400 uppercase font-semibold block">Corridor</span>
+                <span className="text-slate-800 dark:text-slate-200 font-medium text-xs truncate block">{bus.route_name}</span>
               </div>
 
-              <div className="pt-2 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-[11px] font-mono">
+              <div className="pt-2 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-xs font-mono">
                 <span className="text-slate-600 dark:text-slate-400">Speed: <b className="text-slate-900 dark:text-slate-100">{bus.speed_kmh} km/h</b></span>
                 <span className="text-blue-600 dark:text-blue-400 font-semibold">IMU: {bus.imu_jerk_gz}g</span>
               </div>

@@ -800,11 +800,11 @@ export const LiveCameraFeed: React.FC<LiveCameraFeedProps> = ({
       </div>
 
       {/* ── 2. MOBILE DVR CHANNEL SELECTOR STRIP ───────────────────────────── */}
-      <div className="z-20 px-4 py-2 bg-slate-900/90 border-b border-slate-800 flex flex-wrap items-center justify-between gap-2 text-xs">
-        <div className="flex items-center gap-1.5 overflow-x-auto py-0.5 custom-scrollbar">
-          <div className="flex items-center gap-1 text-[11px] font-mono text-cyan-400 font-semibold mr-1">
+      <div className="z-20 px-4 py-2 bg-zinc-900 border-b border-zinc-800 flex flex-wrap items-center justify-between gap-2 text-xs">
+        <div className="flex items-center gap-1.5 overflow-x-auto py-0.5 custom-scrollbar font-mono">
+          <div className="flex items-center gap-1 text-xs text-zinc-400 font-semibold mr-1">
             <Video className="w-3.5 h-3.5" />
-            <span>MDVR:</span>
+            <span>Channel:</span>
           </div>
           {DVR_CHANNELS.slice(0, Math.max(1, Math.min(4, bus.dvr_channels || 4))).map((ch) => (
             <button
@@ -813,21 +813,21 @@ export const LiveCameraFeed: React.FC<LiveCameraFeedProps> = ({
                 setSelectedChannel(ch.id);
                 setIsQuadView(false);
               }}
-              className={`px-2.5 py-1 rounded-lg text-[11px] font-mono transition-all cursor-pointer ${
+              className={`px-3 py-1 rounded-md text-xs font-mono font-medium transition-colors cursor-pointer ${
                 !isQuadView && selectedChannel === ch.id
-                  ? "bg-cyan-500 text-slate-950 font-bold shadow-sm shadow-cyan-500/30"
-                  : "bg-slate-800/80 hover:bg-slate-750 text-slate-300 border border-slate-700/60"
+                  ? "bg-cyan-600 text-white font-semibold"
+                  : "bg-zinc-800 hover:bg-zinc-700 text-zinc-300 border border-zinc-700"
               }`}
             >
-              {ch.name}: {ch.role}
+              {ch.name}
             </button>
           ))}
           <button
             onClick={() => setIsQuadView(true)}
-            className={`px-3 py-1 rounded-lg text-[11px] font-mono font-bold flex items-center gap-1 transition-all cursor-pointer ${
+            className={`px-3 py-1 rounded-md text-xs font-mono font-medium flex items-center gap-1 transition-colors cursor-pointer ${
               isQuadView
-                ? "bg-emerald-500 text-slate-950 shadow-sm shadow-emerald-500/30"
-                : "bg-slate-800/80 hover:bg-slate-750 text-emerald-400 border border-emerald-500/40"
+                ? "bg-cyan-600 text-white font-semibold"
+                : "bg-zinc-800 hover:bg-zinc-700 text-zinc-300 border border-zinc-700"
             }`}
             title="View all 4 DVR cameras simultaneously in 2x2 split-screen"
           >
@@ -836,9 +836,9 @@ export const LiveCameraFeed: React.FC<LiveCameraFeedProps> = ({
           </button>
         </div>
 
-        <div className="hidden sm:flex items-center gap-2 text-[10.5px] font-mono text-slate-400">
-          <span className="text-cyan-400 font-medium truncate max-w-[280px]">
-            {isQuadView ? "4 CAMERAS SYNCHRONIZED" : DVR_CHANNELS[selectedChannel - 1]?.subtitle}
+        <div className="hidden sm:flex items-center gap-2 text-xs font-mono text-zinc-400">
+          <span className="text-zinc-300 font-medium truncate max-w-[280px]">
+            {isQuadView ? "4 Cameras Synchronized" : DVR_CHANNELS[selectedChannel - 1]?.subtitle}
           </span>
         </div>
       </div>
@@ -932,11 +932,11 @@ export const LiveCameraFeed: React.FC<LiveCameraFeedProps> = ({
           />
         )}
 
-        {/* Minimal Optical Reticle */}
+        {/* Subtle Minimal Optical Reticle */}
         {!isQuadView && (
-          <div className="absolute inset-0 pointer-events-none flex items-center justify-center opacity-25">
-            <div className="w-10 h-0.5 bg-cyan-400" />
-            <div className="h-10 w-0.5 bg-cyan-400 -ml-5" />
+          <div className="absolute inset-0 pointer-events-none flex items-center justify-center opacity-10">
+            <div className="w-6 h-0.5 bg-zinc-400" />
+            <div className="h-6 w-0.5 bg-zinc-400 -ml-3" />
           </div>
         )}
       </div>
