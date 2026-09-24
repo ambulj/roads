@@ -99,7 +99,7 @@ export const WorkOrders: React.FC<WorkOrdersProps> = ({ clusters, onUpdateStatus
           onUpdateStatus(
             newClusterId,
             'verified_closed' as WorkOrderStatus,
-            'https://images.unsplash.com/photo-1578985545062-69928b1d9587?w=800&auto=format&fit=crop&q=80',
+            'https://images.unsplash.com/photo-1541888946425-d0fbb186156f?w=800&auto=format&fit=crop&q=80',
             auditNotes
           );
 
@@ -395,7 +395,7 @@ export const WorkOrders: React.FC<WorkOrdersProps> = ({ clusters, onUpdateStatus
                           ← Assigned
                         </button>
                         <button
-                          onClick={() => requestStatusUpdate(c.id, 'verified_closed', 'https://images.unsplash.com/photo-1578985545062-69928b1d9587?w=800&auto=format&fit=crop&q=80', '[AUTONOMOUS_FLEET_CLOSURE] Verified closed by Fleet Node BUS-MTC-19B on re-pass patrol. Gz=0.98g normal.')}
+                          onClick={() => requestStatusUpdate(c.id, 'verified_closed', 'https://images.unsplash.com/photo-1541888946425-d0fbb186156f?w=800&auto=format&fit=crop&q=80', '[AUTONOMOUS_FLEET_CLOSURE] Verified closed by Fleet Node BUS-MTC-19B on re-pass patrol. Gz=0.98g normal.')}
                           className="flex-1 py-1.5 rounded-md bg-emerald-50 dark:bg-emerald-900/30 hover:bg-emerald-600 hover:text-white text-emerald-800 dark:text-emerald-300 font-bold text-[11px] border border-emerald-200 dark:border-emerald-800 transition flex items-center justify-center gap-1 cursor-pointer"
                         >
                           <Sparkles className="w-3 h-3 text-emerald-500" />

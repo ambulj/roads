@@ -537,7 +537,7 @@ export const WebGISMap: React.FC<WebGISMapProps> = ({
               <div style="background: #059669; color: #ffffff; font-size: 9px; font-weight: 700; padding: 2px 5px; border-radius: 4px; font-family: monospace;">5Hz LIVE</div>
             </div>
             <div style="position: relative; width: 100%; height: 120px; border-radius: 6px; overflow: hidden; background: #020617; margin-bottom: 6px; border: 1px solid #334155;">
-              <img src="/api/streams/snapshot/${bus.id}?t=${Date.now()}" style="width: 100%; height: 100%; object-fit: cover;" onerror="this.src='https://images.unsplash.com/photo-1515162816999-a0c47dc192f7?w=500'" alt="${bus.id} live" />
+              <img src="/api/streams/snapshot/${bus.id}?t=${Date.now()}" style="width: 100%; height: 100%; object-fit: cover;" onerror="this.src='https://upload.wikimedia.org/wikipedia/commons/thumb/1/14/Broken_Roads_in_India%27s_Capital_New_Delhi.jpg/1280px-Broken_Roads_in_India%27s_Capital_New_Delhi.jpg'" alt="${bus.id} live" />
               <div style="position: absolute; top: 4px; left: 4px; background: rgba(0,0,0,0.75); color: #34d399; font-size: 9px; font-family: monospace; padding: 2px 4px; border-radius: 3px;">
                 ● CCTV STREAM
               </div>

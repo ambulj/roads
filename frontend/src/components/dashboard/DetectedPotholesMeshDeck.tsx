@@ -27,7 +27,7 @@ export const DETECTED_POTHOLES: PotholeSensorTelemetry[] = [
     sensorGz: 2.8,
     cameraConfidence: 94,
     detectedBusId: "Bus #04 (TN-01-N-1042)",
-    footageImageUrl: "https://images.unsplash.com/photo-1515162816999-a0c47dc192f7?w=600&auto=format&fit=crop&q=80",
+    footageImageUrl: "https://upload.wikimedia.org/wikipedia/commons/thumb/1/14/Broken_Roads_in_India%27s_Capital_New_Delhi.jpg/1280px-Broken_Roads_in_India%27s_Capital_New_Delhi.jpg",
   },
   {
     id: "CL-0004",
@@ -42,7 +42,7 @@ export const DETECTED_POTHOLES: PotholeSensorTelemetry[] = [
     sensorGz: 3.4,
     cameraConfidence: 91,
     detectedBusId: "Bus #12 (DL-1PC-3088)",
-    footageImageUrl: "https://images.unsplash.com/photo-1578985545062-69928b1d9587?w=600&auto=format&fit=crop&q=80",
+    footageImageUrl: "https://upload.wikimedia.org/wikipedia/commons/thumb/c/c1/Potholes_on_road.jpg/1280px-Potholes_on_road.jpg",
   },
   {
     id: "CL-0002",
@@ -57,7 +57,7 @@ export const DETECTED_POTHOLES: PotholeSensorTelemetry[] = [
     sensorGz: 1.9,
     cameraConfidence: 89,
     detectedBusId: "Bus #18 (DL-1PC-5012)",
-    footageImageUrl: "https://images.unsplash.com/photo-1590486803833-1c5dc8ddd4c8?w=600&auto=format&fit=crop&q=80",
+    footageImageUrl: "https://upload.wikimedia.org/wikipedia/commons/thumb/b/b3/Pothole_in_an_asphalt_pavement.jpg/1280px-Pothole_in_an_asphalt_pavement.jpg",
   },
   {
     id: "CL-0005",
@@ -72,7 +72,7 @@ export const DETECTED_POTHOLES: PotholeSensorTelemetry[] = [
     sensorGz: 3.1,
     cameraConfidence: 96,
     detectedBusId: "Bus #24 (DL-1PC-1042)",
-    footageImageUrl: "https://images.unsplash.com/photo-1584463699039-307994849d15?w=600&auto=format&fit=crop&q=80",
+    footageImageUrl: "https://upload.wikimedia.org/wikipedia/commons/thumb/4/44/Roads_deformed_T_munnekollala_Bengaluru_2.jpg/1280px-Roads_deformed_T_munnekollala_Bengaluru_2.jpg",
   },
 ];
 

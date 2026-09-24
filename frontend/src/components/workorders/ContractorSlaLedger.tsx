@@ -507,7 +507,7 @@ export const ContractorSlaLedger: React.FC<ContractorSlaLedgerProps> = ({ cluste
                       BEFORE REPAIR (Initial Pothole Defect)
                     </div>
                     <img 
-                      src="https://images.unsplash.com/photo-1515162816999-a0c47dc192f7?w=600" 
+                      src="https://upload.wikimedia.org/wikipedia/commons/thumb/1/14/Broken_Roads_in_India%27s_Capital_New_Delhi.jpg/1280px-Broken_Roads_in_India%27s_Capital_New_Delhi.jpg" 
                       alt="Before Repair"
                       className="w-full h-28 object-cover"
                     />
@@ -522,7 +522,7 @@ export const ContractorSlaLedger: React.FC<ContractorSlaLedgerProps> = ({ cluste
                       AFTER REPAIR (Hot-Mix DBM Compacted)
                     </div>
                     <img 
-                      src="https://images.unsplash.com/photo-1578916171728-46686eac8d58?w=600" 
+                      src="https://images.unsplash.com/photo-1541888946425-d0fbb186156f?w=600" 
                       alt="After Repair"
                       className="w-full h-28 object-cover"
                     />

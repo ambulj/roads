@@ -257,7 +257,7 @@ def test_work_order_lifecycle():
     res2 = store.update_cluster_status(
         cluster_id=c_id,
         new_status='resolved',
-        after_image_url='https://images.unsplash.com/photo-1578916171728-46686eac8d58',
+        after_image_url='https://images.unsplash.com/photo-1541888946425-d0fbb186156f?w=800',
         field_notes='Compaction completed with 8-ton vibratory roller. Curing verified.'
     )
     assert res2 is not None

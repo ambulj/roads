@@ -302,7 +302,7 @@ export const OperatorInspectorPanel: React.FC<OperatorInspectorPanelProps> = ({
     const isAssigned = selectedCluster.status === 'assigned' || selectedCluster.status === 'in_progress';
     const anyCl = selectedCluster as any;
 
-    const evidenceImg = anyCl.evidence_url || selectedCluster.before_image_url || 'https://images.unsplash.com/photo-1515162816999-a0c47dc192f7?w=600&auto=format&fit=crop&q=80';
+    const evidenceImg = anyCl.evidence_url || selectedCluster.before_image_url || 'https://upload.wikimedia.org/wikipedia/commons/thumb/1/14/Broken_Roads_in_India%27s_Capital_New_Delhi.jpg/1280px-Broken_Roads_in_India%27s_Capital_New_Delhi.jpg';
 
     return (
       <div className="flex flex-col h-full bg-white dark:bg-[#101827] border-l border-slate-200 dark:border-slate-800 select-none overflow-y-auto custom-scrollbar">

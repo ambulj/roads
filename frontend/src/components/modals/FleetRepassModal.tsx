@@ -25,7 +25,7 @@ interface FleetRepassModalProps {
   onAutoClose: (clusterId: string, afterImageUrl: string, notes: string) => void;
 }
 
-const VERIFIED_ASPHALT_IMG = 'https://images.unsplash.com/photo-1578985545062-69928b1d9587?w=800&auto=format&fit=crop&q=80';
+const VERIFIED_ASPHALT_IMG = 'https://images.unsplash.com/photo-1541888946425-d0fbb186156f?w=1200&auto=format&fit=crop&q=80';
 
 export const FleetRepassModal: React.FC<FleetRepassModalProps> = ({
   isOpen,
@@ -268,7 +268,7 @@ export const FleetRepassModal: React.FC<FleetRepassModalProps> = ({
                   </div>
                   <div className="aspect-video rounded-lg overflow-hidden bg-slate-200 dark:bg-slate-700">
                     <img
-                      src={currentCluster?.before_image_url || 'https://images.unsplash.com/photo-1515162816999-a0c47dc192f7?w=800&auto=format&fit=crop&q=80'}
+                      src={currentCluster?.before_image_url || 'https://upload.wikimedia.org/wikipedia/commons/thumb/1/14/Broken_Roads_in_India%27s_Capital_New_Delhi.jpg/1280px-Broken_Roads_in_India%27s_Capital_New_Delhi.jpg'}
                       alt="Before Repair"
                       className="w-full h-full object-cover"
                     />

@@ -1232,7 +1232,7 @@ class ApiService {
         ws_broadcast_ms: 5.1,
         total_end_to_end_ms: 39.9
       },
-      snapshot_url: "https://images.unsplash.com/photo-1515162816999-a0c47dc192f7?w=800&auto=format&fit=crop&q=80"
+      snapshot_url: "https://upload.wikimedia.org/wikipedia/commons/thumb/1/14/Broken_Roads_in_India%27s_Capital_New_Delhi.jpg/1280px-Broken_Roads_in_India%27s_Capital_New_Delhi.jpg"
     };
   }
 

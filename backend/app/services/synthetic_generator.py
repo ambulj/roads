@@ -84,15 +84,15 @@ VEHICLE_CLASSES = ["SUV", "Sedan", "Hatchback", "Commercial Truck", "Motorcycle"
 VEHICLE_COLORS = ["White", "Silver", "Matte Black", "Dark Grey", "Navy Blue", "Maroon", "Yellow"]
 
 SAMPLE_REPAIR_PHOTOS_BEFORE = [
-    "https://images.unsplash.com/photo-1515162816999-a0c47dc192f7?w=600",
-    "https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?w=600",
-    "https://images.unsplash.com/photo-1584463699057-a36c84c1f600?w=600"
+    "https://upload.wikimedia.org/wikipedia/commons/thumb/1/14/Broken_Roads_in_India%27s_Capital_New_Delhi.jpg/1280px-Broken_Roads_in_India%27s_Capital_New_Delhi.jpg",
+    "https://upload.wikimedia.org/wikipedia/commons/thumb/c/c1/Potholes_on_road.jpg/1280px-Potholes_on_road.jpg",
+    "https://upload.wikimedia.org/wikipedia/commons/thumb/4/44/Roads_deformed_T_munnekollala_Bengaluru_2.jpg/1280px-Roads_deformed_T_munnekollala_Bengaluru_2.jpg"
 ]
 
 SAMPLE_REPAIR_PHOTOS_AFTER = [
-    "https://images.unsplash.com/photo-1578916171728-46686eac8d58?w=600",
-    "https://images.unsplash.com/photo-1621905251189-08b45d6a269e?w=600",
-    "https://images.unsplash.com/photo-1589939705384-5185137a7f0f?w=600"
+    "https://images.unsplash.com/photo-1541888946425-d0fbb186156f?w=800&auto=format&fit=crop&q=80",
+    "https://images.unsplash.com/photo-1621905251189-08b45d6a269e?w=800&auto=format&fit=crop&q=80",
+    "https://images.unsplash.com/photo-1519817650390-64a93db51149?w=800&auto=format&fit=crop&q=80"
 ]
 
 SAMPLE_FIELD_NOTES = [
@@ -444,7 +444,7 @@ def generate_synthetic_tick() -> Dict[str, Any]:
             store.update_cluster_status(
                 cluster_id=c_to_verify["id"],
                 new_status="verified_closed",
-                after_image_url="https://images.unsplash.com/photo-1578985545062-69928b1d9587?w=800&auto=format&fit=crop&q=80",
+                after_image_url="https://images.unsplash.com/photo-1541888946425-d0fbb186156f?w=800&auto=format&fit=crop&q=80",
                 field_notes=audit_msg
             )
             store.audit_logs.insert(0, {

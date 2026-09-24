@@ -48,7 +48,7 @@ const WARD_ENGINEERS = [
   },
 ];
 
-const VERIFIED_ASPHALT_IMG = "https://images.unsplash.com/photo-1578985545062-69928b1d9587?w=800&auto=format&fit=crop&q=80";
+const VERIFIED_ASPHALT_IMG = "https://images.unsplash.com/photo-1541888946425-d0fbb186156f?w=1200&auto=format&fit=crop&q=80";
 
 /**
  * Pure SVG QR Code Generator (Zero external dependencies)
