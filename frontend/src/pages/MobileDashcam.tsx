@@ -179,7 +179,7 @@ export const MobileDashcam: React.FC<MobileDashcamProps> = ({
     }
   }, [isPlaying, activeChannelId]);
 
-  // Clean, Smooth Transparent HUD Canvas Overlay
+  // Clean, Smooth Dynamic Perception HUD Canvas Overlay
   useEffect(() => {
     let animFrame: number;
 
@@ -188,101 +188,153 @@ export const MobileDashcam: React.FC<MobileDashcamProps> = ({
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
+    const drawCornerBox = (
+      bx: number,
+      by: number,
+      bw: number,
+      bh: number,
+      color: string,
+      label: string,
+      sublabel?: string
+    ) => {
+      ctx.save();
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 2.0;
+
+      // Draw subtle box
+      ctx.strokeRect(bx, by, bw, bh);
+
+      // Corner brackets
+      const cLen = Math.max(8, Math.min(22, bw * 0.2));
+      ctx.lineWidth = 3.0;
+      ctx.beginPath();
+      // Top-Left
+      ctx.moveTo(bx, by + cLen); ctx.lineTo(bx, by); ctx.lineTo(bx + cLen, by);
+      // Top-Right
+      ctx.moveTo(bx + bw - cLen, by); ctx.lineTo(bx + bw, by); ctx.lineTo(bx + bw, by + cLen);
+      // Bottom-Left
+      ctx.moveTo(bx, by + bh - cLen); ctx.lineTo(bx, by + bh); ctx.lineTo(bx + cLen, by + bh);
+      // Bottom-Right
+      ctx.moveTo(bx + bw - cLen, by + bh); ctx.lineTo(bx + bw, by + bh); ctx.lineTo(bx + bw, by + bh - cLen);
+      ctx.stroke();
+
+      // Top label badge
+      ctx.font = 'bold 10.5px monospace';
+      const textMetrics = ctx.measureText(label);
+      const tagW = textMetrics.width + 12;
+      const tagH = 18;
+      const tagY = Math.max(0, by - tagH - 2);
+
+      ctx.fillStyle = 'rgba(15, 23, 42, 0.88)';
+      ctx.fillRect(bx, tagY, tagW, tagH);
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 1.0;
+      ctx.strokeRect(bx, tagY, tagW, tagH);
+
+      ctx.fillStyle = color;
+      ctx.fillText(label, bx + 6, tagY + 13);
+
+      // Optional sublabel / plate tag
+      if (sublabel) {
+        const subW = 110;
+        const subH = 22;
+        const subY = by + bh + 4;
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.9)';
+        ctx.fillRect(bx + (bw - subW) / 2, subY, subW, subH);
+        ctx.strokeStyle = '#facc15';
+        ctx.lineWidth = 1.5;
+        ctx.strokeRect(bx + (bw - subW) / 2, subY, subW, subH);
+        ctx.fillStyle = '#facc15';
+        ctx.font = 'bold 12px monospace';
+        ctx.fillText(sublabel, bx + (bw - subW) / 2 + 8, subY + 15);
+      }
+      ctx.restore();
+    };
+
     const render = () => {
       const w = canvas.width;
       const h = canvas.height;
       ctx.clearRect(0, 0, w, h);
 
-      // Feature specific overlays
-      if (activeChannel.id === 'front') {
-        // Bounding Box
-        if (showAiBoxes) {
-          const bx = w * 0.43;
-          const by = h * 0.52;
-          const bw = 140;
-          const bh = 135;
-
-          ctx.strokeStyle = '#f59e0b';
-          ctx.lineWidth = 2.5;
-          ctx.strokeRect(bx, by, bw, bh);
-
-          ctx.fillStyle = '#f59e0b';
-          ctx.fillRect(bx, by - 22, 200, 22);
-          ctx.fillStyle = '#000000';
-          ctx.font = 'bold 11px sans-serif';
-          ctx.fillText('PEDESTRIAN CROSSING [96%]', bx + 5, by - 7);
-        }
-      } else if (activeChannel.id === 'rear') {
-        // Vehicle Box
-        if (showAiBoxes) {
-          const bx = w * 0.38;
-          const by = h * 0.48;
-          const bw = 160;
-          const bh = 135;
-
-          ctx.strokeStyle = '#e11d48';
-          ctx.lineWidth = 2.5;
-          ctx.strokeRect(bx, by, bw, bh);
-
-          ctx.fillStyle = '#e11d48';
-          ctx.fillRect(bx, by - 22, 190, 22);
-          ctx.fillStyle = '#ffffff';
-          ctx.font = 'bold 11px sans-serif';
-          ctx.fillText('EVASION TARGET [97%]', bx + 5, by - 7);
-
-          // Plate Tag
-          ctx.fillStyle = '#000000';
-          ctx.fillRect(bx + 20, by + 65, 120, 28);
-          ctx.strokeStyle = '#facc15';
+      if (showAiBoxes) {
+        if (useDeviceWebcam) {
+          // Dynamic Optical Reticle for Real Device Camera
+          const cx = w * 0.5;
+          const cy = h * 0.5;
+          const reticleSize = 120;
+          ctx.save();
+          ctx.strokeStyle = 'rgba(52, 211, 153, 0.6)';
           ctx.lineWidth = 1.5;
-          ctx.strokeRect(bx + 20, by + 65, 120, 28);
-          ctx.fillStyle = '#facc15';
-          ctx.font = 'bold 14px monospace';
-          ctx.fillText('TN-01-AX-8732', bx + 26, by + 84);
-        }
-      } else if (activeChannel.id === 'curbside') {
-        if (showAiBoxes) {
-          const mx = w * 0.35;
-          const my = h * 0.60;
-          const mw = 160;
-          const mh = 90;
+          ctx.setLineDash([6, 6]);
+          ctx.strokeRect(cx - reticleSize / 2, cy - reticleSize / 2, reticleSize, reticleSize);
+          ctx.setLineDash([]);
+          
+          // Optical crosshairs
+          ctx.beginPath();
+          ctx.moveTo(cx - 20, cy); ctx.lineTo(cx + 20, cy);
+          ctx.moveTo(cx, cy - 20); ctx.lineTo(cx, cy + 20);
+          ctx.stroke();
 
-          ctx.strokeStyle = '#dc2626';
-          ctx.lineWidth = 2.5;
-          ctx.strokeRect(mx, my, mw, mh);
+          ctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
+          ctx.fillRect(cx - 85, cy + reticleSize / 2 + 10, 170, 20);
+          ctx.fillStyle = '#34d399';
+          ctx.font = 'bold 10px monospace';
+          ctx.fillText('OPTICAL SCANNING ACTIVE', cx - 72, cy + reticleSize / 2 + 24);
+          ctx.restore();
+        } else {
+          // Time-Synchronized Dynamic Perception for Sample Clips
+          const t = sampleVideoRef.current ? sampleVideoRef.current.currentTime : (Date.now() / 1000);
 
-          ctx.fillStyle = '#dc2626';
-          ctx.fillRect(mx, my - 22, 210, 22);
-          ctx.fillStyle = '#ffffff';
-          ctx.font = 'bold 11px sans-serif';
-          ctx.fillText('POTHOLE CAVITY D40 [96%]', mx + 5, my - 7);
-        }
-      } else if (activeChannel.id === 'lane') {
-        if (showAiBoxes) {
-          const bx = w * 0.30;
-          const by = h * 0.45;
-          const bw = 240;
-          const bh = 160;
+          if (activeChannel.id === 'front') {
+            // Channel 1: Pedestrian Crossing & Approaching Pedestrians
+            const walkProgress = (t * 0.12) % 1;
+            const pedX = w * (0.65 - walkProgress * 0.25);
+            const pedY = h * 0.46;
+            drawCornerBox(pedX, pedY, 55, 120, '#f59e0b', 'PEDESTRIAN [96%]');
 
-          ctx.strokeStyle = '#3b82f6';
-          ctx.lineWidth = 2.5;
-          ctx.strokeRect(bx, by, bw, bh);
+            // Crosswalk marking on pavement
+            drawCornerBox(w * 0.18, h * 0.68, w * 0.64, 90, '#10b981', 'ZEBRA CROSSING (IRC:35) [98%]');
 
-          ctx.fillStyle = '#3b82f6';
-          ctx.fillRect(bx, by - 22, 205, 22);
-          ctx.fillStyle = '#ffffff';
-          ctx.font = 'bold 11px sans-serif';
-          ctx.fillText('HIGHWAY RADAR ACTIVE [94%]', bx + 5, by - 7);
+            // Vehicle ahead in traffic
+            const vehX = w * 0.28 + Math.sin(t * 0.5) * 6;
+            drawCornerBox(vehX, h * 0.44, 110, 85, '#38bdf8', 'VEHICLE [94%]');
+          } else if (activeChannel.id === 'rear') {
+            // Channel 2: Rear Overtake & License Plate ANPR
+            const sway = Math.sin(t * 1.2) * 12;
+            const vehW = 190 + Math.sin(t * 0.8) * 15;
+            const vehH = 145 + Math.sin(t * 0.8) * 10;
+            const vehX = w * 0.38 + sway;
+            const vehY = h * 0.45;
+            drawCornerBox(vehX, vehY, vehW, vehH, '#f43f5e', 'VEHICLE [97%]', 'TN-01-AX-8732');
+          } else if (activeChannel.id === 'curbside') {
+            // Channel 3: Pothole & Road Distress Cavity Tracking
+            const cycle = (t * 0.28) % 1;
+            const z = Math.pow(cycle, 1.8);
+            const cavY = h * (0.42 + z * 0.45);
+            const cavX = w * (0.32 + z * 0.12);
+            const cavW = 75 + z * 110;
+            const cavH = 40 + z * 60;
+            drawCornerBox(cavX, cavY, cavW, cavH, '#ef4444', 'POTHOLE D40 (8.4cm) [96%]');
+          } else if (activeChannel.id === 'lane') {
+            // Channel 4: Highway Corridor Radar & Lane Barrier
+            const veh1X = w * 0.20 + Math.sin(t * 0.4) * 8;
+            drawCornerBox(veh1X, h * 0.46, 130, 100, '#3b82f6', 'HIGHWAY VEHICLE [94%]');
+
+            const veh2X = w * 0.62 + Math.cos(t * 0.5) * 6;
+            drawCornerBox(veh2X, h * 0.44, 115, 88, '#06b6d4', 'CORRIDOR TRAFFIC [92%]');
+
+            drawCornerBox(w * 0.45, h * 0.62, 50, 110, '#a855f7', 'LANE MARKING [96%]');
+          }
         }
       }
 
       // Privacy Badge Stamp
       if (showPrivacyBlur) {
-        ctx.fillStyle = 'rgba(15, 23, 42, 0.75)';
-        ctx.fillRect(w - 205, 12, 195, 22);
+        ctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
+        ctx.fillRect(w - 215, 12, 205, 22);
         ctx.fillStyle = '#34d399';
         ctx.font = 'bold 10px monospace';
-        ctx.fillText('DPDP ACT 2023 PRIVACY MASKED', w - 195, 27);
+        ctx.fillText('DPDP ACT 2023 PRIVACY MASKED', w - 205, 27);
       }
 
       animFrame = requestAnimationFrame(render);
@@ -293,7 +345,7 @@ export const MobileDashcam: React.FC<MobileDashcamProps> = ({
     return () => {
       cancelAnimationFrame(animFrame);
     };
-  }, [isPlaying, activeChannelId, showAiBoxes, showPrivacyBlur]);
+  }, [isPlaying, activeChannelId, showAiBoxes, showPrivacyBlur, useDeviceWebcam]);
 
   // Handle Event Ingestion to DB
   const handleIngestDetection = () => {

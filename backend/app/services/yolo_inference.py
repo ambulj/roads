@@ -539,7 +539,7 @@ class YoloInferenceEngine:
         # 1. Indian Road Infrastructure Assets (High-precision Indian dataset)
         if self.indian_roads_model is not None:
             try:
-                ind_results = self.indian_roads_model(infer_img, conf=0.30, device=self.device, verbose=False)
+                ind_results = self.indian_roads_model(infer_img, conf=0.45, device=self.device, verbose=False)
                 for r in ind_results:
                     for box in r.boxes:
                         cls_id = int(box.cls.item())
@@ -551,7 +551,7 @@ class YoloInferenceEngine:
                         bw, bh = max(1, bx2 - bx1), max(1, by2 - by1)
 
                         # Filter out tiny noise or full-screen bounding box artifacts
-                        if bw > w * 0.85 or bh > h * 0.85 or bw < 20 or bh < 20:
+                        if bw > w * 0.85 or bh > h * 0.85 or bw < 25 or bh < 25:
                             continue
 
                         # Filter out non-hazard background infrastructure
@@ -560,21 +560,21 @@ class YoloInferenceEngine:
                                         "electricity pole", "footpath", "digital display", "tyre works", "board"]:
                             continue
 
-                        if "manhole" in cls_name:
+                        if "manhole" in cls_name and conf >= 0.45 and by1 >= int(h * 0.25):
                             d_code, d_name, d_label, sev, c_bgr = "OPEN_MANHOLE", "IS:1726 Open Manhole Void", "OPEN MANHOLE", "critical", (0, 215, 255)
-                        elif "zebra" in cls_name:
+                        elif "zebra" in cls_name and conf >= 0.50 and by1 >= int(h * 0.25):
                             d_code, d_name, d_label, sev, c_bgr = "ZEBRA_CROSSING", "Pedestrian Crosswalk Marking (IRC:35)", "ZEBRA CROSSING", "low", (50, 205, 50)
-                        elif "barricade" in cls_name or "divider" in cls_name:
+                        elif ("barricade" in cls_name or "divider" in cls_name) and conf >= 0.48:
                             d_code, d_name, d_label, sev, c_bgr = "MISSING_DIVIDER", "Road Barrier / Divider", "ROAD BARRIER", "medium", (255, 105, 180)
-                        elif any(k in cls_name for k in ["cattle", "dog", "cow", "goat", "horse", "camel"]):
+                        elif any(k in cls_name for k in ["cattle", "dog", "cow", "goat", "horse", "camel"]) and conf >= 0.45:
                             d_code, d_name, d_label, sev, c_bgr = "STRAY_ANIMAL_HAZARD", f"Stray {cls_name.capitalize()} on Roadway", f"STRAY {cls_name.upper()}", "high", (0, 140, 255)
-                        elif "person" in cls_name or "police" in cls_name:
+                        elif ("person" in cls_name or "police" in cls_name) and conf >= 0.50 and by1 >= int(h * 0.20):
                             d_code, d_name, d_label, sev, c_bgr = "PEDESTRIAN", "Pedestrian in Roadway", "PEDESTRIAN", "medium", (50, 205, 50)
-                        elif cls_name in ["car", "bus", "truck", "ambulance", "autorickshaw", "rikshaw", "tempo", "tractor"]:
+                        elif cls_name in ["car", "bus", "truck", "ambulance", "autorickshaw", "rikshaw", "tempo", "tractor"] and conf >= 0.50:
                             d_code, d_name, d_label, sev, c_bgr = "TRAFFIC_VEHICLE", f"{cls_name.capitalize()} in Traffic Flow", cls_name.upper(), "low", (255, 185, 0)
-                        elif "bike" in cls_name or "cycle" in cls_name:
+                        elif ("bike" in cls_name or "cycle" in cls_name) and conf >= 0.50:
                             d_code, d_name, d_label, sev, c_bgr = "TWO_WHEELER", f"{cls_name.capitalize()} Two-Wheeler", "TWO WHEELER", "low", (0, 215, 255)
-                        elif "signal" in cls_name or "sign" in cls_name:
+                        elif ("signal" in cls_name or "sign" in cls_name) and conf >= 0.58 and bw >= 30 and bh >= 30:
                             d_code, d_name, d_label, sev, c_bgr = "TRAFFIC_SIGN", "Traffic Signal / Sign (IRC:67)", "TRAFFIC SIGN", "low", (0, 200, 255)
                         else:
                             continue
