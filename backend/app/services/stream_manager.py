@@ -257,21 +257,20 @@ class RealRTSPWorker:
                     
                     h, w = frame.shape[:2]
                     
-                    # 1. Decoupled Asynchronous GPU Neural Perception & DPDP Act 2023 Privacy
+                    # 1. Real-Time GPU Neural Perception & DPDP Act 2023 Privacy
                     if self.overlay_ai:
-                        # Non-blocking async dispatch of GPU inference every 4th frame
-                        if not self._infer_busy and (self.frame_count % 4 == 0 or not self.latest_detections):
-                            self._infer_busy = True
-                            threading.Thread(
-                                target=self._async_infer_worker,
-                                args=(frame.copy(),),
-                                daemon=True
-                            ).start()
-
-                        # Dynamically project latest detections onto the live moving frame
-                        if self.latest_detections:
-                            display_frame = yolo_engine.render_hud_overlay(frame.copy(), self.latest_detections)
-                        else:
+                        try:
+                            # Direct neural inference synchronized with frame capture for zero-lag box alignment
+                            if self.frame_count % 3 == 0 or not self.latest_detections:
+                                res = yolo_engine.detect_road_hazards(frame, channel=self.channel, burn_overlay=True)
+                                self.latest_detections = res.get("detections", [])
+                                display_frame = res.get("annotated_frame", frame)
+                            else:
+                                if self.latest_detections:
+                                    display_frame = yolo_engine.render_hud_overlay(frame.copy(), self.latest_detections)
+                                else:
+                                    display_frame = frame
+                        except Exception:
                             display_frame = frame
                     else:
                         display_frame = frame

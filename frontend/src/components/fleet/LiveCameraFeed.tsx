@@ -26,7 +26,7 @@ interface LiveCameraFeedProps {
 
 interface SimulatedHazard {
   id: string;
-  type: "D40" | "D20" | "WATERLOGGING" | "UNMARKED_SPEED_BREAKER" | "OPEN_MANHOLE" | "FOLIAGE_OBSCURED_SIGN";
+  type: "D40" | "D20" | "WATERLOGGING" | "UNMARKED_SPEED_BREAKER" | "OPEN_MANHOLE" | "FOLIAGE_OBSCURED_SIGN" | "ZEBRA_CROSSING";
   label: string;
   color: string;
   z: number;
@@ -147,12 +147,12 @@ export const LiveCameraFeed: React.FC<LiveCameraFeedProps> = ({
     },
     {
       id: "hz-5",
-      type: "FOLIAGE_OBSCURED_SIGN",
-      label: "IRC:67 Obscured Sign",
+      type: "ZEBRA_CROSSING",
+      label: "IRC:35 Zebra Marking",
       color: "#10B981",
       z: -3.35,
-      lane: -0.42,
-      confidence: 0.92,
+      lane: 0.0,
+      confidence: 0.98,
     },
   ]);
 
@@ -398,6 +398,13 @@ export const LiveCameraFeed: React.FC<LiveCameraFeedProps> = ({
             ctx.strokeStyle = "#DC2626";
             ctx.lineWidth = Math.max(2, 3.5 * z);
             ctx.stroke();
+          } else if (hazard.type === "ZEBRA_CROSSING") {
+            ctx.fillStyle = "rgba(255, 255, 255, 0.9)";
+            const numBars = 5;
+            const barW = defectSizeW / (numBars * 2);
+            for (let b = -2; b <= 2; b++) {
+              ctx.fillRect(x + b * barW * 2 - barW / 2, y - defectSizeH / 2, barW, defectSizeH);
+            }
           }
           ctx.restore();
 
