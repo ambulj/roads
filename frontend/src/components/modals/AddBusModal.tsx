@@ -102,6 +102,9 @@ export const AddBusModal: React.FC<AddBusModalProps> = ({
     const rto = ['TN01', 'TN02', 'TN09', 'TN14', 'TN22'][Math.floor(Math.random() * 5)];
     const generated = `BUS-${rto}-${num}`;
     setBusId(generated);
+    const c = CORRIDOR_PRESETS[selectedCorridorIdx] || CORRIDOR_PRESETS[0];
+    if (!routeName) setRouteName(`${c.name} Express Patrol`);
+    if (!routeCode) setRouteCode(c.routeCode);
     if (!rtspUrl) {
       if (streamProtocol === 'SRT') {
         setRtspUrl(`srt://0.0.0.0:${9000 + Math.floor(Math.random() * 100)}?mode=listener`);

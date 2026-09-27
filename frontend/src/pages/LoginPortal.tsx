@@ -43,7 +43,7 @@ export const LoginPortal: React.FC<LoginPortalProps> = ({ onLoginSuccess }) => {
 
     try {
       await loginWithCredentials(emailInput.trim(), passwordInput, rememberMe);
-      setAuthFeedback({ type: 'success', message: 'Clearance verified! Entering SheherSaathi Command Center...' });
+      setAuthFeedback({ type: 'success', message: 'Clearance verified! Entering RoadSaarthi Command Center...' });
       setTimeout(() => {
         setIsAuthenticating(false);
         if (onLoginSuccess) {
@@ -73,7 +73,7 @@ export const LoginPortal: React.FC<LoginPortalProps> = ({ onLoginSuccess }) => {
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <span className="font-extrabold text-sm sm:text-base tracking-tight text-white">SheherSaathi</span>
+              <span className="font-extrabold text-sm sm:text-base tracking-tight text-white">RoadSaarthi</span>
               <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-slate-800 text-blue-400 border border-slate-700">
                 PROD v2.6.0
               </span>

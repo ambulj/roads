@@ -183,7 +183,7 @@ export const WorkOrderActionConsole: React.FC<WorkOrderActionConsoleProps> = ({
     }, 800);
   };
 
-  const whatsappMessage = `*GREATER CHENNAI CORPORATION • PWD HIGHWAYS DISPATCH*\n----------------------------------------\n*Docket ID:* ${orderId}\n*Corridor:* ${location}\n*Defect:* ${defect}\n*Severity:* ${cluster.severity_level?.toUpperCase() || "CRITICAL"}\n*SLA Target:* ${cluster.sla_hours || 24} Hours\n*Contractor:* ${agency}\n*Material Spec:* ${asphaltKg} kg VG-30 Hot-Mix DBM (${volumeLiters} Liters)\n*Coordinates:* ${cluster.lat.toFixed(5)}, ${cluster.lng.toFixed(5)}\n----------------------------------------\n_Automated dispatch via SheherSaathi System._`;
+  const whatsappMessage = `*GREATER CHENNAI CORPORATION • PWD HIGHWAYS DISPATCH*\n----------------------------------------\n*Docket ID:* ${orderId}\n*Corridor:* ${location}\n*Defect:* ${defect}\n*Severity:* ${cluster.severity_level?.toUpperCase() || "CRITICAL"}\n*SLA Target:* ${cluster.sla_hours || 24} Hours\n*Contractor:* ${agency}\n*Material Spec:* ${asphaltKg} kg VG-30 Hot-Mix DBM (${volumeLiters} Liters)\n*Coordinates:* ${cluster.lat.toFixed(5)}, ${cluster.lng.toFixed(5)}\n----------------------------------------\n_Automated dispatch via RoadSaarthi System._`;
 
   const handleCopyWhatsApp = () => {
     navigator.clipboard.writeText(whatsappMessage);
@@ -393,7 +393,7 @@ export const WorkOrderActionConsole: React.FC<WorkOrderActionConsoleProps> = ({
                   </p>
                 </div>
 
-                <SvgQRCode value={`https://SheherSaathi.gov.in/wo/${orderId}?lat=${cluster.lat}&lng=${cluster.lng}`} size={160} />
+                <SvgQRCode value={`https://roadsaarthi.gov.in/wo/${orderId}?lat=${cluster.lat}&lng=${cluster.lng}`} size={160} />
 
                 <div className="text-[10px] font-mono text-slate-400 space-y-0.5">
                   <div>TICKET HASH: SHA-256: 8a4f91...c3e2</div>
@@ -629,7 +629,7 @@ export const WorkOrderActionConsole: React.FC<WorkOrderActionConsoleProps> = ({
         {/* Footer */}
         <div className="h-12 px-5 border-t border-slate-800 flex items-center justify-between bg-[#121826] text-xs font-mono shrink-0">
           <span className="text-slate-400 text-[11px]">
-            SheherSaathi Autonomous Civic Infrastructure Console
+            RoadSaarthi Autonomous Civic Infrastructure Console
           </span>
 
           <button

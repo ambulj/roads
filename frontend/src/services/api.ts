@@ -509,7 +509,7 @@ export const INITIAL_ROAD_MEMORY_CORRIDORS: RoadMemoryCorridor[] = [
         date: '3 Days Ago',
         type: 'WORK_ORDER',
         title: 'Automated PWD / NHAI Work Order #WO-GST-881 Generated',
-        description: 'Auto-triaged by SheherSaathi AI to Tambaram Municipal Zone Maintenance Unit. Target SLA: 48h emergency patching.',
+        description: 'Auto-triaged by RoadSaarthi AI to Tambaram Municipal Zone Maintenance Unit. Target SLA: 48h emergency patching.',
         severity: 'high'
       },
       {
@@ -667,8 +667,8 @@ class ApiService {
   private isServerHealthy = true;
 
   private getAuthHeaders(): Record<string, string> {
-    const token = typeof window !== 'undefined' ? localStorage.getItem('SheherSaathi_jwt_token') : null;
-    const role = typeof window !== 'undefined' ? (localStorage.getItem('SheherSaathi_active_role') || 'maintenance') : 'maintenance';
+    const token = typeof window !== 'undefined' ? (localStorage.getItem('RoadSaarthi_jwt_token') || localStorage.getItem('SheherSaathi_jwt_token')) : null;
+    const role = typeof window !== 'undefined' ? (localStorage.getItem('RoadSaarthi_active_role') || localStorage.getItem('SheherSaathi_active_role') || 'maintenance') : 'maintenance';
     const headers: Record<string, string> = {};
     if (token) {
       headers['Authorization'] = `Bearer ${token}`;

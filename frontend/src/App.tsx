@@ -43,11 +43,46 @@ const ROUTE_SHORTCUTS: Record<string, AppRoute> = {
   "7": "capture",
 };
 
+const PageSkeletonLoader: React.FC = () => (
+  <div className="flex-1 flex flex-col p-4 md:p-6 space-y-4 max-w-[1700px] mx-auto w-full animate-pulse select-none">
+    {/* Header bar skeleton */}
+    <div className="h-16 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-4 flex items-center justify-between">
+      <div className="flex items-center gap-3">
+        <div className="w-9 h-9 rounded-lg bg-slate-200 dark:bg-slate-800" />
+        <div className="space-y-1.5">
+          <div className="w-36 h-4 bg-slate-200 dark:bg-slate-800 rounded" />
+          <div className="w-52 h-3 bg-slate-100 dark:bg-slate-800/60 rounded" />
+        </div>
+      </div>
+      <div className="flex gap-2">
+        <div className="w-24 h-8 bg-slate-200 dark:bg-slate-800 rounded-lg" />
+        <div className="w-24 h-8 bg-slate-200 dark:bg-slate-800 rounded-lg" />
+      </div>
+    </div>
+
+    {/* Metric cards skeleton */}
+    <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+      {[1, 2, 3, 4].map((i) => (
+        <div key={i} className="h-20 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-3.5 space-y-2">
+          <div className="w-20 h-3 bg-slate-200 dark:bg-slate-800 rounded" />
+          <div className="w-16 h-5 bg-slate-300 dark:bg-slate-700 rounded" />
+        </div>
+      ))}
+    </div>
+
+    {/* Main view skeleton */}
+    <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 flex-1 min-h-[420px]">
+      <div className="lg:col-span-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-4" />
+      <div className="rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-4" />
+    </div>
+  </div>
+);
+
 const getInitialRoute = (): AppRoute => {
   const hash = window.location.hash.replace(/^#\/?/, "").trim();
   if (VALID_ROUTES.includes(hash as AppRoute)) return hash as AppRoute;
   try {
-    const saved = localStorage.getItem("SheherSaathi_active_route");
+    const saved = localStorage.getItem("RoadSaarthi_active_route") || localStorage.getItem("SheherSaathi_active_route");
     if (saved && VALID_ROUTES.includes(saved as AppRoute)) return saved as AppRoute;
   } catch {}
   return "command";
@@ -78,6 +113,27 @@ export const App: React.FC = () => {
 
   const { isConnected, fleet, clusters, incidents, metrics, auditLogs, latestLatency, setFleet, setClusters, setIncidents, refreshIncidents, sendIngest, sendIncident } = useTelemetrySocket();
 
+
+  useEffect(() => {
+    // Background preload lazy page chunks so navigation is instant without network delay
+    const preloadPages = () => {
+      import("./pages/FleetNodes");
+      import("./pages/IncidentList");
+      import("./pages/WorkOrders");
+      import("./pages/RoadMemory");
+      import("./pages/Analytics");
+      import("./pages/EdgeAIAnalytics");
+      import("./pages/MobileDashcam");
+    };
+    if (typeof window !== "undefined") {
+      if ("requestIdleCallback" in window) {
+        (window as any).requestIdleCallback(preloadPages);
+      } else {
+        setTimeout(preloadPages, 100);
+      }
+    }
+  }, []);
+
   const handleNavigate = useCallback((route: string) => {
     const target = route.replace(/^#\/?/, "").trim() as AppRoute;
     if (VALID_ROUTES.includes(target)) {
@@ -89,7 +145,10 @@ export const App: React.FC = () => {
       }
       setCurrentRoute(target);
       window.location.hash = `#/${target}`;
-      try { localStorage.setItem("SheherSaathi_active_route", target); } catch {}
+      try {
+        localStorage.setItem("RoadSaarthi_active_route", target);
+        localStorage.setItem("SheherSaathi_active_route", target);
+      } catch {}
       setIsMobileMenuOpen(false);
     }
   }, [hasAccessToRoute, user, showWarningToast]);
@@ -184,7 +243,10 @@ export const App: React.FC = () => {
       if (VALID_ROUTES.includes(targetRoute)) {
         if (hasAccessToRoute(targetRoute)) {
           setCurrentRoute(targetRoute);
-          try { localStorage.setItem("SheherSaathi_active_route", targetRoute); } catch {}
+          try {
+            localStorage.setItem("RoadSaarthi_active_route", targetRoute);
+            localStorage.setItem("SheherSaathi_active_route", targetRoute);
+          } catch {}
         }
       }
 
@@ -293,14 +355,7 @@ export const App: React.FC = () => {
 
         {/* Page Area */}
         <main className="flex-1 flex flex-col overflow-hidden min-h-0 bg-zinc-100 dark:bg-zinc-950 pb-14 md:pb-0 transition-colors" aria-label="Operations workspace">
-          <React.Suspense fallback={
-            <div className="flex-1 flex items-center justify-center h-full">
-              <div className="flex flex-col items-center gap-3">
-                <div className="w-8 h-8 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
-                <span className="text-sm text-slate-500 dark:text-slate-400 font-medium">Loading…</span>
-              </div>
-            </div>
-          }>
+          <React.Suspense fallback={<PageSkeletonLoader />}>
             {currentRoute === "command" && (
               <CommandCenter
                 metrics={metrics}
