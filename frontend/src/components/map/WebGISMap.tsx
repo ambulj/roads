@@ -191,8 +191,6 @@ export const WebGISMap: React.FC<WebGISMapProps> = ({
   const [showTrafficCongestion, setShowTrafficCongestion] = useState(false);
   const [showBreadcrumbs, setShowBreadcrumbs] = useState(false);
   const [showMonsoonContours, setShowMonsoonContours] = useState(false);
-  const [showPOIs, setShowPOIs] = useState(true);
-  const [showVisionZeroBuffers, setShowVisionZeroBuffers] = useState(true);
   const [isGisMenuOpen, setIsGisMenuOpen] = useState(false);
   const [isInfoMenuOpen, setIsInfoMenuOpen] = useState(false);
 
@@ -201,7 +199,7 @@ export const WebGISMap: React.FC<WebGISMapProps> = ({
   const [activeProfileCorridor, setActiveProfileCorridor] = useState<string | null>(null);
   const [hoveredProfileIndex, setHoveredProfileIndex] = useState<number | null>(null);
 
-  const activeGisCount = (showHeatmap ? 1 : 0) + (showTrafficCongestion ? 1 : 0) + (showBreadcrumbs ? 1 : 0) + (showMonsoonContours ? 1 : 0) + (showPOIs ? 1 : 0) + (showVisionZeroBuffers ? 1 : 0);
+  const activeGisCount = (showHeatmap ? 1 : 0) + (showTrafficCongestion ? 1 : 0) + (showBreadcrumbs ? 1 : 0) + (showMonsoonContours ? 1 : 0);
 
   const UNIFIED_BASEMAP_STYLE = {
     version: 8,

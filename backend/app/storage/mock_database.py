@@ -162,7 +162,7 @@ INITIAL_SEED_CLUSTERS = [
         "status": "resolved",
         "lat": 13.0827,
         "lng": 80.2707,
-        "before_image_url": "https://images.unsplash.com/photo-1596495578065-6e0763fa1178?w=800&auto=format&fit=crop&q=80",
+        "before_image_url": "https://upload.wikimedia.org/wikipedia/commons/thumb/5/57/Potholed_road_outside_Kolkata_Airport.jpg/1280px-Potholed_road_outside_Kolkata_Airport.jpg",
         "after_image_url": "https://images.unsplash.com/photo-1589939705384-5185137a7f0f?w=800&auto=format&fit=crop&q=80",
         "created_at": "4 Sept, 08:30 pm",
         "updated_at": "5 Sept, 06:00 am",

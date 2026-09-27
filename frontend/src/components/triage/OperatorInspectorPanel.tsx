@@ -58,7 +58,7 @@ export const OperatorInspectorPanel: React.FC<OperatorInspectorPanelProps> = ({
   if (selectedIncident) {
     const isCritical = selectedIncident.incident_type === 'HIT_AND_RUN' || selectedIncident.incident_type === 'RASH_DRIVING';
     const anyInc = selectedIncident as any;
-    const evidenceImg = anyInc.evidence_url || selectedIncident.snapshot_url || anyInc.photo_url || anyInc.video_url || 'https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?w=600&auto=format&fit=crop&q=80';
+    const evidenceImg = anyInc.evidence_url || selectedIncident.snapshot_url || anyInc.photo_url || anyInc.video_url || 'https://upload.wikimedia.org/wikipedia/commons/thumb/2/2a/Alipore_Road_-_Hastings_-_Kolkata_2015-02-07_2165.JPG/1280px-Alipore_Road_-_Hastings_-_Kolkata_2015-02-07_2165.JPG';
     const plate = selectedIncident.plate_number || 'TN-09-CB-4412';
 
     const handleRTOCheck = async () => {

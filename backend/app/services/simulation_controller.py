@@ -10,9 +10,9 @@ from app.core.config import settings
 
 class SimulationController:
     def __init__(self):
-        self.demo_mode: bool = settings.DEMO_MODE
-        self.fleet_simulation_active: bool = settings.ENABLE_FLEET_SIMULATION and not self.demo_mode
-        self.synthetic_generation_active: bool = settings.ENABLE_SYNTHETIC_GENERATION and not self.demo_mode
+        self.demo_mode: bool = True
+        self.fleet_simulation_active: bool = False
+        self.synthetic_generation_active: bool = False
         self.interval_seconds: int = settings.SYNTHETIC_INTERVAL_SECONDS
 
     def is_fleet_simulation_active(self) -> bool:

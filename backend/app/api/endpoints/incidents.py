@@ -408,7 +408,7 @@ def get_incident_statutory_dossier(incident_id: str, db: Session = Depends(get_d
 
         <div class="section-title">4. Optical Frame Evidence</div>
         <div class="snapshot-container">
-            <img class="snapshot-img" src="{r.snapshot_url or 'https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?w=800'}" alt="Optical Violation Frame" />
+            <img class="snapshot-img" src="{r.snapshot_url or 'https://upload.wikimedia.org/wikipedia/commons/thumb/2/2a/Alipore_Road_-_Hastings_-_Kolkata_2015-02-07_2165.JPG/1280px-Alipore_Road_-_Hastings_-_Kolkata_2015-02-07_2165.JPG'}" alt="Optical Violation Frame" />
         </div>
 
         <div class="section-title">5. Statutory Evidence Admissibility Certificate</div>

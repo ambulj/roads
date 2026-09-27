@@ -21,9 +21,9 @@ class Settings:
     USE_POSTGIS: bool = os.getenv("USE_POSTGIS", "false").lower() == "true"
     
     # Simulation & Demo Toggles (Control background loops during judged demo)
-    ENABLE_FLEET_SIMULATION: bool = os.getenv("ENABLE_FLEET_SIMULATION", "true").lower() in ("true", "1", "yes")
-    ENABLE_SYNTHETIC_GENERATION: bool = os.getenv("ENABLE_SYNTHETIC_GENERATION", "false").lower() in ("true", "1", "yes")
-    DEMO_MODE: bool = os.getenv("DEMO_MODE", "false").lower() in ("true", "1", "yes")
+    ENABLE_FLEET_SIMULATION: bool = os.getenv("ENABLE_FLEET_SIMULATION", "false").lower() in ("true", "1", "yes")
+    ENABLE_SYNTHETIC_GENERATION: bool = False
+    DEMO_MODE: bool = True
     SYNTHETIC_INTERVAL_SECONDS: int = int(os.getenv("SYNTHETIC_INTERVAL_SECONDS", "300"))
 
     # Authentication & Security

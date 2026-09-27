@@ -88,7 +88,7 @@ interface RoadMeshVisualizerModalProps {
   canDispatchWorkOrder?: boolean;
 }
 
-const DEFAULT_POTHOLE_IMG = "https://images.unsplash.com/photo-1515162816999-a0c47dc192f7?w=600&auto=format&fit=crop&q=80";
+const DEFAULT_POTHOLE_IMG = "https://upload.wikimedia.org/wikipedia/commons/thumb/1/14/Broken_Roads_in_India%27s_Capital_New_Delhi.jpg/1280px-Broken_Roads_in_India%27s_Capital_New_Delhi.jpg";
 
 export const RoadMeshVisualizerModal: React.FC<RoadMeshVisualizerModalProps> = ({
   isOpen,

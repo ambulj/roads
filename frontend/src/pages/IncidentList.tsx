@@ -347,7 +347,7 @@ export const IncidentList: React.FC<IncidentListProps> = ({
                 {/* Photo / Snapshot */}
                 <div className="relative h-44 bg-zinc-950 rounded border border-zinc-800 overflow-hidden flex items-center justify-center">
                   <img
-                    src={selectedIncident.snapshot_url || 'https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?w=600'}
+                    src={selectedIncident.snapshot_url || 'https://upload.wikimedia.org/wikipedia/commons/thumb/2/2a/Alipore_Road_-_Hastings_-_Kolkata_2015-02-07_2165.JPG/1280px-Alipore_Road_-_Hastings_-_Kolkata_2015-02-07_2165.JPG'}
                     alt="Incident frame"
                     className="w-full h-full object-cover"
                   />
