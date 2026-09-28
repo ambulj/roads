@@ -1,5 +1,5 @@
 // ============================================================
-//  SeherSaathi Type Definitions
+//  RoadSaathi Type Definitions
 // ============================================================
 
 export type DefectCode = 

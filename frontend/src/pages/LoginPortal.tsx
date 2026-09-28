@@ -43,7 +43,7 @@ export const LoginPortal: React.FC<LoginPortalProps> = ({ onLoginSuccess }) => {
 
     try {
       await loginWithCredentials(emailInput.trim(), passwordInput, rememberMe);
-      setAuthFeedback({ type: 'success', message: 'Clearance verified! Entering SeherSaathi Command Center...' });
+      setAuthFeedback({ type: 'success', message: 'Clearance verified! Entering RoadSaathi Command Center...' });
       setTimeout(() => {
         setIsAuthenticating(false);
         if (onLoginSuccess) {
@@ -73,7 +73,7 @@ export const LoginPortal: React.FC<LoginPortalProps> = ({ onLoginSuccess }) => {
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <span className="font-extrabold text-sm sm:text-base tracking-tight text-white">SeherSaathi</span>
+              <span className="font-extrabold text-sm sm:text-base tracking-tight text-white">RoadSaathi</span>
             </div>
             <p className="text-[11px] text-slate-400">Greater Chennai Metropolitan Urban Intelligence & Transit Grid</p>
           </div>

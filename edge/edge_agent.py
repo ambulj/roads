@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 ================================================================================
-  SeherSaathi - Autonomous Onboard Edge Computing Daemon (edge_agent.py)
+  RoadSaathi - Autonomous Onboard Edge Computing Daemon (edge_agent.py)
 ================================================================================
   Turn any Vehicle Onboard SBC, Raspberry Pi, Jetson Nano/Orin, or Laptop into
   an autonomous real-time Road Hazard Perception & Telematics Edge Node.
@@ -356,7 +356,7 @@ class OnboardEdgeNode:
     def start(self):
         """Main real-time edge computing perception loop."""
         print("=" * 78)
-        print(f"  ⚡ SEHERSAATHI ONBOARD EDGE COMPUTING DAEMON ({self.bus_id})")
+        print(f"  ⚡ ROADSAATHI ONBOARD EDGE COMPUTING DAEMON ({self.bus_id})")
         print(f"  Target Server   : {self.server_url}")
         print(f"  Camera Source   : {self.source}")
         print(f"  Hardware Device : {self.device.upper()}")
@@ -438,10 +438,10 @@ class OnboardEdgeNode:
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="SeherSaathi Autonomous Onboard Edge Computing Daemon")
+    parser = argparse.ArgumentParser(description="RoadSaathi Autonomous Onboard Edge Computing Daemon")
     parser.add_argument("--bus-id", default="BUS-TN01-1042", help="Unique vehicle edge node ID")
     parser.add_argument("--source", default="0", help="Camera index (0, 1), RTSP URL, or video path")
-    parser.add_argument("--server-url", default="http://localhost:8000", help="Central SeherSaathi Server URL")
+    parser.add_argument("--server-url", default="http://localhost:8000", help="Central RoadSaathi Server URL")
     parser.add_argument("--device", default="cuda", help="Inference device: 'cuda', 'cpu', 'mps', or 'auto'")
     parser.add_argument("--fps", type=float, default=30.0, help="Target edge processing FPS")
     parser.add_argument("--conf", type=float, default=0.35, help="Neural confidence threshold")

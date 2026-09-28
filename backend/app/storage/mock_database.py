@@ -608,7 +608,7 @@ class PersistentStore:
                         "date": "3 Days Ago",
                         "type": "WORK_ORDER",
                         "title": "Automated PWD / NHAI Work Order #WO-GST-881 Generated",
-                        "description": "Auto-triaged by SeherSaathi AI to Tambaram Municipal Zone Maintenance Unit. Target SLA: 48h emergency patching.",
+                        "description": "Auto-triaged by RoadSaathi AI to Tambaram Municipal Zone Maintenance Unit. Target SLA: 48h emergency patching.",
                         "severity": "high"
                     },
                     {

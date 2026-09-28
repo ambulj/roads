@@ -61,9 +61,9 @@ export const WhatsAppDispatchModal: React.FC<WhatsAppDispatchModalProps> = ({
 
   // Build authentic MoHUA/MoRTH WhatsApp Message payload
   const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${cluster.lat},${cluster.lng}`;
-  const portalUrl = `https://sehersaathi.gov.in/#/capture?order=${cluster.cluster_code}`;
+  const portalUrl = `https://roadsaathi.gov.in/#/capture?order=${cluster.cluster_code}`;
 
-  const messageText = `*[OFFICIAL DISPATCH] SeherSaathi MUNICIPAL WORK ORDER*
+  const messageText = `*[OFFICIAL DISPATCH] RoadSaathi MUNICIPAL WORK ORDER*
 *Ministry of Road Transport & Highways (MoRTH)*
 --------------------------------------------
 *Ticket Code:* ${cluster.cluster_code}
@@ -81,7 +81,7 @@ ${isHospital ? `*[HOSPITAL ZONE]:* Near ${poiName} (+15 Priority Boost)\n*Ambula
 *Field Repair & Evidence Upload Portal:*
 ${portalUrl}
 
-_This is an automated dispatch from SeherSaathi Edge-AI Fleet Telemetry. Reply ACK to acknowledge receipt._`;
+_This is an automated dispatch from RoadSaathi Edge-AI Fleet Telemetry. Reply ACK to acknowledge receipt._`;
 
   // WhatsApp Web / Universal deep link
   const cleanPhone = selectedContact.phone.replace(/[^0-9]/g, "");

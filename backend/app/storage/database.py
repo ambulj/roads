@@ -22,10 +22,10 @@ if os.path.exists(_ENV_PATH):
     load_dotenv(_ENV_PATH)
 
 # ── SQLite path: always relative to backend directory ───────────────────────
-_SQLITE_FILE = os.path.join(_BACKEND_DIR, "sehersaathi.db")
+_SQLITE_FILE = os.path.join(_BACKEND_DIR, "roadsaathi.db")
 if not os.path.exists(_SQLITE_FILE):
     import shutil
-    for legacy_name in ["roadsaarthi.db", "SheherSaathi.db", "SeherSaathi.db"]:
+    for legacy_name in ["sehersaathi.db", "SheherSaathi.db", "roadsaarthi.db", "RoadSaathi.db"]:
         legacy_path = os.path.join(_BACKEND_DIR, legacy_name)
         if os.path.exists(legacy_path):
             try:

@@ -28,7 +28,7 @@ export const TRANSLATIONS: Record<Language, Record<string, string>> = {
     "nav.views": "Views",
 
     // Header & Tools
-    "header.title": "SeherSaathi",
+    "header.title": "RoadSaathi",
     "header.searchPlaceholder": "Search buses, corridors, incidents... (Ctrl+K)",
     "header.tools": "Tools",
     "header.toolsTitle": "Executive Tools & Actions",

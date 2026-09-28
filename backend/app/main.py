@@ -67,7 +67,7 @@ app.mount("/uploads", StaticFiles(directory=uploads_dir), name="uploads")
 def health_check():
     return {
         "status": "healthy",
-        "service": "SeherSaathi Core Intelligence Engine",
+        "service": "RoadSaathi Core Intelligence Engine",
         "version": settings.VERSION,
         "mode": "Sovereign Self-Hosted Standalone"
     }
@@ -90,7 +90,7 @@ def readiness_probe():
 @app.get("/", tags=["System"])
 def root():
     return {
-        "title": "SeherSaathi API",
+        "title": "RoadSaathi API",
         "docs_url": "/docs",
         "health_url": "/health",
         "live_url": "/live",

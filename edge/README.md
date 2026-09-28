@@ -1,4 +1,4 @@
-# SeherSaathi Onboard Edge Computing Daemon
+# RoadSaathi Onboard Edge Computing Daemon
 
 The `edge_agent.py` daemon transforms any vehicle computer, Raspberry Pi 4/5, NVIDIA Jetson Orin Nano, Orange Pi RK3588, or local laptop into an **Autonomous Edge AI Node**.
 
@@ -34,7 +34,7 @@ python edge_agent.py --bus-id BUS-TN01-1042 --source rtsp://admin:pass@192.168.1
 | :--- | :--- | :--- |
 | `--bus-id` | `BUS-TN01-1042` | Unique identifier for the vehicle node in the City Brain GIS |
 | `--source` | `0` | Camera index (`0`, `1`), RTSP URL (`rtsp://...`), or path to `.mp4` |
-| `--server-url` | `http://localhost:8000` | Central SeherSaathi server endpoint |
+| `--server-url` | `http://localhost:8000` | Central RoadSaathi server endpoint |
 | `--device` | `cuda` | Inference accelerator (`cuda`, `cpu`, `mps`, `openvino`) |
 | `--fps` | `30.0` | Target edge inference frame rate |
 | `--conf` | `0.35` | Neural hazard detection confidence threshold |

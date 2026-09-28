@@ -2,7 +2,7 @@
 setlocal enabledelayedexpansion
 
 :: ============================================================
-::  SeherSaathi — One-Click Production & Dev Launcher (Windows)
+::  RoadSaathi — One-Click Production & Dev Launcher (Windows)
 ::  Works from any folder location.
 :: ============================================================
 
@@ -13,7 +13,7 @@ set "FRONTEND_DIR=%PROJECT_DIR%\frontend"
 
 echo.
 echo  ====================================================================
-echo   SeherSaathi — Municipal Road & Urban Intelligence Platform
+echo   RoadSaathi — Municipal Road & Urban Intelligence Platform
 echo   MoRTH & National Highway Authority CAD System
 echo  ====================================================================
 echo   Project path: %PROJECT_DIR%
@@ -66,23 +66,23 @@ if not exist "%FRONTEND_DIR%\node_modules" (
 
 :: ── Start Backend Server ─────────────────────────────────────────────────
 echo.
-echo  [START] Launching SeherSaathi FastAPI Backend on http://127.0.0.1:8000 ...
+echo  [START] Launching RoadSaathi FastAPI Backend on http://127.0.0.1:8000 ...
 if exist "%BACKEND_DIR%\venv\Scripts\activate.bat" (
-    start "SeherSaathi Backend (FastAPI)" cmd /k "cd /d "%BACKEND_DIR%" && call venv\Scripts\activate.bat && python run_backend.py"
+    start "RoadSaathi Backend (FastAPI)" cmd /k "cd /d "%BACKEND_DIR%" && call venv\Scripts\activate.bat && python run_backend.py"
 ) else (
-    start "SeherSaathi Backend (FastAPI)" cmd /k "cd /d "%BACKEND_DIR%" && python run_backend.py"
+    start "RoadSaathi Backend (FastAPI)" cmd /k "cd /d "%BACKEND_DIR%" && python run_backend.py"
 )
 timeout /t 3 /nobreak >nul
 
 :: ── Start Frontend Server ────────────────────────────────────────────────
-echo  [START] Launching SeherSaathi WebGIS Frontend on http://localhost:5173 ...
-start "SeherSaathi Frontend (Vite + React)" cmd /k "cd /d "%FRONTEND_DIR%" && npm run dev"
+echo  [START] Launching RoadSaathi WebGIS Frontend on http://localhost:5173 ...
+start "RoadSaathi Frontend (Vite + React)" cmd /k "cd /d "%FRONTEND_DIR%" && npm run dev"
 timeout /t 4 /nobreak >nul
 
 :: ── Open Browser ─────────────────────────────────────────────────────────
 echo.
 echo  ====================================================================
-echo   SeherSaathi is now running:
+echo   RoadSaathi is now running:
 echo   • WebGIS Dashboard: http://localhost:5173
 echo   • REST API Gateway: http://127.0.0.1:8000
 echo   • Swagger API Docs: http://127.0.0.1:8000/docs

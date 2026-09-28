@@ -5,7 +5,7 @@ services:
     image: postgis/postgis:16-3.4
     container_name: sehersaathi_postgis
     environment:
-      POSTGRES_USER: sehersaathi
+      POSTGRES_USER: roadsaathi
       POSTGRES_PASSWORD: sehersaathi_secure_password
       POSTGRES_DB: sehersaathi_db
     ports:
@@ -15,7 +15,7 @@ services:
       - ./backend/app/storage/postgis_schema.sql:/docker-entrypoint-initdb.d/init.sql
     restart: unless-stopped
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U sehersaathi -d sehersaathi_db"]
+      test: ["CMD-SHELL", "pg_isready -U roadsaathi -d sehersaathi_db"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -26,7 +26,7 @@ services:
       dockerfile: Dockerfile
     container_name: sehersaathi_backend
     environment:
-      DATABASE_URL: postgresql://sehersaathi:sehersaathi_secure_password@postgis:5432/sehersaathi_db
+      DATABASE_URL: postgresql://roadsaathi:sehersaathi_secure_password@postgis:5432/sehersaathi_db
       USE_POSTGIS: "true"
       PORT: 8000
     ports:

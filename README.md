@@ -1,4 +1,4 @@
-# SeherSaathi — Municipal Road Intelligence & Vision Zero Platform
+# RoadSaathi — Municipal Road Intelligence & Vision Zero Platform
 
 > **Edge-AI & WebGIS CAD System for Indian Municipal Corporations & Highway Authorities**  
 > Built for Ministry of Road Transport & Highways (MoRTH), National Highways Authority of India (NHAI), and State Transit Undertakings (STUs) · **Version 2.6.0**
@@ -38,7 +38,7 @@
 
 ### Option A — One-Click Launch (Windows)
 
-Simply double-click **`run_sehersaathi.bat`** (or right-click → Run with PowerShell on **`run_sehersaathi.ps1`**).
+Simply double-click **`run_roadsaathi.bat`** (or right-click → Run with PowerShell on **`run_roadsaathi.ps1`**).
 
 The launcher will automatically:
 1. Detect Python 3.10+ and Node.js 18+
@@ -147,7 +147,7 @@ roads/
 │   │   └── models/               # SQLAlchemy schema & Pydantic models
 │   ├── scripts/
 │   │   └── reset_and_seed_ground_truth.py # Ground truth benchmark seeder
-│   ├── sehersaathi.db            # Local SQLite database
+│   ├── roadsaathi.db            # Local SQLite database
 │   ├── requirements.txt          # Python dependencies
 │   └── run_backend.py            # Backend entry point
 │
@@ -159,8 +159,8 @@ roads/
 │   ├── package.json
 │   └── vite.config.ts
 │
-├── run_sehersaathi.bat           # One-click Windows CMD launcher
-├── run_sehersaathi.ps1           # One-click Windows PowerShell launcher
+├── run_roadsaathi.bat           # One-click Windows CMD launcher
+├── run_roadsaathi.ps1           # One-click Windows PowerShell launcher
 └── README.md
 ```
 
