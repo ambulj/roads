@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 ================================================================================
-  SheherSaathi - Rockchip RK3588 / RK3568 NPU Model Compiler (export_rknn.py)
+  RoadSaarthi - Rockchip RK3588 / RK3568 NPU Model Compiler (export_rknn.py)
 ================================================================================
   Converts trained YOLOv8 PyTorch/ONNX road defect detection models into
   hardware-quantized Rockchip Neural Processing Unit (.rknn) binary format.
@@ -55,7 +55,7 @@ def export_to_rknn(args):
     std_vals = [[float(x.strip()) for x in args.std_values.split(",")]]
 
     print("================================================================================")
-    print(f"  SheherSaathi RKNN Compiler -> Target Platform: {args.target_platform.upper()} NPU")
+    print(f"  RoadSaarthi RKNN Compiler -> Target Platform: {args.target_platform.upper()} NPU")
     print(f"  Input ONNX:  {onnx_path}")
     print(f"  Output RKNN: {output_path}")
     print(f"  Precision:   {args.dtype.upper()} (Quantized for onboard low-power NPU)")
@@ -128,7 +128,7 @@ def export_to_rknn(args):
         sys.exit(ret)
 
     print(f"\n[SUCCESS] Successfully compiled RKNN NPU binary: {output_path}")
-    print("Flash this file to the transit bus onboard RK3588 compute box in `/opt/shehersaathi/models/`")
+    print("Flash this file to the transit bus onboard RK3588 compute box in `/opt/roadsaarthi/models/`")
     rknn.release()
 
 

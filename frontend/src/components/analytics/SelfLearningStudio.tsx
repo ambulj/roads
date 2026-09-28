@@ -166,13 +166,16 @@ export const SelfLearningStudio: React.FC = () => {
               <Badge variant="purple" size="sm" className="font-mono font-bold">
                 {learningStatus?.current_model_version || "YOLO11-Edge v2.4"}
               </Badge>
+              <Badge variant="neutral" size="sm" className="font-mono text-[10px] font-bold border border-purple-300 dark:border-purple-700 text-purple-700 dark:text-purple-300">
+                MLOPS SIMULATION
+              </Badge>
               <Badge variant="success" size="sm" className="font-semibold flex items-center gap-1">
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
                 Fleet Hot-Reload Active
               </Badge>
             </div>
             <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1 max-w-3xl leading-relaxed">
-              Closed-loop continuous training: Active uncertainty sampling (0.35–0.72), Chief Inspector Review Queue, and post-repair audit verification (IRC:SP:20 Clause 14).
+              Closed-loop continuous training architecture: Active uncertainty sampling (0.35–0.72), Chief Inspector Review Queue, and post-repair audit verification (IRC:SP:20 Clause 14).
             </p>
           </div>
         </div>
@@ -194,32 +197,46 @@ export const SelfLearningStudio: React.FC = () => {
             size="sm"
             onClick={handleRetrain}
             disabled={isRetraining}
-            className="bg-blue-600 hover:bg-blue-700 text-white font-semibold shadow-xs"
+            className="bg-purple-600 hover:bg-purple-700 text-white font-semibold shadow-xs"
           >
             <Zap className={`w-3.5 h-3.5 mr-1.5 ${isRetraining ? 'animate-spin text-amber-300' : ''}`} />
-            {isRetraining ? "Retraining Pipeline..." : "Trigger Retraining Cycle"}
+            {isRetraining ? "Simulating Pipeline..." : "Simulate Retraining Pipeline"}
           </Button>
+        </div>
+      </div>
+
+      {/* MLOps Architecture Walkthrough Disclaimer */}
+      <div className="mt-4 p-3.5 rounded-xl bg-purple-50/80 dark:bg-purple-950/40 border border-purple-200 dark:border-purple-900/60 flex items-start gap-2.5 text-xs text-slate-700 dark:text-slate-300">
+        <Sparkles className="w-4 h-4 text-purple-600 dark:text-purple-400 mt-0.5 shrink-0" />
+        <div>
+          <div className="font-semibold text-slate-900 dark:text-slate-100 flex items-center gap-2 flex-wrap">
+            <span>MLOps Architecture Walkthrough &amp; OTA Edge Model Hot-Reload</span>
+            <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-purple-100 dark:bg-purple-900/60 text-purple-700 dark:text-purple-300 font-bold">Offline GPU Cluster Architecture</span>
+          </div>
+          <p className="text-[11px] text-slate-600 dark:text-slate-400 mt-0.5 leading-relaxed">
+            In production municipal deployments, heavy model retraining runs asynchronously on offline GPU clusters (overnight batch fine-tuning upon accumulating 500+ curated frames). This studio provides a fast-forward architectural walkthrough of active uncertainty sampling, INT8 post-training quantization, and instant OTA weights deployment to fleet nodes.
+          </p>
         </div>
       </div>
 
       {/* Retraining Progress Bar (Visible when active) */}
       {isRetraining && (
-        <div className="mt-4 p-4 rounded-xl bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-900/60 animate-in fade-in space-y-2">
-          <div className="flex items-center justify-between text-xs font-semibold text-blue-900 dark:text-blue-200">
+        <div className="mt-4 p-4 rounded-xl bg-purple-50 dark:bg-purple-950/40 border border-purple-200 dark:border-purple-900/60 animate-in fade-in space-y-2">
+          <div className="flex items-center justify-between text-xs font-semibold text-purple-900 dark:text-purple-200">
             <span className="flex items-center gap-2">
-              <Cpu className="w-4 h-4 animate-spin text-blue-600 dark:text-blue-400" />
-              Automated 4-Stage Continuous Learning Pipeline in Progress
+              <Cpu className="w-4 h-4 animate-spin text-purple-600 dark:text-purple-400" />
+              [SIMULATION] Fast-Forward Emulation of 4-Stage Continuous Learning Pipeline
             </span>
-            <span className="font-mono font-bold text-blue-600 dark:text-blue-400">
+            <span className="font-mono font-bold text-purple-600 dark:text-purple-400">
               {retrainStep === 1 && "Stage 1/4: Ingesting Hard Samples..."}
               {retrainStep === 2 && "Stage 2/4: INT8 Quantization (QAT)..."}
               {retrainStep === 3 && "Stage 3/4: RKNN & Coral TPU Compilation..."}
               {retrainStep === 4 && "Stage 4/4: Fleet OTA Hot-Reload..."}
             </span>
           </div>
-          <div className="w-full bg-blue-200 dark:bg-blue-900/60 h-2 rounded-full overflow-hidden">
+          <div className="w-full bg-purple-200 dark:bg-purple-900/60 h-2 rounded-full overflow-hidden">
             <div
-              className="bg-blue-600 dark:bg-blue-400 h-full transition-all duration-500 ease-out"
+              className="bg-purple-600 dark:bg-purple-400 h-full transition-all duration-500 ease-out"
               style={{ width: `${(retrainStep / 4) * 100}%` }}
             />
           </div>
@@ -231,7 +248,7 @@ export const SelfLearningStudio: React.FC = () => {
         <div className="mt-4 p-3.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 text-emerald-900 dark:text-emerald-200 text-xs sm:text-sm flex items-start gap-3 animate-in fade-in slide-in-from-top-2">
           <Sparkles className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5" />
           <div className="flex-1">
-            <div className="font-bold text-emerald-800 dark:text-emerald-300">Continuous Retraining Cycle Completed</div>
+            <div className="font-bold text-emerald-800 dark:text-emerald-300">[SIMULATION DEMO] MLOps Pipeline Walkthrough Complete</div>
             <div className="text-xs text-emerald-700 dark:text-emerald-400/90 mt-0.5">{retrainSuccess}</div>
           </div>
           <button onClick={() => setRetrainSuccess(null)} className="text-emerald-500 hover:text-emerald-700 dark:hover:text-emerald-300">

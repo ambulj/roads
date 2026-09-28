@@ -1,7 +1,7 @@
-﻿# ============================================================
-#  SheherSaathi — One-Click Launcher (Windows PowerShell)
+# ============================================================
+#  RoadSaarthi — One-Click Launcher (Windows PowerShell)
 #  Works from any folder location. Just double-click or run:
-#    .\run_SheherSaathi.ps1
+#    .\run_roadsaarthi.ps1
 # ============================================================
 
 $ErrorActionPreference = "Stop"
@@ -16,7 +16,7 @@ $VenvPython   = Join-Path $BackendDir "venv\Scripts\python.exe"
 
 Write-Host ""
 Write-Host " ====================================================================" -ForegroundColor Cyan
-Write-Host "  SheherSaathi — Municipal Road Intelligence Platform" -ForegroundColor Cyan
+Write-Host "  RoadSaarthi — Municipal Road Intelligence Platform" -ForegroundColor Cyan
 Write-Host " ====================================================================" -ForegroundColor Cyan
 Write-Host "  Project: $ProjectDir" -ForegroundColor DarkGray
 Write-Host ""

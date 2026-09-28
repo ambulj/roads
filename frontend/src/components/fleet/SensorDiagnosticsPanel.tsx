@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Activity, Radio, Camera, Cpu, Gauge, Zap,
   Thermometer, Compass, BatteryCharging, Wifi,
@@ -65,25 +65,42 @@ export const SensorDiagnosticsPanel: React.FC<SensorDiagnosticsPanelProps> = ({ 
             <Cpu className="w-4 h-4" />
           </div>
           <div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
               <span className="text-xs font-bold text-slate-900 dark:text-slate-100 uppercase tracking-wider">
-                Indian Smart Transit Integrated Sensor Suite
+                Edge Hardware Architecture &amp; Telemetry Matrix
               </span>
+              <Badge variant="neutral" size="sm" className="font-mono text-[10px] font-bold border border-blue-300 dark:border-blue-700 text-blue-700 dark:text-blue-300">
+                HARDWARE BOM SPECIFICATION
+              </Badge>
               <Badge variant="success" size="sm" dot>
-                7/7 ONLINE
+                TELEMETRY SYNCS (5 Hz)
               </Badge>
             </div>
             <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
-              5Hz Multi-Sensor Fusion running on {bus.npu_hardware} Edge NPU
+              Production BOM Specification &bull; 5Hz Multi-Sensor Fusion on {bus.npu_hardware} Edge NPU
             </p>
           </div>
         </div>
 
         <div className="flex items-center gap-2 font-mono text-[11px] text-slate-500 dark:text-slate-400">
-          <span>Stream ID:</span>
+          <span>Target Node:</span>
           <span className="text-blue-600 dark:text-blue-400 font-bold">{bus.id}</span>
           <span>•</span>
-          <span className="text-emerald-600 dark:text-emerald-400">Lock: 5 Hz</span>
+          <span className="text-emerald-600 dark:text-emerald-400">Schema: AIS-140 Fusion</span>
+        </div>
+      </div>
+
+      {/* Hardware BOM & Telemetry Specification Disclaimer */}
+      <div className="p-3 rounded-xl bg-blue-50/80 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-900/60 flex items-start gap-2.5 text-xs text-slate-700 dark:text-slate-300">
+        <ShieldCheck className="w-4 h-4 text-blue-600 dark:text-blue-400 mt-0.5 shrink-0" />
+        <div>
+          <div className="font-semibold text-slate-900 dark:text-slate-100 flex items-center gap-2">
+            <span>Hardware BOM Specification &amp; Telemetry Architecture</span>
+            <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-blue-100 dark:bg-blue-900/60 text-blue-700 dark:text-blue-300 font-bold">BOM Architecture Target</span>
+          </div>
+          <p className="text-[11px] text-slate-600 dark:text-slate-400 mt-0.5 leading-relaxed">
+            This diagnostic matrix displays the reference telemetry schema from our specified edge hardware suite (Sony IMX335 1080p HDR, u-blox NavIC, MPU-6050 6-axis IMU, INA219 power monitor, and OBD-II CAN bus). For video stream evaluation and software simulation rigs, packet streams are synthesized to demonstrate telemetry fusion with edge perception.
+          </p>
         </div>
       </div>
 

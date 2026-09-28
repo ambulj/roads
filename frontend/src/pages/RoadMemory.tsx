@@ -113,12 +113,15 @@ export const RoadMemory: React.FC = () => {
           onClick={() => setActiveTab('selflearning')}
           className={`px-4 py-2 rounded-xl transition flex items-center gap-2 ${
             activeTab === 'selflearning'
-              ? 'bg-emerald-600 text-white font-bold shadow-xs'
+              ? 'bg-purple-600 text-white font-bold shadow-xs'
               : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white'
           }`}
         >
-          <Brain className="w-4 h-4 text-emerald-300" />
-          <span>Self-Learning & Continuous Retraining Studio</span>
+          <Brain className="w-4 h-4 text-purple-300" />
+          <span>Self-Learning MLOps Studio</span>
+          <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-purple-700/60 text-purple-200">
+            SIMULATION
+          </span>
         </button>
       </div>
 

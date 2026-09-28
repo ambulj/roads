@@ -144,7 +144,7 @@ def create_access_token(data: Dict[str, Any], expires_delta_seconds: Optional[in
         **data,
         "iat": now,
         "exp": expires,
-        "iss": "SheherSaathi-Auth-Core"
+        "iss": "RoadSaarthi-Auth-Core"
     }
     
     header_b64 = _base64url_encode(json.dumps(header, separators=(',', ':')).encode('utf-8'))

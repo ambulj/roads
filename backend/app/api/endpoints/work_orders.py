@@ -185,7 +185,7 @@ def export_csv(db: Session = Depends(get_db)):
     return Response(
         content=csv_data,
         media_type="text/csv",
-        headers={"Content-Disposition": "attachment; filename=SheherSaathi_pwd_dispatch.csv"}
+        headers={"Content-Disposition": "attachment; filename=roadsaarthi_pwd_dispatch.csv"}
     )
 
 
