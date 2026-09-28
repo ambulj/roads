@@ -455,8 +455,8 @@ export const MobileDashcam: React.FC<MobileDashcamProps> = ({
         road_name: 'GST Road Corridor',
         plate_number: d.plateNumber,
         target_speed_kmh: d.speedKmh || 35.0,
-        fine_amount_inr: d.incidentType === 'HIT_AND_RUN' ? 25000 : (d.incidentType === 'SCHOOL_CHILDREN_CROSSING_RISK' ? 2000 : 1500),
-        mva_section: d.incidentType === 'HIT_AND_RUN' ? 'MVA 1988 Sec 134(a)(b) + BNS 106(2)' : 'IRC:35 & CMVR Rule 138'
+        fine_amount_inr: d.incidentType === 'HIT_AND_RUN' ? 25000 : (d.incidentType === 'SCHOOL_CHILDREN_CROSSING_RISK' ? 0 : 1500),
+        mva_section: d.incidentType === 'HIT_AND_RUN' ? 'MVA 1988 Sec 134(a)(b) + BNS 106(2)' : (d.incidentType === 'SCHOOL_CHILDREN_CROSSING_RISK' ? 'IRC:35:2015 Sec 8 & MVDR 2017 Reg 11' : 'IRC:35 & CMVR Rule 138')
       });
     }
   };

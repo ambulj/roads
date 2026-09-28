@@ -507,7 +507,7 @@ export const ContractorSlaLedger: React.FC<ContractorSlaLedgerProps> = ({ cluste
                       BEFORE REPAIR (Initial Pothole Defect)
                     </div>
                     <img 
-                      src="https://upload.wikimedia.org/wikipedia/commons/thumb/1/14/Broken_Roads_in_India%27s_Capital_New_Delhi.jpg/1280px-Broken_Roads_in_India%27s_Capital_New_Delhi.jpg" 
+                      src="/uploads/evidence/pothole_annotated.jpg" 
                       alt="Before Repair"
                       className="w-full h-28 object-cover"
                     />

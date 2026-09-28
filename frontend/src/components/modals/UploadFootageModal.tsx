@@ -245,12 +245,14 @@ export const UploadFootageModal: React.FC<UploadFootageModalProps> = ({
 
         res = await api.uploadStreamMedia(formData);
         
-        if (res?.annotated_b64) {
+        if (res?.evidence_url) {
+          setSanitizedPreviewUrl(res.evidence_url);
+        } else if (res?.annotated_b64) {
           setSanitizedPreviewUrl(res.annotated_b64);
         }
       }
 
-      setUploadProgress(95);
+      setUploadProgress(100);
 
       const facesCount = res?.faces_detected ?? res?.privacy_meta?.faces_detected ?? 0;
       setFacesRedactedCount(facesCount);
@@ -272,15 +274,17 @@ export const UploadFootageModal: React.FC<UploadFootageModalProps> = ({
           filename: res?.filename || fileToProcess?.name,
           media_type: res?.media_type || (isVid ? 'video' : 'image'),
           channel: res?.channel || channel,
+          evidence_url: res?.evidence_url || res?.annotated_b64,
+          created_cluster: res?.created_cluster,
+          created_incident: res?.created_incident,
           detections_count: res?.detections_count ?? res?.detections?.length ?? 0
         };
 
         setDetectionResult(detResult);
         setProcessingStage('completed');
-        setUploadProgress(100);
         setFeedback({ 
           type: 'success', 
-          message: `✓ AI Perception detected ${res.detections.length} hazard(s) • ${facesCount > 0 ? `${facesCount} face(s) redacted under DPDP Act 2023.` : 'DPDP Privacy Filter active.'}` 
+          message: `✓ Real-time perception completed • Detected ${res.detections.length} hazard(s) • Universal evidence saved (${facesCount > 0 ? `${facesCount} face(s) redacted under DPDP Act 2023.` : 'DPDP Privacy Filter active.'})` 
         });
 
         if (res?.created_cluster && onAddCluster) {

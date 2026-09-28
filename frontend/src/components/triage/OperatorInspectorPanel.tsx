@@ -58,7 +58,7 @@ export const OperatorInspectorPanel: React.FC<OperatorInspectorPanelProps> = ({
   if (selectedIncident) {
     const isCritical = selectedIncident.incident_type === 'HIT_AND_RUN' || selectedIncident.incident_type === 'RASH_DRIVING';
     const anyInc = selectedIncident as any;
-    const evidenceImg = anyInc.evidence_url || selectedIncident.snapshot_url || anyInc.photo_url || anyInc.video_url || 'https://upload.wikimedia.org/wikipedia/commons/thumb/2/2a/Alipore_Road_-_Hastings_-_Kolkata_2015-02-07_2165.JPG/1280px-Alipore_Road_-_Hastings_-_Kolkata_2015-02-07_2165.JPG';
+    const evidenceImg = anyInc.evidence_url || selectedIncident.snapshot_url || anyInc.photo_url || anyInc.video_url || (selectedIncident.incident_type === 'SCHOOL_CHILDREN_CROSSING_RISK' ? '/uploads/evidence/school_crossing_annotated.jpg' : '/uploads/evidence/hit_and_run_annotated.jpg');
     const plate = selectedIncident.plate_number || 'TN-09-CB-4412';
 
     const handleRTOCheck = async () => {
@@ -302,7 +302,7 @@ export const OperatorInspectorPanel: React.FC<OperatorInspectorPanelProps> = ({
     const isAssigned = selectedCluster.status === 'assigned' || selectedCluster.status === 'in_progress';
     const anyCl = selectedCluster as any;
 
-    const evidenceImg = anyCl.evidence_url || selectedCluster.before_image_url || 'https://upload.wikimedia.org/wikipedia/commons/thumb/1/14/Broken_Roads_in_India%27s_Capital_New_Delhi.jpg/1280px-Broken_Roads_in_India%27s_Capital_New_Delhi.jpg';
+    const evidenceImg = anyCl.evidence_url || selectedCluster.before_image_url || '/uploads/evidence/pothole_annotated.jpg';
 
     return (
       <div className="flex flex-col h-full bg-white dark:bg-[#101827] border-l border-slate-200 dark:border-slate-800 select-none overflow-y-auto custom-scrollbar">

@@ -268,7 +268,7 @@ export const FleetRepassModal: React.FC<FleetRepassModalProps> = ({
                   </div>
                   <div className="aspect-video rounded-lg overflow-hidden bg-slate-200 dark:bg-slate-700">
                     <img
-                      src={currentCluster?.before_image_url || 'https://upload.wikimedia.org/wikipedia/commons/thumb/1/14/Broken_Roads_in_India%27s_Capital_New_Delhi.jpg/1280px-Broken_Roads_in_India%27s_Capital_New_Delhi.jpg'}
+                      src={currentCluster?.before_image_url || '/uploads/evidence/pothole_annotated.jpg'}
                       alt="Before Repair"
                       className="w-full h-full object-cover"
                     />
