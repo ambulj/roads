@@ -508,13 +508,16 @@ export const WebGISMap: React.FC<WebGISMapProps> = ({
       if (!busMarkersRef.current[bus.id]) {
         const el = document.createElement('div');
         el.className = 'cursor-pointer group';
+        el.style.transition = 'transform 0.9s cubic-bezier(0.25, 1, 0.5, 1)';
+        el.id = `bus-marker-${bus.id}`;
         el.innerHTML = `
           <div style="position: relative; display: flex; align-items: center; justify-content: center;">
-            <div style="width: 32px; height: 32px; border-radius: 50%; background: #0284c7; border: 2px solid #ffffff; box-shadow: 0 4px 12px rgba(2,132,199,0.4); display: flex; align-items: center; justify-content: center; color: #ffffff; font-size: 10px; font-weight: bold; font-family: monospace;">
+            <div style="width: 34px; height: 34px; border-radius: 50%; background: #0284c7; border: 2.5px solid #ffffff; box-shadow: 0 4px 14px rgba(2,132,199,0.5); display: flex; align-items: center; justify-content: center; color: #ffffff; font-size: 10px; font-weight: 800; font-family: monospace;">
               BUS
             </div>
-            <div style="position: absolute; bottom: -18px; font-family: monospace; font-size: 10px; font-weight: 700; background: #09090b; color: #38bdf8; padding: 1px 4px; border-radius: 4px; border: 1px solid #27272a; white-space: nowrap;">
-              ${bus.id.replace('BUS-', '')}
+            <div style="position: absolute; top: -3px; width: 6px; height: 6px; background: #38bdf8; border-radius: 50%; box-shadow: 0 0 8px #38bdf8;"></div>
+            <div style="position: absolute; bottom: -18px; font-family: monospace; font-size: 9.5px; font-weight: 700; background: #09090b; color: #38bdf8; padding: 1px 5px; border-radius: 4px; border: 1px solid #27272a; white-space: nowrap; box-shadow: 0 2px 6px rgba(0,0,0,0.5);">
+              ${bus.id.replace('BUS-', '')} • ${bus.speed_kmh || 35}k
             </div>
           </div>
         `;
@@ -561,6 +564,13 @@ export const WebGISMap: React.FC<WebGISMapProps> = ({
         busMarkersRef.current[bus.id] = marker;
       } else {
         busMarkersRef.current[bus.id].setLngLat([bus.lng, bus.lat]);
+        const mEl = document.getElementById(`bus-marker-${bus.id}`);
+        if (mEl) {
+          const speedLabel = mEl.querySelector('div[style*="bottom: -18px"]');
+          if (speedLabel) {
+            speedLabel.textContent = `${bus.id.replace('BUS-', '')} • ${bus.speed_kmh || 35}k`;
+          }
+        }
       }
     });
   }, [fleet, isMapReady]);

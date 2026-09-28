@@ -225,16 +225,17 @@ export function useTelemetrySocket() {
 
 
 
-  // Client-side smooth corridor trajectory heartbeat when server is disconnected
+  // Client-side smooth corridor trajectory heartbeat to ensure buses are continuously moving in real-time
   useEffect(() => {
-    if (isConnected) return;
-
     const WAYPOINTS: Record<string, [number, number][]> = {
       'BUS-TN01-1042': [[12.9250, 80.1170], [12.9516, 80.1462], [12.9680, 80.1580], [12.9880, 80.1750], [13.0067, 80.2030]],
       'BUS-TN02-3891': [[13.0080, 80.2520], [12.9890, 80.2480], [12.9650, 80.2430], [12.9380, 80.2360], [12.9010, 80.2280]],
       'BUS-TN01-2098': [[13.0827, 80.2707], [13.0640, 80.2630], [13.0580, 80.2520], [13.0410, 80.2450], [13.0210, 80.2250]],
       'BUS-TN03-4410': [[13.0020, 80.2150], [12.9880, 80.2200], [12.9780, 80.2180], [12.9720, 80.2310]],
       'BUS-TN02-5501': [[13.0067, 80.2030], [13.0200, 80.2070], [13.0350, 80.2110], [13.0510, 80.2120], [13.0690, 80.1980]],
+      'BUS-MH12-4419': [[18.5080, 73.8420], [18.5204, 73.8567], [18.5350, 73.8710], [18.5520, 73.8890]],
+      'BUS-TN03-3112': [[13.0300, 80.2100], [13.0515, 80.2120], [13.0700, 80.2150], [13.0850, 80.2180]],
+      'BUS-TN02-4019': [[13.0600, 80.2300], [13.0720, 80.2380], [13.0850, 80.2450], [13.0950, 80.2520]],
     };
 
     const progressMap: Record<string, { prog: number; fwd: boolean }> = {};
@@ -246,7 +247,11 @@ export function useTelemetrySocket() {
 
       setFleet((prev) =>
         prev.map((bus) => {
-          const pts = WAYPOINTS[bus.id];
+          const pts = WAYPOINTS[bus.id] || [
+            [bus.lat - 0.01, bus.lng - 0.01],
+            [bus.lat, bus.lng],
+            [bus.lat + 0.01, bus.lng + 0.01],
+          ];
           if (!pts || pts.length < 2) {
             return {
               ...bus,
@@ -259,7 +264,7 @@ export function useTelemetrySocket() {
           }
 
           const st = progressMap[bus.id];
-          const delta = 0.008 + Math.random() * 0.004;
+          const delta = 0.012 + Math.random() * 0.006;
           st.prog += st.fwd ? delta : -delta;
 
           if (st.prog >= 1.0) {
@@ -327,7 +332,7 @@ export function useTelemetrySocket() {
     }, 1000);
 
     return () => clearInterval(interval);
-  }, [isConnected]);
+  }, []);
 
   const sendIngest = useCallback((ingestPayload: any) => {
     if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
