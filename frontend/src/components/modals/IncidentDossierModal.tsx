@@ -500,27 +500,29 @@ export const IncidentDossierModal: React.FC<IncidentDossierModalProps> = ({
               </div>
             )}
 
-            {/* Target Vehicle Details */}
+            {/* Target Vehicle / Zone Details */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <div className="sm:col-span-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-4 flex flex-col justify-between shadow-xs">
                 <div>
                   <div className="text-xs text-slate-500 dark:text-slate-400 font-bold uppercase tracking-wider mb-2.5 flex items-center justify-between">
-                    <span>Target Vehicle Registry Record</span>
+                    <span>{isSchoolCrossing ? 'Vision Zero Pedestrian Safety Zone' : 'Target Vehicle Registry Record'}</span>
                     <span className="text-emerald-600 dark:text-emerald-400 font-bold">
-                      Confidence Match: {incident.plate_confidence ? `${Math.round(incident.plate_confidence * 100)}%` : 'Unidentified'}
+                      {isSchoolCrossing ? 'VRU Protection Active' : `Confidence Match: ${incident.plate_confidence ? `${Math.round(incident.plate_confidence * 100)}%` : 'Unidentified'}`}
                     </span>
                   </div>
                   
                   <div className="flex items-center gap-3">
-                    <div className="border-2 border-amber-400 bg-amber-50 dark:bg-black px-4 py-2 rounded-lg font-black text-xl text-slate-900 dark:text-yellow-300 tracking-widest font-mono">
-                      {incident.plate_number || 'UNIDENTIFIED'}
+                    <div className={`border-2 px-4 py-2 rounded-lg font-black text-xl tracking-widest font-mono ${
+                      isSchoolCrossing 
+                        ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 text-sm' 
+                        : 'border-amber-400 bg-amber-50 dark:bg-black text-slate-900 dark:text-yellow-300'
+                    }`}>
+                      {isSchoolCrossing ? 'CROSSWALK ZONE' : (incident.plate_number || 'UNIDENTIFIED')}
                     </div>
                     <div className="text-xs space-y-1">
-                      <div>Class: <b className="text-slate-800 dark:text-slate-200">{incident.vehicle_class || 'Motor Vehicle'}</b></div>
-                      {incident.target_speed_kmh ? (
-                        <div>Speed: <b className="text-rose-600 dark:text-rose-400 font-bold">{incident.target_speed_kmh} km/h</b> (Corridor Limit: 50 km/h)</div>
-                      ) : null}
-                      <div>Color: <b className="text-slate-800 dark:text-slate-200">{incident.vehicle_color || 'Standard'}</b></div>
+                      <div>Class: <b className="text-slate-800 dark:text-slate-200">{isSchoolCrossing ? 'School Children Pedestrian Crosswalk' : (incident.vehicle_class || 'Motor Vehicle')}</b></div>
+                      <div>Speed Mandate: <b className="text-emerald-600 dark:text-emerald-400 font-bold">{isSchoolCrossing ? 'Mandatory Driver Yield (≤ 25 km/h)' : `${incident.target_speed_kmh || 50} km/h (Limit: 50 km/h)`}</b></div>
+                      <div>Status: <b className="text-slate-800 dark:text-slate-200">{isSchoolCrossing ? 'Zero Pedestrian Penalty (VRU Protected)' : (incident.vehicle_color || 'Standard')}</b></div>
                     </div>
                   </div>
                 </div>
@@ -555,7 +557,7 @@ export const IncidentDossierModal: React.FC<IncidentDossierModalProps> = ({
             {/* Print Action Bar */}
             <div className="flex items-center justify-between pt-2">
               <span className="text-xs text-slate-500 dark:text-slate-400">
-                Notice formatted for Parivahan / VAHAN &amp; State Police CCTNS.
+                {isSchoolCrossing ? 'Vision Zero Advisory formatted for transit telemetry and roadside digital signage.' : 'Notice formatted for Parivahan / VAHAN & State Police CCTNS.'}
               </span>
               <Button
                 variant="primary"

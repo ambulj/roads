@@ -378,66 +378,70 @@ export const IncidentList: React.FC<IncidentListProps> = ({
                   </div>
                 </div>
 
-                {/* VAHAN Lookup Trigger & Result */}
-                <div className="p-2.5 bg-zinc-50 dark:bg-zinc-950 rounded border border-zinc-200 dark:border-zinc-800 text-xs space-y-1.5">
-                  <div className="flex items-center justify-between">
-                    <span className="font-bold text-zinc-700 dark:text-zinc-300 text-[11px]">MoRTH VAHAN RTO Registry</span>
-                    <button
-                      onClick={() => handleRTOLookup(selectedIncident.plate_number || 'TN09BK4091')}
-                      disabled={isLookingUpRTO || selectedIncident.plate_number === 'NO PLATE'}
-                      className="px-2 py-0.5 text-[10px] bg-cyan-950 hover:bg-cyan-900 text-cyan-300 border border-cyan-800 rounded disabled:opacity-50"
-                    >
-                      {isLookingUpRTO ? 'Querying...' : 'Query VAHAN'}
-                    </button>
-                  </div>
-
-                  {rtoData && (
-                    <div className="text-[11px] text-zinc-400 border-t border-zinc-800 pt-1.5 space-y-0.5">
-                      <div>Owner: <strong className="text-zinc-200">{rtoData.registered_owner || 'R. Senthil Kumar'}</strong></div>
-                      <div>Vehicle: <strong className="text-zinc-200">{rtoData.vahan_details?.make_model || 'Hyundai Creta 1.5L'}</strong></div>
-                      <div>RTO: <strong className="text-zinc-200">{rtoData.rto_office || 'TN-09 Chennai Central'}</strong></div>
-                      <div>PUCC / Fitness: <span className="text-emerald-400 font-bold">VALID UNTIL 2027</span></div>
+                {/* VAHAN Lookup Trigger & Result (Hidden for Pedestrian / School Crossing) */}
+                {selectedIncident.plate_number && selectedIncident.plate_number !== 'NO PLATE' && selectedIncident.incident_type !== 'SCHOOL_CHILDREN_CROSSING_RISK' && selectedIncident.incident_type !== 'PEDESTRIAN_SAFETY_ZONE' && selectedIncident.incident_type !== 'VULNERABLE_PEDESTRIAN' && (
+                  <div className="p-2.5 bg-zinc-50 dark:bg-zinc-950 rounded border border-zinc-200 dark:border-zinc-800 text-xs space-y-1.5">
+                    <div className="flex items-center justify-between">
+                      <span className="font-bold text-zinc-700 dark:text-zinc-300 text-[11px]">MoRTH VAHAN RTO Registry</span>
+                      <button
+                        onClick={() => handleRTOLookup(selectedIncident.plate_number || 'TN09BK4091')}
+                        disabled={isLookingUpRTO}
+                        className="px-2 py-0.5 text-[10px] bg-cyan-950 hover:bg-cyan-900 text-cyan-300 border border-cyan-800 rounded disabled:opacity-50"
+                      >
+                        {isLookingUpRTO ? 'Querying...' : 'Query VAHAN'}
+                      </button>
                     </div>
-                  )}
-                </div>
+
+                    {rtoData && (
+                      <div className="text-[11px] text-zinc-400 border-t border-zinc-800 pt-1.5 space-y-0.5">
+                        <div>Owner: <strong className="text-zinc-200">{rtoData.registered_owner || 'R. Senthil Kumar'}</strong></div>
+                        <div>Vehicle: <strong className="text-zinc-200">{rtoData.vahan_details?.make_model || 'Hyundai Creta 1.5L'}</strong></div>
+                        <div>RTO: <strong className="text-zinc-200">{rtoData.rto_office || 'TN-09 Chennai Central'}</strong></div>
+                        <div>PUCC / Fitness: <span className="text-emerald-400 font-bold">VALID UNTIL 2027</span></div>
+                      </div>
+                    )}
+                  </div>
+                )}
 
                 {/* Action Buttons */}
                 <div className="pt-2 border-t border-zinc-200 dark:border-zinc-800 space-y-2">
-                  <div className="grid grid-cols-2 gap-2">
-                    {selectedIncident.incident_type === 'SCHOOL_CHILDREN_CROSSING_RISK' ? (
+                  {selectedIncident.incident_type === 'SCHOOL_CHILDREN_CROSSING_RISK' || selectedIncident.incident_type === 'PEDESTRIAN_SAFETY_ZONE' || selectedIncident.incident_type === 'VULNERABLE_PEDESTRIAN' || selectedIncident.plate_number === 'NO PLATE' ? (
+                    <div className="grid grid-cols-1 gap-2">
                       <Button
                         variant="primary"
                         size="sm"
                         onClick={() => {
                           onUpdateStatus?.(selectedIncident.id, 'YIELD_ADVISORY_ACTIVE');
-                          success('School Zone Alert', 'Broadcasted driver yield advisory to corridor buses and roadside digital signage');
+                          success('School Safety Zone Active', 'Broadcasted driver yield advisory to corridor buses and roadside digital signage (Zero pedestrian penalty / No police dispatch).');
                         }}
-                        className="w-full text-xs font-mono bg-emerald-600 hover:bg-emerald-700 text-white border-none"
+                        className="w-full text-xs font-mono bg-emerald-600 hover:bg-emerald-700 text-white border-none py-2"
                       >
-                        Broadcast Yield Alert
+                        Broadcast Driver Yield Advisory
                       </Button>
-                    ) : (
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-2 gap-2">
                       <Button
                         variant="primary"
                         size="sm"
                         onClick={() => handleIssueChallan(selectedIncident)}
-                        disabled={!canIssueEChallan || selectedIncident.plate_number === 'NO PLATE'}
+                        disabled={!canIssueEChallan}
                         className="w-full text-xs font-mono bg-rose-600 hover:bg-rose-700 text-white border-none"
                       >
                         Authorize e-Challan
                       </Button>
-                    )}
 
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleDispatchPCR(selectedIncident)}
-                      disabled={!canEscalatePCR}
-                      className="w-full text-xs font-mono text-cyan-400 border-cyan-800 hover:bg-cyan-950"
-                    >
-                      Dispatch PCR 112
-                    </Button>
-                  </div>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleDispatchPCR(selectedIncident)}
+                        disabled={!canEscalatePCR}
+                        className="w-full text-xs font-mono text-cyan-400 border-cyan-800 hover:bg-cyan-950"
+                      >
+                        Dispatch PCR 112
+                      </Button>
+                    </div>
+                  )}
 
                   <button
                     onClick={() => {

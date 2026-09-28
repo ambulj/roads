@@ -242,7 +242,7 @@ class PedestrianCrossingFusionEngine:
                     "bbox_pixels": p_box,
                     "approaching_speed_kmh": approaching_speed_kmh,
                     "school_poi": poi_name or "School Safety Zone",
-                    "requires_pcr_dispatch": approaching_speed_kmh > 40.0
+                    "requires_pcr_dispatch": False
                 })
             elif in_crosswalk:
                 # 2. Person in Crosswalk + Vehicle Approaching

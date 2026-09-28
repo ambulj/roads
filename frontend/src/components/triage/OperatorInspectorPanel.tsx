@@ -183,70 +183,83 @@ export const OperatorInspectorPanel: React.FC<OperatorInspectorPanelProps> = ({
 
           {/* Profile-Tailored Action Dock */}
           <div className="pt-2 border-t border-slate-200 dark:border-slate-800 space-y-2">
-            {/* 1. Traffic Police Actions */}
-            {canEscalatePCR && (
-              <>
-                <button
-                  onClick={() => {
-                    setConfirmConfig({
-                      isOpen: true,
-                      onClose: () => setConfirmConfig(null),
-                      title: "Authorize 112 Police Patrol Dispatch",
-                      description: `Trigger priority emergency police dispatch for incident: ${selectedIncident.incident_type?.replace(/_/g, ' ')}?`,
-                      variant: "danger",
-                      icon: "pcr",
-                      confirmLabel: "Dispatch 112 Unit",
-                      details: [
-                        { label: "Incident ID", value: selectedIncident.id },
-                        { label: "Location", value: selectedIncident.road_name || "Chennai Corridor", highlight: true },
-                        { label: "License Plate", value: plate },
-                        { label: "Section", value: selectedIncident.mva_section || "MVA Sec 134/187" },
-                      ],
-                      onConfirm: async () => {
-                        if (onEscalateIncident) {
-                          onEscalateIncident(selectedIncident.id);
-                        } else {
-                          showSuccessToast('Police Patrol Dispatched: 112 Patrol Unit notified.');
-                        }
-                        setConfirmConfig(null);
-                      }
-                    });
-                  }}
-                  className="w-full py-2 px-3 rounded-md bg-rose-700 hover:bg-rose-800 text-white font-semibold text-xs flex items-center justify-center gap-1.5 transition cursor-pointer"
-                >
-                  <Send className="w-3.5 h-3.5" />
-                  <span>Dispatch 112 Police Patrol</span>
-                </button>
-
-                {canIssueEChallan && (
+            {/* 1. Pedestrian Safety Zone Advisory (No Challan & No Police Dispatch) */}
+            {(selectedIncident.incident_type === 'SCHOOL_CHILDREN_CROSSING_RISK' || selectedIncident.incident_type === 'PEDESTRIAN_SAFETY_ZONE' || selectedIncident.incident_type === 'VULNERABLE_PEDESTRIAN' || plate === 'NO PLATE') ? (
+              <button
+                onClick={() => {
+                  showSuccessToast('School Zone Advisory Broadcasted', 'Mandatory driver yield active across transit fleet & roadside V2X signage (Zero pedestrian penalty / No police dispatch).');
+                }}
+                className="w-full py-2 px-3 rounded-md bg-emerald-700 hover:bg-emerald-800 text-white font-semibold text-xs flex items-center justify-center gap-1.5 transition cursor-pointer"
+              >
+                <ShieldAlert className="w-3.5 h-3.5 text-emerald-200" />
+                <span>Broadcast School Zone Yield Advisory</span>
+              </button>
+            ) : (
+              /* 2. Traffic Police Actions for Vehicular Violations & Collisions */
+              canEscalatePCR && (
+                <>
                   <button
                     onClick={() => {
                       setConfirmConfig({
                         isOpen: true,
                         onClose: () => setConfirmConfig(null),
-                        title: `Issue Statutory e-Challan: ${plate}`,
-                        description: "Generate and transmit an official electronic challan to the vehicle owner via VAHAN/Parivahan gateway.",
-                        variant: "warning",
-                        icon: "challan",
-                        confirmLabel: "Issue e-Challan",
+                        title: "Authorize 112 Police Patrol Dispatch",
+                        description: `Trigger priority emergency police dispatch for incident: ${selectedIncident.incident_type?.replace(/_/g, ' ')}?`,
+                        variant: "danger",
+                        icon: "pcr",
+                        confirmLabel: "Dispatch 112 Unit",
                         details: [
-                          { label: "Plate Number", value: plate, highlight: true },
-                          { label: "Penalty Amount", value: `₹${selectedIncident.fine_amount_inr || 5000}` },
-                          { label: "Citation", value: selectedIncident.mva_section || "MVA Sec 134/187" },
+                          { label: "Incident ID", value: selectedIncident.id },
+                          { label: "Location", value: selectedIncident.road_name || "Chennai Corridor", highlight: true },
+                          { label: "License Plate", value: plate },
+                          { label: "Section", value: selectedIncident.mva_section || "MVA Sec 134/187" },
                         ],
                         onConfirm: async () => {
-                          showSuccessToast(`Draft e-Challan Generated for ${plate}: ₹${selectedIncident.fine_amount_inr || 5000} (MVA Notice).`);
+                          if (onEscalateIncident) {
+                            onEscalateIncident(selectedIncident.id);
+                          } else {
+                            showSuccessToast('Police Patrol Dispatched: 112 Patrol Unit notified.');
+                          }
                           setConfirmConfig(null);
                         }
                       });
                     }}
-                    className="w-full py-1.5 px-3 rounded-md bg-amber-700 hover:bg-amber-800 text-white font-semibold text-xs flex items-center justify-center gap-1.5 transition cursor-pointer"
+                    className="w-full py-2 px-3 rounded-md bg-rose-700 hover:bg-rose-800 text-white font-semibold text-xs flex items-center justify-center gap-1.5 transition cursor-pointer"
                   >
-                    <FileText className="w-3.5 h-3.5" />
-                    <span>Issue Draft e-Challan Notice</span>
+                    <Send className="w-3.5 h-3.5" />
+                    <span>Dispatch 112 Police Patrol</span>
                   </button>
-                )}
-              </>
+
+                  {canIssueEChallan && (
+                    <button
+                      onClick={() => {
+                        setConfirmConfig({
+                          isOpen: true,
+                          onClose: () => setConfirmConfig(null),
+                          title: `Issue Statutory e-Challan: ${plate}`,
+                          description: "Generate and transmit an official electronic challan to the vehicle owner via VAHAN/Parivahan gateway.",
+                          variant: "warning",
+                          icon: "challan",
+                          confirmLabel: "Issue e-Challan",
+                          details: [
+                            { label: "Plate Number", value: plate, highlight: true },
+                            { label: "Penalty Amount", value: `₹${selectedIncident.fine_amount_inr || 5000}` },
+                            { label: "Citation", value: selectedIncident.mva_section || "MVA Sec 134/187" },
+                          ],
+                          onConfirm: async () => {
+                            showSuccessToast(`Draft e-Challan Generated for ${plate}: ₹${selectedIncident.fine_amount_inr || 5000} (MVA Notice).`);
+                            setConfirmConfig(null);
+                          }
+                        });
+                      }}
+                      className="w-full py-1.5 px-3 rounded-md bg-amber-700 hover:bg-amber-800 text-white font-semibold text-xs flex items-center justify-center gap-1.5 transition cursor-pointer"
+                    >
+                      <FileText className="w-3.5 h-3.5" />
+                      <span>Issue Draft e-Challan Notice</span>
+                    </button>
+                  )}
+                </>
+              )
             )}
 
             {/* 2. RTO / Transport Officer Actions */}
