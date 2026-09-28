@@ -161,9 +161,9 @@ async def upload_stream_media(
                     "lat": lat,
                     "lng": lng,
                     "road_name": loc_name,
-                    "fine_amount_inr": 2000,
+                    "fine_amount_inr": 0.0,
                     "mva_section": "IRC:35:2015 Sec 8 & Motor Vehicles (Driving) Regulations 2017 Reg 11",
-                    "description": "Vision Zero School Zone: Group of students in crosswalk near D.A.V. Senior Secondary School. Mandatory yield enforced."
+                    "description": "Vision Zero School Zone: Group of students in active crosswalk near D.A.V. Senior Secondary School. Mandatory driver yield alert active (Zero pedestrian penalty)."
                 })
                 # 2. Road Infrastructure Work Order for Restriping
                 created_cluster = store.add_cluster({

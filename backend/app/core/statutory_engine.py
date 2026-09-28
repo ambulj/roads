@@ -85,6 +85,18 @@ def compute_statutory_citation(
             "provenance": "MVA_1988_RULE_ENGINE_V2019"
         }
 
+    elif itype in ("SCHOOL_CHILDREN_CROSSING_RISK", "SCHOOL_ZONE_CROSSWALK", "PEDESTRIAN_SAFETY_ZONE"):
+        return {
+            "mva_section": "IRC:35:2015 Sec 8 & Motor Vehicles (Driving) Regulations 2017 Reg 11 (School Zone Driver Yield Mandate)",
+            "fine_amount_inr": 0.0,
+            "statutory_act": "Vision Zero Pedestrian Protection Framework & MVDR 2017 Reg 11",
+            "statutory_severity": "VULNERABLE_PEDESTRIAN_PROTECTION",
+            "enforcement_action": "Active Driver Yield Advisory & V2X School Zone Speed Reduction Alert (Zero Pedestrian Liability)",
+            "camera_position": CAMERA_POSITIONS[1]["code"],
+            "channel": 1,
+            "provenance": "VISION_ZERO_PEDESTRIAN_PROTECTION"
+        }
+
     elif itype in ("VULNERABLE_PEDESTRIAN", "ZEBRA_CROSSING_ENCROACHMENT"):
         return {
             "mva_section": "Section 119 & Section 177 MVA 1988 (Disobedience of Mandatory Road Signs & IRC:35 Pedestrian Markings)",

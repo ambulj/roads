@@ -263,12 +263,12 @@ def reset_and_seed_ground_truth():
             status="ACTIVE_ALERT",
             review_status="AUTO_ADMISSIBLE",
             dispatch_status="UNASSIGNED",
-            fine_amount_inr=2000.0,
+            fine_amount_inr=0.0,
             mva_section="IRC:35:2015 Sec 8 & Motor Vehicles (Driving) Regulations 2017 Reg 11",
             camera_position="FRONT_WINDSHIELD",
             channel=1,
-            statutory_provenance="VISION_ZERO_SCHOOL_ZONE_CORRIDOR",
-            description="Vision Zero School Zone: Group of 22 students in crosswalk near D.A.V. Senior Secondary School. Mandatory driver yield enforced (Speed Limit 25 km/h)."
+            statutory_provenance="VISION_ZERO_PEDESTRIAN_PROTECTION",
+            description="Vision Zero School Zone: Group of 22 students in active crosswalk near D.A.V. Senior Secondary School. Mandatory driver yield alert active (Zero pedestrian penalty)."
         )
         db.add(inc_school)
 

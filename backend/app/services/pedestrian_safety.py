@@ -233,10 +233,10 @@ class PedestrianCrossingFusionEngine:
                 events.append({
                     "event_type": "SCHOOL_CHILDREN_CROSSING_RISK",
                     "severity": "critical" if approaching_speed_kmh > 25.0 else "high",
-                    "title": "School Children Crossing Zone - Mandatory Yield",
-                    "description": f"Group of students detected crossing roadway near {poi_name or 'designated school zone'}. Vehicles mandated to stop.",
+                    "title": "School Children Crossing Zone - Mandatory Driver Yield Advisory",
+                    "description": f"Group of students detected crossing roadway near {poi_name or 'designated school zone'}. Vision Zero protection active (Zero pedestrian fine; approaching vehicles mandated to yield).",
                     "mva_section": "IRC:35:2015 Sec 8 & Motor Vehicles (Driving) Regulations 2017 Reg 11 (Vision Zero School Pedestrian Corridor Protection)",
-                    "fine_amount_inr": 2000,
+                    "fine_amount_inr": 0.0,
                     "student_count": student_cnt,
                     "confidence": round(p_conf, 2),
                     "bbox_pixels": p_box,

@@ -77,13 +77,14 @@ export const IncidentDossierModal: React.FC<IncidentDossierModalProps> = ({
   const isWaterlog = incident.incident_type === 'WATERLOGGING' || incident.incident_type === 'SUBMERGED_POTHOLE';
   const isOpenManhole = incident.incident_type === 'OPEN_MANHOLE';
   const isPothole = incident.incident_type === 'POTHOLE_D40' || isRoadSurfaceDefect(incident.incident_type);
-  const isZebraCrossing = incident.incident_type === 'ZEBRA_CROSSING_ENCROACHMENT' || incident.incident_type.includes('CROSSING');
+  const isSchoolCrossing = incident.incident_type === 'SCHOOL_CHILDREN_CROSSING_RISK' || incident.incident_type === 'PEDESTRIAN_SAFETY_ZONE';
+  const isZebraCrossing = !isSchoolCrossing && (incident.incident_type === 'ZEBRA_CROSSING_ENCROACHMENT' || incident.incident_type.includes('CROSSING'));
   const isRedLight = incident.incident_type === 'RED_LIGHT_VIOLATION';
   const isBusLane = incident.incident_type === 'BUS_LANE_ENCROACHMENT' || incident.incident_type === 'BUS_LANE_ENCROACH';
   const isUnsafeOvertake = incident.incident_type === 'UNSAFE_OVERTAKE';
 
-  // Vehicular Traffic Infraction
-  const isTrafficViolation = isHitAndRun || isRashDriving || isZebraCrossing || isRedLight || isBusLane || isUnsafeOvertake || Boolean(incident.plate_number);
+  // Vehicular Traffic Infraction (excludes pure pedestrian advisory zones)
+  const isTrafficViolation = !isSchoolCrossing && (isHitAndRun || isRashDriving || isZebraCrossing || isRedLight || isBusLane || isUnsafeOvertake || (Boolean(incident.plate_number) && incident.plate_number !== 'NO PLATE'));
 
   // Multi-bus coordinated sightings for Hit & Run / Rash Driving
   const defaultInterceptHistory: ANPRInterceptSighting[] = [
@@ -119,6 +120,15 @@ export const IncidentDossierModal: React.FC<IncidentDossierModalProps> = ({
 
   // Legal code mappings
   const getViolationMVA = () => {
+    if (isSchoolCrossing) {
+      return {
+        section: 'IRC:35:2015 Sec 8 & Motor Vehicles (Driving) Regulations 2017 Reg 11',
+        fine: '₹0 (Driver Advisory - Pedestrians Protected)',
+        fineAmount: 0,
+        penalty: 'Active Driver Yield Advisory, School Zone Speed Limit Mandate (25 km/h)',
+        title: 'VISION ZERO SCHOOL ZONE PEDESTRIAN SAFETY CORRIDOR'
+      };
+    }
     if (isHitAndRun) {
       return {
         section: 'MVA 1988 Sec 134(a)(b) & Sec 184 (Hit & Run causing peril)',
@@ -1009,6 +1019,21 @@ export const IncidentDossierModal: React.FC<IncidentDossierModalProps> = ({
                       </Button>
                     )}
                   </>
+                )}
+
+                {/* 1b. School Zone Pedestrian Protection Advisory */}
+                {isSchoolCrossing && (
+                  <Button
+                    variant="primary"
+                    size="sm"
+                    onClick={() => {
+                      executeStatusUpdate('YIELD_ADVISORY_ACTIVE');
+                      showSuccessToast('School Zone Advisory Broadcast', 'Active yield advisory broadcasted to corridor buses & connected V2X signage (Zero pedestrian fine).');
+                    }}
+                    icon={<ShieldAlert className="w-4 h-4 text-emerald-300" />}
+                  >
+                    Broadcast School Zone Yield Advisory
+                  </Button>
                 )}
 
                 {/* 2. Waterlogging: Dispatch Sump Pump */}

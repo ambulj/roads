@@ -317,7 +317,7 @@ export const IncidentList: React.FC<IncidentListProps> = ({
                       <div className="flex items-center justify-between text-[10px] text-zinc-500 mt-2 pt-1.5 border-t border-zinc-100 dark:border-zinc-800/60">
                         <span>Bus: {inc.reporting_bus_id}</span>
                         {inc.target_speed_kmh && <span className="text-rose-400">Speed: {inc.target_speed_kmh} km/h</span>}
-                        <span>Penalty: ₹{inc.fine_amount_inr || 2000}</span>
+                        <span>Penalty: {inc.incident_type === 'SCHOOL_CHILDREN_CROSSING_RISK' || inc.fine_amount_inr === 0 ? '₹0 (Advisory)' : `₹${(inc.fine_amount_inr ?? 1500).toLocaleString()}`}</span>
                         <span className="font-bold text-zinc-400 uppercase">{inc.status}</span>
                       </div>
                     </div>
@@ -370,7 +370,11 @@ export const IncidentList: React.FC<IncidentListProps> = ({
                   <div className="p-2 bg-zinc-50 dark:bg-zinc-950 rounded border border-zinc-200 dark:border-zinc-800">
                     <div className="text-[10px] text-zinc-500">MVA Statutory Section</div>
                     <div className="font-bold text-zinc-200 text-xs mt-0.5">{selectedIncident.mva_section || 'Sec 184 Dangerous Driving'}</div>
-                    <div className="text-[10px] text-emerald-400 font-bold">Fine: ₹{selectedIncident.fine_amount_inr || 2000}</div>
+                    <div className="text-[10px] text-emerald-400 font-bold">
+                      {selectedIncident.incident_type === 'SCHOOL_CHILDREN_CROSSING_RISK' || selectedIncident.fine_amount_inr === 0
+                        ? 'Fine: ₹0 (Pedestrian Protection Alert)'
+                        : `Fine: ₹${(selectedIncident.fine_amount_inr ?? 1500).toLocaleString()}`}
+                    </div>
                   </div>
                 </div>
 
@@ -380,8 +384,8 @@ export const IncidentList: React.FC<IncidentListProps> = ({
                     <span className="font-bold text-zinc-700 dark:text-zinc-300 text-[11px]">MoRTH VAHAN RTO Registry</span>
                     <button
                       onClick={() => handleRTOLookup(selectedIncident.plate_number || 'TN09BK4091')}
-                      disabled={isLookingUpRTO}
-                      className="px-2 py-0.5 text-[10px] bg-cyan-950 hover:bg-cyan-900 text-cyan-300 border border-cyan-800 rounded"
+                      disabled={isLookingUpRTO || selectedIncident.plate_number === 'NO PLATE'}
+                      className="px-2 py-0.5 text-[10px] bg-cyan-950 hover:bg-cyan-900 text-cyan-300 border border-cyan-800 rounded disabled:opacity-50"
                     >
                       {isLookingUpRTO ? 'Querying...' : 'Query VAHAN'}
                     </button>
@@ -400,15 +404,29 @@ export const IncidentList: React.FC<IncidentListProps> = ({
                 {/* Action Buttons */}
                 <div className="pt-2 border-t border-zinc-200 dark:border-zinc-800 space-y-2">
                   <div className="grid grid-cols-2 gap-2">
-                    <Button
-                      variant="primary"
-                      size="sm"
-                      onClick={() => handleIssueChallan(selectedIncident)}
-                      disabled={!canIssueEChallan}
-                      className="w-full text-xs font-mono bg-rose-600 hover:bg-rose-700 text-white border-none"
-                    >
-                      Authorize e-Challan
-                    </Button>
+                    {selectedIncident.incident_type === 'SCHOOL_CHILDREN_CROSSING_RISK' ? (
+                      <Button
+                        variant="primary"
+                        size="sm"
+                        onClick={() => {
+                          onUpdateStatus?.(selectedIncident.id, 'YIELD_ADVISORY_ACTIVE');
+                          success('School Zone Alert', 'Broadcasted driver yield advisory to corridor buses and roadside digital signage');
+                        }}
+                        className="w-full text-xs font-mono bg-emerald-600 hover:bg-emerald-700 text-white border-none"
+                      >
+                        Broadcast Yield Alert
+                      </Button>
+                    ) : (
+                      <Button
+                        variant="primary"
+                        size="sm"
+                        onClick={() => handleIssueChallan(selectedIncident)}
+                        disabled={!canIssueEChallan || selectedIncident.plate_number === 'NO PLATE'}
+                        className="w-full text-xs font-mono bg-rose-600 hover:bg-rose-700 text-white border-none"
+                      >
+                        Authorize e-Challan
+                      </Button>
+                    )}
 
                     <Button
                       variant="outline"
