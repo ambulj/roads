@@ -74,9 +74,6 @@ export const LoginPortal: React.FC<LoginPortalProps> = ({ onLoginSuccess }) => {
           <div>
             <div className="flex items-center gap-2">
               <span className="font-extrabold text-sm sm:text-base tracking-tight text-white">SeherSaathi</span>
-              <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-slate-800 text-blue-400 border border-slate-700">
-                PROD v2.6.0
-              </span>
             </div>
             <p className="text-[11px] text-slate-400">Greater Chennai Metropolitan Urban Intelligence & Transit Grid</p>
           </div>

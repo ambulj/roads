@@ -17,7 +17,17 @@ import {
   Split,
   Maximize2,
   Droplets,
-  CircleDot
+  CircleDot,
+  Play,
+  Pause,
+  Volume2,
+  VolumeX,
+  ShieldCheck,
+  Video,
+  Image as ImageIcon,
+  Eye,
+  Zap,
+  Bus
 } from "lucide-react";
 
 export type Defect3DType = "pothole" | "crack" | "manhole" | "waterlog";
@@ -69,6 +79,23 @@ export interface PotholeSensorTelemetry {
   defectType?: string;
 }
 
+export interface BusEvidencePass {
+  id: string;
+  busId: string;
+  routeNumber: string;
+  routeName: string;
+  timestamp: string;
+  speedKmh: number;
+  imuGz: number;
+  imageUrl: string;
+  cameraConfidence: number;
+  passNumber: number;
+  label: string;
+  phase: string;
+  relativeTime: string;
+  bBox?: { top: number; left: number; width: number; height: number };
+}
+
 interface RoadMeshVisualizerModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -82,13 +109,112 @@ interface RoadMeshVisualizerModalProps {
   sensorGz?: number;
   cameraConfidence?: number;
   footageImageUrl?: string;
+  videoEvidenceUrl?: string;
+  evidencePasses?: BusEvidencePass[];
   detectedBusId?: string;
   defectType?: string;
   onDispatchWorkOrder?: () => void;
   canDispatchWorkOrder?: boolean;
 }
 
-const DEFAULT_POTHOLE_IMG = "https://upload.wikimedia.org/wikipedia/commons/thumb/1/14/Broken_Roads_in_India%27s_Capital_New_Delhi.jpg/1280px-Broken_Roads_in_India%27s_Capital_New_Delhi.jpg";
+const DEFAULT_POTHOLE_IMG = "/evidence/bus_pass_1_detect.jpg";
+const DEFAULT_DASHCAM_VIDEO = "/evidence/bus_dashcam_pothole_patrol.mp4";
+
+export const buildDefaultPasses = (
+  busId: string,
+  gz: number,
+  conf: number,
+  primaryImg?: string,
+  defectName: string = "D40 Cavity",
+  depth: number = 8.4
+): BusEvidencePass[] => {
+  const pImg = primaryImg && !primaryImg.includes("Broken_Roads_in_India") && !primaryImg.includes("Pothole_in_an_asphalt")
+    ? primaryImg 
+    : "/evidence/bus_pass_1_detect.jpg";
+
+  return [
+    {
+      id: "pass-1-approach",
+      busId: busId || "TN-01-N-1042",
+      routeNumber: "MTC 19B",
+      routeName: "Tambaram ↔ Broadway Express Corridor",
+      timestamp: "Today, 07:14:21.180 IST",
+      speedKmh: 42.4,
+      imuGz: 0.98,
+      imageUrl: "/evidence/bus_pass_1_approach.jpg",
+      cameraConfidence: Math.max(76, conf - 12),
+      passNumber: 1,
+      label: "Pass 1 • Approach (T-1.2s)",
+      phase: "Approach Phase (T -1.2s)",
+      relativeTime: "-1.2s",
+      bBox: { top: 48, left: 42, width: 22, height: 16 }
+    },
+    {
+      id: "pass-1-detect",
+      busId: busId || "TN-01-N-1042",
+      routeNumber: "MTC 19B",
+      routeName: "Tambaram ↔ Broadway Express Corridor",
+      timestamp: "Today, 07:14:22.420 IST",
+      speedKmh: 38.1,
+      imuGz: 1.45,
+      imageUrl: pImg,
+      cameraConfidence: conf,
+      passNumber: 1,
+      label: "Pass 1 • Detection (T-0.5s)",
+      phase: "Stereo Disparity Trigger (T -0.5s)",
+      relativeTime: "-0.5s",
+      bBox: { top: 50, left: 40, width: 28, height: 22 }
+    },
+    {
+      id: "pass-1-impact",
+      busId: busId || "TN-01-N-1042",
+      routeNumber: "MTC 19B",
+      routeName: "Tambaram ↔ Broadway Express Corridor",
+      timestamp: "Today, 07:14:22.920 IST",
+      speedKmh: 34.6,
+      imuGz: gz,
+      imageUrl: "/evidence/bus_pass_1_impact.jpg",
+      cameraConfidence: Math.min(99, conf + 2),
+      passNumber: 1,
+      label: "Pass 1 • Axle Impact (T-0.0s)",
+      phase: "Axle Shock Peak (T 0.0s)",
+      relativeTime: "0.0s",
+      bBox: { top: 60, left: 36, width: 34, height: 26 }
+    },
+    {
+      id: "pass-2-daylight",
+      busId: "TN-02-N-3891",
+      routeNumber: "MTC 570",
+      routeName: "Koyambedu ↔ Siruseri IT Expressway",
+      timestamp: "Today, 09:32:15.040 IST",
+      speedKmh: 41.2,
+      imuGz: Number((gz * 0.93).toFixed(2)),
+      imageUrl: "/evidence/bus_pass_2_confirm.jpg",
+      cameraConfidence: Math.max(88, conf - 4),
+      passNumber: 2,
+      label: "Pass 2 • Validation (09:32)",
+      phase: "Secondary Bus Patrol (2h 18m later)",
+      relativeTime: "+2h 18m",
+      bBox: { top: 54, left: 38, width: 25, height: 18 }
+    },
+    {
+      id: "pass-3-fleet",
+      busId: "TN-09-E-7721",
+      routeNumber: "MTC 21G",
+      routeName: "Vandalur Zoo ↔ Broadway Express",
+      timestamp: "Today, 11:05:48.880 IST",
+      speedKmh: 36.8,
+      imuGz: Number((gz * 0.97).toFixed(2)),
+      imageUrl: "/evidence/bus_pass_3_concurrence.jpg",
+      cameraConfidence: Math.min(97, conf + 1),
+      passNumber: 3,
+      label: "Pass 3 • Fleet Audit (11:05)",
+      phase: "Independent Cross-Fleet Concurrence",
+      relativeTime: "+3h 51m",
+      bBox: { top: 48, left: 44, width: 22, height: 16 }
+    }
+  ];
+};
 
 export const RoadMeshVisualizerModal: React.FC<RoadMeshVisualizerModalProps> = ({
   isOpen,
@@ -103,16 +229,57 @@ export const RoadMeshVisualizerModal: React.FC<RoadMeshVisualizerModalProps> = (
   sensorGz = 2.8,
   cameraConfidence = 94,
   footageImageUrl = DEFAULT_POTHOLE_IMG,
+  videoEvidenceUrl = DEFAULT_DASHCAM_VIDEO,
+  evidencePasses,
   detectedBusId = "Bus #04 (TN-01-N-1042)",
   defectType = "D40 Severe Cavity",
   onDispatchWorkOrder,
   canDispatchWorkOrder = true,
 }) => {
   const mountRef = useRef<HTMLDivElement>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
   const [renderMode, setRenderMode] = useState<"solid" | "wireframe" | "lidar">("solid");
   const [autoRotate, setAutoRotate] = useState(true);
   const [showLayersCutaway, setShowLayersCutaway] = useState(false);
   const [dispatched, setDispatched] = useState(false);
+
+  // Evidence deck states
+  const [evidenceTab, setEvidenceTab] = useState<"dashcam-video" | "multi-pass" | "telemetry">("dashcam-video");
+  const [activePassIdx, setActivePassIdx] = useState(1); // default to detection frame
+  const [isPlayingBurst, setIsPlayingBurst] = useState(false);
+  const [showDepthOverlay, setShowDepthOverlay] = useState(false);
+  const [isVideoPlaying, setIsVideoPlaying] = useState(true);
+  const [isMuted, setIsMuted] = useState(true);
+
+  // Resolve passes
+  const passes: BusEvidencePass[] = evidencePasses && evidencePasses.length > 0 
+    ? evidencePasses 
+    : buildDefaultPasses(detectedBusId, sensorGz, cameraConfidence, footageImageUrl, defectType, depthCm);
+
+  const activePass = passes[activePassIdx] || passes[0];
+
+  // Auto-play burst sequence logic
+  useEffect(() => {
+    let timer: ReturnType<typeof setInterval>;
+    if (isPlayingBurst && evidenceTab === "multi-pass") {
+      timer = setInterval(() => {
+        setActivePassIdx((prev) => (prev + 1) % 3);
+      }, 750);
+    }
+    return () => clearInterval(timer);
+  }, [isPlayingBurst, evidenceTab]);
+
+  const toggleVideoPlay = () => {
+    if (videoRef.current) {
+      if (videoRef.current.paused) {
+        videoRef.current.play();
+        setIsVideoPlaying(true);
+      } else {
+        videoRef.current.pause();
+        setIsVideoPlaying(false);
+      }
+    }
+  };
 
   // Determine initial active 3D defect model from defectType prop
   const getInitialMode = (typeStr: string): Defect3DType => {
@@ -681,60 +848,336 @@ export const RoadMeshVisualizerModal: React.FC<RoadMeshVisualizerModalProps> = (
           {/* Right: Engineering Specifications & Sensor Calibration */}
           <div className="lg:col-span-5 p-5 bg-[#0D1424] border-t lg:border-t-0 lg:border-l border-slate-800 flex flex-col justify-between overflow-y-auto custom-scrollbar space-y-4">
             <div className="space-y-3.5">
-              {/* Sensor & Footage Calibration */}
-              <div>
-                <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2 flex items-center gap-1.5 font-mono">
-                  <Activity className="w-3.5 h-3.5 text-blue-400" />
-                  <span>Real Sensor &amp; Footage Input</span>
-                </h4>
+              {/* Transit Fleet Forensic Evidence Console */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <h4 className="text-xs font-bold text-slate-300 uppercase tracking-wider flex items-center gap-1.5 font-mono">
+                    <Bus className="w-3.5 h-3.5 text-blue-400" />
+                    <span>Transit Bus Optical Evidence</span>
+                  </h4>
+                  <span className="text-[10px] font-mono text-emerald-400 font-semibold px-2 py-0.5 rounded bg-emerald-950/60 border border-emerald-800/60 flex items-center gap-1">
+                    <ShieldCheck className="w-3 h-3 text-emerald-400" />
+                    DPDP ACT 2023 REDACTED
+                  </span>
+                </div>
 
-                <div className="p-3 rounded-xl bg-slate-900/85 border border-slate-800 space-y-2">
-                  <div className="flex items-center justify-between text-xs">
-                    <span className="text-slate-400 flex items-center gap-1.5">
-                      <Camera className="w-3.5 h-3.5 text-rose-400" />
-                      Dashcam Optical Disparity:
-                    </span>
-                    <span className="font-mono font-bold text-emerald-400">{cameraConfidence}% YOLOv8</span>
-                  </div>
+                {/* Evidence Source Mode Tabs */}
+                <div className="flex items-center gap-1 p-1 bg-slate-950/80 rounded-xl border border-slate-800 text-[11px] font-mono">
+                  <button
+                    type="button"
+                    onClick={() => { setEvidenceTab("dashcam-video"); setIsPlayingBurst(false); }}
+                    className={`flex-1 py-1.5 px-2 rounded-lg flex items-center justify-center gap-1.5 transition font-semibold ${
+                      evidenceTab === "dashcam-video" 
+                        ? "bg-blue-600 text-white shadow-xs" 
+                        : "text-slate-400 hover:text-slate-200 hover:bg-slate-800/60"
+                    }`}
+                  >
+                    <Video className="w-3.5 h-3.5 text-blue-300" />
+                    <span>Windshield Video</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setEvidenceTab("multi-pass")}
+                    className={`flex-1 py-1.5 px-2 rounded-lg flex items-center justify-center gap-1.5 transition font-semibold ${
+                      evidenceTab === "multi-pass" 
+                        ? "bg-blue-600 text-white shadow-xs" 
+                        : "text-slate-400 hover:text-slate-200 hover:bg-slate-800/60"
+                    }`}
+                  >
+                    <ImageIcon className="w-3.5 h-3.5 text-emerald-300" />
+                    <span>Multi-Bus Passes ({passes.length})</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => { setEvidenceTab("telemetry"); setIsPlayingBurst(false); }}
+                    className={`py-1.5 px-2 rounded-lg flex items-center justify-center gap-1.5 transition font-semibold ${
+                      evidenceTab === "telemetry" 
+                        ? "bg-blue-600 text-white shadow-xs" 
+                        : "text-slate-400 hover:text-slate-200 hover:bg-slate-800/60"
+                    }`}
+                  >
+                    <Activity className="w-3.5 h-3.5 text-amber-300" />
+                    <span>100Hz IMU</span>
+                  </button>
+                </div>
 
-                  <div className="flex items-center justify-between text-xs">
-                    <span className="text-slate-400 flex items-center gap-1.5">
-                      <Gauge className="w-3.5 h-3.5 text-amber-400" />
-                      100Hz Axle Accelerometer:
-                    </span>
-                    <span className="font-mono font-bold text-rose-400">+{sensorGz}g Vertical Shock</span>
-                  </div>
-
-                  <div className="flex items-center justify-between text-xs pt-1 border-t border-slate-800">
-                    <span className="text-slate-400">Patrolling Fleet Vehicle:</span>
-                    <span className="font-mono text-slate-300 text-[11px]">{detectedBusId}</span>
-                  </div>
-
-                  {/* Dashcam Evidence Frame with AI Bounding Box */}
-                  {footageImageUrl && (
-                    <div className="mt-2 pt-2 border-t border-slate-800">
-                      <div className="text-[10px] text-slate-400 mb-1 flex items-center justify-between font-mono">
-                        <span>Original Dashcam Evidence Frame:</span>
-                        <span className="text-emerald-400 font-bold">STEREO PAIR VERIFIED</span>
-                      </div>
-                      <div className="relative rounded-lg overflow-hidden border border-slate-700 aspect-16/9 max-h-32 bg-slate-950">
-                        <img 
-                          src={footageImageUrl} 
-                          alt="Road Defect Evidence" 
-                          className="w-full h-full object-cover"
+                {/* Tab 1: Live Forward Windshield Dashcam Video Feed */}
+                {evidenceTab === "dashcam-video" && (
+                  <div className="space-y-2">
+                    <div className="relative rounded-xl overflow-hidden border border-slate-700/80 bg-slate-950 aspect-video group">
+                      <video
+                        ref={videoRef}
+                        src={videoEvidenceUrl || DEFAULT_DASHCAM_VIDEO}
+                        autoPlay
+                        loop
+                        muted={isMuted}
+                        playsInline
+                        className={`w-full h-full object-cover transition duration-300 ${
+                          showDepthOverlay ? "filter contrast-150 saturate-200 hue-rotate-15" : ""
+                        }`}
+                      />
+                      {/* False-color Depth Disparity Heatmap Overlay if toggled */}
+                      {showDepthOverlay && (
+                        <div 
+                          className="absolute inset-0 pointer-events-none mix-blend-color-dodge opacity-60 bg-gradient-to-t from-emerald-500/30 via-amber-500/20 to-rose-600/30"
                         />
-                        <div className="absolute inset-2 border-2 border-rose-500 rounded bg-rose-500/15 flex flex-col justify-between p-1.5 pointer-events-none">
-                          <span className="px-1.5 py-0.5 rounded bg-rose-600 text-white font-mono text-[9px] font-bold self-start">
+                      )}
+
+                      {/* Top Dashcam HUD Bar */}
+                      <div className="absolute top-0 left-0 right-0 p-2 bg-gradient-to-b from-black/85 via-black/40 to-transparent flex items-center justify-between text-[10px] font-mono pointer-events-none">
+                        <div className="flex items-center gap-2">
+                          <span className="flex items-center gap-1 px-1.5 py-0.5 rounded bg-rose-600/90 text-white font-bold animate-pulse">
+                            <span className="w-1.5 h-1.5 rounded-full bg-white" />
+                            REC 1080p60
+                          </span>
+                          <span className="text-slate-200 font-semibold">{detectedBusId}</span>
+                        </div>
+                        <span className="text-emerald-400 font-semibold flex items-center gap-1 bg-black/60 px-1.5 py-0.5 rounded border border-emerald-500/30 text-[9px]">
+                          STEREO IMX390 HDR
+                        </span>
+                      </div>
+
+                      {/* Dynamic YOLO Defect Target Box */}
+                      <div className="absolute top-[46%] left-[34%] w-[32%] h-[26%] border-2 border-rose-500 rounded bg-rose-500/15 pointer-events-none transition-all duration-300 flex flex-col justify-between p-1 shadow-lg shadow-rose-950/40">
+                        <div className="flex items-center justify-between">
+                          <span className="px-1 py-0.5 rounded bg-rose-600 text-white font-mono text-[8.5px] font-bold">
                             {defectType}: {cameraConfidence}%
                           </span>
-                          <span className="px-1.5 py-0.5 rounded bg-slate-950/90 text-rose-300 font-mono text-[9px] self-end">
-                            Disparity Depth: {depthCm}cm
+                          <span className="px-1 py-0.5 rounded bg-black/80 text-emerald-400 font-mono text-[8.5px] font-bold">
+                            CALIBRATED
                           </span>
+                        </div>
+                        <div className="flex items-center justify-between text-[8.5px] font-mono text-rose-300 bg-slate-950/80 px-1 rounded">
+                          <span>Est Depth:</span>
+                          <span className="font-bold text-white">{depthCm} cm</span>
+                        </div>
+                      </div>
+
+                      {/* Bottom Dashcam Telemetry HUD */}
+                      <div className="absolute bottom-0 left-0 right-0 p-2 bg-gradient-to-t from-black/90 via-black/50 to-transparent flex items-center justify-between text-[9.5px] font-mono pointer-events-none text-slate-300">
+                        <div>
+                          <span>SPD: </span>
+                          <span className="text-white font-bold">38.4 KM/H</span>
+                          <span className="mx-1.5 text-slate-600">|</span>
+                          <span>IMU: </span>
+                          <span className="text-amber-400 font-bold">+{sensorGz}g Z-AXLE</span>
+                        </div>
+                        <div>
+                          <span className="text-slate-400">12.9516°N, 80.1462°E</span>
                         </div>
                       </div>
                     </div>
-                  )}
-                </div>
+
+                    {/* Video Control Bar */}
+                    <div className="flex items-center justify-between px-2.5 py-1.5 rounded-lg bg-slate-950/70 border border-slate-800 text-[11px] font-mono">
+                      <div className="flex items-center gap-1.5">
+                        <button
+                          type="button"
+                          onClick={toggleVideoPlay}
+                          className="p-1 rounded hover:bg-slate-800 text-slate-300 hover:text-white transition"
+                          title={isVideoPlaying ? "Pause Dashcam" : "Play Dashcam"}
+                        >
+                          {isVideoPlaying ? <Pause className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5" />}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setIsMuted(!isMuted)}
+                          className="p-1 rounded hover:bg-slate-800 text-slate-300 hover:text-white transition"
+                          title={isMuted ? "Unmute" : "Mute"}
+                        >
+                          {isMuted ? <VolumeX className="w-3.5 h-3.5" /> : <Volume2 className="w-3.5 h-3.5" />}
+                        </button>
+                        <span className="text-slate-400 text-[10px]">Patrol Dashcam Stream</span>
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={() => setShowDepthOverlay(!showDepthOverlay)}
+                        className={`px-2 py-0.5 rounded text-[10px] font-semibold border transition flex items-center gap-1 ${
+                          showDepthOverlay 
+                            ? "bg-emerald-600/30 text-emerald-300 border-emerald-500/50" 
+                            : "bg-slate-900 text-slate-400 border-slate-700 hover:text-slate-200"
+                        }`}
+                      >
+                        <Eye className="w-3 h-3" />
+                        <span>Disparity Heatmap: {showDepthOverlay ? "ON" : "OFF"}</span>
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {/* Tab 2: Multi-Bus Patrol Passes & Approach Burst */}
+                {evidenceTab === "multi-pass" && (
+                  <div className="space-y-2">
+                    {/* Pass Selector Pills */}
+                    <div className="flex items-center justify-between gap-1 overflow-x-auto custom-scrollbar pb-1">
+                      <div className="flex items-center gap-1">
+                        {passes.map((p, idx) => (
+                          <button
+                            key={p.id}
+                            type="button"
+                            onClick={() => { setActivePassIdx(idx); setIsPlayingBurst(false); }}
+                            className={`px-2 py-1 rounded-md text-[10px] font-mono whitespace-nowrap border transition ${
+                              activePassIdx === idx
+                                ? "bg-blue-600 text-white border-blue-500 font-bold shadow-xs"
+                                : "bg-slate-900/90 text-slate-400 border-slate-800 hover:border-slate-700 hover:text-slate-200"
+                            }`}
+                          >
+                            {p.label}
+                          </button>
+                        ))}
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setIsPlayingBurst(!isPlayingBurst)}
+                        className={`px-2 py-1 rounded-md text-[10px] font-mono whitespace-nowrap border shrink-0 transition flex items-center gap-1 ${
+                          isPlayingBurst
+                            ? "bg-amber-600 text-white border-amber-500 font-bold animate-pulse"
+                            : "bg-slate-800 text-slate-300 border-slate-700 hover:bg-slate-700"
+                        }`}
+                        title="Auto-step through vehicle approach sequence"
+                      >
+                        {isPlayingBurst ? <Pause className="w-2.5 h-2.5" /> : <Play className="w-2.5 h-2.5" />}
+                        <span>{isPlayingBurst ? "Stop Burst" : "Auto Burst"}</span>
+                      </button>
+                    </div>
+
+                    {/* Displayed Frame */}
+                    <div className="relative rounded-xl overflow-hidden border border-slate-700/80 bg-slate-950 aspect-video">
+                      <img
+                        src={activePass.imageUrl}
+                        alt={`Bus Evidence Pass ${activePass.passNumber}`}
+                        className={`w-full h-full object-cover transition duration-300 ${
+                          showDepthOverlay ? "filter contrast-150 saturate-200 hue-rotate-15" : ""
+                        }`}
+                      />
+                      {/* False-color Depth Disparity Heatmap Overlay if toggled */}
+                      {showDepthOverlay && (
+                        <div 
+                          className="absolute inset-0 pointer-events-none mix-blend-color-dodge opacity-60 bg-gradient-to-t from-emerald-500/30 via-amber-500/20 to-rose-600/30"
+                        />
+                      )}
+
+                      {/* Frame Top Header */}
+                      <div className="absolute top-0 left-0 right-0 p-2 bg-gradient-to-b from-black/85 via-black/40 to-transparent flex items-center justify-between text-[10px] font-mono pointer-events-none">
+                        <div className="flex items-center gap-1.5">
+                          <span className="px-1.5 py-0.5 rounded bg-blue-600 text-white font-bold">
+                            PASS {activePass.passNumber}
+                          </span>
+                          <span className="text-white font-semibold">{activePass.phase}</span>
+                        </div>
+                        <span className="text-slate-300 text-[9px]">{activePass.relativeTime}</span>
+                      </div>
+
+                      {/* Defect Bounding Box */}
+                      {activePass.bBox && (
+                        <div 
+                          style={{
+                            top: `${activePass.bBox.top}%`,
+                            left: `${activePass.bBox.left}%`,
+                            width: `${activePass.bBox.width}%`,
+                            height: `${activePass.bBox.height}%`,
+                          }}
+                          className="absolute border-2 border-rose-500 rounded bg-rose-500/20 flex flex-col justify-between p-1 pointer-events-none shadow-md shadow-rose-950/50"
+                        >
+                          <span className="px-1 py-0.5 rounded bg-rose-600 text-white font-mono text-[8px] font-bold self-start">
+                            {defectType}: {activePass.cameraConfidence}%
+                          </span>
+                          <span className="px-1 py-0.5 rounded bg-slate-950/90 text-rose-300 font-mono text-[8px] self-end">
+                            Depth: {depthCm}cm
+                          </span>
+                        </div>
+                      )}
+
+                      {/* Frame Bottom Telemetry Overlay */}
+                      <div className="absolute bottom-0 left-0 right-0 p-1.5 bg-gradient-to-t from-black/90 via-black/50 to-transparent flex items-center justify-between text-[9.5px] font-mono pointer-events-none text-slate-300">
+                        <div>
+                          <span className="text-slate-400">Bus: </span>
+                          <span className="text-white font-bold">{activePass.busId}</span>
+                          <span className="mx-1 text-slate-600">•</span>
+                          <span className="text-slate-400">{activePass.routeNumber}</span>
+                        </div>
+                        <div>
+                          <span className="text-emerald-400 font-bold">{activePass.speedKmh} km/h</span>
+                          <span className="mx-1 text-slate-600">|</span>
+                          <span className="text-amber-400 font-bold">+{activePass.imuGz}g</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Metadata & Controls Bar */}
+                    <div className="p-2 rounded-lg bg-slate-950/80 border border-slate-800 text-[10.5px] font-mono space-y-1">
+                      <div className="flex items-center justify-between text-slate-300">
+                        <span className="text-slate-400">Patrol Timestamp:</span>
+                        <span className="text-white font-bold">{activePass.timestamp}</span>
+                      </div>
+                      <div className="flex items-center justify-between text-slate-300">
+                        <span className="text-slate-400">Transit Fleet Corridor:</span>
+                        <span className="text-blue-300">{activePass.routeName}</span>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Tab 3: Synchronized 100Hz IMU Axle Waveform */}
+                {evidenceTab === "telemetry" && (
+                  <div className="p-3 rounded-xl bg-slate-950/80 border border-slate-800 space-y-2.5">
+                    <div className="flex items-center justify-between text-[11px] font-mono">
+                      <span className="text-slate-300 font-bold flex items-center gap-1.5">
+                        <Zap className="w-3.5 h-3.5 text-amber-400" />
+                        100Hz Axle IMU Shock Waveform
+                      </span>
+                      <span className="text-emerald-400 font-bold text-[10px]">CROSS-CORR r=0.942</span>
+                    </div>
+
+                    {/* SVG Waveform Graphic */}
+                    <div className="relative h-24 w-full bg-slate-900/90 rounded-lg p-2 border border-slate-800 overflow-hidden">
+                      <svg className="w-full h-full" viewBox="0 0 300 80" preserveAspectRatio="none">
+                        <line x1="0" y1="40" x2="300" y2="40" stroke="#334155" strokeDasharray="3,3" strokeWidth="0.8" />
+                        <line x1="150" y1="0" x2="150" y2="80" stroke="#ef4444" strokeDasharray="2,2" strokeWidth="1" />
+                        
+                        <path
+                          d="M 0,40 Q 40,39 70,41 T 110,40 T 130,48 L 140,52 L 150,8 L 160,65 L 175,25 L 190,50 L 210,36 L 240,42 L 300,40"
+                          fill="none"
+                          stroke="#38bdf8"
+                          strokeWidth="2"
+                        />
+                        <path
+                          d="M 0,40 Q 40,39 70,41 T 110,40 T 130,48 L 140,52 L 150,8 L 160,65 L 175,25 L 190,50 L 210,36 L 240,42 L 300,40 L 300,80 L 0,80 Z"
+                          fill="url(#imuGrad)"
+                          opacity="0.25"
+                        />
+                        <defs>
+                          <linearGradient id="imuGrad" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="0%" stopColor="#38bdf8" />
+                            <stop offset="100%" stopColor="#0284c7" stopOpacity="0" />
+                          </linearGradient>
+                        </defs>
+                      </svg>
+
+                      <div className="absolute top-1 left-[50%] -translate-x-1/2 px-1.5 py-0.5 rounded bg-rose-600/90 text-white font-mono text-[8px] font-bold shadow">
+                        Peak: +{sensorGz}g Wheel Strike
+                      </div>
+                      <div className="absolute bottom-1 left-2 text-[8px] font-mono text-slate-500">
+                        T -1000ms
+                      </div>
+                      <div className="absolute bottom-1 right-2 text-[8px] font-mono text-slate-500">
+                        T +1000ms
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-2 text-[10px] font-mono">
+                      <div className="p-2 rounded bg-slate-900 border border-slate-800">
+                        <span className="text-slate-400 block">Axle Z-Axis Shock</span>
+                        <span className="text-xs font-bold text-rose-400 font-mono">+{sensorGz}g Vertical</span>
+                      </div>
+                      <div className="p-2 rounded bg-slate-900 border border-slate-800">
+                        <span className="text-slate-400 block">Damping Deceleration</span>
+                        <span className="text-xs font-bold text-amber-400 font-mono">0.38 m/s²</span>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* Civil Engineering Material Calculation */}

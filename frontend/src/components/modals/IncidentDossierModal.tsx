@@ -1126,6 +1126,9 @@ export const IncidentDossierModal: React.FC<IncidentDossierModalProps> = ({
           sensorGz={2.7}
           cameraConfidence={94}
           defectType={incident.incident_type}
+          footageImageUrl={incident.snapshot_url || (incident as any).image_url || "/evidence/bus_pass_1_detect.jpg"}
+          detectedBusId={incident.reporting_bus_id || "Bus #04 (TN-01-N-1042 • MTC 19B)"}
+          videoEvidenceUrl="/evidence/bus_dashcam_pothole_patrol.mp4"
         />
       )}
     </div>

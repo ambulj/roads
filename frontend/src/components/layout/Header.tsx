@@ -122,10 +122,6 @@ export const Header: React.FC<HeaderProps> = ({
           <div>
             <div className="flex items-center gap-1.5 leading-tight">
               <span className="font-semibold text-sm text-zinc-900 dark:text-zinc-100 tracking-tight">SeherSaathi</span>
-              <span className="text-xs px-1.5 py-0.5 rounded bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 font-medium">v2.6</span>
-            </div>
-            <div className="text-xs text-zinc-500 hidden sm:block font-normal">
-              Civic Road Intelligence
             </div>
           </div>
         </div>

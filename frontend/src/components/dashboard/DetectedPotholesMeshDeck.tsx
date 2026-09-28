@@ -26,8 +26,8 @@ export const DETECTED_POTHOLES: PotholeSensorTelemetry[] = [
     iriScore: 4.82,
     sensorGz: 2.8,
     cameraConfidence: 94,
-    detectedBusId: "Bus #04 (TN-01-N-1042)",
-    footageImageUrl: "https://upload.wikimedia.org/wikipedia/commons/thumb/1/14/Broken_Roads_in_India%27s_Capital_New_Delhi.jpg/1280px-Broken_Roads_in_India%27s_Capital_New_Delhi.jpg",
+    detectedBusId: "Bus #04 (TN-01-N-1042 • MTC 19B)",
+    footageImageUrl: "/evidence/bus_pass_1_detect.jpg",
   },
   {
     id: "CL-0002",
@@ -41,8 +41,8 @@ export const DETECTED_POTHOLES: PotholeSensorTelemetry[] = [
     iriScore: 3.92,
     sensorGz: 1.9,
     cameraConfidence: 89,
-    detectedBusId: "Bus #18 (DL-1PC-5012)",
-    footageImageUrl: "https://upload.wikimedia.org/wikipedia/commons/thumb/b/b3/Pothole_in_an_asphalt_pavement.jpg/1280px-Pothole_in_an_asphalt_pavement.jpg",
+    detectedBusId: "Bus #18 (TN-02-N-3891 • MTC 570)",
+    footageImageUrl: "/evidence/bus_pass_2_confirm.jpg",
   },
 ];
 

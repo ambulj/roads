@@ -855,6 +855,9 @@ export const WorkOrders: React.FC<WorkOrdersProps> = ({ clusters, onUpdateStatus
           sensorGz={inspectingMeshCluster.defect_type === "D40" ? 2.8 : 1.6}
           cameraConfidence={94}
           defectType={inspectingMeshCluster.defect_name}
+          footageImageUrl={inspectingMeshCluster.before_image_url || "/evidence/bus_pass_1_detect.jpg"}
+          detectedBusId="Bus #04 (TN-01-N-1042 • MTC 19B)"
+          videoEvidenceUrl="/evidence/bus_dashcam_pothole_patrol.mp4"
           onDispatchWorkOrder={() => {
             requestStatusUpdate(inspectingMeshCluster.id, 'in_progress');
             setInspectingMeshCluster(null);
