@@ -211,6 +211,87 @@ def reset_and_seed_ground_truth():
         )
         db.add(wo4)
 
+        # WO-0005: Damaged Crash Barrier / Guardrail
+        wo5 = DBDistressCluster(
+            id="cl-0005",
+            cluster_code="WO-0005",
+            defect_type="MISSING_DIVIDER",
+            defect_name="W-Beam Steel Crash Barrier Deformation (IRC:SP:84)",
+            severity_level="high",
+            rpi_score=82.5,
+            pass_count=11,
+            road_name="Kathipara Cloverleaf Interchange (NH-32 / SH-55 Link)",
+            classification="National Highway Grade Separator",
+            nearest_poi="Kathipara Urban Transit Hub",
+            poi_distance_m=180.0,
+            assigned_agency="NHAI Highway Safety & Structures Wing",
+            agency_phone="+91 44 2841 8900",
+            sla_hours=48,
+            status="open",
+            lat=13.0078,
+            lng=80.2045,
+            before_image_url=ev_pothole_url,
+            detecting_camera_position="FRONT_WINDSHIELD",
+            detecting_channel=1,
+            created_at=now_str,
+            updated_at=now_str
+        )
+        db.add(wo5)
+
+        # WO-0006: Non-Compliant Speed Breaker Repainting
+        wo6 = DBDistressCluster(
+            id="cl-0006",
+            cluster_code="WO-0006",
+            defect_type="UNMARKED_SPEED_BREAKER",
+            defect_name="Unmarked Speed Calming Hump Marking (IRC:99)",
+            severity_level="medium",
+            rpi_score=76.0,
+            pass_count=7,
+            road_name="Sardar Patel Road, Guindy (Near Anna University)",
+            classification="Major Educational Arterial",
+            nearest_poi="Anna University Main Gate 3",
+            poi_distance_m=90.0,
+            assigned_agency="Chennai Traffic Engineering Cell",
+            agency_phone="+91 44 2345 2345",
+            sla_hours=72,
+            status="open",
+            lat=13.0115,
+            lng=80.2360,
+            before_image_url=ev_school_url,
+            detecting_camera_position="FRONT_WINDSHIELD",
+            detecting_channel=1,
+            created_at=now_str,
+            updated_at=now_str
+        )
+        db.add(wo6)
+
+        # WO-0007: Longitudinal Thermal Surface Crack
+        wo7 = DBDistressCluster(
+            id="cl-0007",
+            cluster_code="WO-0007",
+            defect_type="D00",
+            defect_name="Longitudinal Surface Crack Network (IRC:82)",
+            severity_level="medium",
+            rpi_score=71.5,
+            pass_count=5,
+            road_name="East Coast Road (ECR / SH-49 Near Thiruvanmiyur)",
+            classification="Coastal Scenic Highway (SH-49)",
+            nearest_poi="Thiruvanmiyur Beach Access Road",
+            poi_distance_m=340.0,
+            assigned_agency="Tamil Nadu Road Development Company (TNRDC)",
+            agency_phone="+91 44 2449 1010",
+            sla_hours=72,
+            status="resolved",
+            lat=12.9820,
+            lng=80.2610,
+            before_image_url=ev_pothole_url,
+            detecting_camera_position="FRONT_WINDSHIELD",
+            detecting_channel=1,
+            created_at=now_str,
+            updated_at=now_str
+        )
+        db.add(wo7)
+
         # ---------------------------------------------------------------------
         # PART 2: DYNAMIC TRAFFIC & SAFETY INCIDENTS
         # Traffic Police PCR 112, 108 Ambulance, ANPR Enforcement Only
@@ -268,7 +349,7 @@ def reset_and_seed_ground_truth():
             camera_position="FRONT_WINDSHIELD",
             channel=1,
             statutory_provenance="VISION_ZERO_PEDESTRIAN_PROTECTION",
-            description="Vision Zero School Zone: Group of 22 students in active crosswalk near D.A.V. Senior Secondary School. Mandatory driver yield alert active (Zero pedestrian penalty)."
+            description="Vision Zero School Zone: Group of 22 students in active crosswalk near D.A.V. Senior Secondary School. Mandatory driver yield alert active (Zero pedestrian penalty / No police dispatch)."
         )
         db.add(inc_school)
 
@@ -328,8 +409,92 @@ def reset_and_seed_ground_truth():
         )
         db.add(inc_redlight)
 
+        # Incident 5: Reckless High-Speed Driving / Tailgating
+        inc_rash = DBTrafficIncident(
+            id="inc-rash-01",
+            reporting_bus_id="BUS-TN03-3112",
+            incident_type="RASH_DRIVING",
+            plate_number="TN09CL8834",
+            plate_confidence=0.94,
+            vehicle_color="Black",
+            vehicle_class="Scorpio SUV / Motor Vehicle",
+            target_speed_kmh=74.0,
+            is_intercepted=False,
+            snapshot_url=ev_hitrun_url,
+            road_name="Inner Ring Road / 100 Feet Road (Near Vadapalani Junction)",
+            lat=13.0515,
+            lng=80.2120,
+            occurred_at=now_str,
+            status="ACTIVE_ALERT",
+            review_status="AUTO_ADMISSIBLE",
+            dispatch_status="PCR_DISPATCHED",
+            fine_amount_inr=5000.0,
+            mva_section="Motor Vehicles Act 1988 Sec 184 (Dangerous & Reckless Driving)",
+            camera_position="FRONT_WINDSHIELD",
+            channel=1,
+            statutory_provenance="AUTOMATIC_TRAFFIC_ENFORCEMENT",
+            description="Vehicle TN09CL8834 clocked at 74 km/h in 50 km/h municipal corridor with aggressive tailgating. Interceptor PCR unit notified."
+        )
+        db.add(inc_rash)
+
+        # Incident 6: Dedicated BRTS Bus Lane Obstruction
+        inc_buslane = DBTrafficIncident(
+            id="inc-buslane-01",
+            reporting_bus_id="BUS-TN01-1042",
+            incident_type="BUS_LANE_ENCROACHMENT",
+            plate_number="TN11BW3109",
+            plate_confidence=0.96,
+            vehicle_color="Silver",
+            vehicle_class="Commercial Goods Delivery Van",
+            target_speed_kmh=42.0,
+            is_intercepted=False,
+            snapshot_url=ev_hitrun_url,
+            road_name="OMR IT Expressway (Near SRP Tools Junction)",
+            lat=12.9730,
+            lng=80.2460,
+            occurred_at=now_str,
+            status="ACTIVE_ALERT",
+            review_status="AUTO_ADMISSIBLE",
+            dispatch_status="UNASSIGNED",
+            fine_amount_inr=1000.0,
+            mva_section="MVA 1988 Sec 177A & IRC:35 (Dedicated Bus Rapid Transit Lane Encroachment)",
+            camera_position="LEFT_ORVM",
+            channel=3,
+            statutory_provenance="AUTOMATIC_TRAFFIC_ENFORCEMENT",
+            description="Commercial vehicle TN11BW3109 illegally obstructing dedicated BRTS transit corridor. Automated e-Challan notice generated."
+        )
+        db.add(inc_buslane)
+
+        # Incident 7: Vision Zero School Zone Crossing (Harrington Road Link)
+        inc_school2 = DBTrafficIncident(
+            id="inc-school-02",
+            reporting_bus_id="BUS-TN02-4019",
+            incident_type="SCHOOL_CHILDREN_CROSSING_RISK",
+            plate_number="NO PLATE",
+            plate_confidence=0.98,
+            vehicle_color="Pedestrian Zone",
+            vehicle_class="School Pedestrian Safety Zone",
+            target_speed_kmh=20.0,
+            is_intercepted=False,
+            snapshot_url=ev_school_url,
+            road_name="Harrington Road, Chetpet (Lady Andal School Link)",
+            lat=13.0720,
+            lng=80.2380,
+            occurred_at=now_str,
+            status="ACTIVE_ALERT",
+            review_status="AUTO_ADMISSIBLE",
+            dispatch_status="UNASSIGNED",
+            fine_amount_inr=0.0,
+            mva_section="IRC:35:2015 Sec 8 & Motor Vehicles (Driving) Regulations 2017 Reg 11",
+            camera_position="FRONT_WINDSHIELD",
+            channel=1,
+            statutory_provenance="VISION_ZERO_PEDESTRIAN_PROTECTION",
+            description="Vision Zero School Zone: Group of 16 students in active crosswalk near Lady Andal School. Mandatory driver yield alert active (Zero pedestrian penalty / No police dispatch)."
+        )
+        db.add(inc_school2)
+
         db.commit()
-        print("[SUCCESS] Seeded 4 Clean Work Orders & 4 Clean Traffic Incidents.")
+        print("[SUCCESS] Seeded 7 Clean Work Orders & 7 Clean Traffic Incidents.")
     except Exception as e:
         print(f"[RESET] Error during transaction: {e}")
         db.rollback()
