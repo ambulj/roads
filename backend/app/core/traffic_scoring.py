@@ -1,6 +1,6 @@
 """
 ================================================================================
-  RoadSaarthi - Canonical IRC:106-1990 Traffic Scoring & Congestion Engine
+  SeherSaathi - Canonical IRC:106-1990 Traffic Scoring & Congestion Engine
 ================================================================================
   Single canonical source of truth for:
   1. IRC:106-1990 Passenger Car Unit (PCU) equivalence scoring

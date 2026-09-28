@@ -32,7 +32,7 @@ def verify_password(password: str, expected_hash: str, salt: str) -> bool:
     return hmac.compare_digest(computed_hash, expected_hash)
 
 DEFAULT_GOV_PASSWORD = "chennai@2026"
-DEFAULT_SALT = "SheherSaathi_salt_2026"
+DEFAULT_SALT = "SeherSaathi_salt_2026"
 DEFAULT_PW_HASH = "c48c3acb586a71bfac26854fca1a837b984ebd03b4390ae7b19903562294ddc5"
 
 # ── Seeded Government Personas (4 Official Civic Profiles + Admin Superuser) ──
@@ -144,7 +144,7 @@ def create_access_token(data: Dict[str, Any], expires_delta_seconds: Optional[in
         **data,
         "iat": now,
         "exp": expires,
-        "iss": "RoadSaarthi-Auth-Core"
+        "iss": "SeherSaathi-Auth-Core"
     }
     
     header_b64 = _base64url_encode(json.dumps(header, separators=(',', ':')).encode('utf-8'))

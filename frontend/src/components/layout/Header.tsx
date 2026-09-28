@@ -117,11 +117,11 @@ export const Header: React.FC<HeaderProps> = ({
 
         <div className="flex items-center gap-2.5 cursor-pointer" onClick={() => onNavigate("command")}>
           <div className="w-8 h-8 bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-950 rounded-lg flex items-center justify-center font-semibold text-sm shadow-xs">
-            RS
+            SS
           </div>
           <div>
             <div className="flex items-center gap-1.5 leading-tight">
-              <span className="font-semibold text-sm text-zinc-900 dark:text-zinc-100 tracking-tight">RoadSaarthi</span>
+              <span className="font-semibold text-sm text-zinc-900 dark:text-zinc-100 tracking-tight">SeherSaathi</span>
               <span className="text-xs px-1.5 py-0.5 rounded bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 font-medium">v2.6</span>
             </div>
             <div className="text-xs text-zinc-500 hidden sm:block font-normal">

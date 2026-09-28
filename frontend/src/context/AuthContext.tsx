@@ -220,13 +220,13 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | null>(null);
 
-const STORAGE_ROLE_KEY = 'RoadSaarthi_active_role';
-const STORAGE_AUTH_KEY = 'RoadSaarthi_auth_session';
+const STORAGE_ROLE_KEY = 'SeherSaathi_active_role';
+const STORAGE_AUTH_KEY = 'SeherSaathi_auth_session';
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => {
     if (typeof window !== 'undefined') {
-      const savedAuth = localStorage.getItem(STORAGE_AUTH_KEY) || localStorage.getItem('SheherSaathi_auth_session');
+      const savedAuth = localStorage.getItem(STORAGE_AUTH_KEY) || localStorage.getItem('SeherSaathi_auth_session');
       if (savedAuth === 'true') return true;
       if (savedAuth === 'false') return false;
     }
@@ -235,7 +235,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const [activeRole, setActiveRole] = useState<CivicRole>(() => {
     if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem(STORAGE_ROLE_KEY) || localStorage.getItem('SheherSaathi_active_role');
+      const saved = localStorage.getItem(STORAGE_ROLE_KEY) || localStorage.getItem('SeherSaathi_active_role');
       if (saved && CANONICAL_ROLE_MAP[saved]) return CANONICAL_ROLE_MAP[saved];
       try { localStorage.setItem(STORAGE_ROLE_KEY, 'traffic_police'); } catch {}
     }
@@ -246,7 +246,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const refreshKPIs = useCallback(async () => {
     try {
-      const token = typeof window !== 'undefined' ? (localStorage.getItem('RoadSaarthi_jwt_token') || localStorage.getItem('SheherSaathi_jwt_token')) : null;
+      const token = typeof window !== 'undefined' ? (localStorage.getItem('SeherSaathi_jwt_token') || localStorage.getItem('SeherSaathi_jwt_token')) : null;
       const res = await fetch('/api/auth/kpis', {
         headers: token ? { 'Authorization': `Bearer ${token}` } : {}
       });
@@ -276,8 +276,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (res.ok) {
       const data = await res.json();
       if (data?.access_token && typeof window !== 'undefined') {
-        localStorage.setItem('RoadSaarthi_jwt_token', data.access_token);
-        localStorage.setItem('SheherSaathi_jwt_token', data.access_token);
+        localStorage.setItem('SeherSaathi_jwt_token', data.access_token);
+        localStorage.setItem('SeherSaathi_jwt_token', data.access_token);
       }
       return data;
     }
@@ -367,8 +367,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setIsAuthenticated(false);
     if (typeof window !== 'undefined') {
       localStorage.setItem(STORAGE_AUTH_KEY, 'false');
-      localStorage.removeItem('RoadSaarthi_jwt_token');
-      localStorage.removeItem('SheherSaathi_jwt_token');
+      localStorage.removeItem('SeherSaathi_jwt_token');
+      localStorage.removeItem('SeherSaathi_jwt_token');
       sessionStorage.removeItem(STORAGE_AUTH_KEY);
     }
   }, []);

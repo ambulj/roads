@@ -1,6 +1,6 @@
 """
 ================================================================================
-  RoadSaarthi API Router - Two-Tier Urban Intelligence Architecture
+  SeherSaathi API Router - Two-Tier Urban Intelligence Architecture
 ================================================================================
   Tier 1: On-Bus Edge Intelligence & Low-Bandwidth Telemetry Ingestion Layer
   Tier 2: Centralized Civic Command, GIS Analytics & Multi-Agency Operations

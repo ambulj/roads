@@ -1,5 +1,5 @@
 -- ====================================================================
--- RoadSaarthi Sovereign WebGIS Platform — PostgreSQL 16 + PostGIS 3.4
+-- SeherSaathi Sovereign WebGIS Platform — PostgreSQL 16 + PostGIS 3.4
 -- Author: MoHUA / Smart Cities Mission / Government of India
 -- ====================================================================
 

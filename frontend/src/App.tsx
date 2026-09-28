@@ -82,7 +82,7 @@ const getInitialRoute = (): AppRoute => {
   const hash = window.location.hash.replace(/^#\/?/, "").trim();
   if (VALID_ROUTES.includes(hash as AppRoute)) return hash as AppRoute;
   try {
-    const saved = localStorage.getItem("RoadSaarthi_active_route") || localStorage.getItem("SheherSaathi_active_route");
+    const saved = localStorage.getItem("SeherSaathi_active_route") || localStorage.getItem("SeherSaathi_active_route");
     if (saved && VALID_ROUTES.includes(saved as AppRoute)) return saved as AppRoute;
   } catch {}
   return "command";
@@ -146,8 +146,8 @@ export const App: React.FC = () => {
       setCurrentRoute(target);
       window.location.hash = `#/${target}`;
       try {
-        localStorage.setItem("RoadSaarthi_active_route", target);
-        localStorage.setItem("SheherSaathi_active_route", target);
+        localStorage.setItem("SeherSaathi_active_route", target);
+        localStorage.setItem("SeherSaathi_active_route", target);
       } catch {}
       setIsMobileMenuOpen(false);
     }
@@ -244,8 +244,8 @@ export const App: React.FC = () => {
         if (hasAccessToRoute(targetRoute)) {
           setCurrentRoute(targetRoute);
           try {
-            localStorage.setItem("RoadSaarthi_active_route", targetRoute);
-            localStorage.setItem("SheherSaathi_active_route", targetRoute);
+            localStorage.setItem("SeherSaathi_active_route", targetRoute);
+            localStorage.setItem("SeherSaathi_active_route", targetRoute);
           } catch {}
         }
       }

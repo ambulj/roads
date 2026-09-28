@@ -213,7 +213,7 @@ export const SidebarNav: React.FC<SidebarNavProps> = ({
         <div className="md:hidden h-12 px-4 border-b border-zinc-200 dark:border-zinc-800 flex items-center justify-between bg-zinc-100 dark:bg-zinc-950">
           <div className="flex items-center gap-2">
             <Cpu className="w-4 h-4 text-cyan-500" />
-            <span className="font-bold text-xs font-mono text-zinc-900 dark:text-zinc-100 uppercase tracking-wider">RoadSaarthi</span>
+            <span className="font-bold text-xs font-mono text-zinc-900 dark:text-zinc-100 uppercase tracking-wider">SeherSaathi</span>
           </div>
           <button onClick={onCloseMobile} className="p-1 rounded text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100">
             <X className="w-5 h-5" />

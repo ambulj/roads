@@ -22,14 +22,17 @@ if os.path.exists(_ENV_PATH):
     load_dotenv(_ENV_PATH)
 
 # ── SQLite path: always relative to backend directory ───────────────────────
-_SQLITE_FILE = os.path.join(_BACKEND_DIR, "roadsaarthi.db")
-_LEGACY_DB = os.path.join(_BACKEND_DIR, "SheherSaathi.db")
-if not os.path.exists(_SQLITE_FILE) and os.path.exists(_LEGACY_DB):
+_SQLITE_FILE = os.path.join(_BACKEND_DIR, "sehersaathi.db")
+if not os.path.exists(_SQLITE_FILE):
     import shutil
-    try:
-        shutil.copy2(_LEGACY_DB, _SQLITE_FILE)
-    except Exception:
-        _SQLITE_FILE = _LEGACY_DB
+    for legacy_name in ["roadsaarthi.db", "SheherSaathi.db", "SeherSaathi.db"]:
+        legacy_path = os.path.join(_BACKEND_DIR, legacy_name)
+        if os.path.exists(legacy_path):
+            try:
+                shutil.copy2(legacy_path, _SQLITE_FILE)
+                break
+            except Exception:
+                pass
 _SQLITE_URL  = f"sqlite:///{_SQLITE_FILE}"
 
 # ── Determine which database to use ─────────────────────────────────────────
