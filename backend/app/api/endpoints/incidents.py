@@ -34,10 +34,12 @@ class IncidentStatusUpdate(BaseModel):
     is_intercepted: Optional[bool] = None
     intercepted_by: Optional[str] = None
 
+from sqlalchemy import text
+
 @router.get("", response_model=List[TrafficIncident])
 def list_incidents(db: Session = Depends(get_db)):
-    """Retrieve all traffic incidents from persistent database."""
-    rows = db.query(DBTrafficIncident).order_by(DBTrafficIncident.occurred_at.desc()).all()
+    """Retrieve all traffic incidents from persistent database (latest first)."""
+    rows = db.query(DBTrafficIncident).order_by(text("rowid DESC")).all()
     if not rows:
         return store.get_incidents()
     

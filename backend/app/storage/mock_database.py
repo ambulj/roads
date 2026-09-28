@@ -929,8 +929,9 @@ class PersistentStore:
     def get_incidents(self) -> List[Dict[str, Any]]:
         db = self._get_db_session()
         try:
+            from sqlalchemy import text
             from app.models.db_models import DBTrafficIncident
-            rows = db.query(DBTrafficIncident).order_by(DBTrafficIncident.occurred_at.desc()).all()
+            rows = db.query(DBTrafficIncident).order_by(text("rowid DESC")).all()
             return [
                 {
                     "id": r.id,

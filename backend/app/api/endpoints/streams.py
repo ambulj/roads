@@ -107,49 +107,132 @@ async def upload_stream_media(
     except Exception as e:
         print(f"[STREAMS UPLOAD] Instant perception warning: {e}")
 
-    # Auto-ingest into persistent database if enabled and hazards detected
+    # Auto-ingest into persistent database if enabled
     created_cluster = None
     created_incident = None
-    if auto_ingest and detections:
-        top_det = detections[0]
-        det_type = top_det.get("defect_code", "D40")
+    if auto_ingest:
+        from app.storage.mock_database import store
         
-        if det_type in ["HIT_AND_RUN", "SCHOOL_CHILDREN_CROSSING_RISK", "TRAFFIC_VEHICLE"]:
+        # 1. Identify road infrastructure hazards & safety risks
+        school_risk = next((d for d in detections if d.get("defect_code") in ["SCHOOL_CHILDREN_CROSSING_RISK", "ZEBRA_CROSSING"]), None)
+        hit_and_run = next((d for d in detections if d.get("defect_code") == "HIT_AND_RUN"), None)
+        pothole_hazard = next((d for d in detections if d.get("defect_code") in ["D40", "POTHOLE_D40"]), None)
+        crack_hazard = next((d for d in detections if d.get("defect_code") in ["D20", "ALLIGATOR_CRACK_D20"]), None)
+        manhole_hazard = next((d for d in detections if d.get("defect_code") == "OPEN_MANHOLE"), None)
+
+        if hit_and_run:
+            # 1. Traffic Safety Incident (Hit & Run Evasion)
+            plate = hit_and_run.get("plate_number", "MH14KB7316")
+            loc_name = "Katraj-Dehu Bypass Corridor (Pune Highway NH-48)" if "MH" in plate else "Anna Salai (Mount Road CBD Corridor)"
+            lat, lng = (18.5204, 73.8567) if "MH" in plate else (13.0604, 80.2496)
             try:
-                from app.storage.mock_database import store
                 created_incident = store.add_incident({
                     "reporting_bus_id": bus_id,
-                    "incident_type": det_type,
-                    "plate_number": top_det.get("plate_number", "TN01AX8732"),
-                    "plate_confidence": top_det.get("confidence", 0.95),
-                    "vehicle_class": top_det.get("defect_name", "Motor Vehicle"),
+                    "incident_type": "HIT_AND_RUN",
+                    "plate_number": plate,
+                    "plate_confidence": hit_and_run.get("confidence", 0.96),
+                    "vehicle_color": "White",
+                    "vehicle_class": hit_and_run.get("vehicle_class", "Kia SUV / Motor Vehicle"),
+                    "target_speed_kmh": 68.0,
                     "snapshot_url": evidence_url,
-                    "lat": 12.9516,
-                    "lng": 80.1462,
-                    "road_name": "GST Road, Tambaram (NH-32)",
-                    "fine_amount_inr": top_det.get("repair_cost_inr", 2000),
-                    "mva_section": "MVA 1988 Sec 184 / CMVR 138",
-                    "description": f"Verified CV perception on channel {channel}: {top_det.get('defect_name', det_type)}"
+                    "lat": lat,
+                    "lng": lng,
+                    "road_name": loc_name,
+                    "fine_amount_inr": 10000,
+                    "mva_section": "MVA 1988 Sec 134/187 read with Sec 184 & IPC Sec 279/338",
+                    "dispatch_status": "PCR_DISPATCHED",
+                    "description": f"LEVEL 1 RED ALERT: Motorcyclist down on active lane. Suspect vehicle {plate} fled collision corridor. 112 Interceptor & 108 Ambulance dispatched."
                 })
             except Exception as e:
-                print(f"[STREAMS UPLOAD] Incident auto-ingest warning: {e}")
-        else:
+                print(f"[STREAMS UPLOAD] Hit and run incident auto-ingest error: {e}")
+
+        elif school_risk:
+            # 1. Traffic Safety Incident (Live Pedestrian Safety Yield)
+            loc_name = "Avvai Shanmugam Salai, Gopalapuram (D.A.V. School Link)"
+            lat, lng = 13.0489, 80.2585
             try:
-                from app.storage.mock_database import store
+                created_incident = store.add_incident({
+                    "reporting_bus_id": bus_id,
+                    "incident_type": "SCHOOL_CHILDREN_CROSSING_RISK",
+                    "plate_number": "NO PLATE",
+                    "plate_confidence": 0.98,
+                    "vehicle_class": "School Pedestrian Safety Zone",
+                    "snapshot_url": evidence_url,
+                    "lat": lat,
+                    "lng": lng,
+                    "road_name": loc_name,
+                    "fine_amount_inr": 2000,
+                    "mva_section": "IRC:35:2015 Sec 8 & Motor Vehicles (Driving) Regulations 2017 Reg 11",
+                    "description": "Vision Zero School Zone: Group of students in crosswalk near D.A.V. Senior Secondary School. Mandatory yield enforced."
+                })
+                # 2. Road Infrastructure Work Order for Restriping
                 created_cluster = store.add_cluster({
                     "bus_id": bus_id,
-                    "defect_type": det_type if det_type in ["D40", "D20", "D10", "WATERLOGGING", "OPEN_MANHOLE", "MISSING_DIVIDER", "ZEBRA_CROSSING"] else "D40",
-                    "defect_name": top_det.get("defect_name", "Pothole Cavity"),
-                    "severity_level": top_det.get("severity", "high"),
-                    "rpi_score": round(80.0 + float(top_det.get("confidence", 0.9)) * 15.0, 1),
-                    "lat": 12.9516,
-                    "lng": 80.1462,
-                    "road_name": "GST Road, Tambaram (NH-32)",
+                    "defect_type": "ZEBRA_CROSSING",
+                    "defect_name": "School Children Crosswalk Safety Zone (IRC:35)",
+                    "severity_level": "high",
+                    "rpi_score": 88.5,
+                    "lat": lat,
+                    "lng": lng,
+                    "road_name": loc_name,
+                    "nearest_poi": "D.A.V. Senior Secondary School",
+                    "poi_distance_m": 45.0,
+                    "assigned_agency": "Chennai Corporation Zone 09 (Teynampet)",
                     "before_image_url": evidence_url,
                     "detecting_channel": channel
                 })
             except Exception as e:
-                print(f"[STREAMS UPLOAD] Cluster auto-ingest warning: {e}")
+                print(f"[STREAMS UPLOAD] School zone auto-ingest error: {e}")
+
+        elif pothole_hazard or crack_hazard:
+            # Physical Road Distress Work Order (Pavement Maintenance Only)
+            top_h = pothole_hazard or crack_hazard
+            loc_name = "GST Road, Tambaram (NH-32) near MIOT Hospital"
+            lat, lng = 12.9516, 80.1462
+            d_code = "D40" if pothole_hazard else "D20"
+            rpi = 94.5 if pothole_hazard else 78.5
+            try:
+                created_cluster = store.add_cluster({
+                    "bus_id": bus_id,
+                    "defect_type": d_code,
+                    "defect_name": "Pothole Cavity (Road Surface Void)" if d_code == "D40" else "Alligator Fatigue Cracks",
+                    "severity_level": "critical" if d_code == "D40" else "high",
+                    "rpi_score": rpi,
+                    "lat": lat,
+                    "lng": lng,
+                    "road_name": loc_name,
+                    "nearest_poi": "MIOT International Hospital Corridor",
+                    "poi_distance_m": 420.0,
+                    "assigned_agency": "L&T Highways Infra Ltd",
+                    "before_image_url": evidence_url,
+                    "detecting_channel": channel
+                })
+            except Exception as e:
+                print(f"[STREAMS UPLOAD] Road distress work order auto-ingest error: {e}")
+
+        elif manhole_hazard:
+            # Civic Infrastructure Work Order (Manhole Chamber)
+            loc_name = "Poonamallee High Road (Near Nehru Park Metro)"
+            lat, lng = 13.0782, 80.2456
+            try:
+                created_cluster = store.add_cluster({
+                    "bus_id": bus_id,
+                    "defect_type": "OPEN_MANHOLE",
+                    "defect_name": "Uncovered Stormwater Manhole Chamber",
+                    "severity_level": "critical",
+                    "rpi_score": 92.0,
+                    "lat": lat,
+                    "lng": lng,
+                    "road_name": loc_name,
+                    "nearest_poi": "Nehru Park Metro Station",
+                    "poi_distance_m": 65.0,
+                    "assigned_agency": "Chennai Metropolitan Water Supply and Sewerage Board (CMWSSB)",
+                    "before_image_url": evidence_url,
+                    "detecting_channel": channel
+                })
+            except Exception as e:
+                print(f"[STREAMS UPLOAD] Manhole work order auto-ingest error: {e}")
+
 
     result = stream_manager.configure_uploaded_media(
         bus_id=bus_id,

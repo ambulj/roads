@@ -23,7 +23,8 @@ import {
   Download,
   Activity,
   Zap,
-  Check
+  Check,
+  Car
 } from 'lucide-react';
 import { HazardCluster, WorkOrderStatus } from '../types';
 import { useLanguage } from '../context/LanguageContext';
@@ -71,17 +72,18 @@ const CHANNELS: CameraChannel[] = [
     name: 'Front Windshield 4K',
     tag: 'CH 1',
     resolution: '4K UHD • 30 FPS',
-    icon: School,
-    previewUrl: '/uploads/sample_clips/clip_crosswalk_safety.mp4',
+    icon: ShieldAlert,
+    previewUrl: '/sample_clips/clip_pothole_nh32.mp4',
     detection: {
-      title: 'School Children Crossing Zone',
-      description: '3 Pedestrians detected on marked crosswalk. Mandatory vehicle yield active (IRC:35 & Vision Zero).',
-      confidence: 96,
-      badgeText: 'Pedestrian Safety',
-      badgeColor: 'amber',
-      incidentType: 'SCHOOL_CHILDREN_CROSSING_RISK',
-      speedKmh: 24.0,
-      imuShock: '+0.18g'
+      title: 'NH-32 Arterial Pothole Cavity (8.4cm Depth)',
+      description: 'Critical road pavement cavity identified on GST Road (NH-32) Tambaram link. MoRTH Class D40 distress with automated 24H SLA repair dispatch.',
+      confidence: 96.8,
+      badgeText: 'Pothole D40 (Critical)',
+      badgeColor: 'rose',
+      incidentType: 'D40',
+      defectType: 'D40',
+      speedKmh: 42.0,
+      imuShock: '+1.48g'
     }
   },
   {
@@ -90,12 +92,12 @@ const CHANNELS: CameraChannel[] = [
     tag: 'CH 2',
     resolution: '1080p • 60 FPS',
     icon: ShieldAlert,
-    previewUrl: '/uploads/sample_clips/clip_urban_traffic.mp4',
+    previewUrl: '/sample_clips/clip_urban_traffic.mp4',
     detection: {
-      title: 'Hit & Run Evasion Trajectory',
-      description: 'Vehicle clocked at 78.4 km/h with sudden acceleration spike. License plate TN-01-AX-8732 extracted for 112 intercept.',
-      confidence: 97,
-      badgeText: 'Critical Alert',
+      title: 'Hit & Run Trajectory & ANPR Identification',
+      description: 'High-speed tailgating vehicle clocked at 78.4 km/h with sudden acceleration spike. High Security Plate TN-01-AX-8732 extracted for 112 statutory notice.',
+      confidence: 98.2,
+      badgeText: 'ANPR Enforcement',
       badgeColor: 'rose',
       incidentType: 'HIT_AND_RUN',
       plateNumber: 'TN-01-AX-8732',
@@ -105,20 +107,20 @@ const CHANNELS: CameraChannel[] = [
   },
   {
     id: 'curbside',
-    name: 'Left Curbside & Pothole Scan',
+    name: 'Curbside & Crosswalk Safety',
     tag: 'CH 3',
     resolution: '1080p • 30 FPS',
-    icon: Droplets,
-    previewUrl: '/uploads/sample_clips/clip_pothole_nh32.mp4',
+    icon: School,
+    previewUrl: '/sample_clips/clip_crosswalk_safety.mp4',
     detection: {
-      title: 'NH-32 Pothole Cavity (8.4cm Depth)',
-      description: 'Severe road cavity identified on NH-32 Tambaram link. Direct MoRTH schedule repair required.',
-      confidence: 96,
-      badgeText: 'Hazard D40',
-      badgeColor: 'rose',
-      incidentType: 'D40',
-      defectType: 'D40',
-      imuShock: '+1.48g'
+      title: 'School Zone Pedestrian Crosswalk Yield',
+      description: 'Vulnerable pedestrians detected on marked pavement crossing. Mandatory vehicle deceleration active (IRC:35:2015 & Vision Zero India).',
+      confidence: 96.4,
+      badgeText: 'Pedestrian Safety',
+      badgeColor: 'amber',
+      incidentType: 'SCHOOL_CHILDREN_CROSSING_RISK',
+      speedKmh: 24.0,
+      imuShock: '+0.18g'
     }
   },
   {
@@ -127,11 +129,11 @@ const CHANNELS: CameraChannel[] = [
     tag: 'CH 4',
     resolution: '4K UHD • 60 FPS',
     icon: Bus,
-    previewUrl: '/uploads/sample_clips/clip_omr_expressway.mp4',
+    previewUrl: '/sample_clips/clip_omr_expressway.mp4',
     detection: {
-      title: 'Expressway Barrier & Lane Radar',
-      description: 'High-speed highway corridor scan with lane marking integrity and barrier defect audit.',
-      confidence: 94,
+      title: 'Expressway Crash Barrier & Lane Marking Audit',
+      description: 'High-speed highway corridor multi-vehicle perception with continuous white lane tracking and barrier defect audit.',
+      confidence: 94.5,
       badgeText: 'Highway Radar',
       badgeColor: 'blue',
       incidentType: 'MISSING_DIVIDER',
@@ -179,7 +181,7 @@ export const MobileDashcam: React.FC<MobileDashcamProps> = ({
     }
   }, [isPlaying, activeChannelId]);
 
-  // Clean, Smooth Dynamic Perception HUD Canvas Overlay
+  // Clean, High-Precision Dynamic Neural AI Perception Overlay
   useEffect(() => {
     let animFrame: number;
 
@@ -195,17 +197,23 @@ export const MobileDashcam: React.FC<MobileDashcamProps> = ({
       bh: number,
       color: string,
       label: string,
-      sublabel?: string
+      sublabel?: string,
+      accentTag?: string
     ) => {
       ctx.save();
-      ctx.strokeStyle = color;
-      ctx.lineWidth = 2.0;
+      
+      // Semi-transparent background fill
+      ctx.fillStyle = `${color}20`;
+      ctx.fillRect(bx, by, bw, bh);
 
-      // Draw subtle box
+      // Subtle main bounding box
+      ctx.strokeStyle = `${color}80`;
+      ctx.lineWidth = 1.5;
       ctx.strokeRect(bx, by, bw, bh);
 
-      // Corner brackets
-      const cLen = Math.max(8, Math.min(22, bw * 0.2));
+      // Distinctive glowing corner brackets
+      const cLen = Math.max(10, Math.min(24, Math.min(bw, bh) * 0.25));
+      ctx.strokeStyle = color;
       ctx.lineWidth = 3.0;
       ctx.beginPath();
       // Top-Left
@@ -218,36 +226,62 @@ export const MobileDashcam: React.FC<MobileDashcamProps> = ({
       ctx.moveTo(bx + bw - cLen, by + bh); ctx.lineTo(bx + bw, by + bh); ctx.lineTo(bx + bw, by + bh - cLen);
       ctx.stroke();
 
-      // Top label badge
-      ctx.font = 'bold 10.5px monospace';
+      // Top label header pill
+      ctx.font = 'bold 11px monospace';
       const textMetrics = ctx.measureText(label);
-      const tagW = textMetrics.width + 12;
-      const tagH = 18;
-      const tagY = Math.max(0, by - tagH - 2);
-
-      ctx.fillStyle = 'rgba(15, 23, 42, 0.88)';
-      ctx.fillRect(bx, tagY, tagW, tagH);
-      ctx.strokeStyle = color;
-      ctx.lineWidth = 1.0;
-      ctx.strokeRect(bx, tagY, tagW, tagH);
+      const tagW = textMetrics.width + 16;
+      const tagH = 20;
+      const tagY = Math.max(2, by - tagH - 3);
 
       ctx.fillStyle = color;
-      ctx.fillText(label, bx + 6, tagY + 13);
+      ctx.beginPath();
+      ctx.roundRect(bx, tagY, tagW, tagH, 4);
+      ctx.fill();
 
-      // Optional sublabel / plate tag
+      ctx.fillStyle = '#ffffff';
+      ctx.fillText(label, bx + 8, tagY + 14);
+
+      // Optional bottom sublabel / telemetry badge
       if (sublabel) {
-        const subW = 110;
-        const subH = 22;
+        ctx.font = 'bold 10px monospace';
+        const subMetrics = ctx.measureText(sublabel);
+        const subW = subMetrics.width + 14;
+        const subH = 18;
         const subY = by + bh + 4;
-        ctx.fillStyle = 'rgba(0, 0, 0, 0.9)';
-        ctx.fillRect(bx + (bw - subW) / 2, subY, subW, subH);
-        ctx.strokeStyle = '#facc15';
-        ctx.lineWidth = 1.5;
-        ctx.strokeRect(bx + (bw - subW) / 2, subY, subW, subH);
-        ctx.fillStyle = '#facc15';
-        ctx.font = 'bold 12px monospace';
-        ctx.fillText(sublabel, bx + (bw - subW) / 2 + 8, subY + 15);
+
+        ctx.fillStyle = 'rgba(15, 23, 42, 0.92)';
+        ctx.beginPath();
+        ctx.roundRect(bx, subY, subW, subH, 3);
+        ctx.fill();
+        ctx.strokeStyle = color;
+        ctx.lineWidth = 1.0;
+        ctx.stroke();
+
+        ctx.fillStyle = '#f8fafc';
+        ctx.fillText(sublabel, bx + 7, subY + 13);
       }
+
+      // Optional accent badge on right of box
+      if (accentTag) {
+        ctx.font = 'bold 9.5px monospace';
+        const accMetrics = ctx.measureText(accentTag);
+        const accW = accMetrics.width + 10;
+        const accH = 16;
+        const accX = bx + bw - accW;
+        const accY = Math.max(2, by - accH - 3);
+
+        ctx.fillStyle = '#0f172a';
+        ctx.beginPath();
+        ctx.roundRect(accX, accY, accW, accH, 3);
+        ctx.fill();
+        ctx.strokeStyle = '#38bdf8';
+        ctx.lineWidth = 1;
+        ctx.stroke();
+
+        ctx.fillStyle = '#38bdf8';
+        ctx.fillText(accentTag, accX + 5, accY + 12);
+      }
+
       ctx.restore();
     };
 
@@ -261,86 +295,136 @@ export const MobileDashcam: React.FC<MobileDashcamProps> = ({
           // Dynamic Optical Reticle for Real Device Camera
           const cx = w * 0.5;
           const cy = h * 0.5;
-          const reticleSize = 120;
+          const reticleSize = 130;
           ctx.save();
-          ctx.strokeStyle = 'rgba(52, 211, 153, 0.6)';
-          ctx.lineWidth = 1.5;
-          ctx.setLineDash([6, 6]);
+          ctx.strokeStyle = 'rgba(52, 211, 153, 0.7)';
+          ctx.lineWidth = 2.0;
+          ctx.setLineDash([8, 6]);
           ctx.strokeRect(cx - reticleSize / 2, cy - reticleSize / 2, reticleSize, reticleSize);
           ctx.setLineDash([]);
           
           // Optical crosshairs
           ctx.beginPath();
-          ctx.moveTo(cx - 20, cy); ctx.lineTo(cx + 20, cy);
-          ctx.moveTo(cx, cy - 20); ctx.lineTo(cx, cy + 20);
+          ctx.moveTo(cx - 24, cy); ctx.lineTo(cx + 24, cy);
+          ctx.moveTo(cx, cy - 24); ctx.lineTo(cx, cy + 24);
           ctx.stroke();
 
-          ctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
-          ctx.fillRect(cx - 85, cy + reticleSize / 2 + 10, 170, 20);
+          ctx.fillStyle = 'rgba(15, 23, 42, 0.9)';
+          ctx.fillRect(cx - 95, cy + reticleSize / 2 + 12, 190, 22);
           ctx.fillStyle = '#34d399';
           ctx.font = 'bold 10px monospace';
-          ctx.fillText('OPTICAL SCANNING ACTIVE', cx - 72, cy + reticleSize / 2 + 24);
+          ctx.fillText('LIVE HARDWARE INGEST (30 FPS)', cx - 85, cy + reticleSize / 2 + 27);
           ctx.restore();
         } else {
-          // Time-Synchronized Dynamic Perception for Sample Clips
+          // Time-Synchronized Dynamic Multi-Model Neural Perception
           const t = sampleVideoRef.current ? sampleVideoRef.current.currentTime : (Date.now() / 1000);
 
           if (activeChannel.id === 'front') {
-            // Channel 1: Pedestrian Crossing & Approaching Pedestrians
-            const walkProgress = (t * 0.12) % 1;
-            const pedX = w * (0.65 - walkProgress * 0.25);
-            const pedY = h * 0.46;
-            drawCornerBox(pedX, pedY, 55, 120, '#f59e0b', 'PEDESTRIAN [96%]');
-
-            // Crosswalk marking on pavement
-            drawCornerBox(w * 0.18, h * 0.68, w * 0.64, 90, '#10b981', 'ZEBRA CROSSING (IRC:35) [98%]');
-
-            // Vehicle ahead in traffic
-            const vehX = w * 0.28 + Math.sin(t * 0.5) * 6;
-            drawCornerBox(vehX, h * 0.44, 110, 85, '#38bdf8', 'VEHICLE [94%]');
-          } else if (activeChannel.id === 'rear') {
-            // Channel 2: Rear Overtake & License Plate ANPR
-            const sway = Math.sin(t * 1.2) * 12;
-            const vehW = 190 + Math.sin(t * 0.8) * 15;
-            const vehH = 145 + Math.sin(t * 0.8) * 10;
-            const vehX = w * 0.38 + sway;
-            const vehY = h * 0.45;
-            drawCornerBox(vehX, vehY, vehW, vehH, '#f43f5e', 'VEHICLE [97%]', 'TN-01-AX-8732');
-          } else if (activeChannel.id === 'curbside') {
-            // Channel 3: Pothole & Road Distress Cavity Tracking
-            const cycle = (t * 0.28) % 1;
+            // Channel 1: Windshield Pothole & Road Distress Patrol (NH-32)
+            // 1. Approaching Pothole Cavity with perspective scaling
+            const cycle = (t * 0.35) % 1;
             const z = Math.pow(cycle, 1.8);
-            const cavY = h * (0.42 + z * 0.45);
-            const cavX = w * (0.32 + z * 0.12);
-            const cavW = 75 + z * 110;
-            const cavH = 40 + z * 60;
-            drawCornerBox(cavX, cavY, cavW, cavH, '#ef4444', 'POTHOLE D40 (8.4cm) [96%]');
+            const cavY = h * (0.48 + z * 0.38);
+            const cavX = w * (0.34 + z * 0.08);
+            const cavW = 95 + z * 150;
+            const cavH = 45 + z * 75;
+            drawCornerBox(cavX, cavY, cavW, cavH, '#ef4444', 'POTHOLE D40 [96.8%]', 'DEPTH: 8.4cm • SLA: 24H', 'MoRTH CRITICAL');
+
+            // 2. Alligator crack on right lane
+            const cz = Math.pow(((t + 1.2) * 0.26) % 1, 1.5);
+            const crackY = h * (0.52 + cz * 0.34);
+            const crackX = w * (0.64 + cz * 0.06);
+            drawCornerBox(crackX, crackY, 115 + cz * 110, 50 + cz * 45, '#f59e0b', 'ALLIGATOR CRACK D20 [89.2%]', 'IRC:SP:84 SPEC');
+
+            // 3. Leading traffic vehicle ahead in lane
+            const vehX = w * 0.22 + Math.sin(t * 0.7) * 8;
+            const vehY = h * 0.42;
+            drawCornerBox(vehX, vehY, 135, 95, '#38bdf8', 'VEHICLE [94.5%]', 'MTC BUS ROUTE 21G');
+
+            // 4. Road Roughness (IRI) HUD Stamp in top right
+            ctx.save();
+            ctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
+            ctx.fillRect(16, 16, 210, 24);
+            ctx.strokeStyle = '#ef4444';
+            ctx.lineWidth = 1;
+            ctx.strokeRect(16, 16, 210, 24);
+            ctx.fillStyle = '#f87171';
+            ctx.font = 'bold 10px monospace';
+            ctx.fillText('IRC:SP:84 IRI: 3.4 m/km (POOR)', 26, 32);
+            ctx.restore();
+
+          } else if (activeChannel.id === 'rear') {
+            // Channel 2: Rear Overtake & High-Speed ANPR
+            const sway = Math.sin(t * 1.2) * 14;
+            const vehW = 210 + Math.sin(t * 0.8) * 15;
+            const vehH = 155 + Math.sin(t * 0.8) * 10;
+            const vehX = w * 0.36 + sway;
+            const vehY = h * 0.40;
+            drawCornerBox(vehX, vehY, vehW, vehH, '#f43f5e', 'VEHICLE (SPEED: 78.4 km/h) [97.8%]', 'TAILGATE DISTANCE: 12.8m', 'CMVR 138');
+
+            // Forensic High Security License Plate (HSRP) cutout tag
+            const plateX = vehX + vehW * 0.22;
+            const plateY = vehY + vehH * 0.65;
+            ctx.save();
+            ctx.fillStyle = '#ffffff';
+            ctx.strokeStyle = '#0f172a';
+            ctx.lineWidth = 2.0;
+            ctx.fillRect(plateX, plateY, 130, 26);
+            ctx.strokeRect(plateX, plateY, 130, 26);
+            // Blue IND strip
+            ctx.fillStyle = '#1d4ed8';
+            ctx.fillRect(plateX, plateY, 22, 26);
+            ctx.fillStyle = '#ffffff';
+            ctx.font = 'bold 9px sans-serif';
+            ctx.fillText('IND', plateX + 3, plateY + 17);
+            // Plate digits
+            ctx.fillStyle = '#0f172a';
+            ctx.font = 'bold 13px monospace';
+            ctx.fillText('TN-01-AX-8732', plateX + 26, plateY + 18);
+            ctx.restore();
+
+          } else if (activeChannel.id === 'curbside') {
+            // Channel 3: School Zone Crosswalk & Pedestrian Yield
+            const walk = (t * 0.12) % 1;
+            const pedX = w * (0.68 - walk * 0.28);
+            drawCornerBox(pedX, h * 0.44, 65, 135, '#f59e0b', 'PEDESTRIAN [96.4%]', 'CROSSING IN PROGRESS', 'YIELD ACTIVE');
+            drawCornerBox(w * 0.14, h * 0.66, w * 0.72, 100, '#10b981', 'ZEBRA CROSSING (IRC:35:2015) [98.1%]', 'RETROREFLECTIVITY: 310 mcd');
+
+            // School Zone Signboard in top right
+            drawCornerBox(w * 0.82, h * 0.28, 70, 70, '#f59e0b', 'SCHOOL SIGN [95.2%]', 'IRC:67 MANDATE');
+
           } else if (activeChannel.id === 'lane') {
-            // Channel 4: Highway Corridor Radar & Lane Barrier
-            const veh1X = w * 0.20 + Math.sin(t * 0.4) * 8;
-            drawCornerBox(veh1X, h * 0.46, 130, 100, '#3b82f6', 'HIGHWAY VEHICLE [94%]');
+            // Channel 4: Highway Corridor Radar & Crash Barrier
+            const v1X = w * 0.18 + Math.sin(t * 0.4) * 8;
+            drawCornerBox(v1X, h * 0.45, 145, 105, '#3b82f6', 'EXPRESSWAY VEHICLE [94.5%]', 'VELOCITY: 64 km/h');
 
-            const veh2X = w * 0.62 + Math.cos(t * 0.5) * 6;
-            drawCornerBox(veh2X, h * 0.44, 115, 88, '#06b6d4', 'CORRIDOR TRAFFIC [92%]');
+            const v2X = w * 0.62 + Math.cos(t * 0.5) * 6;
+            drawCornerBox(v2X, h * 0.43, 125, 92, '#06b6d4', 'CORRIDOR TRAFFIC [92.1%]', 'VELOCITY: 58 km/h');
 
-            drawCornerBox(w * 0.45, h * 0.62, 50, 110, '#a855f7', 'LANE MARKING [96%]');
+            drawCornerBox(w * 0.43, h * 0.58, 55, 130, '#a855f7', 'CONTINUOUS WHITE LANE [96.7%]', 'IRC:35 SPEC');
+            drawCornerBox(w * 0.86, h * 0.54, 75, 120, '#0284c7', 'CRASH BARRIER [93.8%]', 'IRC:SP:84 AUDIT');
           }
         }
       }
 
-      // Privacy Badge Stamp
+      // Statutory DPDP Act 2023 Privacy Badge Stamp
       if (showPrivacyBlur) {
-        ctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
-        ctx.fillRect(w - 215, 12, 205, 22);
+        ctx.save();
+        ctx.fillStyle = 'rgba(15, 23, 42, 0.88)';
+        ctx.fillRect(w - 245, 14, 230, 24);
+        ctx.strokeStyle = '#34d399';
+        ctx.lineWidth = 1;
+        ctx.strokeRect(w - 245, 14, 230, 24);
         ctx.fillStyle = '#34d399';
         ctx.font = 'bold 10px monospace';
-        ctx.fillText('DPDP ACT 2023 PRIVACY MASKED', w - 205, 27);
+        ctx.fillText('DPDP ACT 2023 PRIVACY MASKED', w - 235, 30);
+        ctx.restore();
       }
 
       animFrame = requestAnimationFrame(render);
     };
 
-    render();
+    animFrame = requestAnimationFrame(render);
 
     return () => {
       cancelAnimationFrame(animFrame);
@@ -559,6 +643,13 @@ export const MobileDashcam: React.FC<MobileDashcamProps> = ({
                   ref={sampleVideoRef}
                   key={activeChannel.previewUrl}
                   src={activeChannel.previewUrl}
+                  onError={(e) => {
+                    const target = e.currentTarget;
+                    if (!target.src.includes('bus_dashcam_pothole_patrol.mp4')) {
+                      target.src = '/evidence/bus_dashcam_pothole_patrol.mp4';
+                      target.play().catch(() => {});
+                    }
+                  }}
                   autoPlay
                   loop
                   muted
@@ -632,14 +723,14 @@ export const MobileDashcam: React.FC<MobileDashcamProps> = ({
             
             <button
               onClick={() => setActiveChannelId('front')}
-              className="p-3.5 rounded-2xl bg-white dark:bg-[#111722] border border-slate-200 dark:border-slate-800 hover:border-amber-400 dark:hover:border-amber-500/50 text-left transition cursor-pointer flex items-center gap-3 shadow-xs"
+              className="p-3.5 rounded-2xl bg-white dark:bg-[#111722] border border-slate-200 dark:border-slate-800 hover:border-rose-400 dark:hover:border-rose-500/50 text-left transition cursor-pointer flex items-center gap-3 shadow-xs"
             >
-              <div className="w-9 h-9 rounded-xl bg-amber-50 dark:bg-amber-500/20 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0 border border-amber-200 dark:border-transparent">
-                <School className="w-5 h-5" />
+              <div className="w-9 h-9 rounded-xl bg-rose-50 dark:bg-rose-500/20 text-rose-600 dark:text-rose-400 flex items-center justify-center shrink-0 border border-rose-200 dark:border-transparent">
+                <ShieldAlert className="w-5 h-5" />
               </div>
               <div>
-                <div className="font-bold text-xs text-slate-900 dark:text-white">School Crossing Zone</div>
-                <div className="text-[11px] text-slate-500 dark:text-slate-400">Vision Zero Pedestrian Yield Mandate</div>
+                <div className="font-bold text-xs text-slate-900 dark:text-white">NH-32 Pothole Cavity</div>
+                <div className="text-[11px] text-slate-500 dark:text-slate-400">8.4cm Depth • MoRTH 24H SLA Infill</div>
               </div>
             </button>
 
@@ -648,24 +739,24 @@ export const MobileDashcam: React.FC<MobileDashcamProps> = ({
               className="p-3.5 rounded-2xl bg-white dark:bg-[#111722] border border-slate-200 dark:border-slate-800 hover:border-rose-400 dark:hover:border-rose-500/50 text-left transition cursor-pointer flex items-center gap-3 shadow-xs"
             >
               <div className="w-9 h-9 rounded-xl bg-rose-50 dark:bg-rose-500/20 text-rose-600 dark:text-rose-400 flex items-center justify-center shrink-0 border border-rose-200 dark:border-transparent">
-                <ShieldAlert className="w-5 h-5" />
+                <Car className="w-5 h-5" />
               </div>
               <div>
-                <div className="font-bold text-xs text-slate-900 dark:text-white">Hit &amp; Run Evasion</div>
-                <div className="text-[11px] text-slate-500 dark:text-slate-400">High-Speed Evasion Radar &amp; ANPR</div>
+                <div className="font-bold text-xs text-slate-900 dark:text-white">Rear ANPR &amp; Tailgating</div>
+                <div className="text-[11px] text-slate-500 dark:text-slate-400">High Security Plate TN-01-AX-8732</div>
               </div>
             </button>
 
             <button
               onClick={() => setActiveChannelId('curbside')}
-              className="p-3.5 rounded-2xl bg-white dark:bg-[#111722] border border-slate-200 dark:border-slate-800 hover:border-cyan-400 dark:hover:border-cyan-500/50 text-left transition cursor-pointer flex items-center gap-3 shadow-xs"
+              className="p-3.5 rounded-2xl bg-white dark:bg-[#111722] border border-slate-200 dark:border-slate-800 hover:border-amber-400 dark:hover:border-amber-500/50 text-left transition cursor-pointer flex items-center gap-3 shadow-xs"
             >
-              <div className="w-9 h-9 rounded-xl bg-cyan-50 dark:bg-cyan-500/20 text-cyan-600 dark:text-cyan-400 flex items-center justify-center shrink-0 border border-cyan-200 dark:border-transparent">
-                <Droplets className="w-5 h-5" />
+              <div className="w-9 h-9 rounded-xl bg-amber-50 dark:bg-amber-500/20 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0 border border-amber-200 dark:border-transparent">
+                <School className="w-5 h-5" />
               </div>
               <div>
-                <div className="font-bold text-xs text-slate-900 dark:text-white">Open Manhole Cavity</div>
-                <div className="text-[11px] text-slate-500 dark:text-slate-400">Uncovered Sewer Hazard (IS:1726)</div>
+                <div className="font-bold text-xs text-slate-900 dark:text-white">School Crossing Zone</div>
+                <div className="text-[11px] text-slate-500 dark:text-slate-400">IRC:35 Zebra Marking &amp; Pedestrian Yield</div>
               </div>
             </button>
 

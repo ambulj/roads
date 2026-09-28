@@ -195,27 +195,43 @@ class RealRTSPWorker:
             (isinstance(source, str) and os.path.isfile(source) and source.lower().endswith(('.mp4', '.avi', '.mov', '.mkv', '.webm', '.m4v')))
         )
 
+        channel_clips = {
+            1: "uploads/sample_clips/clip_pothole_nh32.mp4",
+            2: "uploads/sample_clips/clip_urban_traffic.mp4",
+            3: "uploads/sample_clips/clip_crosswalk_safety.mp4",
+            4: "uploads/sample_clips/clip_omr_expressway.mp4",
+        }
+
         while self.is_running:
             if cap is None or not cap.isOpened():
                 try:
-                    if isinstance(source, str) and source.startswith("srt://"):
-                        os.environ["OPENCV_FFMPEG_CAPTURE_OPTIONS"] = "timeout;5000000|transtype;live"
-                        cap = cv2.VideoCapture(source, cv2.CAP_FFMPEG)
-                    elif isinstance(source, str) and source.startswith("rtsp://"):
-                        os.environ["OPENCV_FFMPEG_CAPTURE_OPTIONS"] = "rtsp_transport;tcp|analyzeduration;1000000|max_delay;500000"
-                        cap = cv2.VideoCapture(source)
-                    else:
-                        cap = cv2.VideoCapture(source)
+                    # If mock domain or local camera 0 is specified in demo mode, skip slow network timeout and load local clip directly
+                    is_mock_rtsp = isinstance(source, str) and ("mtc-fleet" in source or "192.168.10." in source or source in ("0", 0))
+                    if is_mock_rtsp:
+                        cand_rel = channel_clips.get(self.channel, channel_clips[1])
+                        cand_clip = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", cand_rel))
+                        if not os.path.isfile(cand_clip):
+                            cand_clip = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "uploads", "evidence", "bus_dashcam_pothole_patrol.mp4"))
+                        if os.path.isfile(cand_clip):
+                            cap = cv2.VideoCapture(cand_clip)
+                            is_local_video = True
+                            source = cand_clip
+
+                    if cap is None or not cap.isOpened():
+                        if isinstance(source, str) and source.startswith("srt://"):
+                            os.environ["OPENCV_FFMPEG_CAPTURE_OPTIONS"] = "timeout;5000000|transtype;live"
+                            cap = cv2.VideoCapture(source, cv2.CAP_FFMPEG)
+                        elif isinstance(source, str) and source.startswith("rtsp://"):
+                            os.environ["OPENCV_FFMPEG_CAPTURE_OPTIONS"] = "rtsp_transport;tcp|analyzeduration;1000000|max_delay;500000"
+                            cap = cv2.VideoCapture(source)
+                        else:
+                            cap = cv2.VideoCapture(source)
 
                     # If remote RTSP is offline or unreachable, fallback to high-definition channel video clip
                     if not cap.isOpened() and isinstance(source, str) and (source.startswith("rtsp://") or source.startswith("http")):
-                        channel_clips = {
-                            1: "uploads/sample_clips/clip_crosswalk_safety.mp4",
-                            2: "uploads/sample_clips/clip_urban_traffic.mp4",
-                            3: "uploads/sample_clips/clip_pothole_nh32.mp4",
-                            4: "uploads/sample_clips/clip_omr_expressway.mp4",
-                        }
                         cand_clip = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", channel_clips.get(self.channel, channel_clips[1])))
+                        if not os.path.isfile(cand_clip):
+                            cand_clip = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "uploads", "evidence", "bus_dashcam_pothole_patrol.mp4"))
                         if os.path.isfile(cand_clip):
                             cap = cv2.VideoCapture(cand_clip)
                             is_local_video = True
@@ -262,7 +278,7 @@ class RealRTSPWorker:
                         try:
                             # Direct neural inference synchronized with frame capture for zero-lag box alignment
                             if self.frame_count % 3 == 0 or not self.latest_detections:
-                                res = yolo_engine.detect_road_hazards(frame, channel=self.channel, burn_overlay=True)
+                                res = yolo_engine.detect_road_hazards(frame, channel=self.channel, burn_overlay=True, save_evidence=False)
                                 self.latest_detections = res.get("detections", [])
                                 display_frame = res.get("annotated_frame", frame)
                             else:

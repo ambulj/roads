@@ -25,15 +25,8 @@ def get_cluster_evidence(cluster_id: str):
     """Retrieves all evidence frames and captures associated with a specific Hazard Cluster."""
     return evidence_vault.get_evidence_for_cluster(cluster_id)
 
-@router.post("/temp/purge")
-def trigger_temp_purge():
-    """
-    Manually triggers the temporary footage purge cycle.
-    Deletes raw unflagged temporary video/photo buffers older than 24 hours while permanently retaining verified evidence.
-    """
-    purged = evidence_vault.purge_expired_temp_footage()
-    return {
-        "status": "success",
-        "purged_temp_files": purged,
-        "message": f"Purged {purged} expired temporary footage file(s)"
-    }
+@router.post("/reset")
+def reset_evidence_vault():
+    """Clears all records in the evidence vault registry."""
+    evidence_vault.clear_all()
+    return {"status": "success", "message": "Evidence vault cleared."}

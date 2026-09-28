@@ -43,16 +43,18 @@ class EvidenceVault:
 
     def _load_registry(self):
         try:
-            if REGISTRY_FILE.exists():
+            if REGISTRY_FILE.exists() and REGISTRY_FILE.stat().st_size > 0:
                 with open(REGISTRY_FILE, "r", encoding="utf-8") as f:
                     self.registry = json.load(f)
+            else:
+                self.registry = {}
         except Exception as e:
             print(f"[EVIDENCE VAULT] Warning loading registry: {e}")
             self.registry = {}
 
     def _save_registry(self):
         try:
-            with open(REGVIDENCE_FILE if 'REGVIDENCE_FILE' in locals() else REGISTRY_FILE, "w", encoding="utf-8") as f:
+            with open(REGISTRY_FILE, "w", encoding="utf-8") as f:
                 json.dump(self.registry, f, indent=2)
         except Exception as e:
             print(f"[EVIDENCE VAULT] Error saving registry: {e}")
@@ -167,8 +169,26 @@ class EvidenceVault:
                 if rec.get("cluster_id") == cluster_id
             ]
 
+    def clear_all(self):
+        with self.lock:
+            self.registry = {}
+            if EVIDENCE_DIR.exists():
+                for item in EVIDENCE_DIR.iterdir():
+                    if item.is_file() and item.name != ".gitkeep":
+                        try:
+                            item.unlink()
+                        except Exception:
+                            pass
+            self._save_registry()
+            print("[EVIDENCE VAULT] Vault cleared.")
+
+    def reload(self):
+        with self.lock:
+            self._load_registry()
+
     def list_recent_evidence(self, limit: int = 50) -> List[Dict[str, Any]]:
         with self.lock:
+            self._load_registry()
             sorted_records = sorted(
                 self.registry.values(),
                 key=lambda x: x.get("timestamp", 0),

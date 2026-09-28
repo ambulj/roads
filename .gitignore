@@ -72,8 +72,16 @@ Desktop.ini
 logs/
 bin/
 scratch/
-backend/uploads/*
-!backend/uploads/.gitkeep
+# ── Uploads, Buffers & Cache ────────────────────────────────
+backend/uploads/
 backend/data/test_cache/
 edge_buffer_*.json
+# ── Large Media & Video Clips ────────────────────────────────
+*.mp4
+*.mov
+*.avi
+*.mkv
+frontend/public/sample_clips/
+
+
 

@@ -283,6 +283,10 @@ export const UploadFootageModal: React.FC<UploadFootageModalProps> = ({
           message: `✓ AI Perception detected ${res.detections.length} hazard(s) • ${facesCount > 0 ? `${facesCount} face(s) redacted under DPDP Act 2023.` : 'DPDP Privacy Filter active.'}` 
         });
 
+        if (res?.created_cluster && onAddCluster) {
+          onAddCluster(res.created_cluster);
+        }
+
         if (onUploadSuccess) {
           onUploadSuccess(detResult);
         }

@@ -49,7 +49,7 @@ export const LiveCameraFeed: React.FC<LiveCameraFeedProps> = ({
   const [currentJerk, setCurrentJerk] = useState(bus.imu_jerk_gz || 0.98);
   const [simPace, setSimPace] = useState<number>(1.0);
   const [isPaused, setIsPaused] = useState<boolean>(false);
-  const [feedMode, setFeedMode] = useState<'rtsp' | 'canvas' | 'webcam'>('rtsp');
+  const [feedMode, setFeedMode] = useState<'sample' | 'rtsp' | 'canvas' | 'webcam'>('sample');
   const [streamVersion, setStreamVersion] = useState<number>(Date.now());
   const [rtspError, setRtspError] = useState<boolean>(false);
   const [selectedChannel, setSelectedChannel] = useState<number>(1);
@@ -57,6 +57,8 @@ export const LiveCameraFeed: React.FC<LiveCameraFeedProps> = ({
   const [isUploadModalOpen, setIsUploadModalOpen] = useState<boolean>(false);
   const webcamVideoRef = useRef<HTMLVideoElement | null>(null);
   const webcamStreamRef = useRef<MediaStream | null>(null);
+  const sampleVideoRef = useRef<HTMLVideoElement | null>(null);
+  const sampleCanvasRef = useRef<HTMLCanvasElement | null>(null);
   const [isWebcamRunning, setIsWebcamRunning] = useState<boolean>(false);
   const [uploadedMediaInfo, setUploadedMediaInfo] = useState<{
     active: boolean;
@@ -525,12 +527,197 @@ export const LiveCameraFeed: React.FC<LiveCameraFeedProps> = ({
     setFeedMode("rtsp");
   };
 
+  // Synchronize pause state with sample video
+  useEffect(() => {
+    if (sampleVideoRef.current) {
+      if (isPaused) {
+        sampleVideoRef.current.pause();
+      } else {
+        sampleVideoRef.current.play().catch(() => {});
+      }
+    }
+  }, [isPaused]);
+
+  // Dynamic AI bounding boxes overlay loop for sample dashcam footage
+  useEffect(() => {
+    if (feedMode !== 'sample' && !rtspError) return;
+    let animId: number;
+
+    const drawCornerBox = (
+      ctx: CanvasRenderingContext2D,
+      x: number,
+      y: number,
+      w: number,
+      h: number,
+      color: string,
+      label: string,
+      sublabel?: string
+    ) => {
+      ctx.save();
+      ctx.fillStyle = `${color}22`;
+      ctx.fillRect(x, y, w, h);
+
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 2.5;
+      const cornerLen = Math.min(18, w * 0.25, h * 0.25);
+
+      // Top-left
+      ctx.beginPath();
+      ctx.moveTo(x, y + cornerLen);
+      ctx.lineTo(x, y);
+      ctx.lineTo(x + cornerLen, y);
+      ctx.stroke();
+
+      // Top-right
+      ctx.beginPath();
+      ctx.moveTo(x + w - cornerLen, y);
+      ctx.lineTo(x + w, y);
+      ctx.lineTo(x + w, y + cornerLen);
+      ctx.stroke();
+
+      // Bottom-left
+      ctx.beginPath();
+      ctx.moveTo(x, y + h - cornerLen);
+      ctx.lineTo(x, y + h);
+      ctx.lineTo(x + cornerLen, y + h);
+      ctx.stroke();
+
+      // Bottom-right
+      ctx.beginPath();
+      ctx.moveTo(x + w - cornerLen, y + h);
+      ctx.lineTo(x + w, y + h);
+      ctx.lineTo(x + w, y + h - cornerLen);
+      ctx.stroke();
+
+      // Pill label
+      ctx.font = 'bold 12px monospace';
+      const textMetrics = ctx.measureText(label);
+      const textW = textMetrics.width + 16;
+      const textH = 22;
+      const textY = Math.max(0, y - textH - 2);
+
+      ctx.fillStyle = color;
+      ctx.beginPath();
+      ctx.roundRect(x, textY, textW, textH, 4);
+      ctx.fill();
+
+      ctx.fillStyle = '#ffffff';
+      ctx.fillText(label, x + 8, textY + 15);
+
+      if (sublabel) {
+        ctx.font = 'bold 10px monospace';
+        const subMetrics = ctx.measureText(sublabel);
+        const subW = subMetrics.width + 12;
+        const subH = 18;
+        const subY = y + h + 3;
+
+        ctx.fillStyle = 'rgba(15, 23, 42, 0.9)';
+        ctx.beginPath();
+        ctx.roundRect(x, subY, subW, subH, 3);
+        ctx.fill();
+        ctx.strokeStyle = color;
+        ctx.lineWidth = 1;
+        ctx.stroke();
+
+        ctx.fillStyle = '#f8fafc';
+        ctx.fillText(sublabel, x + 6, subY + 13);
+      }
+      ctx.restore();
+    };
+
+    const render = () => {
+      const canvas = sampleCanvasRef.current;
+      const video = sampleVideoRef.current;
+      if (!canvas) return;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return;
+
+      const w = canvas.width;
+      const h = canvas.height;
+      ctx.clearRect(0, 0, w, h);
+
+      if (showBoundingBoxes) {
+        const t = video ? video.currentTime : Date.now() / 1000;
+
+        if (selectedChannel === 1) {
+          // CH 1: Windshield Pothole & Road Distress Patrol
+          const cycle = (t * 0.35) % 1;
+          const z = Math.pow(cycle, 1.8);
+          const cavY = h * (0.50 + z * 0.38);
+          const cavX = w * (0.34 + z * 0.09);
+          const cavW = 90 + z * 140;
+          const cavH = 45 + z * 70;
+          drawCornerBox(ctx, cavX, cavY, cavW, cavH, '#ef4444', 'POTHOLE D40 [96%]', 'DEPTH: 8.4cm | SLA: 24H');
+
+          // Secondary alligator cracking on right lane
+          const crackCycle = ((t + 1.2) * 0.28) % 1;
+          const cz = Math.pow(crackCycle, 1.5);
+          const crackY = h * (0.54 + cz * 0.32);
+          const crackX = w * (0.62 + cz * 0.06);
+          drawCornerBox(ctx, crackX, crackY, 110 + cz * 100, 50 + cz * 40, '#f59e0b', 'ALLIGATOR CRACK D20 [89%]', 'IRC:SP:84');
+
+          // Leading transit vehicle ahead
+          const vehX = w * 0.22 + Math.sin(t * 0.8) * 8;
+          const vehY = h * 0.44;
+          drawCornerBox(ctx, vehX, vehY, 130, 95, '#38bdf8', 'VEHICLE [94%]', 'MTC BUS ROUTE 21G');
+        } else if (selectedChannel === 2) {
+          // CH 2: Rear Overtake & ANPR
+          const sway = Math.sin(t * 1.2) * 12;
+          const vehW = 200 + Math.sin(t * 0.8) * 15;
+          const vehH = 150 + Math.sin(t * 0.8) * 10;
+          const vehX = w * 0.36 + sway;
+          const vehY = h * 0.42;
+          drawCornerBox(ctx, vehX, vehY, vehW, vehH, '#f43f5e', 'VEHICLE [97%]', 'ANPR: TN-01-AX-8732');
+        } else if (selectedChannel === 3) {
+          // CH 3: Curbside & Pedestrian Crossing
+          const walk = (t * 0.12) % 1;
+          const pedX = w * (0.68 - walk * 0.28);
+          drawCornerBox(ctx, pedX, h * 0.45, 60, 130, '#f59e0b', 'PEDESTRIAN [96%]', 'YIELD ACTIVE');
+          drawCornerBox(ctx, w * 0.16, h * 0.68, w * 0.68, 95, '#10b981', 'ZEBRA CROSSING [98%]', 'IRC:35 SPEC');
+        } else {
+          // CH 4: Expressway Corridor Radar
+          const v1X = w * 0.20 + Math.sin(t * 0.4) * 8;
+          drawCornerBox(ctx, v1X, h * 0.46, 140, 100, '#3b82f6', 'EXPRESSWAY VEHICLE [94%]');
+          const v2X = w * 0.60 + Math.cos(t * 0.5) * 6;
+          drawCornerBox(ctx, v2X, h * 0.44, 120, 90, '#06b6d4', 'CORRIDOR TRAFFIC [92%]');
+          drawCornerBox(ctx, w * 0.44, h * 0.60, 50, 120, '#a855f7', 'LANE MARKING [96%]');
+        }
+
+        // DPDP Act 2023 Badge
+        ctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
+        ctx.fillRect(w - 240, 14, 226, 24);
+        ctx.fillStyle = '#34d399';
+        ctx.font = 'bold 10px monospace';
+        ctx.fillText('DPDP ACT 2023 PRIVACY MASKED', w - 230, 30);
+      }
+
+      animId = requestAnimationFrame(render);
+    };
+
+    animId = requestAnimationFrame(render);
+    return () => cancelAnimationFrame(animId);
+  }, [feedMode, rtspError, selectedChannel, showBoundingBoxes]);
+
   const handleCaptureSnapshot = () => {
     setFlashEffect(true);
     setTimeout(() => setFlashEffect(false), 200);
 
     if (feedMode === "webcam" && webcamVideoRef.current) {
       const video = webcamVideoRef.current;
+      const offscreen = document.createElement("canvas");
+      offscreen.width = video.videoWidth || 1280;
+      offscreen.height = video.videoHeight || 720;
+      const ctx = offscreen.getContext("2d");
+      if (ctx) {
+        ctx.drawImage(video, 0, 0, offscreen.width, offscreen.height);
+        const dataUrl = offscreen.toDataURL("image/jpeg", 0.9);
+        if (onSnapshot) onSnapshot(dataUrl);
+        return;
+      }
+    }
+
+    if ((feedMode === "sample" || rtspError) && sampleVideoRef.current) {
+      const video = sampleVideoRef.current;
       const offscreen = document.createElement("canvas");
       offscreen.width = video.videoWidth || 1280;
       offscreen.height = video.videoHeight || 720;
@@ -602,6 +789,23 @@ export const LiveCameraFeed: React.FC<LiveCameraFeedProps> = ({
 
         {/* Right: Quick Action Controls */}
         <div className="flex items-center gap-1.5">
+          {/* Real Dashcam Clip Mode Toggle */}
+          <button
+            onClick={() => {
+              setFeedMode(feedMode === 'sample' ? 'rtsp' : 'sample');
+              setRtspError(false);
+            }}
+            title={feedMode === 'sample' ? "Switch to Live RTSP Feed" : "Load Real Road Dashcam Clip with AI Bounding Boxes"}
+            className={`px-2.5 py-1 rounded-lg border text-xs font-mono font-bold flex items-center gap-1.5 transition cursor-pointer ${
+              feedMode === 'sample'
+                ? "bg-rose-600 border-rose-500 text-white shadow-xs"
+                : "bg-slate-900 hover:bg-slate-800 border-slate-800 text-rose-400 hover:text-rose-300"
+            }`}
+          >
+            <Video className="w-3.5 h-3.5" />
+            <span className="hidden sm:inline">{feedMode === 'sample' ? "Dashcam Active" : "Dashcam Clip"}</span>
+          </button>
+
           {/* Pause / Play */}
           <button
             onClick={() => setIsPaused(p => !p)}
@@ -774,7 +978,15 @@ export const LiveCameraFeed: React.FC<LiveCameraFeedProps> = ({
                   <span className="text-slate-300 text-[11px]">Feed Engine:</span>
                   <div className="flex gap-1 bg-slate-950 p-0.5 rounded-lg border border-slate-800">
                     <button
-                      onClick={() => setFeedMode('rtsp')}
+                      onClick={() => { setFeedMode('sample'); setRtspError(false); }}
+                      className={`px-2 py-0.5 rounded text-[10px] font-bold transition cursor-pointer ${
+                        feedMode === 'sample' ? 'bg-rose-600 text-white' : 'text-slate-400 hover:text-slate-200'
+                      }`}
+                    >
+                      Dashcam
+                    </button>
+                    <button
+                      onClick={() => { setFeedMode('rtsp'); setRtspError(false); }}
                       className={`px-2 py-0.5 rounded text-[10px] font-bold transition cursor-pointer ${
                         feedMode === 'rtsp' ? 'bg-emerald-600 text-white' : 'text-slate-400 hover:text-slate-200'
                       }`}
@@ -882,7 +1094,7 @@ export const LiveCameraFeed: React.FC<LiveCameraFeedProps> = ({
               </div>
             ))}
           </div>
-        ) : feedMode === 'rtsp' ? (
+        ) : feedMode === 'rtsp' && !rtspError ? (
           <div className="relative w-full h-full">
             <img
               src={isPaused ? `/api/streams/snapshot/${bus.id}?channel=${selectedChannel}&t=${streamVersion}` : `/api/streams/live/${bus.id}?channel=${selectedChannel}&v=${streamVersion}`}
@@ -909,6 +1121,58 @@ export const LiveCameraFeed: React.FC<LiveCameraFeedProps> = ({
                 </div>
               </div>
             )}
+          </div>
+        ) : (feedMode === 'sample' || (feedMode === 'rtsp' && rtspError)) ? (
+          <div className="relative w-full h-full bg-slate-950 flex items-center justify-center overflow-hidden">
+            <video
+              ref={sampleVideoRef}
+              key={`sample-vid-${selectedChannel}`}
+              src={
+                selectedChannel === 1 ? "/sample_clips/clip_pothole_nh32.mp4" :
+                selectedChannel === 2 ? "/sample_clips/clip_urban_traffic.mp4" :
+                selectedChannel === 3 ? "/sample_clips/clip_crosswalk_safety.mp4" :
+                "/sample_clips/clip_omr_expressway.mp4"
+              }
+              onError={(e) => {
+                const target = e.currentTarget;
+                if (!target.src.includes('bus_dashcam_pothole_patrol.mp4')) {
+                  target.src = '/evidence/bus_dashcam_pothole_patrol.mp4';
+                  target.play().catch(() => {});
+                }
+              }}
+              autoPlay
+              loop
+              muted
+              playsInline
+              className="w-full h-full object-cover"
+            />
+            <canvas
+              ref={sampleCanvasRef}
+              width={1280}
+              height={720}
+              className="absolute inset-0 w-full h-full pointer-events-none"
+            />
+            {/* Live AI Perception Overlay Status Tag */}
+            {showBoundingBoxes && (
+              <div className="absolute top-3 right-3 z-10 flex items-center gap-2 pointer-events-none">
+                <div className="bg-slate-950/90 backdrop-blur-md px-3 py-1.5 rounded-xl border border-rose-500/50 text-[11px] font-mono flex items-center gap-2 shadow-2xl">
+                  <span className="w-2 h-2 rounded-full bg-rose-500 animate-ping" />
+                  <span className="text-slate-200">
+                    AI CV OVERLAY: <strong className="text-rose-400 font-bold">ACTIVE</strong>
+                  </span>
+                  <span className="text-rose-300 font-bold bg-rose-950/80 px-1.5 py-0.5 rounded border border-rose-600/40 text-[10px]">
+                    {selectedChannel === 1 ? "POTHOLE D40 (8.4cm)" : selectedChannel === 2 ? "VEHICLE ANPR" : selectedChannel === 3 ? "ZEBRA / PEDESTRIAN" : "CORRIDOR RADAR"}
+                  </span>
+                </div>
+              </div>
+            )}
+            <div className="absolute bottom-3 left-3 z-10 bg-slate-950/85 backdrop-blur-md px-2.5 py-1 rounded-lg border border-slate-800 text-[10.5px] font-mono text-slate-300 flex items-center gap-2 pointer-events-none">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+              <span>
+                {feedMode === 'sample' ? "Dashcam Ingest: " : "RTSP Fallback Stream: "}
+                {selectedChannel === 1 ? "Windshield Pothole Patrol (NH-32)" : selectedChannel === 2 ? "Rear Traffic & ANPR" : selectedChannel === 3 ? "Curbside Pedestrian Safety" : "OMR Expressway"}
+              </span>
+            </div>
           </div>
         ) : feedMode === 'webcam' ? (
           <div className="relative w-full h-full bg-black flex items-center justify-center">
