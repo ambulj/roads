@@ -28,21 +28,28 @@ const VEHICLE_TYPES = [
   'MTC Standard BS-VI Diesel City Bus',
   'MTC Volvo 8400 Low-Floor AC',
   'CMRL Metro Feeder Mini-Bus',
+  'Municipal Patrol & Inspection Van',
   'Interstate High-Capacity Transit'
 ];
 
 const NPU_OPTIONS = [
-  'Rockchip RK3588 NPU (6 TOPS INT8)',
-  'Hailo-8 M.2 Edge AI Accelerator (26 TOPS)',
-  'NVIDIA Jetson Orin Nano (40 TOPS)',
-  'Zero-Hardware Nirbhaya Telematics Hub'
+  'Rockchip RK3588 Industrial AI Box (6 TOPS INT8 NPU)',
+  'NVIDIA Jetson Orin Nano AI Box (40 TOPS Edge AI)',
+  'Hailo-8 / Hailo-8L Edge AI Box (26 TOPS NPU)',
+  'Google Coral Edge TPU AI Box (4 TOPS)',
+  'Intel Core Ultra / N100 OpenVINO AI Box (16 TOPS)',
+  'Raspberry Pi 5 + AI NPU HAT (13 TOPS)',
+  'Custom Automotive ARM Edge AI Gateway (INT8/FP16)',
+  'Zero-Hardware Nirbhaya Telematics Hub (AIS-140 only)'
 ];
 
 const DVR_MODELS = [
+  'On-Vehicle Edge AI Box Direct Ingest (PoE/LAN IP Camera)',
+  'USB UVC Digital Dashcam (Sony IMX335 1080p True WDR)',
+  'CP PLUS CP-VNR-2104-E1 4-CH MDVR',
   'Hikvision DS-MP7608HN 8-CH Mobile NVR',
   'Dahua MXVR4104-GFW 4-CH Mobile DVR',
-  'CP PLUS CP-VNR-2104-E1 4-CH MDVR',
-  'Standard Zero-Hardware ONVIF IP Bridge'
+  'Standard ONVIF IP Bridge / SRT Cellular Gateway'
 ];
 
 const CORRIDOR_PRESETS = [
@@ -500,13 +507,111 @@ export const AddBusModal: React.FC<AddBusModalProps> = ({
             )}
           </div>
 
-          {/* ── SECTION 2: SENSOR & TELEMETRY INSERTION ───────────────────── */}
+          {/* ── SECTION 2: EDGE AI BOX & COMPUTE HARDWARE ───────────────────── */}
           <div className="p-4 bg-slate-950/60 border border-slate-800 rounded-xl space-y-3.5">
             <div className="flex items-center justify-between border-b border-slate-800/80 pb-2">
               <div className="flex items-center gap-2">
-                <Cpu className="w-4 h-4 text-emerald-400" />
+                <Cpu className="w-4 h-4 text-purple-400" />
                 <span className="text-xs font-bold text-slate-200 uppercase tracking-wider">
-                  2. Sensor &amp; Telematics Calibration (AIS-140 &amp; IMU)
+                  2. Edge AI Box &amp; On-Vehicle Compute Hardware
+                </span>
+              </div>
+              <span className="text-[11px] text-purple-400 font-medium font-mono">
+                LOCAL INT8 INFERENCE
+              </span>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label className="text-[11px] font-semibold text-slate-400 block mb-1">
+                  AI Box / NPU Accelerator Model
+                </label>
+                <select
+                  value={npuHardware}
+                  onChange={(e) => setNpuHardware(e.target.value)}
+                  className="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-2 text-xs text-white focus:outline-none font-medium"
+                >
+                  {NPU_OPTIONS.map((opt, i) => (
+                    <option key={i} value={opt}>
+                      {opt}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="text-[11px] font-semibold text-slate-400 block mb-1">
+                  Vehicle Platform Type
+                </label>
+                <select
+                  value={vehicleType}
+                  onChange={(e) => setVehicleType(e.target.value)}
+                  className="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-2 text-xs text-white focus:outline-none font-medium"
+                >
+                  {VEHICLE_TYPES.map((vt, i) => (
+                    <option key={i} value={vt}>
+                      {vt}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div>
+                <label className="text-[11px] font-semibold text-slate-400 block mb-1">
+                  Camera / MDVR Ingest Module
+                </label>
+                <select
+                  value={cameraModel}
+                  onChange={(e) => setCameraModel(e.target.value)}
+                  className="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none"
+                >
+                  {DVR_MODELS.map((dm, i) => (
+                    <option key={i} value={dm}>
+                      {dm}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="text-[11px] font-semibold text-slate-400 block mb-1">
+                  Target AI Vision FPS
+                </label>
+                <select
+                  value={edgeFps}
+                  onChange={(e) => setEdgeFps(Number(e.target.value))}
+                  className="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white font-mono focus:outline-none"
+                >
+                  <option value={30}>30 FPS (Standard Real-Time Detection)</option>
+                  <option value={15}>15 FPS (Power-Saving Patrol Mode)</option>
+                  <option value={60}>60 FPS (High-Speed Expressway)</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="text-[11px] font-semibold text-slate-400 block mb-1">
+                  AI Box LAN / Gateway IP
+                </label>
+                <input
+                  type="text"
+                  placeholder="e.g. 192.168.10.88"
+                  value={dvrIp}
+                  onChange={(e) => setDvrIp(e.target.value)}
+                  className="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white font-mono focus:outline-none"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* ── SECTION 3: SENSOR & TELEMETRY INSERTION ───────────────────── */}
+          <div className="p-4 bg-slate-950/60 border border-slate-800 rounded-xl space-y-3.5">
+            <div className="flex items-center justify-between border-b border-slate-800/80 pb-2">
+              <div className="flex items-center gap-2">
+                <Radio className="w-4 h-4 text-emerald-400" />
+                <span className="text-xs font-bold text-slate-200 uppercase tracking-wider">
+                  3. Sensor &amp; Telematics Calibration (AIS-140 &amp; IMU)
                 </span>
               </div>
               <span className="text-[11px] text-emerald-400 font-medium font-mono">
