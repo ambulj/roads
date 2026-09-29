@@ -8,7 +8,14 @@ import {
   Printer,
   Award,
   AlertOctagon,
-  FileText
+  FileText,
+  Zap,
+  ShieldAlert,
+  ArrowDownRight,
+  Receipt,
+  RotateCcw,
+  Sliders,
+  DollarSign
 } from 'lucide-react';
 import { HazardCluster } from '../../types';
 
@@ -29,6 +36,23 @@ interface ContractorAgency {
   compactionDensityGcm3: number;
   warrantyExpiry: string;
   debarmentRisk: 'Low' | 'Medium' | 'Critical Debarment Warning';
+}
+
+interface AutoDebitRecord {
+  id: string;
+  timestamp: string;
+  contractorId: string;
+  contractorName: string;
+  corridor: string;
+  clusterCode: string;
+  patrolBusId: string;
+  measuredGz: number;
+  thresholdGz: number;
+  penaltyDebitInr: number;
+  remainingDepositInr: number;
+  pfmsTxnRef: string;
+  clause: string;
+  status: 'EXECUTED_VIA_PFMS' | 'PENDING_RE_INSPECTION';
 }
 
 const INITIAL_CONTRACTORS: ContractorAgency[] = [
@@ -124,19 +148,59 @@ const INITIAL_CONTRACTORS: ContractorAgency[] = [
   },
 ];
 
+const INITIAL_AUTO_DEBITS: AutoDebitRecord[] = [
+  {
+    id: 'AD-2026-081',
+    timestamp: '2026-09-28 14:15 IST',
+    contractorId: 'CTR-04',
+    contractorName: 'HCC - Hindustan Construction Co.',
+    corridor: 'Inner Ring Road (Koyambedu Flyover)',
+    clusterCode: 'WO-2026-CHE-441',
+    patrolBusId: 'BUS-MTC-19B',
+    measuredGz: 1.44,
+    thresholdGz: 1.30,
+    penaltyDebitInr: 25000,
+    remainingDepositInr: 2720000,
+    pfmsTxnRef: 'PFMS/DLP-DEBIT/2026/0928-8812',
+    clause: 'IRC:SP:20 Clause 14.2 / MoRTH Sec 3000 DLP Penalty',
+    status: 'EXECUTED_VIA_PFMS'
+  },
+  {
+    id: 'AD-2026-079',
+    timestamp: '2026-09-26 11:30 IST',
+    contractorId: 'CTR-02',
+    contractorName: 'GMR Urban Highways Ltd',
+    corridor: 'Anna Salai (Teynampet Signal Approach)',
+    clusterCode: 'WO-2026-CHE-219',
+    patrolBusId: 'BUS-TN01-1042',
+    measuredGz: 1.38,
+    thresholdGz: 1.30,
+    penaltyDebitInr: 25000,
+    remainingDepositInr: 4875000,
+    pfmsTxnRef: 'PFMS/DLP-DEBIT/2026/0926-4401',
+    clause: 'IRC:SP:20 Clause 14.2 / MoRTH Sec 3000 DLP Penalty',
+    status: 'EXECUTED_VIA_PFMS'
+  }
+];
+
 interface ContractorSlaLedgerProps {
   clusters: HazardCluster[];
 }
 
 export const ContractorSlaLedger: React.FC<ContractorSlaLedgerProps> = ({ clusters }) => {
-  const [contractors] = useState<ContractorAgency[]>(INITIAL_CONTRACTORS);
+  const [contractors, setContractors] = useState<ContractorAgency[]>(INITIAL_CONTRACTORS);
+  const [autoDebits, setAutoDebits] = useState<AutoDebitRecord[]>(INITIAL_AUTO_DEBITS);
   const [selectedContractor, setSelectedContractor] = useState<ContractorAgency | null>(null);
-  const [activeModal, setActiveModal] = useState<'penalty_notice' | 'completion_cert' | null>(null);
+  const [activeModal, setActiveModal] = useState<'penalty_notice' | 'completion_cert' | 'auto_debit_voucher' | null>(null);
   const [selectedClusterForCert, setSelectedClusterForCert] = useState<HazardCluster | null>(clusters[0] || null);
+  const [selectedDebitRecord, setSelectedDebitRecord] = useState<AutoDebitRecord | null>(INITIAL_AUTO_DEBITS[0]);
+  const [isSimulatingAutoDebit, setIsSimulatingAutoDebit] = useState<boolean>(false);
+  const [activeViewTab, setActiveViewTab] = useState<'sla_table' | 'auto_debit_ledger'>('sla_table');
 
   const totalSecurityDeposits = contractors.reduce((acc, c) => acc + (c.securityDepositInr - c.penaltiesDeductedInr), 0);
   const totalPenaltiesCollected = contractors.reduce((acc, c) => acc + c.penaltiesDeductedInr, 0);
   const totalBreaches = contractors.reduce((acc, c) => acc + c.breachedWorkOrders, 0);
+  const totalAutoDebitsInr = autoDebits.reduce((acc, d) => acc + d.penaltyDebitInr, 0);
 
   const handleOpenPenaltyNotice = (ctr: ContractorAgency) => {
     setSelectedContractor(ctr);
@@ -150,8 +214,104 @@ export const ContractorSlaLedger: React.FC<ContractorSlaLedgerProps> = ({ cluste
     setActiveModal('completion_cert');
   };
 
+  const handleOpenDebitVoucher = (record: AutoDebitRecord) => {
+    setSelectedDebitRecord(record);
+    const matchedCtr = contractors.find(c => c.id === record.contractorId) || contractors[0];
+    setSelectedContractor(matchedCtr);
+    setActiveModal('auto_debit_voucher');
+  };
+
+  // Interactive Live Demo Simulation: Trigger IRC:SP:20 Clause 14 Auto-Debit
+  const handleSimulateClause14AutoDebit = () => {
+    if (isSimulatingAutoDebit) return;
+    setIsSimulatingAutoDebit(true);
+
+    setTimeout(() => {
+      // Pick target contractor (HCC or GMR)
+      const targetId = 'CTR-04';
+      const debitAmount = 25000;
+      const measuredShock = 1.48; // Gz > 1.30g trigger
+
+      const newRecord: AutoDebitRecord = {
+        id: `AD-2026-${Math.floor(100 + Math.random() * 900)}`,
+        timestamp: new Date().toLocaleString('en-IN', { dateStyle: 'short', timeStyle: 'short' }),
+        contractorId: targetId,
+        contractorName: 'HCC - Hindustan Construction Co.',
+        corridor: 'Inner Ring Road / Koyambedu Arterial',
+        clusterCode: `WO-2026-CHE-${Math.floor(500 + Math.random() * 400)}`,
+        patrolBusId: 'BUS-MTC-19B',
+        measuredGz: measuredShock,
+        thresholdGz: 1.30,
+        penaltyDebitInr: debitAmount,
+        remainingDepositInr: 2695000,
+        pfmsTxnRef: `PFMS/DLP-ESCROW/${Date.now().toString().slice(-8)}`,
+        clause: 'IRC:SP:20 Clause 14.2 / MoRTH Sec 3000 DLP Penalty',
+        status: 'EXECUTED_VIA_PFMS'
+      };
+
+      // Update contractor state
+      setContractors(prev => prev.map(c => {
+        if (c.id === targetId) {
+          return {
+            ...c,
+            penaltiesDeductedInr: c.penaltiesDeductedInr + debitAmount
+          };
+        }
+        return c;
+      }));
+
+      setAutoDebits(prev => [newRecord, ...prev]);
+      setSelectedDebitRecord(newRecord);
+      setSelectedContractor(contractors.find(c => c.id === targetId) || contractors[0]);
+      setIsSimulatingAutoDebit(false);
+      setActiveModal('auto_debit_voucher');
+    }, 1200);
+  };
+
   return (
     <div className="space-y-5 animate-fadeIn">
+      
+      {/* ── HIGHLIGHTED TAXPAYER PROTECTION BANNER: IRC:SP:20 CLAUSE 14 AUTO-DEBIT ── */}
+      <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-rose-950/60 via-slate-900 to-amber-950/40 border border-rose-500/40 shadow-lg relative overflow-hidden">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 relative z-10">
+          <div className="space-y-1.5 max-w-2xl">
+            <div className="flex items-center gap-2">
+              <span className="px-2.5 py-0.5 rounded-full bg-rose-500/20 border border-rose-500/40 text-rose-400 font-mono text-[11px] font-bold flex items-center gap-1.5">
+                <Zap className="w-3 h-3 text-rose-400" />
+                <span>IRC:SP:20 CLAUSE 14.2 &bull; AUTONOMOUS DLP PENALTY DEBIT</span>
+              </span>
+              <span className="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 text-[10.5px] font-mono font-bold">
+                100% TAXPAYER RECOVERY
+              </span>
+            </div>
+            <h3 className="text-base sm:text-lg font-bold text-white tracking-tight">
+              Automated Contractor Bank Guarantee Escrow Deductions
+            </h3>
+            <p className="text-xs text-slate-300 leading-relaxed">
+              When transit fleet buses re-cross repaired potholes and detect recurrent vertical shocks (<strong className="text-rose-400 font-mono">Gz &ge; 1.30g</strong>), RoadSaathi auto-debits <strong className="text-amber-300 font-mono">₹25,000</strong> per defect directly from the contractor's held Security Deposit without human bureaucratic delays.
+            </p>
+          </div>
+
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 shrink-0">
+            <button
+              onClick={handleSimulateClause14AutoDebit}
+              disabled={isSimulatingAutoDebit}
+              className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-rose-600 to-amber-600 hover:from-rose-500 hover:to-amber-500 text-white font-bold text-xs shadow-md transition flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+            >
+              <Zap className={`w-4 h-4 ${isSimulatingAutoDebit ? 'animate-spin' : ''}`} />
+              <span>{isSimulatingAutoDebit ? 'Patrol Bus Re-Pass Detecting Gz=1.48g...' : '⚡ Trigger Clause 14 Auto-Debit Demo'}</span>
+            </button>
+            <button
+              onClick={() => setActiveViewTab(activeViewTab === 'sla_table' ? 'auto_debit_ledger' : 'sla_table')}
+              className="px-3.5 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 font-semibold text-xs transition flex items-center justify-center gap-1.5 cursor-pointer"
+            >
+              <Receipt className="w-4 h-4 text-cyan-400" />
+              <span>{activeViewTab === 'sla_table' ? 'View Auto-Debit Ledger' : 'View Performance Table'}</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
       {/* Overview Metric Banners */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="p-4 rounded-2xl bg-white dark:bg-[#0B101D] border border-slate-200 dark:border-slate-800 shadow-xs">
@@ -170,14 +330,15 @@ export const ContractorSlaLedger: React.FC<ContractorSlaLedgerProps> = ({ cluste
 
         <div className="p-4 rounded-2xl bg-white dark:bg-[#0B101D] border border-slate-200 dark:border-slate-800 shadow-xs">
           <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 font-medium mb-1">
-            <span>Liquidated Damages Deducted</span>
+            <span>Clause 14 &amp; SLA Debits Executed</span>
             <AlertOctagon className="w-4 h-4 text-rose-500" />
           </div>
           <div className="text-2xl font-extrabold text-rose-600 dark:text-rose-400 font-mono">
             ₹{totalPenaltiesCollected.toLocaleString('en-IN')}
           </div>
-          <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-1">
-            Calculated ₹500/hr SLA breach penalty
+          <div className="text-[11px] text-amber-600 dark:text-amber-400 mt-1 flex items-center gap-1">
+            <Receipt className="w-3 h-3" />
+            <span>Auto-debited to Municipal Repair Fund</span>
           </div>
         </div>
 
@@ -190,152 +351,236 @@ export const ContractorSlaLedger: React.FC<ContractorSlaLedgerProps> = ({ cluste
             {totalBreaches} Overdue
           </div>
           <div className="text-[11px] text-rose-500 font-medium mt-1">
-            Immediate Liquidated Damages Active
+            Liquidated Damages Active (₹500/hr)
           </div>
         </div>
 
         <div className="p-4 rounded-2xl bg-white dark:bg-[#0B101D] border border-slate-200 dark:border-slate-800 shadow-xs">
           <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 font-medium mb-1">
-            <span>Avg Quality &amp; Audit Index</span>
+            <span>Defect Liability Warranty Audit</span>
             <Award className="w-4 h-4 text-indigo-500" />
           </div>
           <div className="text-2xl font-extrabold text-indigo-600 dark:text-indigo-400 font-mono">
-            90.8%
+            100%
           </div>
           <div className="text-[11px] text-emerald-600 font-medium mt-1">
-            IRC:SP:20 Compaction Compliance
+            Autonomous Sensor Verification Active
           </div>
         </div>
       </div>
 
-      {/* Contractor Performance & SLA Ledger Table */}
-      <div className="bg-white dark:bg-[#0B101D] border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden shadow-xs">
-        <div className="p-4 sm:p-5 border-b border-slate-200 dark:border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-          <div>
-            <h3 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
-              <Building2 className="w-4 h-4 text-blue-600" />
-              <span>Contractor SLA Compliance &amp; Performance Ledger</span>
-            </h3>
-            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-              Automated SLA tracking, liquidated damages accounting, and payment authorizations under MoRTH guidelines.
-            </p>
+      {/* VIEW TAB 1: CONTRACTOR SLA LEDGER TABLE */}
+      {activeViewTab === 'sla_table' ? (
+        <div className="bg-white dark:bg-[#0B101D] border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden shadow-xs">
+          <div className="p-4 sm:p-5 border-b border-slate-200 dark:border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div>
+              <h3 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                <Building2 className="w-4 h-4 text-blue-600" />
+                <span>Contractor SLA Compliance &amp; Performance Ledger</span>
+              </h3>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                Automated SLA tracking, liquidated damages accounting, and payment authorizations under MoRTH guidelines.
+              </p>
+            </div>
+            <div className="flex items-center gap-2 text-xs font-mono">
+              <span className="px-2.5 py-1 rounded-lg bg-blue-50 dark:bg-blue-950/60 border border-blue-200 dark:border-blue-900 text-blue-700 dark:text-blue-300 font-semibold">
+                MoRTH Clause 108.4 Active
+              </span>
+              <span className="px-2.5 py-1 rounded-lg bg-rose-50 dark:bg-rose-950/60 border border-rose-200 dark:border-rose-900 text-rose-700 dark:text-rose-300 font-semibold">
+                IRC:SP:20 Clause 14 Active
+              </span>
+            </div>
           </div>
-          <div className="flex items-center gap-2 text-xs font-mono">
-            <span className="px-2.5 py-1 rounded-lg bg-blue-50 dark:bg-blue-950/60 border border-blue-200 dark:border-blue-900 text-blue-700 dark:text-blue-300 font-semibold">
-              MoRTH Clause 108.4 Active
+
+          <div className="overflow-x-auto custom-scrollbar">
+            <table className="w-full text-left border-collapse text-xs">
+              <thead>
+                <tr className="bg-slate-50/80 dark:bg-slate-900/60 border-b border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400 font-semibold">
+                  <th className="py-3 px-4">Contractor / Agency</th>
+                  <th className="py-3 px-4">Assigned Corridor &amp; Zone</th>
+                  <th className="py-3 px-4 text-right">Deposit Balance (Tracked)</th>
+                  <th className="py-3 px-4 text-right">Penalties Deducted</th>
+                  <th className="py-3 px-4 text-center">On-Time SLA</th>
+                  <th className="py-3 px-4 text-center">Quality Index</th>
+                  <th className="py-3 px-4 text-center">Breaches</th>
+                  <th className="py-3 px-4 text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                {contractors.map((ctr) => {
+                  const currentBalance = ctr.securityDepositInr - ctr.penaltiesDeductedInr;
+                  const isBreached = ctr.breachedWorkOrders > 0;
+
+                  return (
+                    <tr key={ctr.id} className="hover:bg-slate-50/70 dark:hover:bg-slate-900/40 transition">
+                      <td className="py-3.5 px-4">
+                        <div className="font-bold text-slate-900 dark:text-slate-100">{ctr.name}</div>
+                        <div className="text-[10.5px] font-mono text-slate-400">{ctr.cin}</div>
+                        <div className="text-[10px] text-slate-500">Rep: {ctr.director}</div>
+                      </td>
+
+                      <td className="py-3.5 px-4">
+                        <div className="font-medium text-slate-800 dark:text-slate-200">{ctr.assignedCorridor}</div>
+                        <div className="text-[10.5px] text-slate-400">{ctr.zone}</div>
+                      </td>
+
+                      <td className="py-3.5 px-4 text-right font-mono">
+                        <div className="font-bold text-slate-900 dark:text-slate-100">
+                          ₹{currentBalance.toLocaleString('en-IN')}
+                        </div>
+                        <div className="text-[10px] text-slate-400">
+                          Bond: ₹{(ctr.securityDepositInr / 100000).toFixed(0)}L
+                        </div>
+                      </td>
+
+                      <td className="py-3.5 px-4 text-right font-mono">
+                        <div className={`font-bold ${ctr.penaltiesDeductedInr > 0 ? 'text-rose-600 dark:text-rose-400' : 'text-slate-400'}`}>
+                          {ctr.penaltiesDeductedInr > 0 ? `-₹${ctr.penaltiesDeductedInr.toLocaleString('en-IN')}` : '₹0'}
+                        </div>
+                        <div className="text-[10px] text-slate-400">Clause 14.2 &amp; SLA</div>
+                      </td>
+
+                      <td className="py-3.5 px-4 text-center">
+                        <div className="inline-flex items-center gap-1 font-bold text-slate-800 dark:text-slate-200 font-mono">
+                          {ctr.onTimeSlaPct}%
+                        </div>
+                        <div className="w-16 h-1.5 bg-slate-200 dark:bg-slate-800 rounded-full mx-auto mt-1 overflow-hidden">
+                          <div 
+                            className={`h-full rounded-full ${ctr.onTimeSlaPct >= 90 ? 'bg-emerald-500' : ctr.onTimeSlaPct >= 75 ? 'bg-amber-500' : 'bg-rose-500'}`}
+                            style={{ width: `${ctr.onTimeSlaPct}%` }}
+                          />
+                        </div>
+                      </td>
+
+                      <td className="py-3.5 px-4 text-center">
+                        <span className="px-2 py-0.5 rounded-full font-bold font-mono text-[11px] bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700">
+                          {ctr.qualityScorePct}%
+                        </span>
+                      </td>
+
+                      <td className="py-3.5 px-4 text-center">
+                        {isBreached ? (
+                          <span className="px-2 py-0.5 rounded-md font-bold font-mono text-[10.5px] bg-rose-50 dark:bg-rose-950/60 border border-rose-300 dark:border-rose-800 text-rose-700 dark:text-rose-300 animate-pulse">
+                            {ctr.breachedWorkOrders} Breached
+                          </span>
+                        ) : (
+                          <span className="px-2 py-0.5 rounded-md font-medium text-[10.5px] bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-300 dark:border-emerald-800 text-emerald-700 dark:text-emerald-300">
+                            All On-Time
+                          </span>
+                        )}
+                      </td>
+
+                      <td className="py-3.5 px-4 text-right">
+                        <div className="flex items-center justify-end gap-1.5">
+                          {isBreached && (
+                            <button
+                              onClick={() => handleOpenPenaltyNotice(ctr)}
+                              className="px-2.5 py-1 rounded-lg font-bold text-[11px] bg-rose-600 hover:bg-rose-500 text-white transition shadow-xs flex items-center gap-1 cursor-pointer"
+                              title="Generate and print Liquidated Damages Notice Draft"
+                            >
+                              <AlertOctagon className="w-3 h-3" />
+                              <span>Notice</span>
+                            </button>
+                          )}
+                          <button
+                            onClick={() => handleOpenCert(ctr)}
+                            className="px-2.5 py-1 rounded-lg font-semibold text-[11px] bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 transition border border-slate-200 dark:border-slate-700 flex items-center gap-1 cursor-pointer"
+                            title="View / issue IRC:SP:20 Work Completion Certificate"
+                          >
+                            <FileText className="w-3 h-3 text-blue-500" />
+                            <span>Cert</span>
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      ) : (
+        /* VIEW TAB 2: AUTONOMOUS CLAUSE 14 AUTO-DEBIT AUDIT TRAIL */
+        <div className="bg-white dark:bg-[#0B101D] border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden shadow-xs">
+          <div className="p-4 sm:p-5 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
+            <div>
+              <h3 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                <Receipt className="w-4 h-4 text-rose-500" />
+                <span>IRC:SP:20 Clause 14.2 &bull; Automated DLP Penalty Debit Ledger</span>
+              </h3>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                Zero-human-intervention liquidated damage debits executed against contractor escrow deposits upon recurrent transit sensor shock detection.
+              </p>
+            </div>
+            <span className="text-xs font-mono font-bold text-rose-600 dark:text-rose-400">
+              Total Auto-Debited: ₹{totalAutoDebitsInr.toLocaleString('en-IN')}
             </span>
           </div>
-        </div>
 
-        <div className="overflow-x-auto custom-scrollbar">
-          <table className="w-full text-left border-collapse text-xs">
-            <thead>
-              <tr className="bg-slate-50/80 dark:bg-slate-900/60 border-b border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400 font-semibold">
-                <th className="py-3 px-4">Contractor / Agency</th>
-                <th className="py-3 px-4">Assigned Corridor &amp; Zone</th>
-                <th className="py-3 px-4 text-right">Deposit Balance (Tracked)</th>
-                <th className="py-3 px-4 text-right">Penalties Deducted</th>
-                <th className="py-3 px-4 text-center">On-Time SLA</th>
-                <th className="py-3 px-4 text-center">Quality Index</th>
-                <th className="py-3 px-4 text-center">Breaches</th>
-                <th className="py-3 px-4 text-right">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-              {contractors.map((ctr) => {
-                const currentBalance = ctr.securityDepositInr - ctr.penaltiesDeductedInr;
-                const isBreached = ctr.breachedWorkOrders > 0;
-
-                return (
-                  <tr key={ctr.id} className="hover:bg-slate-50/70 dark:hover:bg-slate-900/40 transition">
+          <div className="overflow-x-auto custom-scrollbar">
+            <table className="w-full text-left border-collapse text-xs font-sans">
+              <thead>
+                <tr className="bg-slate-50/80 dark:bg-slate-900/60 border-b border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400 font-semibold">
+                  <th className="py-3 px-4">Debit ID &amp; Time</th>
+                  <th className="py-3 px-4">Contractor Agency</th>
+                  <th className="py-3 px-4">Corridor &amp; Ticket</th>
+                  <th className="py-3 px-4 text-center">Sensor Re-Shock</th>
+                  <th className="py-3 px-4 text-right">Auto-Debited Amount</th>
+                  <th className="py-3 px-4">PFMS / Treasury Reference</th>
+                  <th className="py-3 px-4 text-right">Voucher</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                {autoDebits.map((rec) => (
+                  <tr key={rec.id} className="hover:bg-slate-50/70 dark:hover:bg-slate-900/40 transition">
+                    <td className="py-3.5 px-4 font-mono">
+                      <div className="font-bold text-slate-900 dark:text-slate-100">{rec.id}</div>
+                      <div className="text-[10px] text-slate-400">{rec.timestamp}</div>
+                    </td>
                     <td className="py-3.5 px-4">
-                      <div className="font-bold text-slate-900 dark:text-slate-100">{ctr.name}</div>
-                      <div className="text-[10.5px] font-mono text-slate-400">{ctr.cin}</div>
-                      <div className="text-[10px] text-slate-500">Rep: {ctr.director}</div>
+                      <div className="font-bold text-slate-900 dark:text-slate-100">{rec.contractorName}</div>
+                      <div className="text-[10px] text-slate-400">{rec.clause}</div>
                     </td>
-
                     <td className="py-3.5 px-4">
-                      <div className="font-medium text-slate-800 dark:text-slate-200">{ctr.assignedCorridor}</div>
-                      <div className="text-[10.5px] text-slate-400">{ctr.zone}</div>
+                      <div className="text-slate-800 dark:text-slate-200">{rec.corridor}</div>
+                      <div className="text-[10px] font-mono text-cyan-600 dark:text-cyan-400">{rec.clusterCode}</div>
                     </td>
-
+                    <td className="py-3.5 px-4 text-center font-mono">
+                      <span className="px-2 py-0.5 rounded bg-rose-50 dark:bg-rose-950 border border-rose-300 dark:border-rose-800 text-rose-600 dark:text-rose-400 font-bold text-[11px]">
+                        Gz={rec.measuredGz}g &gt; {rec.thresholdGz}g
+                      </span>
+                      <div className="text-[9.5px] text-slate-400 mt-0.5">{rec.patrolBusId}</div>
+                    </td>
                     <td className="py-3.5 px-4 text-right font-mono">
-                      <div className="font-bold text-slate-900 dark:text-slate-100">
-                        ₹{currentBalance.toLocaleString('en-IN')}
+                      <div className="font-bold text-rose-600 dark:text-rose-400">
+                        -₹{rec.penaltyDebitInr.toLocaleString('en-IN')}
                       </div>
-                      <div className="text-[10px] text-slate-400">
-                        Deposit: ₹{(ctr.securityDepositInr / 100000).toFixed(0)}L
-                      </div>
+                      <div className="text-[10px] text-slate-400">Escrow Debit</div>
                     </td>
-
-                    <td className="py-3.5 px-4 text-right font-mono">
-                      <div className={`font-bold ${ctr.penaltiesDeductedInr > 0 ? 'text-rose-600 dark:text-rose-400' : 'text-slate-400'}`}>
-                        {ctr.penaltiesDeductedInr > 0 ? `-₹${ctr.penaltiesDeductedInr.toLocaleString('en-IN')}` : '₹0'}
-                      </div>
-                      <div className="text-[10px] text-slate-400">₹500/hr late rate</div>
-                    </td>
-
-                    <td className="py-3.5 px-4 text-center">
-                      <div className="inline-flex items-center gap-1 font-bold text-slate-800 dark:text-slate-200 font-mono">
-                        {ctr.onTimeSlaPct}%
-                      </div>
-                      <div className="w-16 h-1.5 bg-slate-200 dark:bg-slate-800 rounded-full mx-auto mt-1 overflow-hidden">
-                        <div 
-                          className={`h-full rounded-full ${ctr.onTimeSlaPct >= 90 ? 'bg-emerald-500' : ctr.onTimeSlaPct >= 75 ? 'bg-amber-500' : 'bg-rose-500'}`}
-                          style={{ width: `${ctr.onTimeSlaPct}%` }}
-                        />
-                      </div>
-                    </td>
-
-                    <td className="py-3.5 px-4 text-center">
-                      <span className="px-2 py-0.5 rounded-full font-bold font-mono text-[11px] bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700">
-                        {ctr.qualityScorePct}%
+                    <td className="py-3.5 px-4 font-mono text-[10.5px] text-slate-500 dark:text-slate-400">
+                      <div>{rec.pfmsTxnRef}</div>
+                      <span className="px-1.5 py-0.2 rounded bg-emerald-50 dark:bg-emerald-950 text-emerald-600 text-[9px] font-bold">
+                        PFMS SETTLED
                       </span>
                     </td>
-
-                    <td className="py-3.5 px-4 text-center">
-                      {isBreached ? (
-                        <span className="px-2 py-0.5 rounded-md font-bold font-mono text-[10.5px] bg-rose-50 dark:bg-rose-950/60 border border-rose-300 dark:border-rose-800 text-rose-700 dark:text-rose-300 animate-pulse">
-                          {ctr.breachedWorkOrders} Breached
-                        </span>
-                      ) : (
-                        <span className="px-2 py-0.5 rounded-md font-medium text-[10.5px] bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-300 dark:border-emerald-800 text-emerald-700 dark:text-emerald-300">
-                          All On-Time
-                        </span>
-                      )}
-                    </td>
-
                     <td className="py-3.5 px-4 text-right">
-                      <div className="flex items-center justify-end gap-1.5">
-                        {isBreached && (
-                          <button
-                            onClick={() => handleOpenPenaltyNotice(ctr)}
-                            className="px-2.5 py-1 rounded-lg font-bold text-[11px] bg-rose-600 hover:bg-rose-500 text-white transition shadow-xs flex items-center gap-1"
-                            title="Generate and print Liquidated Damages Notice Draft"
-                          >
-                            <AlertOctagon className="w-3 h-3" />
-                            <span>Notice</span>
-                          </button>
-                        )}
-                        <button
-                          onClick={() => handleOpenCert(ctr)}
-                          className="px-2.5 py-1 rounded-lg font-semibold text-[11px] bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 transition border border-slate-200 dark:border-slate-700 flex items-center gap-1"
-                          title="View / issue IRC:SP:20 Work Completion Certificate"
-                        >
-                          <FileText className="w-3 h-3 text-blue-500" />
-                          <span>Cert</span>
-                        </button>
-                      </div>
+                      <button
+                        onClick={() => handleOpenDebitVoucher(rec)}
+                        className="px-2.5 py-1 rounded-lg font-bold text-[11px] bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 border border-slate-300 dark:border-slate-700 transition flex items-center gap-1 ml-auto cursor-pointer"
+                      >
+                        <FileText className="w-3 h-3 text-rose-500" />
+                        <span>Voucher</span>
+                      </button>
                     </td>
                   </tr>
-                );
-              })}
-            </tbody>
-          </table>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
-      </div>
+      )}
 
-      {/* MODAL 1: CONTRACTOR PENALTY NOTICE (PRINTABLE NOTICE DRAFT) */}
+      {/* ── MODAL 1: CONTRACTOR LIQUIDATED DAMAGES NOTICE (DRAFT) ── */}
       {activeModal === 'penalty_notice' && selectedContractor && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm animate-fadeIn">
           <div className="relative w-full max-w-2xl rounded-2xl bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-800 shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
@@ -377,7 +622,7 @@ export const ContractorSlaLedger: React.FC<ContractorSlaLedgerProps> = ({ cluste
                   <div className="text-[10px] text-slate-500">Attn: {selectedContractor.director}</div>
                 </div>
                 <div>
-                  <span className="text-slate-400 block text-[10px] font-semibold">JURISDICTION & CORRIDOR:</span>
+                  <span className="text-slate-400 block text-[10px] font-semibold">JURISDICTION &amp; CORRIDOR:</span>
                   <strong className="text-slate-900 dark:text-white">{selectedContractor.assignedCorridor}</strong>
                   <div className="text-[10px] text-slate-500">{selectedContractor.zone}</div>
                   <div className="text-[10px] text-rose-600 font-bold mt-1">
@@ -432,14 +677,14 @@ export const ContractorSlaLedger: React.FC<ContractorSlaLedgerProps> = ({ cluste
             <div className="border-t border-slate-200 dark:border-slate-800 p-4 bg-slate-50 dark:bg-slate-950/60 flex items-center justify-between">
               <button
                 onClick={() => window.print()}
-                className="px-3.5 py-1.5 rounded-lg bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 font-semibold text-xs flex items-center gap-1.5 transition"
+                className="px-3.5 py-1.5 rounded-lg bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 font-semibold text-xs flex items-center gap-1.5 transition cursor-pointer"
               >
                 <Printer className="w-3.5 h-3.5" />
                 <span>Print Notice Draft</span>
               </button>
               <button
                 onClick={() => setActiveModal(null)}
-                className="px-4 py-1.5 rounded-lg bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs transition"
+                className="px-4 py-1.5 rounded-lg bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs transition cursor-pointer"
               >
                 Close &amp; File in Ledger
               </button>
@@ -448,7 +693,7 @@ export const ContractorSlaLedger: React.FC<ContractorSlaLedgerProps> = ({ cluste
         </div>
       )}
 
-      {/* MODAL 2: WORK COMPLETION & QUALITY CERTIFICATE */}
+      {/* ── MODAL 2: WORK COMPLETION & QUALITY CERTIFICATE ── */}
       {activeModal === 'completion_cert' && selectedContractor && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm animate-fadeIn">
           <div className="relative w-full max-w-2xl rounded-2xl bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-800 shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
@@ -460,7 +705,7 @@ export const ContractorSlaLedger: React.FC<ContractorSlaLedgerProps> = ({ cluste
                     MUNICIPAL WORK COMPLETION &amp; QUALITY CERTIFICATE
                   </h3>
                   <div className="text-[10px] font-mono text-emerald-700 dark:text-emerald-300">
-                    FORM IRC:SP:20 (2025 COMPLIANCE) • CERT NO: GCC-QC-2026-8819
+                    FORM IRC:SP:20 (2025 COMPLIANCE) &bull; CERT NO: GCC-QC-2026-8819
                   </div>
                 </div>
               </div>
@@ -475,7 +720,7 @@ export const ContractorSlaLedger: React.FC<ContractorSlaLedgerProps> = ({ cluste
             <div className="p-6 overflow-y-auto space-y-4 text-xs text-slate-800 dark:text-slate-200 font-sans custom-scrollbar">
               <div className="text-center border-b border-slate-200 dark:border-slate-800 pb-3">
                 <div className="font-bold uppercase tracking-widest text-slate-900 dark:text-white text-xs">
-                  GREATER CHENNAI CORPORATION • QUALITY ASSURANCE WING
+                  GREATER CHENNAI CORPORATION &bull; QUALITY ASSURANCE WING
                 </div>
                 <div className="text-[10px] text-slate-500 dark:text-slate-400">
                   Standard Pavement Rectification &amp; Defect Liability Warranty Certificate
@@ -556,16 +801,141 @@ export const ContractorSlaLedger: React.FC<ContractorSlaLedgerProps> = ({ cluste
             <div className="border-t border-slate-200 dark:border-slate-800 p-4 bg-slate-50 dark:bg-slate-950/60 flex items-center justify-between">
               <button
                 onClick={() => window.print()}
-                className="px-3.5 py-1.5 rounded-lg bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 font-semibold text-xs flex items-center gap-1.5 transition"
+                className="px-3.5 py-1.5 rounded-lg bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 font-semibold text-xs flex items-center gap-1.5 transition cursor-pointer"
               >
                 <Printer className="w-3.5 h-3.5" />
                 <span>Print Completion Certificate</span>
               </button>
               <button
                 onClick={() => setActiveModal(null)}
-                className="px-4 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs transition"
+                className="px-4 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs transition cursor-pointer"
               >
                 Approve Invoice &amp; Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── MODAL 3: MUNICIPAL TREASURY AUTO-DEBIT VOUCHER (IRC:SP:20 CLAUSE 14.2 & PFMS ESCROW) ── */}
+      {activeModal === 'auto_debit_voucher' && selectedDebitRecord && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fadeIn">
+          <div className="relative w-full max-w-2xl rounded-2xl bg-white dark:bg-slate-900 border border-rose-500/50 shadow-2xl overflow-hidden flex flex-col max-h-[92vh]">
+            <div className="flex items-center justify-between border-b border-rose-200 dark:border-rose-900/60 px-5 py-3.5 bg-gradient-to-r from-rose-950/90 to-slate-900 text-white">
+              <div className="flex items-center gap-2.5">
+                <Receipt className="w-5 h-5 text-rose-400" />
+                <div>
+                  <h3 className="text-sm font-bold text-white flex items-center gap-2">
+                    <span>MUNICIPAL TREASURY ESCROW AUTO-DEBIT VOUCHER</span>
+                    <span className="px-1.5 py-0.5 rounded bg-rose-500 text-[10px] font-mono font-bold">
+                      PFMS LINKED
+                    </span>
+                  </h3>
+                  <div className="text-[10.5px] font-mono text-rose-300">
+                    IRC:SP:20 CLAUSE 14.2 &bull; DEFECT LIABILITY GUARANTEE BREACH
+                  </div>
+                </div>
+              </div>
+              <button 
+                onClick={() => setActiveModal(null)}
+                className="p-1.5 rounded-lg text-slate-400 hover:text-white transition cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="p-6 overflow-y-auto space-y-4 text-xs text-slate-800 dark:text-slate-200 font-sans custom-scrollbar">
+              
+              {/* Header Badge */}
+              <div className="text-center border-b border-slate-200 dark:border-slate-800 pb-3">
+                <div className="font-bold uppercase tracking-widest text-slate-900 dark:text-white text-xs">
+                  GREATER CHENNAI CORPORATION &bull; MUNICIPAL TREASURY &amp; ESCROW WING
+                </div>
+                <div className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">
+                  Public Financial Management System (PFMS) &bull; Automated Contractor Security Debit
+                </div>
+              </div>
+
+              {/* Transaction Meta Card */}
+              <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 grid grid-cols-2 gap-3 text-[11px] font-mono">
+                <div>
+                  <span className="text-slate-400 block text-[10px] uppercase font-sans">PFMS Transaction ID:</span>
+                  <strong className="text-cyan-600 dark:text-cyan-400">{selectedDebitRecord.pfmsTxnRef}</strong>
+                  <div className="text-[10px] text-slate-500 mt-1">Debit Ref: {selectedDebitRecord.id}</div>
+                </div>
+                <div>
+                  <span className="text-slate-400 block text-[10px] uppercase font-sans">Execution Timestamp:</span>
+                  <strong className="text-slate-900 dark:text-white">{selectedDebitRecord.timestamp}</strong>
+                  <div className="text-[10px] text-emerald-600 font-bold mt-1">STATUS: SETTLED IN ESCROW</div>
+                </div>
+              </div>
+
+              {/* Sensor Re-Pass Detection Proof */}
+              <div className="p-3.5 rounded-xl bg-rose-50/70 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900/60 space-y-2">
+                <div className="flex items-center justify-between font-bold text-rose-950 dark:text-rose-200">
+                  <span className="flex items-center gap-1.5">
+                    <ShieldAlert className="w-4 h-4 text-rose-600" />
+                    <span>Statutory Recurrence Trigger &bull; IRC:SP:20 Clause 14.2</span>
+                  </span>
+                  <span className="font-mono text-rose-600 dark:text-rose-400">Gz={selectedDebitRecord.measuredGz}g</span>
+                </div>
+                <p className="text-[11px] text-slate-600 dark:text-slate-300 leading-relaxed">
+                  Autonomous transit patrol node <strong className="font-mono text-slate-900 dark:text-white">{selectedDebitRecord.patrolBusId}</strong> re-inspected repaired ticket <strong className="font-mono text-slate-900 dark:text-white">{selectedDebitRecord.clusterCode}</strong> along {selectedDebitRecord.corridor}. Vertical shock recorded at <strong>{selectedDebitRecord.measuredGz}g</strong>, significantly exceeding the IRC:SP:20 permissible defect ceiling of <strong>{selectedDebitRecord.thresholdGz}g</strong>.
+                </p>
+              </div>
+
+              {/* Deduction Table */}
+              <div className="border border-slate-200 dark:border-slate-700 rounded-xl overflow-hidden font-mono text-[11px]">
+                <div className="grid grid-cols-3 p-2.5 bg-slate-100 dark:bg-slate-800 font-bold text-slate-700 dark:text-slate-300 border-b border-slate-200 dark:border-slate-700">
+                  <span>Contractor Held Bond</span>
+                  <span className="text-center">Statutory Debit Rate</span>
+                  <span className="text-right">Liquidated Damages</span>
+                </div>
+                <div className="grid grid-cols-3 p-2.5 border-b border-slate-200 dark:border-slate-800">
+                  <div className="font-sans">
+                    <strong>{selectedDebitRecord.contractorName}</strong>
+                    <div className="text-[10px] text-slate-400">Security Deposit Escrow Account</div>
+                  </div>
+                  <span className="text-center font-bold text-amber-600">
+                    IRC:SP:20 Cl. 14 Flat Rate
+                  </span>
+                  <span className="text-right font-extrabold text-rose-600">
+                    -₹{selectedDebitRecord.penaltyDebitInr.toLocaleString('en-IN')}
+                  </span>
+                </div>
+                <div className="grid grid-cols-3 p-2.5 bg-slate-50 dark:bg-slate-850 font-bold text-slate-900 dark:text-white">
+                  <span>Remaining Held Deposit:</span>
+                  <span className="text-center text-slate-400">Net Balance</span>
+                  <span className="text-right text-emerald-600 font-extrabold">
+                    ₹{selectedDebitRecord.remainingDepositInr.toLocaleString('en-IN')}
+                  </span>
+                </div>
+              </div>
+
+              {/* Legal Disclaimer & Remittance Order */}
+              <p className="text-[10.5px] text-slate-500 dark:text-slate-400 leading-relaxed">
+                The auto-debited sum of <strong>₹{selectedDebitRecord.penaltyDebitInr.toLocaleString('en-IN')}</strong> has been remitted to the <em>GCC Municipal Road Restoration Escrow Fund</em>. Contractor is formally ordered to re-compact the affected site within <strong>48 hours</strong> under threat of commercial debarment.
+              </p>
+
+              <div className="pt-3 border-t border-slate-200 dark:border-slate-800 flex items-center justify-between text-[10px] text-slate-500 font-mono">
+                <div>CRYPTOGRAPHIC AUDIT HASH: e4b2...99f0 (Immutable Ledger)</div>
+                <div className="text-rose-600 font-bold uppercase">ESCROW DEBIT SETTLED</div>
+              </div>
+            </div>
+
+            <div className="border-t border-slate-200 dark:border-slate-800 p-4 bg-slate-50 dark:bg-slate-950/60 flex items-center justify-between">
+              <button
+                onClick={() => window.print()}
+                className="px-3.5 py-1.5 rounded-lg bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 font-semibold text-xs flex items-center gap-1.5 transition cursor-pointer"
+              >
+                <Printer className="w-3.5 h-3.5" />
+                <span>Print Treasury Voucher</span>
+              </button>
+              <button
+                onClick={() => setActiveModal(null)}
+                className="px-4 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs transition cursor-pointer"
+              >
+                Close Docket
               </button>
             </div>
           </div>
