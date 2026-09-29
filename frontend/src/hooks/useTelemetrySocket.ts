@@ -245,6 +245,11 @@ export function useTelemetrySocket() {
       if (document.hidden) return; // Don't update when tab is not visible
       tickCount += 1;
 
+      // If backend WebSocket is actively streaming live fleet telemetry, let backend drive coordinates without race conditions!
+      if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+        return;
+      }
+
       setFleet((prev) =>
         prev.map((bus) => {
           const pts = WAYPOINTS[bus.id] || [
@@ -264,7 +269,8 @@ export function useTelemetrySocket() {
           }
 
           const st = progressMap[bus.id];
-          const delta = 0.012 + Math.random() * 0.006;
+          // Calibrated to realistic 25-35 km/h transit velocity (~8-12 meters per sec)
+          const delta = 0.0003 + Math.random() * 0.0003;
           st.prog += st.fwd ? delta : -delta;
 
           if (st.prog >= 1.0) {

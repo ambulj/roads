@@ -789,7 +789,6 @@ export const WebGISMap: React.FC<WebGISMapProps> = ({
       if (!busMarkersRef.current[bus.id]) {
         const el = document.createElement('div');
         el.className = 'cursor-pointer group';
-        el.style.transition = 'transform 1.8s linear';
         el.id = `bus-marker-${bus.id}`;
         el.innerHTML = `
           <div style="position: relative; display: flex; align-items: center; justify-content: center;">
@@ -847,7 +846,6 @@ export const WebGISMap: React.FC<WebGISMapProps> = ({
         busMarkersRef.current[bus.id].setLngLat([bus.lng, bus.lat]);
         const mEl = document.getElementById(`bus-marker-${bus.id}`);
         if (mEl) {
-          mEl.style.transition = 'transform 1.8s linear';
           const speedLabel = mEl.querySelector('div[style*="bottom: -18px"]');
           if (speedLabel) {
             speedLabel.textContent = `${bus.id.replace('BUS-', '')} • ${bus.speed_kmh || 35}k`;
