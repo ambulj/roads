@@ -13,7 +13,6 @@ const MobileDashcam = React.lazy(() => import("./pages/MobileDashcam").then(m =>
 const RoadMemory   = React.lazy(() => import("./pages/RoadMemory").then(m => ({ default: m.RoadMemory })));
 const IncidentList = React.lazy(() => import("./pages/IncidentList").then(m => ({ default: m.IncidentList })));
 import { RPIFormulaModal } from "./components/modals/RPIFormulaModal";
-import { TrustLedgerModal } from "./components/modals/TrustLedgerModal";
 import { BriefModal } from "./components/modals/BriefModal";
 import { CommandPalette } from "./components/modals/CommandPalette";
 import { AuthModal } from "./components/modals/AuthModal";
@@ -105,7 +104,6 @@ export const App: React.FC = () => {
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
   const [isRPIModalOpen, setIsRPIModalOpen] = useState(false);
   const [rpiModalClusterId, setRpiModalClusterId] = useState<string | null>(null);
-  const [isTrustLedgerOpen, setIsTrustLedgerOpen] = useState(false);
   const [selectedIncident, setSelectedIncident] = useState<TrafficIncident | null>(null);
 
   useEffect(() => {
@@ -205,7 +203,6 @@ export const App: React.FC = () => {
         if (isAuthModalOpen) { setIsAuthModalOpen(false); return; }
         if (isMobileMenuOpen) { setIsMobileMenuOpen(false); return; }
         if (isRPIModalOpen) { setIsRPIModalOpen(false); return; }
-        if (isTrustLedgerOpen) { setIsTrustLedgerOpen(false); return; }
         return;
       }
 
@@ -339,7 +336,6 @@ export const App: React.FC = () => {
         isBackendConnected={isConnected}
         activeNodesCount={fleet.filter((b) => b.is_online).length}
         onOpenRPIModal={() => setIsRPIModalOpen(true)}
-        onOpenTrustLedger={() => setIsTrustLedgerOpen(true)}
         onOpenBriefModal={() => setIsBriefModalOpen(true)}
         onTriggerDedup={handleTriggerDedup}
         onOpenAuthModal={() => setIsAuthModalOpen(true)}
@@ -478,10 +474,6 @@ export const App: React.FC = () => {
         onClose={() => setIsRPIModalOpen(false)}
         selectedCluster={clusters.find(c => c.id === rpiModalClusterId) || clusters[0] || null}
         clusters={clusters}
-      />
-      <TrustLedgerModal
-        isOpen={isTrustLedgerOpen}
-        onClose={() => setIsTrustLedgerOpen(false)}
       />
     </div>
   );
