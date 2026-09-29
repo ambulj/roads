@@ -50,6 +50,82 @@ const WARD_ENGINEERS = [
 
 const VERIFIED_ASPHALT_IMG = "https://images.unsplash.com/photo-1541888946425-d0fbb186156f?w=1200&auto=format&fit=crop&q=80";
 
+export interface ConsoleEvidencePass {
+  id: string;
+  label: string;
+  tag: string;
+  url: string;
+  bus: string;
+  route: string;
+  gz: string;
+  speed: string;
+  conf: string;
+  timestamp: string;
+}
+
+const CONSOLE_EVIDENCE_PASSES: ConsoleEvidencePass[] = [
+  {
+    id: "pass1_detect",
+    label: "Pass 1 • Optical Detection",
+    tag: "T -0.5s",
+    url: "/evidence/bus_pass_1_detect.jpg",
+    bus: "Bus #04 (TN-01-N-1042)",
+    route: "MTC 19B (GST Road)",
+    gz: "1.45g",
+    speed: "38.1 km/h",
+    conf: "94%",
+    timestamp: "Today, 07:14:22 IST",
+  },
+  {
+    id: "pass1_impact",
+    label: "Pass 1 • Axle Impact Peak",
+    tag: "T 0.0s",
+    url: "/evidence/bus_pass_1_impact.jpg",
+    bus: "Bus #04 (TN-01-N-1042)",
+    route: "MTC 19B (GST Road)",
+    gz: "+2.80g (Critical)",
+    speed: "34.6 km/h",
+    conf: "96%",
+    timestamp: "Today, 07:14:22.9 IST",
+  },
+  {
+    id: "pass1_approach",
+    label: "Pass 1 • Approach Framing",
+    tag: "T -1.2s",
+    url: "/evidence/bus_pass_1_approach.jpg",
+    bus: "Bus #04 (TN-01-N-1042)",
+    route: "MTC 19B (GST Road)",
+    gz: "0.98g",
+    speed: "42.4 km/h",
+    conf: "82%",
+    timestamp: "Today, 07:14:21.1 IST",
+  },
+  {
+    id: "pass2_confirm",
+    label: "Pass 2 • Validation Patrol",
+    tag: "+2h 18m",
+    url: "/evidence/bus_pass_2_confirm.jpg",
+    bus: "Bus #18 (TN-02-N-3891)",
+    route: "MTC 570 (Kathipara)",
+    gz: "+1.90g",
+    speed: "41.2 km/h",
+    conf: "91%",
+    timestamp: "Today, 09:32:15 IST",
+  },
+  {
+    id: "pass3_concurrence",
+    label: "Pass 3 • Fleet Consensus",
+    tag: "+3h 51m",
+    url: "/evidence/bus_pass_3_concurrence.jpg",
+    bus: "Bus #29 (TN-09-E-7721)",
+    route: "MTC 21G (Vandalur)",
+    gz: "+2.10g",
+    speed: "36.8 km/h",
+    conf: "95%",
+    timestamp: "Today, 11:05:48 IST",
+  },
+];
+
 /**
  * Pure SVG QR Code Generator (Zero external dependencies)
  */
@@ -128,6 +204,7 @@ export const WorkOrderActionConsole: React.FC<WorkOrderActionConsoleProps> = ({
 
   // Tab 1: CAD Audit Slider State
   const [sliderPosition, setSliderPosition] = useState(50);
+  const [selectedPassIdx, setSelectedPassIdx] = useState(0);
   const containerRef = useRef<HTMLDivElement>(null);
 
   // Tab 2: Dispatch State
@@ -154,6 +231,11 @@ export const WorkOrderActionConsole: React.FC<WorkOrderActionConsoleProps> = ({
   const volumeLiters = Math.round(volumeM3 * 1000 * 10) / 10;
   const asphaltKg = Math.round(volumeM3 * 2300);
   const costInr = Math.round(asphaltKg * 68);
+
+  const currentPass = CONSOLE_EVIDENCE_PASSES[selectedPassIdx] || CONSOLE_EVIDENCE_PASSES[0];
+  const beforeImgUrl = (cluster.before_image_url && !cluster.before_image_url.includes("pothole_annotated.jpg") && selectedPassIdx === 0)
+    ? cluster.before_image_url
+    : currentPass.url;
 
   const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
     if (!containerRef.current) return;
@@ -299,22 +381,28 @@ export const WorkOrderActionConsole: React.FC<WorkOrderActionConsoleProps> = ({
           {activeTab === "cad_audit" && (
             <div className="space-y-4">
               <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
-                {/* Left: Interactive Infill Slider */}
-                <div className="lg:col-span-7 space-y-2">
+                {/* Left: Interactive Infill Slider & Multi-Pass Evidence Strip */}
+                <div className="lg:col-span-7 space-y-2.5">
                   <div className="text-xs font-mono text-slate-400 flex items-center justify-between">
-                    <span>Pre-Repair Defect vs Post-Compaction Overlay</span>
+                    <span className="flex items-center gap-1.5 text-slate-300 font-semibold">
+                      <Sliders className="w-3.5 h-3.5 text-blue-400" />
+                      Pre-Repair Defect vs Post-Compaction Overlay
+                    </span>
                     <span className="text-blue-400 font-bold">Slider: {Math.round(sliderPosition)}%</span>
                   </div>
 
                   <div
                     ref={containerRef}
                     onMouseMove={handleMouseMove}
-                    className="relative w-full h-64 rounded-lg overflow-hidden border border-slate-700 bg-slate-950 cursor-ew-resize select-none"
+                    className="relative w-full h-64 rounded-lg overflow-hidden border border-slate-700 bg-slate-950 cursor-ew-resize select-none shadow-inner"
                   >
                     <img
-                      src={cluster.before_image_url || (cluster as any).image_url || "/uploads/evidence/pothole_annotated.jpg"}
-                      alt="Before"
+                      src={beforeImgUrl}
+                      alt="Before Repair Defect"
                       className="absolute inset-0 w-full h-full object-cover pointer-events-none"
+                      onError={(e) => {
+                        (e.currentTarget as HTMLImageElement).src = "/evidence/bus_pass_1_detect.jpg";
+                      }}
                     />
                     <div
                       className="absolute inset-0 overflow-hidden border-r-2 border-white pointer-events-none"
@@ -322,20 +410,81 @@ export const WorkOrderActionConsole: React.FC<WorkOrderActionConsoleProps> = ({
                     >
                       <img
                         src={VERIFIED_ASPHALT_IMG}
-                        alt="After"
+                        alt="After Repair"
                         className="absolute inset-0 w-full h-full object-cover max-w-none"
                         style={{ width: "100%", height: "100%" }}
+                        onError={(e) => {
+                          (e.currentTarget as HTMLImageElement).src = "/evidence/bus_pass_3_concurrence.jpg";
+                        }}
                       />
-                      <div className="absolute top-2 left-2 px-2 py-0.5 rounded bg-slate-900/90 text-white font-mono text-[10px] font-bold border border-slate-700">
-                        AFTER (Hot-Mix DBM)
+                      <div className="absolute top-2 left-2 px-2 py-0.5 rounded bg-slate-900/90 text-emerald-400 font-mono text-[10px] font-bold border border-emerald-600/50 shadow">
+                        AFTER: Hot-Mix DBM VG-30
                       </div>
                     </div>
-                    <div className="absolute top-2 right-2 px-2 py-0.5 rounded bg-slate-900/90 text-white font-mono text-[10px] font-bold border border-slate-700">
-                      BEFORE (Surface Defect)
+                    <div className="absolute top-2 right-2 px-2 py-0.5 rounded bg-slate-900/90 text-rose-300 font-mono text-[10px] font-bold border border-rose-600/50 shadow">
+                      BEFORE: {currentPass.label.split("•")[1]?.trim() || currentPass.label} ({currentPass.gz})
                     </div>
                   </div>
-                  <div className="text-[10.5px] font-mono text-slate-400 text-center">
-                    Drag across viewport to inspect boundary sealing and asphalt compaction level.
+
+                  {/* Multi-bus Captured Passes Gallery Strip */}
+                  <div className="space-y-1.5 pt-0.5">
+                    <div className="flex items-center justify-between text-[11px] font-mono text-slate-400">
+                      <span className="flex items-center gap-1 font-bold text-slate-300">
+                        <Bus className="w-3.5 h-3.5 text-blue-400" />
+                        Captured Optical &amp; IMU Evidence Passes ({CONSOLE_EVIDENCE_PASSES.length})
+                      </span>
+                      <span className="text-[10px] text-blue-400 font-semibold">Select pass to inspect in slider</span>
+                    </div>
+
+                    <div className="grid grid-cols-2 sm:grid-cols-5 gap-1.5">
+                      {CONSOLE_EVIDENCE_PASSES.map((pass, idx) => (
+                        <button
+                          key={pass.id}
+                          type="button"
+                          onClick={() => setSelectedPassIdx(idx)}
+                          className={`flex flex-col p-1.5 rounded-lg border text-left transition ${
+                            selectedPassIdx === idx
+                              ? "bg-blue-600/25 border-blue-500 ring-1 ring-blue-500/50"
+                              : "bg-slate-950/70 border-slate-800 hover:border-slate-700 hover:bg-slate-900"
+                          }`}
+                        >
+                          <div className="relative aspect-video rounded overflow-hidden mb-1 border border-slate-800">
+                            <img
+                              src={pass.url}
+                              alt={pass.label}
+                              className="w-full h-full object-cover"
+                              onError={(e) => {
+                                (e.currentTarget as HTMLImageElement).src = "/evidence/bus_pass_1_detect.jpg";
+                              }}
+                            />
+                            <span className="absolute bottom-0.5 right-0.5 px-1 py-0.2 rounded bg-black/80 text-[8px] font-mono text-white font-bold">
+                              {pass.tag}
+                            </span>
+                          </div>
+                          <span className="text-[10px] font-mono font-bold text-slate-200 truncate">
+                            {pass.label.split("•")[1]?.trim() || pass.label}
+                          </span>
+                          <span className="text-[9px] font-mono text-slate-400 truncate">
+                            {pass.gz} • {pass.speed}
+                          </span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Forensic Stamp Bar */}
+                  <div className="p-2 rounded bg-slate-950/90 border border-slate-800 flex flex-wrap items-center justify-between text-[10px] font-mono text-slate-400 gap-2">
+                    <div className="flex items-center gap-1.5">
+                      <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
+                      <span className="text-emerald-400 font-semibold">DPDP ACT 2023 CERTIFIED</span>
+                      <span className="text-slate-600">•</span>
+                      <span>Node: <strong className="text-slate-200">{currentPass.bus}</strong></span>
+                    </div>
+                    <div>
+                      <span>GPS: <strong className="text-slate-200">[{cluster.lat.toFixed(5)}, {cluster.lng.toFixed(5)}]</strong></span>
+                      <span className="text-slate-600 mx-1.5">•</span>
+                      <span className="text-blue-400 font-semibold">{currentPass.timestamp}</span>
+                    </div>
                   </div>
                 </div>
 
@@ -500,6 +649,65 @@ export const WorkOrderActionConsole: React.FC<WorkOrderActionConsoleProps> = ({
                     {isVerified ? "2.38 g/cm³ (98.4%)" : "Awaiting sensor sweep"}
                   </strong>
                   <div className="text-[10px] text-slate-500">IRC:SP:20 Standard</div>
+                </div>
+              </div>
+
+              {/* Dual Photographic Evidence Inspection */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                <div className="p-3 rounded-lg bg-slate-950 border border-slate-800 space-y-2">
+                  <div className="flex items-center justify-between text-[11px] font-mono font-bold text-rose-400">
+                    <span>1. PRE-REPAIR DISTRESS FRAME</span>
+                    <span className="px-1.5 py-0.5 rounded bg-rose-950/80 border border-rose-800/80 text-[10px]">Gz = +2.80g</span>
+                  </div>
+                  <div className="aspect-video rounded-lg overflow-hidden border border-slate-800 relative bg-slate-900">
+                    <img
+                      src="/evidence/bus_pass_1_impact.jpg"
+                      alt="Pre repair cavity"
+                      className="w-full h-full object-cover"
+                      onError={(e) => {
+                        (e.currentTarget as HTMLImageElement).src = "/evidence/bus_pass_1_detect.jpg";
+                      }}
+                    />
+                    <div className="absolute top-1.5 left-1.5 px-2 py-0.5 rounded bg-rose-950/90 text-rose-300 font-mono text-[9px] font-bold border border-rose-800">
+                      DEFECT IMPACT (T 0.0s)
+                    </div>
+                  </div>
+                  <div className="text-[10px] text-slate-400 font-mono flex justify-between">
+                    <span>Node: BUS-TN-01-N-1042</span>
+                    <span className="text-rose-400 font-bold">Unrepaired Void</span>
+                  </div>
+                </div>
+
+                <div className="p-3 rounded-lg bg-slate-950 border border-slate-800 space-y-2">
+                  <div className="flex items-center justify-between text-[11px] font-mono font-bold text-emerald-400">
+                    <span>2. RE-PASS REPAVED PROOF</span>
+                    <span className={`px-1.5 py-0.5 rounded text-[10px] ${isVerified ? "bg-emerald-950/80 border border-emerald-800/80 text-emerald-300" : "bg-slate-800 border border-slate-700 text-slate-400"}`}>
+                      {isVerified ? "Gz = +0.98g (Smooth)" : "Awaiting Patrol"}
+                    </span>
+                  </div>
+                  <div className="aspect-video rounded-lg overflow-hidden border border-slate-800 relative bg-slate-900">
+                    <img
+                      src={VERIFIED_ASPHALT_IMG}
+                      alt="Post repair overlay"
+                      className="w-full h-full object-cover"
+                      onError={(e) => {
+                        (e.currentTarget as HTMLImageElement).src = "/evidence/bus_pass_3_concurrence.jpg";
+                      }}
+                    />
+                    <div className={`absolute top-1.5 left-1.5 px-2 py-0.5 rounded font-mono text-[9px] font-bold border ${
+                      isVerified
+                        ? "bg-emerald-950/90 text-emerald-300 border-emerald-700"
+                        : "bg-slate-900/90 text-slate-400 border-slate-700"
+                    }`}>
+                      {isVerified ? "AUTONOMOUSLY VERIFIED REPAVED" : "HOT-MIX ASPHALT TARGET"}
+                    </div>
+                  </div>
+                  <div className="text-[10px] text-slate-400 font-mono flex justify-between">
+                    <span>Node: BUS-MTC-21G</span>
+                    <span className={isVerified ? "text-emerald-400 font-bold" : "text-amber-400 font-bold"}>
+                      {isVerified ? "SLA Closed (IRC:SP:20)" : "Pending Verification"}
+                    </span>
+                  </div>
                 </div>
               </div>
 

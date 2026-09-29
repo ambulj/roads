@@ -268,9 +268,12 @@ export const FleetRepassModal: React.FC<FleetRepassModalProps> = ({
                   </div>
                   <div className="aspect-video rounded-lg overflow-hidden bg-slate-200 dark:bg-slate-700">
                     <img
-                      src={currentCluster?.before_image_url || '/uploads/evidence/pothole_annotated.jpg'}
+                      src={currentCluster?.before_image_url || '/evidence/bus_pass_1_detect.jpg'}
                       alt="Before Repair"
                       className="w-full h-full object-cover"
+                      onError={(e) => {
+                        (e.currentTarget as HTMLImageElement).src = '/evidence/bus_pass_1_detect.jpg';
+                      }}
                     />
                   </div>
                 </div>
@@ -287,6 +290,9 @@ export const FleetRepassModal: React.FC<FleetRepassModalProps> = ({
                       src={VERIFIED_ASPHALT_IMG}
                       alt="After Repair"
                       className="w-full h-full object-cover"
+                      onError={(e) => {
+                        (e.currentTarget as HTMLImageElement).src = '/evidence/bus_pass_3_concurrence.jpg';
+                      }}
                     />
                     {scanStep === 4 && (
                       <div className="absolute inset-0 bg-emerald-950/40 flex items-center justify-center backdrop-blur-xs">

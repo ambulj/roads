@@ -244,10 +244,11 @@ export const RoadMeshVisualizerModal: React.FC<RoadMeshVisualizerModalProps> = (
   const [dispatched, setDispatched] = useState(false);
 
   // Evidence deck states
-  const [evidenceTab, setEvidenceTab] = useState<"dashcam-video" | "multi-pass" | "telemetry">("dashcam-video");
+  const [evidenceTab, setEvidenceTab] = useState<"multi-pass" | "dashcam-video" | "telemetry">("multi-pass");
   const [activePassIdx, setActivePassIdx] = useState(1); // default to detection frame
   const [isPlayingBurst, setIsPlayingBurst] = useState(false);
   const [showDepthOverlay, setShowDepthOverlay] = useState(false);
+  const [showCameraInset, setShowCameraInset] = useState(true);
   const [isVideoPlaying, setIsVideoPlaying] = useState(true);
   const [isMuted, setIsMuted] = useState(true);
 
@@ -831,17 +832,76 @@ export const RoadMeshVisualizerModal: React.FC<RoadMeshVisualizerModalProps> = (
               </div>
             )}
 
+            {/* Real Optical Evidence PIP Inset */}
+            {showCameraInset && (
+              <div className="absolute bottom-16 right-3 w-60 rounded-xl overflow-hidden border border-slate-700 bg-slate-900/90 backdrop-blur-md p-2 space-y-1.5 shadow-2xl animate-fadeIn">
+                <div className="flex items-center justify-between text-[10px] font-mono">
+                  <span className="text-emerald-400 font-bold flex items-center gap-1">
+                    <Camera className="w-3 h-3 text-emerald-400" />
+                    Captured Optical Frame
+                  </span>
+                  <span className="px-1.5 py-0.2 rounded bg-blue-950 text-blue-300 border border-blue-800 text-[9px] font-bold">
+                    Pass {activePass.passNumber}
+                  </span>
+                </div>
+                <div className="relative aspect-video rounded-lg overflow-hidden border border-slate-800 bg-slate-950">
+                  <img
+                    src={activePass.imageUrl}
+                    alt="Captured Optical Defect"
+                    className="w-full h-full object-cover"
+                    onError={(e) => {
+                      (e.currentTarget as HTMLImageElement).src = DEFAULT_POTHOLE_IMG;
+                    }}
+                  />
+                  {/* Bounding box marker */}
+                  {activePass.bBox && (
+                    <div 
+                      style={{
+                        top: `${activePass.bBox.top}%`,
+                        left: `${activePass.bBox.left}%`,
+                        width: `${activePass.bBox.width}%`,
+                        height: `${activePass.bBox.height}%`,
+                      }}
+                      className="absolute border-2 border-rose-500 rounded bg-rose-500/20 pointer-events-none"
+                    />
+                  )}
+                  <div className="absolute bottom-1 left-1 px-1.5 py-0.5 rounded bg-black/80 text-[8px] font-mono text-slate-200">
+                    {activePass.busId} • {activePass.speedKmh} km/h
+                  </div>
+                </div>
+                <div className="text-[9.5px] font-mono text-slate-400 flex items-center justify-between">
+                  <span>Axle: <strong className="text-rose-400">+{activePass.imuGz}g</strong></span>
+                  <span className="text-emerald-400 font-bold">3D Photogrammetry Model</span>
+                </div>
+              </div>
+            )}
+
             {/* Color Elevation Legend */}
             <div className="absolute bottom-3 left-3 right-3 flex items-center justify-between px-3.5 py-2 rounded-xl bg-slate-900/85 backdrop-blur-md border border-slate-800 text-[10px] font-mono">
-              <span className="text-slate-400">Depth Heatmap:</span>
-              <div className="flex items-center gap-1.5">
-                <span className="w-3 h-3 rounded-full bg-slate-500" />
-                <span>Road Pavement (0cm)</span>
-                <span className="w-3 h-3 rounded-full bg-amber-500 ml-2" />
-                <span>Lip Drop (-{(depthCm * 0.35).toFixed(1)}cm)</span>
-                <span className="w-3 h-3 rounded-full bg-rose-600 ml-2" />
-                <span>Cavity Void (-{depthCm}cm)</span>
+              <div className="flex items-center gap-3">
+                <span className="text-slate-400">Depth Heatmap:</span>
+                <div className="flex items-center gap-1.5">
+                  <span className="w-3 h-3 rounded-full bg-slate-500" />
+                  <span>Road (0cm)</span>
+                  <span className="w-3 h-3 rounded-full bg-amber-500 ml-2" />
+                  <span>Lip Drop (-{(depthCm * 0.35).toFixed(1)}cm)</span>
+                  <span className="w-3 h-3 rounded-full bg-rose-600 ml-2" />
+                  <span>Cavity (-{depthCm}cm)</span>
+                </div>
               </div>
+
+              <button
+                type="button"
+                onClick={() => setShowCameraInset(!showCameraInset)}
+                className={`px-2 py-1 rounded text-[10px] font-semibold transition border flex items-center gap-1 ${
+                  showCameraInset
+                    ? "bg-blue-600/30 text-blue-300 border-blue-500/50"
+                    : "bg-slate-800 text-slate-400 border-slate-700 hover:text-white"
+                }`}
+              >
+                <Camera className="w-3 h-3" />
+                <span>{showCameraInset ? "Hide Camera Inset" : "Show Camera Inset"}</span>
+              </button>
             </div>
           </div>
 
@@ -865,39 +925,39 @@ export const RoadMeshVisualizerModal: React.FC<RoadMeshVisualizerModalProps> = (
                 <div className="flex items-center gap-1 p-1 bg-slate-950/80 rounded-xl border border-slate-800 text-[11px] font-mono">
                   <button
                     type="button"
-                    onClick={() => { setEvidenceTab("dashcam-video"); setIsPlayingBurst(false); }}
-                    className={`flex-1 py-1.5 px-2 rounded-lg flex items-center justify-center gap-1.5 transition font-semibold ${
-                      evidenceTab === "dashcam-video" 
-                        ? "bg-blue-600 text-white shadow-xs" 
-                        : "text-slate-400 hover:text-slate-200 hover:bg-slate-800/60"
-                    }`}
-                  >
-                    <Video className="w-3.5 h-3.5 text-blue-300" />
-                    <span>Windshield Video</span>
-                  </button>
-                  <button
-                    type="button"
                     onClick={() => setEvidenceTab("multi-pass")}
                     className={`flex-1 py-1.5 px-2 rounded-lg flex items-center justify-center gap-1.5 transition font-semibold ${
                       evidenceTab === "multi-pass" 
-                        ? "bg-blue-600 text-white shadow-xs" 
+                        ? "bg-blue-600 text-white shadow-xs font-bold" 
                         : "text-slate-400 hover:text-slate-200 hover:bg-slate-800/60"
                     }`}
                   >
-                    <ImageIcon className="w-3.5 h-3.5 text-emerald-300" />
-                    <span>Multi-Bus Passes ({passes.length})</span>
+                    <Camera className="w-3.5 h-3.5 text-emerald-400" />
+                    <span>Captured Passes ({passes.length})</span>
                   </button>
                   <button
                     type="button"
                     onClick={() => { setEvidenceTab("telemetry"); setIsPlayingBurst(false); }}
                     className={`py-1.5 px-2 rounded-lg flex items-center justify-center gap-1.5 transition font-semibold ${
                       evidenceTab === "telemetry" 
-                        ? "bg-blue-600 text-white shadow-xs" 
+                        ? "bg-blue-600 text-white shadow-xs font-bold" 
                         : "text-slate-400 hover:text-slate-200 hover:bg-slate-800/60"
                     }`}
                   >
-                    <Activity className="w-3.5 h-3.5 text-amber-300" />
-                    <span>100Hz IMU</span>
+                    <Activity className="w-3.5 h-3.5 text-amber-400" />
+                    <span>100Hz IMU Shock</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => { setEvidenceTab("dashcam-video"); setIsPlayingBurst(false); }}
+                    className={`flex-1 py-1.5 px-2 rounded-lg flex items-center justify-center gap-1.5 transition font-semibold ${
+                      evidenceTab === "dashcam-video" 
+                        ? "bg-blue-600 text-white shadow-xs font-bold" 
+                        : "text-slate-400 hover:text-slate-200 hover:bg-slate-800/60"
+                    }`}
+                  >
+                    <Video className="w-3.5 h-3.5 text-blue-400" />
+                    <span>Windshield Video</span>
                   </button>
                 </div>
 
@@ -1050,6 +1110,9 @@ export const RoadMeshVisualizerModal: React.FC<RoadMeshVisualizerModalProps> = (
                         className={`w-full h-full object-cover transition duration-300 ${
                           showDepthOverlay ? "filter contrast-150 saturate-200 hue-rotate-15" : ""
                         }`}
+                        onError={(e) => {
+                          (e.currentTarget as HTMLImageElement).src = DEFAULT_POTHOLE_IMG;
+                        }}
                       />
                       {/* False-color Depth Disparity Heatmap Overlay if toggled */}
                       {showDepthOverlay && (
