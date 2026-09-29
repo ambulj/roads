@@ -21,7 +21,8 @@ import {
   UploadCloud,
   Layers,
   Activity,
-  HardDrive
+  HardDrive,
+  Scale
 } from "lucide-react";
 import { ThemeToggle } from "../common/ThemeToggle";
 import { LanguageToggle } from "../common/LanguageToggle";
@@ -42,6 +43,7 @@ interface HeaderProps {
   isBackendConnected: boolean;
   activeNodesCount: number;
   onOpenRPIModal?: () => void;
+  onOpenTrustLedger?: () => void;
   onOpenBriefModal?: () => void;
   onTriggerDedup?: () => void;
   onOpenAuthModal?: () => void;
@@ -61,6 +63,8 @@ export const Header: React.FC<HeaderProps> = ({
   onToggleMobileMenu,
   onToggleSidebar,
   activeNodesCount,
+  onOpenRPIModal,
+  onOpenTrustLedger,
   onOpenAuthModal,
   onOpenStreamModelModal,
   onOpenDocumentModal,
@@ -167,6 +171,18 @@ export const Header: React.FC<HeaderProps> = ({
           <LanguageToggle />
         </div>
 
+        {/* Trust Ledger / BSA Audit Trail */}
+        {onOpenTrustLedger && (
+          <button
+            onClick={onOpenTrustLedger}
+            className="p-1.5 sm:px-2.5 sm:py-1 text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-lg transition-colors flex items-center gap-1.5 text-xs font-semibold cursor-pointer border border-zinc-200/80 dark:border-zinc-800"
+            title="Bharatiya Sakshya Adhiniyam (BSA) Court-Admissible Trust Ledger"
+          >
+            <Scale className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+            <span className="hidden xl:inline text-zinc-700 dark:text-zinc-300">Trust Ledger</span>
+          </button>
+        )}
+
         {/* Incident Alerts Bell */}
         <div className="relative">
           <button
@@ -225,6 +241,24 @@ export const Header: React.FC<HeaderProps> = ({
                   <ShieldCheck className="w-4 h-4 text-zinc-500" />
                   <span>Switch Officer Role</span>
                 </button>
+                {onOpenTrustLedger && (
+                  <button
+                    onClick={() => { setIsProfileMenuOpen(false); onOpenTrustLedger(); }}
+                    className="w-full px-3.5 py-2 text-left hover:bg-zinc-50 dark:hover:bg-zinc-800 text-zinc-700 dark:text-zinc-300 flex items-center gap-2.5 transition-colors cursor-pointer"
+                  >
+                    <Scale className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                    <span>Court Trust Ledger (BSA)</span>
+                  </button>
+                )}
+                {onOpenRPIModal && (
+                  <button
+                    onClick={() => { setIsProfileMenuOpen(false); onOpenRPIModal(); }}
+                    className="w-full px-3.5 py-2 text-left hover:bg-zinc-50 dark:hover:bg-zinc-800 text-zinc-700 dark:text-zinc-300 flex items-center gap-2.5 transition-colors cursor-pointer"
+                  >
+                    <Activity className="w-4 h-4 text-blue-500" />
+                    <span>Explain RPI Formula</span>
+                  </button>
+                )}
                 <button
                   onClick={() => { setIsProfileMenuOpen(false); onOpenShortcutsModal?.(); }}
                   className="w-full px-3.5 py-2 text-left hover:bg-zinc-50 dark:hover:bg-zinc-800 text-zinc-700 dark:text-zinc-300 flex items-center gap-2.5 transition-colors cursor-pointer"

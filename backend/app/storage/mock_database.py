@@ -1581,9 +1581,9 @@ class PersistentStore:
                     self._bus_progress[bus.id] = random.uniform(0.0, 0.8)
                     self._bus_forward[bus.id] = True
 
-                # Step progress along polyline (0.015 - 0.025 per step)
+                # Step progress along polyline (calibrated to realistic 30-40 km/h transit velocity)
                 is_fwd = self._bus_forward[bus.id]
-                delta_prog = random.uniform(0.012, 0.022)
+                delta_prog = random.uniform(0.0006, 0.0011)
                 curr_prog = self._bus_progress[bus.id] + (delta_prog if is_fwd else -delta_prog)
 
                 if curr_prog >= 1.0:

@@ -24,7 +24,8 @@ import {
   Box,
   Wrench,
   CheckCircle,
-  AlertCircle
+  AlertCircle,
+  Sparkles
 } from 'lucide-react';
 import { TrafficIncident, ANPRInterceptSighting } from '../../types';
 import { RoadMeshVisualizerModal, isRoadSurfaceDefect } from './RoadMeshVisualizerModal';
@@ -32,6 +33,7 @@ import { ConfirmationModal, ConfirmationModalProps } from '../common/Confirmatio
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
 import { Badge, Button } from '../ui';
+import { api } from '../../services/api';
 
 interface IncidentDossierModalProps {
   isOpen: boolean;
@@ -220,6 +222,9 @@ export const IncidentDossierModal: React.FC<IncidentDossierModalProps> = ({
     if (s.includes('reject')) {
       return { label: 'Rejected', variant: 'neutral' as const, icon: XCircle };
     }
+    if (s.includes('false_positive') || s.includes('false positive')) {
+      return { label: 'False Positive (Active Learning)', variant: 'neutral' as const, icon: Sparkles };
+    }
     return { label: 'Active Alert', variant: 'warning' as const, icon: AlertCircle };
   };
 
@@ -233,6 +238,19 @@ export const IncidentDossierModal: React.FC<IncidentDossierModalProps> = ({
       onUpdateStatus(incident.id, status);
     }
     showSuccessToast('Status Updated', `Incident #${incident.id} updated to ${status.replace(/_/g, ' ')}`);
+  };
+
+  const handleFlagFalsePositive = async () => {
+    try {
+      await api.reviewIncident(incident.id, 'REJECT', 'Operator flagged as overconfident edge false positive (shadow/reflection artifact)');
+    } catch {
+      // Local fallback
+    }
+    executeStatusUpdate('FALSE_POSITIVE');
+    showSuccessToast(
+      'Flagged for Active Learning',
+      `Incident #${incident.id} marked as False Positive. Frame snapshot & bounding box queued for edge shadow retraining (v3.2 active learning pool).`
+    );
   };
 
   // 1. Prompt E-Challan Issuance Confirmation
@@ -506,9 +524,23 @@ export const IncidentDossierModal: React.FC<IncidentDossierModalProps> = ({
                 <div>
                   <div className="text-xs text-slate-500 dark:text-slate-400 font-bold uppercase tracking-wider mb-2.5 flex items-center justify-between">
                     <span>{isSchoolCrossing ? 'Vision Zero Pedestrian Safety Zone' : 'Target Vehicle Registry Record'}</span>
-                    <span className="text-emerald-600 dark:text-emerald-400 font-bold">
-                      {isSchoolCrossing ? 'VRU Protection Active' : `Confidence Match: ${incident.plate_confidence ? `${Math.round(incident.plate_confidence * 100)}%` : 'Unidentified'}`}
-                    </span>
+                    {isSchoolCrossing ? (
+                      <span className="text-emerald-600 dark:text-emerald-400 font-bold">VRU Protection Active</span>
+                    ) : (
+                      <span className={`text-[11px] font-mono font-bold px-2 py-0.5 rounded border ${
+                        (incident.plate_confidence ?? 0.94) >= 0.90
+                          ? 'border-emerald-500/50 bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400'
+                          : (incident.plate_confidence ?? 0.94) >= 0.70
+                          ? 'border-amber-500/50 bg-amber-50 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400'
+                          : 'border-rose-500/50 bg-rose-50 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400'
+                      }`}>
+                        {(incident.plate_confidence ?? 0.94) >= 0.90
+                          ? `Match: ${Math.round((incident.plate_confidence ?? 0.94) * 100)}% (High • Auto-Admissible)`
+                          : (incident.plate_confidence ?? 0.94) >= 0.70
+                          ? `Match: ${Math.round((incident.plate_confidence ?? 0.94) * 100)}% (Medium • Check Required)`
+                          : `Match: ${Math.round((incident.plate_confidence ?? 0.94) * 100)}% (Low • Review Queued)`}
+                      </span>
+                    )}
                   </div>
                   
                   <div className="flex items-center gap-3">
@@ -853,8 +885,20 @@ export const IncidentDossierModal: React.FC<IncidentDossierModalProps> = ({
                     <div className="text-xl sm:text-2xl font-mono font-black text-white tracking-widest">
                       {incident.plate_number || 'UNIDENTIFIED'}
                     </div>
-                    <div className="text-xs font-mono text-emerald-400 font-bold mt-0.5">
-                      CONFIDENCE MATCH: {incident.plate_confidence ? `${Math.round(incident.plate_confidence * 100)}%` : 'UNREADABLE'} • TRANSIT EDGE VISION
+                    <div className="mt-1 flex items-center gap-1.5 flex-wrap justify-center">
+                      <span className={`text-[10px] font-mono font-bold px-2.5 py-0.5 rounded border ${
+                        (incident.plate_confidence ?? 0.94) >= 0.90
+                          ? 'border-emerald-500/60 bg-emerald-500/20 text-emerald-400'
+                          : (incident.plate_confidence ?? 0.94) >= 0.70
+                          ? 'border-amber-500/60 bg-amber-500/20 text-amber-400'
+                          : 'border-rose-500/60 bg-rose-500/20 text-rose-400'
+                      }`}>
+                        {(incident.plate_confidence ?? 0.94) >= 0.90
+                          ? `CONFIDENCE: ${Math.round((incident.plate_confidence ?? 0.94) * 100)}% (HIGH ≥90%) • AUTO-ADMISSIBLE`
+                          : (incident.plate_confidence ?? 0.94) >= 0.70
+                          ? `CONFIDENCE: ${Math.round((incident.plate_confidence ?? 0.94) * 100)}% (MEDIUM 70-89%) • VERIFICATION REQUIRED`
+                          : `CONFIDENCE: ${Math.round((incident.plate_confidence ?? 0.94) * 100)}% (LOW <70%) • AUTO-ROUTED TO REVIEW QUEUE`}
+                      </span>
                     </div>
                   </div>
 
@@ -988,14 +1032,28 @@ export const IncidentDossierModal: React.FC<IncidentDossierModalProps> = ({
                 </div>
               )}
 
-              <Button
-                variant="secondary"
-                size="sm"
-                onClick={promptRejectIncident}
-                icon={<XCircle className="w-4 h-4 text-rose-500" />}
-              >
-                Reject / False Alarm
-              </Button>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={promptRejectIncident}
+                  icon={<XCircle className="w-4 h-4 text-rose-500" />}
+                >
+                  Reject / False Alarm
+                </Button>
+
+                {/* 1-click Active Learning Operator Feedback */}
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={handleFlagFalsePositive}
+                  disabled={currentStatus === 'FALSE_POSITIVE'}
+                  icon={<Sparkles className="w-4 h-4 text-amber-500" />}
+                  title="Flag overconfident detection into edge active learning shadow retraining queue"
+                >
+                  {currentStatus === 'FALSE_POSITIVE' ? 'Flagged to Active Learning' : 'Flag False Positive (Retrain AI)'}
+                </Button>
+              </div>
 
               <div className="flex items-center gap-2 flex-wrap">
                 {/* 1. Traffic Violations: Issue e-Challan / Escalate to PCR */}

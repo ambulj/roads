@@ -21,7 +21,8 @@ import {
   ExternalLink,
   ShieldCheck,
   Camera,
-  Activity
+  Activity,
+  Sparkles
 } from 'lucide-react';
 import { TrafficIncident, OpenManholeAlert, SubmergedPotholeAlert } from '../types';
 import { Button } from '../components/ui';
@@ -308,8 +309,18 @@ export const IncidentList: React.FC<IncidentListProps> = ({
                           <div className="text-xs font-mono font-bold text-cyan-500 bg-zinc-100 dark:bg-zinc-950 px-2 py-0.5 rounded border border-zinc-200 dark:border-zinc-800">
                             {inc.plate_number || 'NO PLATE'}
                           </div>
-                          <div className="text-[10px] text-zinc-400 mt-0.5">
-                            Conf: {Math.round((inc.plate_confidence || 0.95) * 100)}%
+                          <div className="mt-0.5">
+                            {(() => {
+                              const conf = inc.plate_confidence ?? 0.95;
+                              const confPct = Math.round(conf * 100);
+                              if (conf >= 0.90) {
+                                return <span className="text-[10px] font-mono font-bold text-emerald-500 dark:text-emerald-400">Conf: {confPct}% (High)</span>;
+                              } else if (conf >= 0.70) {
+                                return <span className="text-[10px] font-mono font-bold text-amber-500 dark:text-amber-400">Conf: {confPct}% (Check)</span>;
+                              } else {
+                                return <span className="text-[10px] font-mono font-bold text-rose-500 dark:text-rose-400">Conf: {confPct}% (Review)</span>;
+                              }
+                            })()}
                           </div>
                         </div>
                       </div>
@@ -364,7 +375,19 @@ export const IncidentList: React.FC<IncidentListProps> = ({
                   <div className="p-2 bg-zinc-50 dark:bg-zinc-950 rounded border border-zinc-200 dark:border-zinc-800">
                     <div className="text-[10px] text-zinc-500">License Plate</div>
                     <div className="font-bold text-cyan-400 text-sm mt-0.5">{selectedIncident.plate_number || 'UNLOCKED'}</div>
-                    <div className="text-[10px] text-zinc-500">Conf: {Math.round((selectedIncident.plate_confidence || 0.95) * 100)}%</div>
+                    <div className="mt-1">
+                      {(() => {
+                        const conf = selectedIncident.plate_confidence ?? 0.95;
+                        const confPct = Math.round(conf * 100);
+                        if (conf >= 0.90) {
+                          return <span className="text-[10px] font-mono font-bold text-emerald-400">Conf: {confPct}% (High • Auto-Admissible)</span>;
+                        } else if (conf >= 0.70) {
+                          return <span className="text-[10px] font-mono font-bold text-amber-400">Conf: {confPct}% (Medium • Officer Verify)</span>;
+                        } else {
+                          return <span className="text-[10px] font-mono font-bold text-rose-400">Conf: {confPct}% (Low • Review Queue)</span>;
+                        }
+                      })()}
+                    </div>
                   </div>
 
                   <div className="p-2 bg-zinc-50 dark:bg-zinc-950 rounded border border-zinc-200 dark:border-zinc-800">
@@ -443,15 +466,36 @@ export const IncidentList: React.FC<IncidentListProps> = ({
                     </div>
                   )}
 
-                  <button
-                    onClick={() => {
-                      onUpdateStatus?.(selectedIncident.id, 'RESOLVED');
-                      success('Marked Resolved', `Incident ${selectedIncident.id} closed`);
-                    }}
-                    className="w-full py-1.5 text-xs text-zinc-500 hover:text-zinc-300 text-center"
-                  >
-                    Mark Incident as Dismissed / Resolved
-                  </button>
+                  <div className="grid grid-cols-2 gap-2 pt-1">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={async () => {
+                        try {
+                          await api.reviewIncident(selectedIncident.id, 'REJECT', 'Operator flagged as overconfident edge false positive (shadow/reflection artifact)');
+                        } catch {}
+                        onUpdateStatus?.(selectedIncident.id, 'FALSE_POSITIVE');
+                        success(
+                          'Pushed to Active Learning',
+                          `Incident #${selectedIncident.id} flagged as False Positive. Frame snapshot queued for edge shadow retraining (v3.2 active learning pool).`
+                        );
+                      }}
+                      className="w-full text-[11px] font-mono text-amber-500 dark:text-amber-400 border-amber-800/80 hover:bg-amber-950/40"
+                    >
+                      <Sparkles className="w-3.5 h-3.5 mr-1 text-amber-400" />
+                      Flag False Positive
+                    </Button>
+
+                    <button
+                      onClick={() => {
+                        onUpdateStatus?.(selectedIncident.id, 'RESOLVED');
+                        success('Marked Resolved', `Incident ${selectedIncident.id} closed`);
+                      }}
+                      className="w-full py-1.5 text-xs text-zinc-500 hover:text-zinc-300 text-center border border-zinc-200 dark:border-zinc-800 rounded"
+                    >
+                      Dismiss / Resolve
+                    </button>
+                  </div>
                 </div>
               </>
             ) : (

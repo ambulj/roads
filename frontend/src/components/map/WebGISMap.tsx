@@ -138,6 +138,157 @@ const MONSOON_CONTOURS = [
   }
 ];
 
+export const OD_DESIRE_LINES_GEOJSON = {
+  type: 'FeatureCollection',
+  features: [
+    {
+      type: 'Feature',
+      geometry: {
+        type: 'LineString',
+        coordinates: [
+          [80.1462, 12.9516],
+          [80.1650, 12.9850],
+          [80.2030, 13.0067],
+          [80.2450, 13.0410],
+          [80.2850, 13.0850]
+        ]
+      },
+      properties: {
+        id: 'od-tambaram-broadway',
+        name: 'GST Arterial Transit Trunk (Route 21G)',
+        originZone: 'Zone 12 (Tambaram Gateway)',
+        destZone: 'Zone 05 (Broadway CBD Hub)',
+        tripsPerDay: 4820,
+        cabinLoadProxy: '84% Cabin Capacity',
+        distressDelayMins: '5.4 min lost to potholes',
+        los: 'LoS D (Approaching Capacity)',
+        color: '#06b6d4'
+      }
+    },
+    {
+      type: 'Feature',
+      geometry: {
+        type: 'LineString',
+        coordinates: [
+          [80.1900, 13.0700],
+          [80.2120, 13.0110],
+          [80.2480, 12.9890],
+          [80.2360, 12.9380],
+          [80.2280, 12.8600]
+        ]
+      },
+      properties: {
+        id: 'od-koyambedu-siruseri',
+        name: 'OMR IT Expressway Express (Route 570X)',
+        originZone: 'Zone 10 (CMBT Koyambedu)',
+        destZone: 'Zone 15 (Siruseri Tech SEZ)',
+        tripsPerDay: 6450,
+        cabinLoadProxy: '92% Cabin Capacity',
+        distressDelayMins: '7.2 min lost to potholes',
+        los: 'LoS E (Peak Choke-points)',
+        color: '#8b5cf6'
+      }
+    },
+    {
+      type: 'Feature',
+      geometry: {
+        type: 'LineString',
+        coordinates: [
+          [80.2707, 13.0827],
+          [80.2520, 13.0580],
+          [80.2250, 13.0210],
+          [80.2030, 13.0067]
+        ]
+      },
+      properties: {
+        id: 'od-central-guindy',
+        name: 'Mount Road Metro Spine (Route 1B)',
+        originZone: 'Zone 05 (Central Rail Station)',
+        destZone: 'Zone 13 (Guindy Industrial)',
+        tripsPerDay: 5200,
+        cabinLoadProxy: '78% Cabin Capacity',
+        distressDelayMins: '3.8 min lost to potholes',
+        los: 'LoS C (Stable Flow)',
+        color: '#10b981'
+      }
+    },
+    {
+      type: 'Feature',
+      geometry: {
+        type: 'LineString',
+        coordinates: [
+          [80.2850, 13.0850],
+          [80.2700, 13.0000],
+          [80.2550, 12.9000],
+          [80.2450, 12.7900]
+        ]
+      },
+      properties: {
+        id: 'od-broadway-kelambakkam',
+        name: 'East Coast Marine Link (Route 102)',
+        originZone: 'Zone 05 (Broadway Terminal)',
+        destZone: 'Zone 14 (Kelambakkam Gateway)',
+        tripsPerDay: 3180,
+        cabinLoadProxy: '65% Cabin Capacity',
+        distressDelayMins: '3.6 min lost to potholes',
+        los: 'LoS C (Free Flow)',
+        color: '#f59e0b'
+      }
+    }
+  ]
+};
+
+export const COVERAGE_GAPS_GEOJSON = {
+  type: 'FeatureCollection',
+  features: [
+    {
+      type: 'Feature',
+      geometry: {
+        type: 'LineString',
+        coordinates: [
+          [80.2300, 13.0420], [80.2360, 13.0390], [80.2400, 13.0370], [80.2420, 13.0320]
+        ]
+      },
+      properties: {
+        sector: 'T. Nagar Residential Inner Wards (Zone 10)',
+        busPasses14d: 0,
+        gapType: 'High Density Residential Core',
+        targetFleet: 'Swachh Bharat Waste Compactor Trucks'
+      }
+    },
+    {
+      type: 'Feature',
+      geometry: {
+        type: 'LineString',
+        coordinates: [
+          [80.2650, 13.0350], [80.2700, 13.0320], [80.2720, 13.0280], [80.2680, 13.0250]
+        ]
+      },
+      properties: {
+        sector: 'Mylapore Heritage & Temple Inner Grid (Zone 09)',
+        busPasses14d: 0,
+        gapType: 'Narrow Lane Urban Grid',
+        targetFleet: 'Municipal Electric Waste Midi-Vans'
+      }
+    },
+    {
+      type: 'Feature',
+      geometry: {
+        type: 'LineString',
+        coordinates: [
+          [80.2150, 12.9820], [80.2100, 12.9780], [80.2050, 12.9750]
+        ]
+      },
+      properties: {
+        sector: 'Velachery Interior Residential Sector (Zone 13)',
+        busPasses14d: 0,
+        gapType: 'Suburban Feeder Lanes',
+        targetFleet: 'Postal Delivery & Water Tanker Fleets'
+      }
+    }
+  ]
+};
+
 function createGeoJSONCircle(center: [number, number], radiusInMeters: number, points = 64) {
   const coords: [number, number][] = [];
   const km = radiusInMeters / 1000;
@@ -191,6 +342,8 @@ export const WebGISMap: React.FC<WebGISMapProps> = ({
   const [showTrafficCongestion, setShowTrafficCongestion] = useState(false);
   const [showBreadcrumbs, setShowBreadcrumbs] = useState(false);
   const [showMonsoonContours, setShowMonsoonContours] = useState(false);
+  const [showODDesireLines, setShowODDesireLines] = useState(false);
+  const [showCoverageGaps, setShowCoverageGaps] = useState(false);
   const [isGisMenuOpen, setIsGisMenuOpen] = useState(false);
   const [isInfoMenuOpen, setIsInfoMenuOpen] = useState(false);
 
@@ -199,7 +352,7 @@ export const WebGISMap: React.FC<WebGISMapProps> = ({
   const [activeProfileCorridor, setActiveProfileCorridor] = useState<string | null>(null);
   const [hoveredProfileIndex, setHoveredProfileIndex] = useState<number | null>(null);
 
-  const activeGisCount = (showHeatmap ? 1 : 0) + (showTrafficCongestion ? 1 : 0) + (showBreadcrumbs ? 1 : 0) + (showMonsoonContours ? 1 : 0);
+  const activeGisCount = (showHeatmap ? 1 : 0) + (showTrafficCongestion ? 1 : 0) + (showBreadcrumbs ? 1 : 0) + (showMonsoonContours ? 1 : 0) + (showODDesireLines ? 1 : 0) + (showCoverageGaps ? 1 : 0);
 
   const UNIFIED_BASEMAP_STYLE = {
     version: 8,
@@ -429,6 +582,131 @@ export const WebGISMap: React.FC<WebGISMapProps> = ({
     }
   }, [clusters, showHeatmap, showTrafficCongestion, isMapReady]);
 
+  // 3. Origin-Destination Transit Desire Lines (PS 26124)
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !isMapReady) return;
+
+    if (!map.getSource('od-desire-lines-src')) {
+      map.addSource('od-desire-lines-src', {
+        type: 'geojson',
+        data: OD_DESIRE_LINES_GEOJSON as any
+      });
+
+      map.addLayer({
+        id: 'od-desire-lines-layer',
+        type: 'line',
+        source: 'od-desire-lines-src',
+        layout: {
+          'line-join': 'round',
+          'line-cap': 'round',
+          'visibility': showODDesireLines ? 'visible' : 'none'
+        },
+        paint: {
+          'line-color': ['get', 'color'],
+          'line-width': 4.5,
+          'line-opacity': 0.85
+        }
+      });
+
+      map.on('click', 'od-desire-lines-layer', (e) => {
+        if (!e.features || !e.features[0]) return;
+        const p = e.features[0].properties;
+        new maplibregl.Popup({ offset: 12 })
+          .setLngLat(e.lngLat)
+          .setHTML(`
+            <div style="font-family: system-ui, sans-serif; font-size: 11px; padding: 4px; min-width: 210px;">
+              <div style="font-weight: 800; font-size: 12px; color: ${p.color}; margin-bottom: 2px;">
+                ${p.name}
+              </div>
+              <div style="font-size: 10px; color: #64748b; margin-bottom: 6px;">
+                <b>Origin:</b> ${p.originZone} &rarr; <b>Dest:</b> ${p.destZone}
+              </div>
+              <div style="background: #f1f5f9; padding: 6px; border-radius: 6px; font-family: monospace; font-size: 10px; line-height: 1.5; color: #0f172a;">
+                <div>Daily Transit: <b>${Number(p.tripsPerDay).toLocaleString()} trips/day</b></div>
+                <div>Passenger Load: <b style="color: #0284c7;">${p.cabinLoadProxy}</b></div>
+                <div>Distress Delay: <b style="color: #dc2626;">${p.distressDelayMins}</b></div>
+                <div>LoS Rating: <b>${p.los}</b></div>
+              </div>
+            </div>
+          `)
+          .addTo(map);
+      });
+    } else {
+      if (map.getLayer('od-desire-lines-layer')) {
+        map.setLayoutProperty('od-desire-lines-layer', 'visibility', showODDesireLines ? 'visible' : 'none');
+      }
+    }
+  }, [showODDesireLines, isMapReady]);
+
+  // 4. Municipal Coverage Gaps & Blind Spots (Phase 2 Expansion)
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !isMapReady) return;
+
+    if (!map.getSource('coverage-gaps-src')) {
+      map.addSource('coverage-gaps-src', {
+        type: 'geojson',
+        data: COVERAGE_GAPS_GEOJSON as any
+      });
+
+      map.addLayer({
+        id: 'coverage-gaps-layer',
+        type: 'line',
+        source: 'coverage-gaps-src',
+        layout: {
+          'line-join': 'round',
+          'line-cap': 'round',
+          'visibility': showCoverageGaps ? 'visible' : 'none'
+        },
+        paint: {
+          'line-color': '#f59e0b',
+          'line-width': 4.0,
+          'line-dasharray': [2, 2],
+          'line-opacity': 0.90
+        }
+      });
+
+      map.on('click', 'coverage-gaps-layer', (e) => {
+        if (!e.features || !e.features[0]) return;
+        const p = e.features[0].properties;
+        new maplibregl.Popup({ offset: 12 })
+          .setLngLat(e.lngLat)
+          .setHTML(`
+            <div style="font-family: system-ui, sans-serif; font-size: 11px; padding: 4px; min-width: 220px;">
+              <div style="font-weight: 800; font-size: 12px; color: #d97706; margin-bottom: 2px;">
+                Municipal Coverage Blind Spot
+              </div>
+              <div style="font-size: 10px; color: #475569; margin-bottom: 4px;">
+                <b>Sector:</b> ${p.sector}
+              </div>
+              <div style="background: #fffbeb; border: 1px solid #fde68a; padding: 6px; border-radius: 6px; font-size: 10px; color: #92400e; line-height: 1.4;">
+                <div>Fleet Status: <b>0 Bus Passes in last 14 Days</b></div>
+                <div style="margin-top: 4px;"><b>Phase 2 Expansion:</b> Targeted for deployment on <em>${p.targetFleet}</em>.</div>
+              </div>
+            </div>
+          `)
+          .addTo(map);
+      });
+    } else {
+      if (map.getLayer('coverage-gaps-layer')) {
+        map.setLayoutProperty('coverage-gaps-layer', 'visibility', showCoverageGaps ? 'visible' : 'none');
+      }
+    }
+  }, [showCoverageGaps, isMapReady]);
+
+  // Hook global window method for RPI formula live explain from popup
+  useEffect(() => {
+    (window as any).__roadsaathi_open_rpi_modal = (clusterId: string) => {
+      const cl = clusters.find(c => c.id === clusterId) || selectedCluster;
+      if (cl) onSelectCluster(cl);
+      onOpenRPIModal();
+    };
+    return () => {
+      delete (window as any).__roadsaathi_open_rpi_modal;
+    };
+  }, [clusters, selectedCluster, onSelectCluster, onOpenRPIModal]);
+
   // Render Defect Cluster Markers
   useEffect(() => {
     const map = mapRef.current;
@@ -476,6 +754,9 @@ export const WebGISMap: React.FC<WebGISMapProps> = ({
               Contractor: <b>${cluster.assigned_agency}</b><br/>
               Status: <span style="text-transform: uppercase; color: ${color}; font-weight: bold;">${cluster.status}</span> &bull; ${cluster.pass_count} passes
             </div>
+            <button onclick="window.__roadsaathi_open_rpi_modal?.('${cluster.id}')" style="margin-top: 6px; width: 100%; padding: 4px 6px; background: #2563eb; color: #ffffff; font-size: 10px; font-weight: 700; border-radius: 4px; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 4px;">
+              Explain RPI Formula Live &rarr;
+            </button>
           </div>
         `);
 
@@ -508,7 +789,7 @@ export const WebGISMap: React.FC<WebGISMapProps> = ({
       if (!busMarkersRef.current[bus.id]) {
         const el = document.createElement('div');
         el.className = 'cursor-pointer group';
-        el.style.transition = 'transform 0.9s cubic-bezier(0.25, 1, 0.5, 1)';
+        el.style.transition = 'transform 1.8s linear';
         el.id = `bus-marker-${bus.id}`;
         el.innerHTML = `
           <div style="position: relative; display: flex; align-items: center; justify-content: center;">
@@ -566,6 +847,7 @@ export const WebGISMap: React.FC<WebGISMapProps> = ({
         busMarkersRef.current[bus.id].setLngLat([bus.lng, bus.lat]);
         const mEl = document.getElementById(`bus-marker-${bus.id}`);
         if (mEl) {
+          mEl.style.transition = 'transform 1.8s linear';
           const speedLabel = mEl.querySelector('div[style*="bottom: -18px"]');
           if (speedLabel) {
             speedLabel.textContent = `${bus.id.replace('BUS-', '')} • ${bus.speed_kmh || 35}k`;
@@ -752,6 +1034,34 @@ export const WebGISMap: React.FC<WebGISMapProps> = ({
                   </div>
                   {showMonsoonContours && <Check className="w-4 h-4 text-blue-500" />}
                 </button>
+
+                <div className="my-1 border-t border-slate-100 dark:border-slate-800" />
+
+                <button
+                  onClick={() => setShowODDesireLines(!showODDesireLines)}
+                  className={`flex items-center justify-between p-2 rounded-xl text-left transition ${
+                    showODDesireLines ? 'bg-cyan-50 dark:bg-cyan-950/60 text-cyan-700 dark:text-cyan-300 font-bold' : 'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
+                  }`}
+                >
+                  <div className="flex items-center gap-2">
+                    <TrendingUp className="w-4 h-4 text-cyan-500" />
+                    <span>O-D Transit Desire Lines (PS 26124)</span>
+                  </div>
+                  {showODDesireLines && <Check className="w-4 h-4 text-cyan-500" />}
+                </button>
+
+                <button
+                  onClick={() => setShowCoverageGaps(!showCoverageGaps)}
+                  className={`flex items-center justify-between p-2 rounded-xl text-left transition ${
+                    showCoverageGaps ? 'bg-amber-50 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 font-bold' : 'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
+                  }`}
+                >
+                  <div className="flex items-center gap-2">
+                    <AlertCircle className="w-4 h-4 text-amber-500" />
+                    <span>Coverage Blind Spots (Phase 2)</span>
+                  </div>
+                  {showCoverageGaps && <Check className="w-4 h-4 text-amber-500" />}
+                </button>
               </div>
             )}
           </div>
@@ -761,6 +1071,82 @@ export const WebGISMap: React.FC<WebGISMapProps> = ({
       {/* Main Map Canvas */}
       <div className="flex-1 w-full h-full relative">
         <div ref={mapContainerRef} className="w-full h-full" style={{ width: "100%", height: "100%", minHeight: "460px" }} />
+
+        {/* FLOATING HUD 1: O-D FLOW MATRIX CARD (WHEN ACTIVE) */}
+        {showODDesireLines && (
+          <div className="absolute top-14 right-3 z-20 max-w-sm w-full bg-slate-950/90 backdrop-blur-md border border-cyan-500/40 rounded-xl p-3 shadow-xl text-xs text-slate-200 font-sans animate-fadeIn">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-2 mb-2">
+              <div className="flex items-center gap-1.5 font-bold text-cyan-400">
+                <TrendingUp className="w-4 h-4" />
+                <span>O-D Transit Desire Lines (PS 26124)</span>
+              </div>
+              <button 
+                onClick={() => setShowODDesireLines(false)}
+                className="text-slate-400 hover:text-white"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            </div>
+            <p className="text-[10.5px] text-slate-400 mb-2 leading-tight">
+              Aggregated passenger-load proxies from cabin cameras &amp; bus GPS trip frequencies across city wards.
+            </p>
+            <div className="space-y-1.5 font-mono text-[10.5px]">
+              <div className="p-1.5 rounded bg-slate-900 border border-slate-800 flex items-center justify-between">
+                <div>
+                  <span className="font-bold text-cyan-300">Tambaram &rarr; Broadway</span>
+                  <div className="text-[9.5px] text-slate-400 font-sans">Route 21G &bull; GST Trunk</div>
+                </div>
+                <div className="text-right">
+                  <span className="font-bold text-white">4,820 trips/day</span>
+                  <div className="text-[9px] text-emerald-400">84% Cabin Load</div>
+                </div>
+              </div>
+              <div className="p-1.5 rounded bg-slate-900 border border-slate-800 flex items-center justify-between">
+                <div>
+                  <span className="font-bold text-purple-300">Koyambedu &rarr; Siruseri</span>
+                  <div className="text-[9.5px] text-slate-400 font-sans">Route 570X &bull; OMR Tech SEZ</div>
+                </div>
+                <div className="text-right">
+                  <span className="font-bold text-white">6,450 trips/day</span>
+                  <div className="text-[9px] text-rose-400">92% Cabin Load (Choke)</div>
+                </div>
+              </div>
+              <div className="p-1.5 rounded bg-slate-900 border border-slate-800 flex items-center justify-between">
+                <div>
+                  <span className="font-bold text-emerald-300">Central &rarr; Guindy</span>
+                  <div className="text-[9.5px] text-slate-400 font-sans">Route 1B &bull; Mount Road Spine</div>
+                </div>
+                <div className="text-right">
+                  <span className="font-bold text-white">5,200 trips/day</span>
+                  <div className="text-[9px] text-cyan-400">78% Cabin Load</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* FLOATING HUD 2: COVERAGE GAPS & PHASE 2 EXPANSION BANNER */}
+        {showCoverageGaps && (
+          <div className="absolute top-14 left-1/2 -translate-x-1/2 z-20 bg-slate-950/90 backdrop-blur-md border border-amber-500/50 rounded-xl px-4 py-2.5 shadow-xl text-xs text-slate-200 max-w-md w-full animate-fadeIn flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2">
+              <AlertCircle className="w-5 h-5 text-amber-400 shrink-0" />
+              <div>
+                <div className="font-bold text-amber-300 text-[11px]">
+                  Municipal Blind Spots (Dashed Amber Lines)
+                </div>
+                <div className="text-[10px] text-slate-400 leading-tight">
+                  Streets with 0 transit bus passes in 14 days. <strong>Phase 2 Scope:</strong> Deploy Edge AI on Swachh Bharat garbage trucks &amp; utility fleets to close coverage gap.
+                </div>
+              </div>
+            </div>
+            <button 
+              onClick={() => setShowCoverageGaps(false)}
+              className="text-slate-400 hover:text-white shrink-0"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+        )}
 
         {/* Bottom Legend */}
         <div className="absolute bottom-3 left-3 z-10 pointer-events-none flex items-center gap-2">

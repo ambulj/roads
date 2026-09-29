@@ -13,6 +13,7 @@ const MobileDashcam = React.lazy(() => import("./pages/MobileDashcam").then(m =>
 const RoadMemory   = React.lazy(() => import("./pages/RoadMemory").then(m => ({ default: m.RoadMemory })));
 const IncidentList = React.lazy(() => import("./pages/IncidentList").then(m => ({ default: m.IncidentList })));
 import { RPIFormulaModal } from "./components/modals/RPIFormulaModal";
+import { TrustLedgerModal } from "./components/modals/TrustLedgerModal";
 import { BriefModal } from "./components/modals/BriefModal";
 import { CommandPalette } from "./components/modals/CommandPalette";
 import { AuthModal } from "./components/modals/AuthModal";
@@ -102,7 +103,20 @@ export const App: React.FC = () => {
   const [isShortcutsModalOpen, setIsShortcutsModalOpen] = useState(false);
   const [isLifecycleModalOpen, setIsLifecycleModalOpen] = useState(false);
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
+  const [isRPIModalOpen, setIsRPIModalOpen] = useState(false);
+  const [rpiModalClusterId, setRpiModalClusterId] = useState<string | null>(null);
+  const [isTrustLedgerOpen, setIsTrustLedgerOpen] = useState(false);
   const [selectedIncident, setSelectedIncident] = useState<TrafficIncident | null>(null);
+
+  useEffect(() => {
+    (window as any).__roadsaathi_open_rpi_modal = (clusterId?: string) => {
+      if (clusterId) setRpiModalClusterId(clusterId);
+      setIsRPIModalOpen(true);
+    };
+    return () => {
+      delete (window as any).__roadsaathi_open_rpi_modal;
+    };
+  }, []);
 
   const openSensorModal = (tab: "fusion" | "rpi" | "streams" = "fusion") => {
     setSensorModalTab(tab);
@@ -190,6 +204,8 @@ export const App: React.FC = () => {
         if (isBriefModalOpen) { setIsBriefModalOpen(false); return; }
         if (isAuthModalOpen) { setIsAuthModalOpen(false); return; }
         if (isMobileMenuOpen) { setIsMobileMenuOpen(false); return; }
+        if (isRPIModalOpen) { setIsRPIModalOpen(false); return; }
+        if (isTrustLedgerOpen) { setIsTrustLedgerOpen(false); return; }
         return;
       }
 
@@ -322,7 +338,8 @@ export const App: React.FC = () => {
         onToggleSidebar={() => setIsSidebarCollapsed((p) => !p)}
         isBackendConnected={isConnected}
         activeNodesCount={fleet.filter((b) => b.is_online).length}
-        onOpenRPIModal={() => openSensorModal("rpi")}
+        onOpenRPIModal={() => setIsRPIModalOpen(true)}
+        onOpenTrustLedger={() => setIsTrustLedgerOpen(true)}
         onOpenBriefModal={() => setIsBriefModalOpen(true)}
         onTriggerDedup={handleTriggerDedup}
         onOpenAuthModal={() => setIsAuthModalOpen(true)}
@@ -363,7 +380,7 @@ export const App: React.FC = () => {
                 fleet={fleet}
                 incidents={incidents}
                 auditLogs={auditLogs}
-                onOpenRPIModal={() => openSensorModal("rpi")}
+                onOpenRPIModal={() => setIsRPIModalOpen(true)}
                 onOpenBriefModal={() => setIsBriefModalOpen(true)}
                 onNavigateToCapture={() => handleNavigate("capture")}
                 onNavigate={handleNavigate}
@@ -455,6 +472,16 @@ export const App: React.FC = () => {
         onClose={() => setIsUploadModalOpen(false)}
         onAddCluster={(newCl) => setClusters((prev) => [newCl, ...prev])}
         onNavigateToMap={() => handleNavigate("command")}
+      />
+      <RPIFormulaModal
+        isOpen={isRPIModalOpen}
+        onClose={() => setIsRPIModalOpen(false)}
+        selectedCluster={clusters.find(c => c.id === rpiModalClusterId) || clusters[0] || null}
+        clusters={clusters}
+      />
+      <TrustLedgerModal
+        isOpen={isTrustLedgerOpen}
+        onClose={() => setIsTrustLedgerOpen(false)}
       />
     </div>
   );
