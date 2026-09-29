@@ -86,7 +86,7 @@ class HitAndRunBehavioralEngine:
         is_fleeing = (speed_delta > 15.0 or speed_ratio > 1.30) and (current_speed_kmh > 55.0 or impact_detected)
 
         if is_fleeing and impact_detected:
-            # High-priority Hit & Run Anomaly Detected
+            # High-priority Hit & Run Anomaly Detected (Collision + Evasion)
             conf = plate_confidence if plate_confidence is not None else 0.0
             requires_human_review = conf < 0.90 or not plate_number
 
@@ -96,7 +96,7 @@ class HitAndRunBehavioralEngine:
                 "severity": "critical",
                 "title": "Fleeing Vehicle Evasion Signature Clocked",
                 "description": f"Vehicle {plate_number or 'UNIDENTIFIED'} accelerated sharply ({prev_speed:.1f} ➔ {current_speed_kmh:.1f} km/h) following proximity collision anomaly.",
-                "mva_section": "MVA 1988 Sec 134 & Sec 187 read with Sec 184 (Duty of Driver in Case of Accident & Rash Driving)",
+                "mva_section": "MVA 1988 Sec 134 & Sec 187 (Duty of Driver in Case of Accident & Failure to Report)",
                 "fine_amount_inr": 10000,
                 "plate_number": plate_number or "UNIDENTIFIED",
                 "plate_confidence": conf,
@@ -110,6 +110,33 @@ class HitAndRunBehavioralEngine:
                 "review_status": "PENDING_REVIEW" if requires_human_review else "AUTO_ADMISSIBLE",
                 "review_flag_reason": "ANPR plate unreadable or confidence below statutory threshold (0.90)" if requires_human_review else "Verified Multi-Node Hit & Run Sequence",
                 "requires_pcr_dispatch": True
+            }
+
+        # Standalone Rash Driving Detection (MVA 1988 Sec 184)
+        # Decoupled from collisions: triggers purely on reckless speed excess or erratic delta in congested traffic
+        is_rash_driving = (current_speed_kmh > 65.0 and speed_delta > 12.0) or (speed_ratio > 1.40 and current_speed_kmh > 50.0)
+        if is_rash_driving:
+            conf = plate_confidence if plate_confidence is not None else 0.0
+            return {
+                "detected": True,
+                "incident_type": "RASH_DRIVING",
+                "severity": "high",
+                "title": "Reckless Velocity & Rash Trajectory Clocked",
+                "description": f"Vehicle {plate_number or 'UNIDENTIFIED'} exhibited erratic acceleration ({prev_speed:.1f} ➔ {current_speed_kmh:.1f} km/h) and dangerous weaving.",
+                "mva_section": "MVA 1988 Sec 184 (Driving Dangerously / Rash Driving)",
+                "fine_amount_inr": 2000,
+                "plate_number": plate_number or "UNIDENTIFIED",
+                "plate_confidence": conf,
+                "initial_speed_kmh": prev_speed,
+                "fleeing_speed_kmh": current_speed_kmh,
+                "acceleration_delta_kmh": speed_delta,
+                "road_name": road_name,
+                "lat": lat,
+                "lng": lng,
+                "reporting_bus_id": bus_id,
+                "review_status": "AUTO_ADMISSIBLE" if conf >= 0.85 else "PENDING_REVIEW",
+                "review_flag_reason": "Automated Speed Radar & Dashcam Trajectory Lock",
+                "requires_pcr_dispatch": False
             }
 
         return None

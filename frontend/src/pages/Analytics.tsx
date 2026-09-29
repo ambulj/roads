@@ -29,6 +29,7 @@ export const Analytics: React.FC<AnalyticsProps> = ({ metrics, corridors, fleet 
   const [trafficDensity, setTrafficDensity] = useState<any[]>([]);
   const [anprResult, setAnprResult] = useState<any | null>(null);
   const [isScanningANPR, setIsScanningANPR] = useState(false);
+  const [odData, setOdData] = useState<any | null>(null);
 
   useEffect(() => {
     api.getSafeCorridors().then(setSafeCorridors);
@@ -36,6 +37,7 @@ export const Analytics: React.FC<AnalyticsProps> = ({ metrics, corridors, fleet 
     api.getTransitDelays().then(data => { if (data?.length) setTransitDelays(data); }).catch(() => {});
     api.getTrafficBottlenecks().then(data => { if (data?.length) setBottlenecks(data); }).catch(() => {});
     api.getTrafficDensity().then(data => { if (data?.length) setTrafficDensity(data); }).catch(() => {});
+    api.getOriginDestinationMatrix().then(setOdData).catch(() => {});
   }, []);
 
   const handleRunANPRTest = async () => {
@@ -619,6 +621,106 @@ export const Analytics: React.FC<AnalyticsProps> = ({ metrics, corridors, fleet 
                 <div className="text-xs text-slate-700 dark:text-slate-300 space-y-1">
                   <p><b className="text-slate-900 dark:text-slate-100">Root Cause:</b> {bn.cause}</p>
                   <p className="text-xs text-blue-700 dark:text-blue-400"><b className="text-slate-900 dark:text-slate-100">Diversion:</b> {bn.recommended_diversion}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </Card>
+      )}
+
+      {/* ── ORIGIN-DESTINATION (O-D) TRANSIT CORRIDOR FLOW & DESIRE LINES ───── */}
+      {odData?.corridors && odData.corridors.length > 0 && (
+        <Card className="p-4 lg:p-6 flex flex-col gap-4 shadow-xs">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-slate-200 dark:border-slate-800">
+            <div className="flex items-center gap-2.5">
+              <div className="w-8 h-8 rounded-lg bg-purple-100 dark:bg-purple-950 border border-purple-300 dark:border-purple-800 flex items-center justify-center text-purple-700 dark:text-purple-300">
+                <TrendingUp className="w-4 h-4" />
+              </div>
+              <div>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <h2 className="text-sm font-bold uppercase tracking-tight text-slate-900 dark:text-slate-100">
+                    Origin-Destination (O-D) Transit Corridor &amp; Desire Lines Matrix
+                  </h2>
+                  <Badge variant="purple" size="sm" className="font-mono font-bold">
+                    SIH PS 26124 Mandate
+                  </Badge>
+                  <span className="text-[10px] font-mono text-emerald-600 dark:text-emerald-400 font-bold bg-emerald-50 dark:bg-emerald-950/60 px-2 py-0.5 rounded border border-emerald-200 dark:border-emerald-800">
+                    TTR: {odData.network_avg_travel_time_ratio}x
+                  </span>
+                </div>
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                  Inter-nodal passenger car unit (PCU) volume matrices, transit headway reliability, and pavement distress travel-time attribution.
+                </p>
+              </div>
+            </div>
+            <span className="text-xs text-slate-500 dark:text-slate-400 font-mono">
+              {odData.total_monitored_od_pairs} Core Corridors
+            </span>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {odData.corridors.map((od: any) => (
+              <div key={od.id} className="p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-zinc-900/60 flex flex-col justify-between gap-3 shadow-xs">
+                <div>
+                  <div className="flex items-center justify-between text-xs pb-2 border-b border-slate-200/70 dark:border-slate-800">
+                    <span className="font-bold text-slate-900 dark:text-white font-mono flex items-center gap-1.5">
+                      <span className="px-1.5 py-0.5 rounded bg-blue-100 dark:bg-blue-900/60 text-blue-700 dark:text-blue-300 text-[10px] font-bold">
+                        {od.route_code}
+                      </span>
+                      {od.corridor_name}
+                    </span>
+                    <Badge variant={od.level_of_service.includes('LoS C') ? 'success' : od.level_of_service.includes('LoS D') ? 'medium' : 'critical'} size="sm">
+                      {od.level_of_service.split(' ')[0]} {od.level_of_service.split(' ')[1]}
+                    </Badge>
+                  </div>
+
+                  {/* Origin -> Destination Flow Vector */}
+                  <div className="mt-3 flex items-center justify-between gap-2 p-2.5 rounded-lg bg-white dark:bg-zinc-950 border border-slate-200 dark:border-slate-800 text-xs">
+                    <div className="flex-1 truncate">
+                      <span className="text-[10px] uppercase font-bold text-slate-400 block">Origin (A)</span>
+                      <span className="font-semibold text-slate-800 dark:text-slate-200 truncate block text-[11px]">
+                        {od.origin}
+                      </span>
+                    </div>
+                    <div className="flex flex-col items-center px-1 text-slate-400">
+                      <span className="text-[9px] font-mono text-cyan-600 dark:text-cyan-400 font-bold">{od.distance_km} km</span>
+                      <ArrowRight className="w-3.5 h-3.5 text-slate-400" />
+                    </div>
+                    <div className="flex-1 text-right truncate">
+                      <span className="text-[10px] uppercase font-bold text-slate-400 block">Destination (B)</span>
+                      <span className="font-semibold text-slate-800 dark:text-slate-200 truncate block text-[11px]">
+                        {od.destination}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Metrics grid */}
+                  <div className="grid grid-cols-3 gap-2 mt-3 text-center text-xs font-mono">
+                    <div className="p-2 rounded-lg bg-white dark:bg-zinc-950 border border-slate-200 dark:border-slate-800">
+                      <span className="text-[10px] text-slate-400 uppercase block font-sans">Trip Duration</span>
+                      <span className="font-bold text-slate-900 dark:text-white">{od.actual_transit_mins}m</span>
+                      <span className="text-[9px] text-rose-500 block">+{od.delay_mins}m delay</span>
+                    </div>
+                    <div className="p-2 rounded-lg bg-white dark:bg-zinc-950 border border-slate-200 dark:border-slate-800">
+                      <span className="text-[10px] text-slate-400 uppercase block font-sans">Hourly Volume</span>
+                      <span className="font-bold text-slate-900 dark:text-white">{od.hourly_pcu_flow.toLocaleString()}</span>
+                      <span className="text-[9px] text-slate-400 block">PCU / hr</span>
+                    </div>
+                    <div className="p-2 rounded-lg bg-white dark:bg-zinc-950 border border-slate-200 dark:border-slate-800">
+                      <span className="text-[10px] text-slate-400 uppercase block font-sans">Distress Impact</span>
+                      <span className="font-bold text-amber-600 dark:text-amber-400">{od.distress_delay_attribution_mins}m</span>
+                      <span className="text-[9px] text-slate-400 block">Pothole Loss</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="pt-2 border-t border-slate-200/60 dark:border-slate-800/80 flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400">
+                  <span className="truncate max-w-[240px]">
+                    <strong className="text-slate-700 dark:text-slate-300">Bottlenecks:</strong> {od.critical_chokepoints.join(', ')}
+                  </span>
+                  <span className="font-mono text-cyan-600 dark:text-cyan-400 shrink-0">
+                    {od.primary_transit_mode}
+                  </span>
                 </div>
               </div>
             ))}

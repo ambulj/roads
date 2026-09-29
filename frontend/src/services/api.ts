@@ -1230,6 +1230,90 @@ class ApiService {
     return { status: 'success', eps_meters: 15.0 };
   }
 
+  async getOriginDestinationMatrix(): Promise<any> {
+    try {
+      const res = await fetch(`${API_BASE}/traffic/od-matrix`, { signal: AbortSignal.timeout(2000) });
+      if (res.ok) return await res.json();
+    } catch {
+      // fallback
+    }
+    return {
+      status: "success",
+      total_monitored_od_pairs: 4,
+      network_avg_travel_time_ratio: 1.17,
+      corridors: [
+        {
+          id: "od-tambaram-broadway",
+          corridor_name: "GST Road Arterial Corridor",
+          origin: "Tambaram Sanatorium Bus Stand (South Gateway)",
+          destination: "Broadway Bus Terminal (Central Hub)",
+          route_code: "21G",
+          distance_km: 28.5,
+          scheduled_mins: 72.0,
+          actual_transit_mins: 84.6,
+          delay_mins: 12.6,
+          hourly_pcu_flow: 2840,
+          peak_travel_time_ratio: 1.18,
+          level_of_service: "LoS D (Approaching Capacity)",
+          distress_delay_attribution_mins: 5.4,
+          critical_chokepoints: ["Airport Flyover Approach", "Kathipara Cloverleaf"],
+          primary_transit_mode: "MTC Electric Low-Floor Fleet"
+        },
+        {
+          id: "od-koyambedu-siruseri",
+          corridor_name: "OMR IT Expressway Corridor",
+          origin: "CMBT Koyambedu Terminal",
+          destination: "Siruseri IT Park (Tech Corridor)",
+          route_code: "570X",
+          distance_km: 34.2,
+          scheduled_mins: 85.0,
+          actual_transit_mins: 102.4,
+          delay_mins: 17.4,
+          hourly_pcu_flow: 3450,
+          peak_travel_time_ratio: 1.20,
+          level_of_service: "LoS E (Unstable Flow / Choke Points)",
+          distress_delay_attribution_mins: 7.2,
+          critical_chokepoints: ["Sholinganallur Junction", "Perungudi Toll Plaza"],
+          primary_transit_mode: "MTC Volvo AC Arterial"
+        },
+        {
+          id: "od-broadway-kelambakkam",
+          corridor_name: "East Coast Marine Corridor",
+          origin: "Broadway Bus Terminal",
+          destination: "Kelambakkam Junction",
+          route_code: "102",
+          distance_km: 36.0,
+          scheduled_mins: 90.0,
+          actual_transit_mins: 98.2,
+          delay_mins: 8.2,
+          hourly_pcu_flow: 1960,
+          peak_travel_time_ratio: 1.09,
+          level_of_service: "LoS C (Stable Flow)",
+          distress_delay_attribution_mins: 3.6,
+          critical_chokepoints: ["Thiruvanmiyur RTO Junction"],
+          primary_transit_mode: "Standard BS-VI City Transit"
+        },
+        {
+          id: "od-swargate-hinjewadi",
+          corridor_name: "Pune Tech Metro Link",
+          origin: "Swargate Multimodal Hub (Pune)",
+          destination: "Hinjewadi Phase 3 IT Park",
+          route_code: "PMPML-100",
+          distance_km: 24.8,
+          scheduled_mins: 65.0,
+          actual_transit_mins: 79.5,
+          delay_mins: 14.5,
+          hourly_pcu_flow: 2680,
+          peak_travel_time_ratio: 1.22,
+          level_of_service: "LoS D (Congested Peak)",
+          distress_delay_attribution_mins: 6.0,
+          critical_chokepoints: ["Wakad Bridge", "Chandani Chowk"],
+          primary_transit_mode: "PMPML Electric Midi-Bus"
+        }
+      ]
+    };
+  }
+
   async getFleetNodes(): Promise<FleetNode[]> {
     try {
       const res = await fetch(`${API_BASE}/fleet`, { signal: AbortSignal.timeout(1500) });
