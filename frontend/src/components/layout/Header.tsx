@@ -117,8 +117,8 @@ export const Header: React.FC<HeaderProps> = ({
         </button>
 
         <div className="flex items-center gap-2.5 cursor-pointer" onClick={() => onNavigate("command")}>
-          <div className="w-8 h-8 bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-950 rounded-lg flex items-center justify-center font-semibold text-sm shadow-xs">
-            SS
+          <div className="w-8 h-8 bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-950 rounded-lg flex items-center justify-center font-bold text-sm shadow-xs tracking-wider">
+            RS
           </div>
           <div>
             <div className="flex items-center gap-1.5 leading-tight">
