@@ -147,7 +147,7 @@ export const SelfLearningStudio: React.FC = () => {
   };
 
   return (
-    <Card className="p-5 sm:p-7 border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm relative overflow-hidden transition-colors">
+    <Card className="p-5 sm:p-7 border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm relative overflow-visible transition-colors">
       {/* Background ambient HUD decoration */}
       <div className="absolute top-0 right-0 w-96 h-96 bg-blue-500/5 dark:bg-blue-400/5 rounded-full blur-3xl pointer-events-none" />
       <div className="absolute bottom-0 left-0 w-96 h-96 bg-purple-500/5 dark:bg-purple-400/5 rounded-full blur-3xl pointer-events-none" />

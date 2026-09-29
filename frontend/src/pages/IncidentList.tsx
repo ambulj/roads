@@ -165,7 +165,7 @@ export const IncidentList: React.FC<IncidentListProps> = ({
   };
 
   return (
-    <div className="space-y-4 pb-12 font-mono">
+    <div className="flex-1 flex flex-col min-h-0 overflow-y-auto custom-scrollbar p-4 md:p-6 space-y-4 pb-12 font-mono max-w-[1700px] mx-auto w-full">
       {/* ── HEADER & CONTROLS RIBBON ────────────────────────────────────────── */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-zinc-200 dark:border-zinc-800 pb-3">
         <div>

@@ -129,7 +129,7 @@ export const EdgeAIAnalytics: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[500px] text-zinc-400">
+      <div className="flex-1 flex flex-col items-center justify-center min-h-[500px] text-zinc-400">
         <RefreshCw className="w-8 h-8 animate-spin mb-3 text-cyan-500" />
         <p className="font-mono text-xs uppercase tracking-wider">Loading Edge AI Telemetry & Hardware Matrix...</p>
       </div>
@@ -144,7 +144,7 @@ export const EdgeAIAnalytics: React.FC = () => {
   const avgLatencyMs = fusionMetrics?.avg_end_to_end_latency_ms || 39.4;
 
   return (
-    <div className="space-y-6 pb-16">
+    <div className="flex-1 flex flex-col min-h-0 overflow-y-auto custom-scrollbar p-4 md:p-6 lg:p-7 space-y-6 pb-16 max-w-[1700px] mx-auto w-full">
       {/* ── HEADER RIBBON ──────────────────────────────────────────────────────── */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-zinc-200 dark:border-zinc-800 pb-4">
         <div>
