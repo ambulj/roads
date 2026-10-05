@@ -1,6 +1,7 @@
 from fastapi import APIRouter, UploadFile, File, Form, HTTPException, Depends
 from typing import Dict, Any, List, Optional
 from pathlib import Path
+import asyncio
 import base64
 import uuid
 import datetime
@@ -92,7 +93,7 @@ async def trigger_synthetic_generation():
     from app.services.synthetic_generator import generate_synthetic_tick
     from app.api.websockets import manager
     
-    summary = generate_synthetic_tick()
+    summary = await asyncio.to_thread(generate_synthetic_tick)
     if manager.active_connections:
         await manager.broadcast({
             "type": "SYNTHETIC_CYCLE_TICK",
@@ -173,7 +174,7 @@ async def infer_zebra_crossing(
     else:
         raise HTTPException(status_code=400, detail="Either 'file' or 'image_b64' must be provided")
 
-    result = yolo_engine.detect_zebra_crossings(image_bytes)
+    result = await asyncio.to_thread(yolo_engine.detect_zebra_crossings, image_bytes)
 
     # If requested, automatically create an official work order docket in RoadSaathi
     if auto_ingest and result.get("detections"):

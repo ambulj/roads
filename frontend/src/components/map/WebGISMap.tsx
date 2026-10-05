@@ -304,6 +304,26 @@ function createGeoJSONCircle(center: [number, number], radiusInMeters: number, p
   return coords;
 }
 
+function fleetToGeoJSON(busList: FleetNode[]) {
+  return {
+    type: 'FeatureCollection' as const,
+    features: busList.map((bus) => ({
+      type: 'Feature' as const,
+      geometry: {
+        type: 'Point' as const,
+        coordinates: [bus.lng, bus.lat]
+      },
+      properties: {
+        id: bus.id,
+        route_name: bus.route_name,
+        speed_kmh: bus.speed_kmh || 35,
+        heading: bus.heading || 0,
+        is_online: bus.is_online
+      }
+    }))
+  };
+}
+
 export const WebGISMap: React.FC<WebGISMapProps> = ({
   clusters,
   fleet,
@@ -854,6 +874,71 @@ export const WebGISMap: React.FC<WebGISMapProps> = ({
       }
     });
   }, [fleet, isMapReady]);
+
+  // Decoupled 5Hz Telemetry Listener & 'bus-positions' MapLibre GeoJSON source:
+  // Directly updates MapLibre GeoJSON source and DOM markers to maintain locked 60 FPS WebGIS performance
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !isMapReady) return;
+
+    // Initialize 'bus-positions' GeoJSON source and glowing pulse layer if not present
+    const initialGeoData = fleetToGeoJSON(fleet);
+    if (!map.getSource('bus-positions')) {
+      map.addSource('bus-positions', {
+        type: 'geojson',
+        data: initialGeoData as any
+      });
+
+      map.addLayer({
+        id: 'bus-positions-pulse',
+        type: 'circle',
+        source: 'bus-positions',
+        paint: {
+          'circle-radius': 16,
+          'circle-color': '#0284c7',
+          'circle-opacity': 0.18,
+          'circle-stroke-width': 1.5,
+          'circle-stroke-color': '#38bdf8',
+          'circle-stroke-opacity': 0.6
+        }
+      });
+    } else {
+      (map.getSource('bus-positions') as maplibregl.GeoJSONSource).setData(initialGeoData as any);
+    }
+
+    const handleFleetTelemetry = (e: Event) => {
+      const customEvent = e as CustomEvent<FleetNode[]>;
+      const liveFleet = customEvent.detail;
+      if (!liveFleet || !Array.isArray(liveFleet)) return;
+
+      const currentMap = mapRef.current;
+      if (currentMap) {
+        const source = currentMap.getSource('bus-positions') as maplibregl.GeoJSONSource | undefined;
+        if (source) {
+          source.setData(fleetToGeoJSON(liveFleet) as any);
+        }
+      }
+
+      liveFleet.forEach((bus) => {
+        const marker = busMarkersRef.current[bus.id];
+        if (marker) {
+          marker.setLngLat([bus.lng, bus.lat]);
+          const mEl = document.getElementById(`bus-marker-${bus.id}`);
+          if (mEl) {
+            const speedLabel = mEl.querySelector('div[style*="bottom: -18px"]');
+            if (speedLabel) {
+              speedLabel.textContent = `${bus.id.replace('BUS-', '')} • ${bus.speed_kmh || 35}k`;
+            }
+          }
+        }
+      });
+    };
+
+    window.addEventListener('roadsaathi:telemetry:fleet', handleFleetTelemetry);
+    return () => {
+      window.removeEventListener('roadsaathi:telemetry:fleet', handleFleetTelemetry);
+    };
+  }, [isMapReady]);
 
   // Render Incidents
   useEffect(() => {

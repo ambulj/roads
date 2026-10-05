@@ -1,3 +1,4 @@
+import asyncio
 from fastapi import APIRouter, Response, HTTPException, UploadFile, File, Form
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
@@ -88,7 +89,7 @@ async def upload_stream_media(
             nparr = np.frombuffer(file_bytes, np.uint8)
             img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
             if img is not None:
-                detect_res = yolo_engine.detect_road_hazards(img, channel=channel, burn_overlay=True)
+                detect_res = await asyncio.to_thread(yolo_engine.detect_road_hazards, img, channel=channel, burn_overlay=True)
                 annotated_b64 = detect_res.get("annotated_b64")
                 evidence_url = detect_res.get("evidence_url")
                 evidence_id = detect_res.get("evidence_id")
@@ -98,7 +99,7 @@ async def upload_stream_media(
             if cap.isOpened():
                 ret, frame = cap.read()
                 if ret and frame is not None:
-                    detect_res = yolo_engine.detect_road_hazards(frame, channel=channel, burn_overlay=True)
+                    detect_res = await asyncio.to_thread(yolo_engine.detect_road_hazards, frame, channel=channel, burn_overlay=True)
                     annotated_b64 = detect_res.get("annotated_b64")
                     evidence_url = detect_res.get("evidence_url")
                     evidence_id = detect_res.get("evidence_id")

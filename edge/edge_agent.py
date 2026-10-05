@@ -100,8 +100,8 @@ class OnboardEdgeNode:
         self.current_fps = 0.0
         self.last_sync_time = time.time()
 
-        # Local Ring Buffer for offline resilience (FIFO on local flash/SSD)
-        self.ring_buffer_file = Path(f"edge_buffer_{self.bus_id}.json")
+        # Local Ring Buffer for offline resilience (FIFO on local flash/SSD via append-only JSONL)
+        self.ring_buffer_file = Path(f"edge_buffer_{self.bus_id}.jsonl")
         self.ring_buffer: List[Dict[str, Any]] = self._load_local_buffer()
 
         # Dynamic vehicle coordinates (starts in Chennai transit corridor)
@@ -154,22 +154,63 @@ class OnboardEdgeNode:
             print(f"[EDGE MQTT] Notice: MQTT broker unreachable at {self.mqtt_broker}:{self.mqtt_port} ({e}). Retrying in background.")
 
     def _load_local_buffer(self) -> List[Dict[str, Any]]:
-        """Loads offline ring-buffer from disk if preserved from previous shutdown."""
+        """Loads offline ring-buffer from disk (.jsonl format, with fallback to legacy .json)."""
+        items: List[Dict[str, Any]] = []
         if self.ring_buffer_file.exists():
             try:
-                with open(self.ring_buffer_file, "r") as f:
-                    return json.load(f)
+                with open(self.ring_buffer_file, "r", encoding="utf-8") as f:
+                    for line in f:
+                        line = line.strip()
+                        if line:
+                            items.append(json.loads(line))
+                return items[-1000:]
             except Exception:
-                return []
-        return []
+                pass
 
-    def _save_local_buffer(self):
-        """Saves offline ring-buffer to disk."""
+        # Legacy fallback
+        legacy_file = Path(f"edge_buffer_{self.bus_id}.json")
+        if legacy_file.exists():
+            try:
+                with open(legacy_file, "r", encoding="utf-8") as f:
+                    data = json.load(f)
+                    if isinstance(data, list):
+                        items = data[-1000:]
+            except Exception:
+                pass
+        return items
+
+    def _append_to_local_buffer(self, packet: Dict[str, Any]):
+        """
+        Appends packet to memory ring-buffer and writes single line to append-only JSONL.
+        Avoids full-file overwrites on vehicle SBC flash/eMMC storage to prevent premature wear.
+        """
+        self.ring_buffer.append(packet)
         try:
-            with open(self.ring_buffer_file, "w") as f:
-                json.dump(self.ring_buffer[-500:], f)
+            with open(self.ring_buffer_file, "a", encoding="utf-8") as f:
+                f.write(json.dumps(packet) + "\n")
         except Exception:
             pass
+
+        # Periodic truncation/compaction if memory queue exceeds threshold
+        if len(self.ring_buffer) > 1000:
+            self.ring_buffer = self.ring_buffer[-1000:]
+            self._compact_local_buffer()
+
+    def _compact_local_buffer(self):
+        """Compacts the .jsonl ring buffer file atomically to retain only the bounded active buffer."""
+        try:
+            bounded = self.ring_buffer[-1000:]
+            temp_file = self.ring_buffer_file.with_suffix(".tmp")
+            with open(temp_file, "w", encoding="utf-8") as f:
+                for item in bounded:
+                    f.write(json.dumps(item) + "\n")
+            temp_file.replace(self.ring_buffer_file)
+        except Exception:
+            pass
+
+    def _save_local_buffer(self):
+        """Backward compatibility alias for _compact_local_buffer."""
+        self._compact_local_buffer()
 
     def _init_edge_models(self) -> Dict[str, Any]:
         """Loads quantized edge YOLO models with hardware acceleration probe (RKNN / TensorRT / ONNX / PT)."""
@@ -375,16 +416,15 @@ class OnboardEdgeNode:
                 pass
 
         if not (sent_mqtt or sent_http):
-            # Network blackout (e.g. tunnel / rural stretch) -> Fallback to local offline ring buffer
+            # Network blackout (e.g. tunnel / rural stretch) -> Fallback to local offline append-only ring buffer
             self.is_online = False
-            self.ring_buffer.append(payload)
-            self._save_local_buffer()
+            self._append_to_local_buffer(payload)
             return False
 
         return True
 
     def buffer_tier2_p1_telemetry(self, detection: Dict[str, Any]):
-        """Tier 2 Routine: Buffers telemetry into local SSD FIFO queue for batch syncing."""
+        """Tier 2 Routine: Buffers telemetry into local SSD FIFO queue via append-only JSONL."""
         packet = {
             "bus_id": self.bus_id,
             "defect_type": detection.get("code", "D20"),
@@ -396,17 +436,16 @@ class OnboardEdgeNode:
             "lng": self.lng,
             "timestamp": time.time()
         }
-        self.ring_buffer.append(packet)
         self.p1_buffered_count += 1
-        if len(self.ring_buffer) > 1000:
-            self.ring_buffer.pop(0) # FIFO eviction
-        self._save_local_buffer()
+        self._append_to_local_buffer(packet)
 
     def _background_sync_loop(self):
-        """Periodically compresses and flushes offline ring buffer when network is available."""
+        """Periodically flushes offline ring buffer with adaptive exponential backoff to conserve cellular modem power."""
+        backoff_sec = 5.0
         while self.is_running:
-            time.sleep(5.0)
+            time.sleep(backoff_sec)
             if not self.ring_buffer:
+                backoff_sec = 5.0
                 continue
 
             # Attempt batch compressed sync
@@ -435,10 +474,13 @@ class OnboardEdgeNode:
                         self.is_online = True
                         self.bytes_transmitted += len(data)
                         self.ring_buffer = self.ring_buffer[len(batch_to_send):]
-                        self._save_local_buffer()
+                        self._compact_local_buffer()
                         self.last_sync_time = time.time()
+                        backoff_sec = 5.0  # Reset backoff on successful transmission
             except Exception:
                 self.is_online = False
+                # Exponential backoff with random jitter to prevent cellular thundering herd
+                backoff_sec = min(60.0, backoff_sec * 1.5 + random.uniform(0.5, 2.5))
 
     def _create_capture_source(self):
         """

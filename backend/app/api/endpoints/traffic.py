@@ -261,8 +261,7 @@ def detect_license_plate(req: ANPRRequest):
 @router.get("/anpr/sample")
 def get_anpr_sample():
     """Returns sample verified ANPR detection on Chennai HSRP vehicle plate."""
-    from app.services.anpr_engine import anpr_engine
-    return anpr_engine.detect_plate(None)
+    return detect_license_plate(ANPRRequest())
 
 @router.get("/rto/lookup/{plate_number}")
 def lookup_rto_registration(plate_number: str):

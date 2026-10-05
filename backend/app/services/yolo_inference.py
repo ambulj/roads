@@ -932,10 +932,18 @@ class YoloInferenceEngine:
 
         from app.services.anpr_engine import anpr_engine
 
+        # Adaptive confidence thresholding based on ambient illumination lux proxy
+        lux = quality_metrics.get("illumination_lux", 120.0)
+        conf_bias = -0.08 if lux < 45.0 else (0.05 if lux > 220.0 else 0.0)
+        ind_conf = max(0.28, min(0.60, 0.45 + conf_bias))
+        veh_conf = max(0.20, min(0.45, 0.28 + conf_bias))
+        pothole_conf = max(0.25, min(0.50, 0.35 + conf_bias))
+        zebra_conf = max(0.28, min(0.55, 0.40 + conf_bias))
+
         # 1. Indian Road Infrastructure Assets
         if self.indian_roads_model is not None:
             try:
-                ind_results = self.indian_roads_model(infer_img, conf=0.45, device=self.device, verbose=False)
+                ind_results = self.indian_roads_model(infer_img, conf=ind_conf, device=self.device, verbose=False)
                 for r in ind_results:
                     for box in r.boxes:
                         cls_id = int(box.cls.item())
@@ -1018,7 +1026,7 @@ class YoloInferenceEngine:
         # 2. Supplementary Vehicle & Vulnerable Road User Detection
         if self.vehicle_model is not None:
             try:
-                v_results = self.vehicle_model(infer_img, conf=0.28, device=self.device, verbose=False)
+                v_results = self.vehicle_model(infer_img, conf=veh_conf, device=self.device, verbose=False)
                 for r in v_results:
                     for box in r.boxes:
                         cls_id = int(box.cls.item())
@@ -1108,7 +1116,7 @@ class YoloInferenceEngine:
         # 3. Neural Pothole Detection
         if self.pothole_model is not None:
             try:
-                p_results = self.pothole_model(infer_img, conf=0.35, device=self.device, verbose=False)
+                p_results = self.pothole_model(infer_img, conf=pothole_conf, device=self.device, verbose=False)
                 for r in p_results:
                     for box in r.boxes:
                         cls_id = int(box.cls.item())
@@ -1117,7 +1125,7 @@ class YoloInferenceEngine:
                             continue
 
                         conf = float(box.conf.item())
-                        if conf < 0.35:
+                        if conf < pothole_conf:
                             continue
                         xyxy = box.xyxy[0].cpu().numpy()
                         bx1, by1 = int(xyxy[0] * scale_x), int(xyxy[1] * scale_y)
@@ -1156,7 +1164,7 @@ class YoloInferenceEngine:
         # 4. Neural Zebra Crossing Model
         if self.zebra_model is not None:
             try:
-                z_results = self.zebra_model(infer_img, conf=0.40, device=self.device, verbose=False)
+                z_results = self.zebra_model(infer_img, conf=zebra_conf, device=self.device, verbose=False)
                 for r in z_results:
                     for box in r.boxes:
                         conf = float(box.conf.item())

@@ -223,5 +223,30 @@ class TestProductionHardening(unittest.TestCase):
         self.assertTrue(data["delivery_receipt_id"].startswith("MSG-WA-2026-"))
         self.assertIn("wa.me", data["wa_deep_link"])
 
+    # ── 9. DPDP ACT 2023 ROLE-GATED EVIDENCE VAULT ───────────────────────────
+    def test_10_dpdp_authenticated_evidence_vault_download(self):
+        # 1. Unauthenticated access must fail with 401
+        res_unauth = client.get("/api/evidence/ev-test/download")
+        self.assertEqual(res_unauth.status_code, 401)
+
+        # 2. Authenticated access by authorized persona
+        res_auth = client.post("/api/auth/login", json={"role": "pwd_engineer"})
+        token = res_auth.json()["access_token"]
+        headers = {"Authorization": f"Bearer {token}"}
+
+        # Query evidence vault
+        res_list = client.get("/api/evidence")
+        self.assertEqual(res_list.status_code, 200)
+        items = res_list.json()
+
+        if items:
+            ev_id = items[0].get("evidence_id") or items[0].get("id")
+            res_dl = client.get(f"/api/evidence/{ev_id}/download", headers=headers)
+            if res_dl.status_code == 200:
+                self.assertIn("X-DPDP-Act-2023-Compliance", res_dl.headers)
+                self.assertIn("X-DPDP-Authorized-Role", res_dl.headers)
+            else:
+                self.assertIn(res_dl.status_code, (200, 404))
+
 if __name__ == "__main__":
     unittest.main()

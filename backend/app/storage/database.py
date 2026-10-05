@@ -11,7 +11,7 @@ can be moved to any directory without breaking anything.
 """
 import os
 from dotenv import load_dotenv
-from sqlalchemy import create_engine, text
+from sqlalchemy import create_engine, text, event
 from sqlalchemy.orm import sessionmaker, Session
 from app.models.db_models import Base, DBDistressCluster, DBTrafficIncident, DBFleetNode, DBRawIngest
 
@@ -51,7 +51,19 @@ else:
 # ── Create engine with fallback ──────────────────────────────────────────────
 def _make_engine(url: str):
     if url.startswith("sqlite"):
-        return create_engine(url, connect_args={"check_same_thread": False})
+        eng = create_engine(url, connect_args={"check_same_thread": False, "timeout": 30})
+        @event.listens_for(eng, "connect")
+        def set_sqlite_pragma(dbapi_connection, connection_record):
+            cursor = dbapi_connection.cursor()
+            try:
+                cursor.execute("PRAGMA journal_mode=WAL")
+                cursor.execute("PRAGMA synchronous=NORMAL")
+                cursor.execute("PRAGMA busy_timeout=15000")
+            except Exception:
+                pass
+            finally:
+                cursor.close()
+        return eng
     return create_engine(url, pool_pre_ping=True, pool_recycle=300)
 
 try:
@@ -160,7 +172,7 @@ def init_db():
 
         # ── Seed traffic incidents ────────────────────────────────────────────
         # ── Seed traffic incidents: Minimal high-value baseline set ───────────
-        if db.query(DBTrafficIncident).count() == 0:
+        if db.query(DBTrafficIncident).filter(DBTrafficIncident.id == "inc-003").first() is None:
             initial_incidents = [
                 {
                     "id": "inc-001",
@@ -227,6 +239,8 @@ def init_db():
                 }
             ]
             for inc in initial_incidents:
+                if db.query(DBTrafficIncident).filter(DBTrafficIncident.id == inc["id"]).first():
+                    continue
                 citation = compute_statutory_citation(
                     inc["incident_type"],
                     target_speed_kmh=inc.get("target_speed_kmh", 0.0),

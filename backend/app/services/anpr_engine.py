@@ -65,6 +65,21 @@ class ANPREngine:
     def __init__(self):
         # Regex for standard Indian vehicle registration numbers
         self.plate_pattern = re.compile(r"([A-Z]{2})[- ]?([0-9]{1,2})[- ]?([A-Z]{1,3})[- ]?([0-9]{4})")
+        self._easyocr_reader = None
+        self._easyocr_attempted = False
+
+    def _get_easyocr_reader(self):
+        """Lazily instantiates and caches EasyOCR Reader singleton to avoid multi-second reload overhead."""
+        if not self._easyocr_attempted:
+            self._easyocr_attempted = True
+            try:
+                import easyocr
+                import torch
+                use_gpu = torch.cuda.is_available()
+                self._easyocr_reader = easyocr.Reader(['en'], gpu=use_gpu, verbose=False)
+            except Exception as e:
+                self._easyocr_reader = None
+        return self._easyocr_reader
 
     def detect_plate(self, image_input: Any, vehicle_bbox: Optional[List[int]] = None) -> Dict[str, Any]:
         """
@@ -236,18 +251,18 @@ class ANPREngine:
             infer_crop = plate_crop
 
         ocr_text = ""
-        # 1. Attempt EasyOCR extraction
-        try:
-            import easyocr
-            reader = easyocr.Reader(['en'], gpu=True, verbose=False)
-            gray = cv2.cvtColor(infer_crop, cv2.COLOR_BGR2GRAY) if len(infer_crop.shape) == 3 else infer_crop
-            results = reader.readtext(gray)
-            for _, txt, c in results:
-                cleaned = re.sub(r"[^A-Z0-9]", "", txt.upper())
-                if len(cleaned) >= 4:
-                    ocr_text += cleaned
-        except Exception:
-            ocr_text = ""
+        # 1. Attempt EasyOCR extraction using cached reader singleton
+        reader = self._get_easyocr_reader()
+        if reader is not None:
+            try:
+                gray = cv2.cvtColor(infer_crop, cv2.COLOR_BGR2GRAY) if len(infer_crop.shape) == 3 else infer_crop
+                results = reader.readtext(gray)
+                for _, txt, c in results:
+                    cleaned = re.sub(r"[^A-Z0-9]", "", txt.upper())
+                    if len(cleaned) >= 4:
+                        ocr_text += cleaned
+            except Exception:
+                ocr_text = ""
 
         # 2. Fallback to PyTesseract if EasyOCR didn't yield result
         if not ocr_text:

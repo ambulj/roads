@@ -10,6 +10,7 @@ export function useTelemetrySocket() {
   const [metrics, setMetrics] = useState<MetricSummary>(INITIAL_METRICS);
   const [auditLogs, setAuditLogs] = useState<PerceptionLogEntry[]>(INITIAL_AUDIT_LOGS);
   const [latestLatency, setLatestLatency] = useState<number>(72);
+  const lastFleetStateSyncRef = useRef<number>(0);
   const wsRef = useRef<WebSocket | null>(null);
   const reconnectTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isDestroyedRef = useRef(false);
@@ -79,19 +80,44 @@ export function useTelemetrySocket() {
           const data = JSON.parse(event.data);
           if (data.type === 'SNAPSHOT') {
             if (data.metrics) setMetrics(data.metrics);
-            if (data.fleet) setFleet(data.fleet);
+            if (data.fleet) {
+              setFleet(data.fleet);
+              if (typeof window !== 'undefined') {
+                window.dispatchEvent(new CustomEvent('roadsaathi:telemetry:fleet', { detail: data.fleet }));
+              }
+            }
             if (data.clusters) setClusters(data.clusters);
             if (data.incidents) setIncidents(data.incidents);
             if (data.audit_logs) setAuditLogs(data.audit_logs);
           } else if (data.type === 'TELEMETRY_TICK') {
-            if (data.fleet) setFleet(data.fleet);
+            if (data.fleet) {
+              // High-frequency 5Hz telemetry: dispatch direct custom event to WebGIS MapLibre source
+              if (typeof window !== 'undefined') {
+                window.dispatchEvent(new CustomEvent('roadsaathi:telemetry:fleet', { detail: data.fleet }));
+              }
+              // Throttle React state reconciliation so component tree doesn't re-render 5 times/sec
+              const now = Date.now();
+              if (now - lastFleetStateSyncRef.current > 1500) {
+                lastFleetStateSyncRef.current = now;
+                setFleet(data.fleet);
+              }
+            }
             if (data.metrics) setMetrics(data.metrics);
             if (data.latest_log) {
               pushAuditLog(data.latest_log);
               setLatestLatency(data.latest_log.latency_ms || 75);
             }
           } else if (data.type === 'FLEET_UPDATE') {
-            if (data.fleet) setFleet(data.fleet);
+            if (data.fleet) {
+              if (typeof window !== 'undefined') {
+                window.dispatchEvent(new CustomEvent('roadsaathi:telemetry:fleet', { detail: data.fleet }));
+              }
+              const now = Date.now();
+              if (now - lastFleetStateSyncRef.current > 1500) {
+                lastFleetStateSyncRef.current = now;
+                setFleet(data.fleet);
+              }
+            }
             if (data.metrics) setMetrics(data.metrics);
             if (data.latest_log) {
               pushAuditLog(data.latest_log);
@@ -156,7 +182,12 @@ export function useTelemetrySocket() {
             if (data.metrics) setMetrics(data.metrics);
             if (data.clusters) setClusters(data.clusters);
             if (data.incidents) setIncidents(data.incidents);
-            if (data.fleet) setFleet(data.fleet);
+            if (data.fleet) {
+              setFleet(data.fleet);
+              if (typeof window !== 'undefined') {
+                window.dispatchEvent(new CustomEvent('roadsaathi:telemetry:fleet', { detail: data.fleet }));
+              }
+            }
             if (data.latest_log) {
               pushAuditLog(data.latest_log);
               setLatestLatency(data.latest_log.latency_ms || 65);
