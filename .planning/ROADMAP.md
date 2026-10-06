@@ -49,7 +49,10 @@ Plans:
 **Plans**: 2 plans
 
 Plans:
+**Wave 1**
 - [ ] 02-01: Zero-copy RKNN2 pipeline integration and INT8 quantized license plate model optimization.
+
+**Wave 2** *(blocked on Wave 1 completion)*
 - [ ] 02-02: Resilient edge watchdog loop with cellular network monitoring and depot Wi-Fi flush automation.
 
 ---
