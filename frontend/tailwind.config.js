@@ -1,4 +1,4 @@
-﻿/** @type {import("tailwindcss").Config} */
+/** @type {import("tailwindcss").Config} */
 export default {
   content: [
     "./index.html",
@@ -14,21 +14,25 @@ export default {
           950: "#0b0f19",
         },
         civic: {
-          navy:    "#0E2A47",
-          blue:    "#1E3A8A",
-          chakra:  "#2563EB",
-          saffron: "#D97706",
-          green:   "#16A34A",
-          ivory:   "#F4F6F9",
-          canvas:  "#F4F6F9",
-          surface: "#FFFFFF",
-          charcoal:"#0F172A",
-          border:  "#E2E8F0",
-          muted:   "#64748B",
+          canvas:      "#f8fafc",
+          surface:     "#ffffff",
+          elevated:    "#f1f5f9",
+          charcoal:    "#0f172a",
+          muted:       "#475569",
+          border:      "#e2e8f0",
+          borderSubtle:"#f1f5f9",
+          indigo:      "#4338ca",
+          indigoHover: "#3730a3",
+          indigoLight: "#eef2ff",
+          navy:        "#0e2a47",
+          blue:        "#1e3a8a",
+          chakra:      "#2563eb",
+          saffron:     "#d97706",
+          green:       "#16a34a",
         },
       },
       fontFamily: {
-        sans: ['"Source Sans 3"', "Inter", "system-ui", "-apple-system", "BlinkMacSystemFont", '"Segoe UI"', "Roboto", "sans-serif"],
+        sans: ['"Inter"', '"Source Sans 3"', "system-ui", "-apple-system", "BlinkMacSystemFont", '"Segoe UI"', "Roboto", "sans-serif"],
         mono: ['"JetBrains Mono"', "ui-monospace", "SFMono-Regular", "Menlo", "Monaco", "Consolas", "monospace"],
       },
       boxShadow: {

@@ -12,11 +12,17 @@
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <script>
       try {
-        var t = localStorage.getItem('SeherSaathi_theme') || localStorage.getItem('SeherSaathi_theme');
+        var t = localStorage.getItem('SeherSaathi_theme');
         var prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-        var theme = (t === 'dark' || t === 'light') ? t : (prefersDark ? 'dark' : 'light');
-        document.documentElement.classList.toggle('dark', theme === 'dark');
-        document.documentElement.classList.toggle('light', theme === 'light');
+        var theme = (t === 'dark' || t === 'light' || t === 'edge') ? t : (prefersDark ? 'dark' : 'light');
+        document.documentElement.classList.remove('dark', 'light', 'theme-edge');
+        if (theme === 'dark') {
+          document.documentElement.classList.add('dark');
+        } else if (theme === 'edge') {
+          document.documentElement.classList.add('dark', 'theme-edge');
+        } else {
+          document.documentElement.classList.add('light');
+        }
       } catch(e) {}
     </script>
     <link href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css" rel="stylesheet" />

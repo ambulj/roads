@@ -9,12 +9,8 @@ import {
   ChevronLeft,
   ChevronRight,
   X,
-  Shield,
   Camera,
-  Cpu,
-  Layers,
-  Activity,
-  HardDrive
+  Cpu
 } from "lucide-react";
 import { useLanguage } from "../../context/LanguageContext";
 import { useAuth } from "../../context/AuthContext";
@@ -40,7 +36,7 @@ interface NavItem {
   route: string;
   tier: "edge" | "central";
   badge?: string | number | null;
-  badgeVariant?: "cyan" | "rose" | "amber" | "emerald" | "zinc";
+  badgeVariant?: "indigo" | "cyan" | "rose" | "amber" | "emerald" | "zinc";
 }
 
 export const SidebarNav: React.FC<SidebarNavProps> = ({
@@ -56,11 +52,11 @@ export const SidebarNav: React.FC<SidebarNavProps> = ({
   isBackendConnected,
 }) => {
   const { t } = useLanguage();
-  const { user, meta, hasAccessToRoute, getRoleBadgeLabel } = useAuth();
+  const { user, hasAccessToRoute } = useAuth();
   const isExpanded = !isCollapsed || isMobileOpen;
 
   const allMenuItems: NavItem[] = [
-    // ── Tier 1: On-Bus Edge Intelligence ──
+    // ── Tier 1: On-Bus Edge Perception ──
     {
       id: "fleet",
       label: t("nav.fleet", "Fleet Edge Nodes"),
@@ -68,7 +64,7 @@ export const SidebarNav: React.FC<SidebarNavProps> = ({
       route: "fleet",
       tier: "edge",
       badge: fleetCount > 0 ? `${fleetCount} Nodes` : "5 Nodes",
-      badgeVariant: "cyan"
+      badgeVariant: "indigo"
     },
     {
       id: "capture",
@@ -79,7 +75,7 @@ export const SidebarNav: React.FC<SidebarNavProps> = ({
       badge: "AIS-140",
       badgeVariant: "zinc"
     },
-    // ── Tier 2: Centralized Civic Platform ──
+    // ── Tier 2: Civic Command & Governance ──
     {
       id: "command",
       label: t("nav.command", "Command Center"),
@@ -119,7 +115,7 @@ export const SidebarNav: React.FC<SidebarNavProps> = ({
       route: "analytics",
       tier: user.role === "admin2" ? "edge" : "central",
       badge: user.role === "admin2" ? "RK3588" : "GTFS",
-      badgeVariant: "cyan"
+      badgeVariant: "indigo"
     }
   ];
 
@@ -133,13 +129,13 @@ export const SidebarNav: React.FC<SidebarNavProps> = ({
     if (isMobileOpen) onCloseMobile();
   };
 
-  const renderNavGroup = (title: string, subtitle: string, items: NavItem[]) => {
+  const renderNavGroup = (title: string, items: NavItem[]) => {
     if (items.length === 0) return null;
     return (
       <div className="mb-4">
         {isExpanded && (
           <div className="px-3 mb-1.5">
-            <div className="text-xs font-semibold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider">
+            <div className="text-[11px] font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider">
               {title}
             </div>
           </div>
@@ -156,25 +152,26 @@ export const SidebarNav: React.FC<SidebarNavProps> = ({
                 className={`
                   w-full min-h-[38px] flex items-center gap-3 px-3 py-2 text-xs transition-all text-left rounded-lg cursor-pointer
                   ${isActive 
-                    ? "bg-zinc-200 dark:bg-zinc-800 text-zinc-950 dark:text-zinc-50 font-semibold shadow-xs" 
-                    : "text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-850 hover:text-zinc-900 dark:hover:text-zinc-200 font-medium"
+                    ? "border-l-3 border-indigo-600 dark:border-indigo-400 bg-indigo-50/80 dark:bg-indigo-950/50 text-indigo-950 dark:text-indigo-100 font-semibold shadow-xs" 
+                    : "border-l-3 border-transparent text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800/60 hover:text-slate-900 dark:hover:text-slate-200 font-medium"
                   }
-                  ${!isExpanded ? "justify-center px-0" : ""}
+                  ${!isExpanded ? "justify-center px-0 border-l-0" : ""}
                 `}
               >
-                <Icon className={`w-4 h-4 shrink-0 ${isActive ? "text-zinc-900 dark:text-zinc-100" : "text-zinc-400 dark:text-zinc-500"}`} />
+                <Icon className={`w-4 h-4 shrink-0 ${isActive ? "text-indigo-700 dark:text-indigo-400" : "text-slate-400 dark:text-slate-500"}`} />
                 {isExpanded && (
                   <span className="flex-1 whitespace-nowrap overflow-hidden text-ellipsis">{item.label}</span>
                 )}
                 {isExpanded && item.badge && (
                   <span
                     className={`
-                      text-xs px-2 py-0.5 rounded-full font-medium shrink-0
+                      text-xs px-2 py-0.5 rounded-full font-semibold tabular-nums shrink-0
                       ${item.badgeVariant === "rose" ? "bg-rose-100 dark:bg-rose-950/80 text-rose-700 dark:text-rose-300" : ""}
                       ${item.badgeVariant === "amber" ? "bg-amber-100 dark:bg-amber-950/80 text-amber-700 dark:text-amber-300" : ""}
-                      ${item.badgeVariant === "cyan" ? "bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300" : ""}
+                      ${item.badgeVariant === "indigo" ? "bg-indigo-100 dark:bg-indigo-950/80 text-indigo-700 dark:text-indigo-300" : ""}
+                      ${item.badgeVariant === "cyan" ? "bg-cyan-100 dark:bg-cyan-950/80 text-cyan-700 dark:text-cyan-300" : ""}
                       ${item.badgeVariant === "emerald" ? "bg-emerald-100 dark:bg-emerald-950/80 text-emerald-700 dark:text-emerald-300" : ""}
-                      ${item.badgeVariant === "zinc" || !item.badgeVariant ? "bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400" : ""}
+                      ${item.badgeVariant === "zinc" || !item.badgeVariant ? "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400" : ""}
                     `}
                   >
                     {item.badge}
@@ -202,43 +199,43 @@ export const SidebarNav: React.FC<SidebarNavProps> = ({
       <aside
         className={`
           fixed md:static top-0 bottom-0 left-0 z-50
-          flex flex-col bg-zinc-50 dark:bg-zinc-900 text-zinc-700 dark:text-zinc-300
-          border-r border-zinc-200 dark:border-zinc-800
+          flex flex-col bg-slate-50 dark:bg-slate-900 text-slate-700 dark:text-slate-300
+          border-r border-slate-200 dark:border-slate-800
           transition-all duration-150 ease-in-out select-none
           ${isMobileOpen ? "translate-x-0 w-64" : "-translate-x-full md:translate-x-0"}
           ${isCollapsed && !isMobileOpen ? "md:w-[60px]" : "md:w-64"}
         `}
       >
         {/* Mobile-only Top Close Bar */}
-        <div className="md:hidden h-12 px-4 border-b border-zinc-200 dark:border-zinc-800 flex items-center justify-between bg-zinc-100 dark:bg-zinc-950">
+        <div className="md:hidden h-12 px-4 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between bg-slate-100 dark:bg-slate-950">
           <div className="flex items-center gap-2">
-            <div className="w-6 h-6 rounded bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-950 flex items-center justify-center font-bold text-xs tracking-wider">
+            <div className="w-6 h-6 rounded bg-indigo-600 dark:bg-indigo-500 text-white flex items-center justify-center font-bold text-xs tracking-wider">
               RS
             </div>
-            <span className="font-bold text-xs font-mono text-zinc-900 dark:text-zinc-100 uppercase tracking-wider">RoadSaathi</span>
+            <span className="font-bold text-xs font-mono text-slate-900 dark:text-slate-100 uppercase tracking-wider">RoadSaathi</span>
           </div>
-          <button onClick={onCloseMobile} className="p-1 rounded text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100">
+          <button onClick={onCloseMobile} className="p-1 rounded text-slate-500 hover:text-slate-900 dark:hover:text-slate-100">
             <X className="w-5 h-5" />
           </button>
         </div>
 
         {/* Navigation Sections */}
         <div className="flex-1 overflow-y-auto py-3 px-2 space-y-1">
-          {renderNavGroup("Onboard Edge", "Onboard", edgeItems)}
-          {renderNavGroup("Central Platform", "ICCC", centralItems)}
+          {renderNavGroup("Tier 1: On-Bus Edge Perception", edgeItems)}
+          {renderNavGroup("Tier 2: Civic Command & Governance", centralItems)}
         </div>
 
         {/* Bottom Collapse Toggle & System Status */}
-        <div className="p-2.5 border-t border-zinc-200 dark:border-zinc-800 bg-zinc-100/40 dark:bg-zinc-950/40 text-xs flex items-center justify-between">
+        <div className="p-2.5 border-t border-slate-200 dark:border-slate-800 bg-slate-100/40 dark:bg-slate-950/40 text-xs flex items-center justify-between">
           {isExpanded ? (
             <>
               <div className="flex items-center gap-2">
                 <span className={`w-2 h-2 rounded-full ${isBackendConnected ? "bg-emerald-500" : "bg-rose-500"}`}></span>
-                <span className="text-zinc-500 font-medium">{isBackendConnected ? "Connected" : "Disconnected"}</span>
+                <span className="text-slate-500 font-medium">{isBackendConnected ? "Connected" : "Disconnected"}</span>
               </div>
               <button
                 onClick={onToggleCollapse}
-                className="p-1 text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 rounded cursor-pointer"
+                className="p-1 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 rounded cursor-pointer"
                 title="Collapse sidebar"
               >
                 <ChevronLeft className="w-4 h-4" />
@@ -247,7 +244,7 @@ export const SidebarNav: React.FC<SidebarNavProps> = ({
           ) : (
             <button
               onClick={onToggleCollapse}
-              className="w-full flex justify-center py-1 text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 rounded cursor-pointer"
+              className="w-full flex justify-center py-1 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 rounded cursor-pointer"
               title="Expand sidebar"
             >
               <ChevronRight className="w-4 h-4" />
