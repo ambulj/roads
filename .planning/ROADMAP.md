@@ -18,7 +18,7 @@ RoadSaathi v3.2 streamlines the entire civic cockpit into a sleek, decluttered, 
 - [x] **Phase 7: Municipal Dashboard, Work Orders & SLA Action Console Polish** - Clean high-contrast KPI metric cards, modern data tables, contractor escrow status pills, and intuitive multi-pass concurrence payment clearance workflow.
 
 ### Milestone v3.2: Sleek Minimalist Civic Cockpit & UI De-cluttering (Active)
-- [ ] **Phase 8: Sidebar Workspace Consolidation & Global Navigation** - Consolidate 16+ menu items into 5 core workspaces (Command Map, Work Orders, Analytics, Fleet Edge, Governance) with sub-navigation pills and clean breadcrumbs.
+- [x] **Phase 8: Sidebar Workspace Consolidation & Global Navigation** - Consolidate 16+ menu items into 5 core workspaces (Command Map, Work Orders, Analytics, Fleet Edge, Governance) with sub-navigation pills and clean breadcrumbs.
 - [ ] **Phase 9: Map HUD & Command Center Viewport Optimization** - Streamline top dock into a sleek floating micro-bar, collapse secondary HUDs into discreet bottom trays, and expand map canvas to 100% viewport.
 - [ ] **Phase 10: Tabbed Executive Analytics & Clean Backlog Table Redesign** - Group analytics into a 4-tab segmented switcher, clean up work order backlog with progressive disclosure slide-overs, and enforce unified minimal hierarchy.
 
@@ -37,7 +37,8 @@ RoadSaathi v3.2 streamlines the entire civic cockpit into a sleek, decluttered, 
   3. Responsive sidebar collapse functions cleanly with intuitive tooltips and active indicator pills.
 
 **Plans**: 1 plan
-- [ ] 08-01: Sidebar workspace consolidation, sub-tab navigation, and breadcrumb layout polish.
+**Wave 1**
+- [x] 08-01: Sidebar workspace consolidation, sub-tab navigation, and breadcrumb layout polish.
 
 ---
 
@@ -85,7 +86,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 | 5. Design Tokens & Minimalist Government Portal Theme | 1/1 | Complete | 2026-10-07 |
 | 6. WebGIS Map HUD & Interactive Inspection Overlays | 1/1 | Complete | 2026-10-07 |
 | 7. Municipal Dashboard, Work Orders & SLA Action Console Polish | 1/1 | Complete | 2026-10-07 |
-| 8. Sidebar Workspace Consolidation & Global Navigation | 0/1 | Ready to start | - |
+| 8. Sidebar Workspace Consolidation & Global Navigation | 1/1 | Complete | 2026-10-07 |
 | 9. Map HUD & Command Center Viewport Optimization | 0/1 | Ready to start | - |
 | 10. Tabbed Executive Analytics & Clean Backlog Table Redesign | 0/1 | Ready to start | - |
 

@@ -28,7 +28,7 @@
 ## Active Milestone v3.2: Sleek Minimalist Civic Cockpit & UI De-cluttering
 
 ### 8. Sidebar Workspace Consolidation & Global Navigation (NAV-UI)
-- [ ] **DECLUTTER-01**: Consolidate the 16+ menu items into 5 core intuitive workspaces:
+- [x] **DECLUTTER-01**: Consolidate the 16+ menu items into 5 core intuitive workspaces:
   1. 🗺️ **Command Center & Map** (`command`)
   2. 📋 **Work Orders & SLA** (`work-orders`, integrating Contractors)
   3. 📊 **Safety & Traffic Analytics** (`analytics`, integrating Incidents, Pedestrian, Darkspots, Simulation)
@@ -60,14 +60,14 @@
 | UI-01 | v3.1 | Phase 5 | Complete |
 | UI-02 | v3.1 | Phase 6 | Complete |
 | UI-03 | v3.1 | Phase 7 | Complete |
-| DECLUTTER-01 | v3.2 | Phase 8 | Pending |
+| DECLUTTER-01 | v3.2 | Phase 8 | Complete |
 | DECLUTTER-02 | v3.2 | Phase 9 | Pending |
 | DECLUTTER-03 | v3.2 | Phase 10 | Pending |
 
 **Coverage:**
 - Total Requirements: 18
-- Completed: 15 / 18 (83.3%)
-- Active in Milestone v3.2: 3
+- Completed: 16 / 18 (88.9%)
+- Active in Milestone v3.2: 2
 
 ---
 *Requirements updated: 2026-10-07 for Milestone v3.2*
