@@ -1,21 +1,32 @@
 """
-database.py — Portable database connection with automatic SQLite fallback.
+database.py — Portable database connection with dual-engine architecture and automatic fallback.
 
-Priority:
-  1. DATABASE_URL env var (if set to a real postgresql:// URL → use PostgreSQL)
-  2. DATABASE_URL == "sqlite" or blank → use bundled SQLite file
-  3. Any connection error on PostgreSQL → auto-fallback to SQLite
+Dual Engine Architecture:
+  1. Production: PostgreSQL 16 + PostGIS with asyncpg and PgBouncer-safe connection pooling
+  2. Local / Testing: SQLite WAL mode with aiosqlite for zero-dependency high concurrency
 
-The SQLite file path is always resolved relative to this file, so the project
-can be moved to any directory without breaking anything.
+Exports:
+  - engine: Synchronous SQLAlchemy Engine (backward compatibility)
+  - async_engine: Asynchronous SQLAlchemy Engine
+  - SessionLocal: Synchronous Session maker
+  - AsyncSessionLocal: Asynchronous AsyncSession maker
+  - get_db: FastAPI dependency yielding synchronous Session
+  - get_async_db: FastAPI dependency yielding AsyncSession
+  - init_db: Schema initialization and verified seed loader
 """
 import os
+import shutil
 from dotenv import load_dotenv
 from sqlalchemy import create_engine, text, event
+from sqlalchemy.engine import make_url
 from sqlalchemy.orm import sessionmaker, Session
-from app.models.db_models import Base, DBDistressCluster, DBTrafficIncident, DBFleetNode, DBRawIngest
+from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
 
-# ── Load .env from the backend root (two levels up from this file) ──────────
+from app.models.db_models import (
+    Base, DBDistressCluster, DBTrafficIncident, DBFleetNode, DBRawIngest
+)
+
+# ── Load .env from backend root ──────────────────────────────────────────────
 _BACKEND_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 _ENV_PATH = os.path.join(_BACKEND_DIR, ".env")
 if os.path.exists(_ENV_PATH):
@@ -24,7 +35,6 @@ if os.path.exists(_ENV_PATH):
 # ── SQLite path: always relative to backend directory ───────────────────────
 _SQLITE_FILE = os.path.join(_BACKEND_DIR, "roadsaathi.db")
 if not os.path.exists(_SQLITE_FILE):
-    import shutil
     for legacy_name in ["sehersaathi.db", "SheherSaathi.db", "roadsaarthi.db", "RoadSaathi.db"]:
         legacy_path = os.path.join(_BACKEND_DIR, legacy_name)
         if os.path.exists(legacy_path):
@@ -33,58 +43,192 @@ if not os.path.exists(_SQLITE_FILE):
                 break
             except Exception:
                 pass
-_SQLITE_URL  = f"sqlite:///{_SQLITE_FILE}"
 
-# ── Determine which database to use ─────────────────────────────────────────
+_SQLITE_URL = f"sqlite:///{_SQLITE_FILE}"
+_SQLITE_ASYNC_URL = f"sqlite+aiosqlite:///{_SQLITE_FILE}"
+
+# ── Protocol Normalization ───────────────────────────────────────────────────
+def normalize_database_url(url: str | None = None) -> str:
+    """Normalize database connection string into an async-compatible URL."""
+    if not url or not url.strip() or url.strip().lower() in ("sqlite", "sqlite3"):
+        return _SQLITE_ASYNC_URL
+
+    cleaned = url.strip()
+    if cleaned.startswith("sqlite+aiosqlite:///"):
+        return cleaned
+    if cleaned.startswith("sqlite:///"):
+        return cleaned.replace("sqlite:///", "sqlite+aiosqlite:///", 1)
+    if cleaned.startswith("postgresql+asyncpg://"):
+        return cleaned
+    if cleaned.startswith("postgres://"):
+        return cleaned.replace("postgres://", "postgresql+asyncpg://", 1)
+    if cleaned.startswith("postgresql://"):
+        return cleaned.replace("postgresql://", "postgresql+asyncpg://", 1)
+    return cleaned
+
+
+def to_sync_database_url(url: str) -> str:
+    """Convert an async database URL into a synchronous driver URL."""
+    if url.startswith("sqlite+aiosqlite:///"):
+        return url.replace("sqlite+aiosqlite:///", "sqlite:///", 1)
+    if url.startswith("postgresql+asyncpg://"):
+        return url.replace("postgresql+asyncpg://", "postgresql://", 1)
+    return url
+
+
+def _mask_url_for_logging(url: str) -> str:
+    """Return masked database connection string to avoid leaking credentials (T-01-01)."""
+    try:
+        return make_url(url).render_as_string(hide_password=True)
+    except Exception:
+        return "<masked_database_url>"
+
+
+# ── Engine Factory ───────────────────────────────────────────────────────────
+POSTGRES_CONNECT_ARGS = {
+    "statement_cache_size": 0,
+    "prepared_statement_cache_size": 0,
+    "command_timeout": 15,
+}
+
+
+def _apply_sqlite_pragmas(eng_sync):
+    """Register PRAGMAs for SQLite WAL mode, busy timeout, and foreign keys."""
+    @event.listens_for(eng_sync, "connect")
+    def set_sqlite_pragmas(dbapi_connection, connection_record):
+        cursor = dbapi_connection.cursor()
+        try:
+            cursor.execute("PRAGMA journal_mode=WAL;")
+            cursor.execute("PRAGMA synchronous=NORMAL;")
+            cursor.execute("PRAGMA busy_timeout=15000;")
+            cursor.execute("PRAGMA foreign_keys=ON;")
+        except Exception:
+            pass
+        finally:
+            cursor.close()
+
+
+def create_sqlite_async_engine(url_or_path: str, echo: bool = False):
+    """Create async SQLite engine with WAL pragmas."""
+    url = normalize_database_url(url_or_path) if not url_or_path.startswith("sqlite+aiosqlite:///") else url_or_path
+    eng = create_async_engine(
+        url,
+        connect_args={"check_same_thread": False, "timeout": 30},
+        echo=echo,
+    )
+    _apply_sqlite_pragmas(eng.sync_engine)
+    return eng
+
+
+def create_sqlite_sync_engine(url_or_path: str, echo: bool = False):
+    """Create sync SQLite engine with WAL pragmas."""
+    url = to_sync_database_url(normalize_database_url(url_or_path)) if "aiosqlite" in url_or_path or not url_or_path.startswith("sqlite:///") else url_or_path
+    eng = create_engine(
+        url,
+        connect_args={"check_same_thread": False, "timeout": 30},
+        echo=echo,
+    )
+    _apply_sqlite_pragmas(eng)
+    return eng
+
+
+def create_postgres_async_engine(url: str, echo: bool = False):
+    """Create async PostgreSQL engine configured for PgBouncer transaction-mode pooling."""
+    return create_async_engine(
+        url,
+        connect_args=POSTGRES_CONNECT_ARGS,
+        pool_size=20,
+        max_overflow=10,
+        pool_recycle=300,
+        pool_pre_ping=True,
+        pool_timeout=10,
+        echo=echo,
+    )
+
+
+def create_postgres_sync_engine(url: str, echo: bool = False):
+    """Create sync PostgreSQL engine with pre-ping and recycling."""
+    sync_url = to_sync_database_url(url)
+    return create_engine(
+        sync_url,
+        pool_size=20,
+        max_overflow=10,
+        pool_recycle=300,
+        pool_pre_ping=True,
+        pool_timeout=10,
+        echo=echo,
+    )
+
+
+def create_async_db_engine(url: str, echo: bool = False):
+    """Unified factory for async engines based on normalized URL."""
+    norm = normalize_database_url(url)
+    if norm.startswith("sqlite"):
+        return create_sqlite_async_engine(norm, echo=echo)
+    return create_postgres_async_engine(norm, echo=echo)
+
+
+def create_sync_db_engine(url: str, echo: bool = False):
+    """Unified factory for sync engines based on normalized URL."""
+    norm = normalize_database_url(url)
+    if norm.startswith("sqlite"):
+        return create_sqlite_sync_engine(norm, echo=echo)
+    return create_postgres_sync_engine(norm, echo=echo)
+
+
+# ── Active Database Initialization with Safe Fallback ────────────────────────
 _raw_db_url = os.getenv("DATABASE_URL", "sqlite").strip()
+DATABASE_URL = normalize_database_url(_raw_db_url)
+SYNC_DATABASE_URL = to_sync_database_url(DATABASE_URL)
 
-# Treat empty string, "sqlite", or anything that isn't a real URL as SQLite
-_use_sqlite = (not _raw_db_url or _raw_db_url.lower() in ("sqlite", "sqlite3", ""))
-
-if _use_sqlite:
-    DATABASE_URL = _SQLITE_URL
+if DATABASE_URL.startswith("sqlite"):
     print(f"[DATABASE] Using SQLite: {_SQLITE_FILE}")
+    engine = create_sqlite_sync_engine(SYNC_DATABASE_URL)
+    async_engine = create_sqlite_async_engine(DATABASE_URL)
 else:
-    DATABASE_URL = _raw_db_url
-    print(f"[DATABASE] Attempting connection to: {DATABASE_URL}")
-
-# ── Create engine with fallback ──────────────────────────────────────────────
-def _make_engine(url: str):
-    if url.startswith("sqlite"):
-        eng = create_engine(url, connect_args={"check_same_thread": False, "timeout": 30})
-        @event.listens_for(eng, "connect")
-        def set_sqlite_pragma(dbapi_connection, connection_record):
-            cursor = dbapi_connection.cursor()
-            try:
-                cursor.execute("PRAGMA journal_mode=WAL")
-                cursor.execute("PRAGMA synchronous=NORMAL")
-                cursor.execute("PRAGMA busy_timeout=15000")
-            except Exception:
-                pass
-            finally:
-                cursor.close()
-        return eng
-    return create_engine(url, pool_pre_ping=True, pool_recycle=300)
-
-try:
-    engine = _make_engine(DATABASE_URL)
-    with engine.connect() as conn:
-        conn.execute(text("SELECT 1"))
-    print(f"[DATABASE] Connection established.")
-except Exception as err:
-    print(f"[DATABASE] Connection failed ({err}). Falling back to SQLite: {_SQLITE_FILE}")
-    DATABASE_URL = _SQLITE_URL
-    engine = _make_engine(DATABASE_URL)
+    masked_url = _mask_url_for_logging(DATABASE_URL)
+    print(f"[DATABASE] Attempting connection to: {masked_url}")
+    try:
+        engine = create_postgres_sync_engine(SYNC_DATABASE_URL)
+        with engine.connect() as conn:
+            conn.execute(text("SELECT 1"))
+        async_engine = create_postgres_async_engine(DATABASE_URL)
+        print(f"[DATABASE] Connection established.")
+    except Exception as err:
+        print(f"[DATABASE] Connection failed ({err}). Falling back to SQLite: {_SQLITE_FILE}")
+        DATABASE_URL = _SQLITE_ASYNC_URL
+        SYNC_DATABASE_URL = _SQLITE_URL
+        engine = create_sqlite_sync_engine(SYNC_DATABASE_URL)
+        async_engine = create_sqlite_async_engine(DATABASE_URL)
 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
+AsyncSessionLocal = async_sessionmaker(
+    bind=async_engine,
+    autocommit=False,
+    autoflush=False,
+    expire_on_commit=False,
+    class_=AsyncSession,
+)
+
+
 def get_db():
-    """FastAPI dependency: yields a database session and closes it after use."""
+    """FastAPI dependency: yields a synchronous database session and closes it after use."""
     db = SessionLocal()
     try:
         yield db
     finally:
         db.close()
+
+
+async def get_async_db():
+    """FastAPI async dependency: yields an async database session and closes it after use."""
+    async with AsyncSessionLocal() as session:
+        try:
+            yield session
+        finally:
+            await session.close()
+
 
 def init_db():
     """Initialize schema and seed initial verified Chennai data if tables are empty."""
@@ -95,7 +239,7 @@ def init_db():
         cursor = conn.cursor()
         cursor.execute("PRAGMA table_info(distress_clusters)")
         existing_cols = {row[1] for row in cursor.fetchall()}
-        for col in ("before_image_url", "after_image_url", "field_notes", "detecting_camera_position"):
+        for col in ("before_image_url", "after_image_url", "field_notes", "detecting_camera_position", "geom"):
             if col not in existing_cols and existing_cols:
                 cursor.execute(f"ALTER TABLE distress_clusters ADD COLUMN {col} TEXT")
         if "detecting_channel" not in existing_cols and existing_cols:
@@ -119,7 +263,8 @@ def init_db():
             ("reviewed_by", "TEXT"),
             ("reviewed_at", "TEXT"),
             ("rejection_reason", "TEXT"),
-            ("dispatch_status", "TEXT")
+            ("dispatch_status", "TEXT"),
+            ("geom", "TEXT")
         ):
             if col not in existing_inc_cols and existing_inc_cols:
                 cursor.execute(f"ALTER TABLE traffic_incidents ADD COLUMN {col} {col_type}")
@@ -130,6 +275,8 @@ def init_db():
             cursor.execute("ALTER TABLE raw_ingests ADD COLUMN camera_position TEXT DEFAULT 'FRONT_WINDSHIELD'")
         if "channel" not in existing_raw_cols and existing_raw_cols:
             cursor.execute("ALTER TABLE raw_ingests ADD COLUMN channel INTEGER DEFAULT 1")
+        if "geom" not in existing_raw_cols and existing_raw_cols:
+            cursor.execute("ALTER TABLE raw_ingests ADD COLUMN geom TEXT")
 
         cursor.execute("PRAGMA table_info(fleet_nodes)")
         existing_fn_cols = {row[1] for row in cursor.fetchall()}
@@ -171,7 +318,6 @@ def init_db():
                 db.add(DBFleetNode(**bus_dict))
 
         # ── Seed traffic incidents ────────────────────────────────────────────
-        # ── Seed traffic incidents: Minimal high-value baseline set ───────────
         if db.query(DBTrafficIncident).filter(DBTrafficIncident.id == "inc-003").first() is None:
             initial_incidents = [
                 {
@@ -497,4 +643,3 @@ def init_db():
         print("[DATABASE] Database ready.")
     finally:
         db.close()
-

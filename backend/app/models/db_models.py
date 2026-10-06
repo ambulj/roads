@@ -1,7 +1,13 @@
-from sqlalchemy import Column, String, Integer, Float, Boolean, Text
+from sqlalchemy import Column, String, Integer, Float, Boolean, Text, Index
 from sqlalchemy.orm import declarative_base
+from geoalchemy2 import Geometry
 
 Base = declarative_base()
+
+SpatialPoint = Text().with_variant(
+    Geometry(geometry_type="POINT", srid=4326, spatial_index=True),
+    "postgresql"
+)
 
 class DBDistressCluster(Base):
     __tablename__ = "distress_clusters"
@@ -23,6 +29,7 @@ class DBDistressCluster(Base):
     status = Column(String(32), default="open", index=True)
     lat = Column(Float, nullable=False)
     lng = Column(Float, nullable=False)
+    geom = Column(SpatialPoint, nullable=True)
     before_image_url = Column(Text, nullable=True)
     after_image_url = Column(Text, nullable=True)
     field_notes = Column(Text, nullable=True)
@@ -30,6 +37,8 @@ class DBDistressCluster(Base):
     detecting_channel = Column(Integer, default=1)
     created_at = Column(String(64))
     updated_at = Column(String(64))
+
+Index('idx_distress_clusters_geom', DBDistressCluster.geom, postgresql_using='gist')
 
 class DBTrafficIncident(Base):
     __tablename__ = "traffic_incidents"
@@ -48,6 +57,7 @@ class DBTrafficIncident(Base):
     road_name = Column(String(255), nullable=False)
     lat = Column(Float, nullable=False)
     lng = Column(Float, nullable=False)
+    geom = Column(SpatialPoint, nullable=True)
     occurred_at = Column(String(64))
     status = Column(String(32), default="ACTIVE_ALERT", index=True)
     fine_amount_inr = Column(Float, nullable=True)
@@ -69,6 +79,8 @@ class DBTrafficIncident(Base):
     rejection_reason = Column(Text, nullable=True)
     dispatch_status = Column(String(32), default="UNASSIGNED") # UNASSIGNED, PCR_DISPATCHED, ECHALLAN_ISSUED
 
+Index('idx_traffic_incidents_geom', DBTrafficIncident.geom, postgresql_using='gist')
+
 class DBRawIngest(Base):
     __tablename__ = "raw_ingests"
 
@@ -81,9 +93,13 @@ class DBRawIngest(Base):
     vertical_g_force = Column(Float, default=1.0)
     lat = Column(Float, nullable=False)
     lng = Column(Float, nullable=False)
+    geom = Column(SpatialPoint, nullable=True)
     camera_position = Column(String(32), default="FRONT_WINDSHIELD")
     channel = Column(Integer, default=1)
     captured_at = Column(String(64))
+
+Index('idx_raw_ingests_geom', DBRawIngest.geom, postgresql_using='gist')
+Index('idx_raw_ingests_time_bus', DBRawIngest.captured_at, DBRawIngest.bus_id)
 
 class DBFleetNode(Base):
     __tablename__ = "fleet_nodes"
