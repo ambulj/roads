@@ -35,7 +35,7 @@
 
 ### 5. Modern Civic Design System & Theme Polish (CIVIC)
 
-- [ ] **UI-01**: Implement unified modern government portal design system with refined white/indigo & slate design tokens, crisp typography, WCAG AAA accessibility, and seamless dark/light mode switching.
+- [x] **UI-01**: Implement unified modern government portal design system with refined white/indigo & slate design tokens, crisp typography, WCAG AAA accessibility, and seamless dark/light mode switching.
 
 ### 6. WebGIS Map HUD & Inspection Controls (MAP-UI)
 
@@ -81,15 +81,15 @@
 | GIS-01 | v3.0 | Phase 4 | Complete |
 | GIS-02 | v3.0 | Phase 4 | Complete |
 | GIS-03 | v3.0 | Phase 4 | Complete |
-| UI-01 | v3.1 | Phase 5 | Pending |
+| UI-01 | v3.1 | Phase 5 | Complete |
 | UI-02 | v3.1 | Phase 6 | Pending |
 | UI-03 | v3.1 | Phase 7 | Pending |
 
 **Coverage:**
 - Total Requirements: 15
 - Mapped to Phases: 15
-- Completed: 12 / 15 (80%)
-- Active in Milestone v3.1: 3
+- Completed: 13 / 15 (86.7%)
+- Active in Milestone v3.1: 2
 
 ---
 *Requirements updated: 2026-10-06 for Milestone v3.1*

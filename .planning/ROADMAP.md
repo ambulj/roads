@@ -13,7 +13,7 @@ RoadSaathi v3.1 elevates the municipal user experience into a modern, high-contr
 - [x] **Phase 4: Explainable WebGIS & Live Presentation Visualizer** - Interactive RPI click-to-explain modal, live dashcam 30 FPS visualizer, and Origin-Destination desire lines (PS 26124).
 
 ### Milestone v3.1: Modern Civic Portal & UI/UX Polish (Active)
-- [ ] **Phase 5: Design Tokens & Minimalist Government Portal Theme** - Modern white/indigo civic theme with crisp contrast, unified design tokens, typography, and polished dark/light mode toggle.
+- [x] **Phase 5: Design Tokens & Minimalist Government Portal Theme** - Modern white/indigo civic theme with crisp contrast, unified design tokens, typography, and polished dark/light mode toggle.
 - [ ] **Phase 6: WebGIS Map HUD & Interactive Inspection Overlays** - Polished map control floating dock, clean cluster inspect popup cards, streamlined layer selector, and responsive sidebar split view.
 - [ ] **Phase 7: Municipal Dashboard, Work Orders & SLA Action Console Polish** - Clean high-contrast KPI metric cards, modern data tables, contractor escrow status pills, and intuitive multi-pass concurrence payment clearance workflow.
 
@@ -34,7 +34,8 @@ RoadSaathi v3.1 elevates the municipal user experience into a modern, high-contr
 **Plans**: 1 plan
 
 Plans:
-- [ ] 05-01: Civic design tokens, theme engine, and global navigation polish.
+**Wave 1**
+- [x] 05-01: Civic design tokens, theme engine, and global navigation polish.
 
 ---
 
@@ -83,8 +84,8 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7
 | 2. Edge NPU & Hardware Telematics Suite | 2/2 | Complete | 2026-10-06 |
 | 3. Contractor Financial Accountability & SLA Ledger | 2/2 | Complete | 2026-10-06 |
 | 4. Explainable WebGIS & Live Presentation Visualizer | 2/2 | Complete | 2026-10-06 |
-| 5. Design Tokens & Minimalist Government Portal Theme | 0/1 | Ready to start | - |
-| 6. WebGIS Map HUD & Interactive Inspection Overlays | 0/1 | Pending | - |
+| 5. Design Tokens & Minimalist Government Portal Theme | 1/1 | Complete | 2026-10-07 |
+| 6. WebGIS Map HUD & Interactive Inspection Overlays | 0/1 | Ready to start | - |
 | 7. Municipal Dashboard, Work Orders & SLA Action Console Polish | 0/1 | Pending | - |
 
 ---
