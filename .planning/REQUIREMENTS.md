@@ -19,9 +19,9 @@
 
 ### 3. Contractor Financial Accountability & SLA Ledger (LEDGER)
 
-- [ ] **LEDGER-01**: System calculates automated contractor debit penalties under IRC:SP:20 Clause 14 based on defect recurrence within the mandatory 36-month liability period.
-- [ ] **LEDGER-02**: Contractor SLA ledger displays cumulative debit accrual, escrow holdbacks, defect recurrence velocity, and repair turnaround countdowns.
-- [ ] **LEDGER-03**: Work order action console enforces multi-pass concurrence validation (minimum 3 independent bus passes + IMU confirmation) before releasing contractor repair payments.
+- [x] **LEDGER-01**: System calculates automated contractor debit penalties under IRC:SP:20 Clause 14 based on defect recurrence within the mandatory 36-month liability period.
+- [x] **LEDGER-02**: Contractor SLA ledger displays cumulative debit accrual, escrow holdbacks, defect recurrence velocity, and repair turnaround countdowns.
+- [x] **LEDGER-03**: Work order action console enforces multi-pass concurrence validation (minimum 3 independent bus passes + IMU confirmation) before releasing contractor repair payments.
 
 ### 4. Explainable WebGIS & Live Visualizer (GIS)
 
@@ -59,9 +59,9 @@
 | EDGE-01 | Phase 2 | Complete |
 | EDGE-02 | Phase 2 | Complete |
 | EDGE-03 | Phase 2 | Complete |
-| LEDGER-01 | Phase 3 | Pending |
-| LEDGER-02 | Phase 3 | Pending |
-| LEDGER-03 | Phase 3 | Pending |
+| LEDGER-01 | Phase 3 | Complete |
+| LEDGER-02 | Phase 3 | Complete |
+| LEDGER-03 | Phase 3 | Complete |
 | GIS-01 | Phase 4 | Pending |
 | GIS-02 | Phase 4 | Pending |
 | GIS-03 | Phase 4 | Pending |
