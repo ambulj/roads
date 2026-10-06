@@ -61,8 +61,47 @@ export const WorkOrders: React.FC<WorkOrdersProps> = ({ clusters, onUpdateStatus
   const [consoleTab, setConsoleTab] = useState<WorkOrderConsoleTab>('cad_audit');
   const [isConsoleOpen, setIsConsoleOpen] = useState(false);
 
-  // Tab View
-  const [activeTab, setActiveTab] = useState<'cad' | 'kanban' | 'sla'>('cad');
+  // Tab View with Query Sync (e.g. ?tab=sla or ?tab=cad)
+  const getInitialTab = (): 'cad' | 'kanban' | 'sla' => {
+    if (typeof window !== 'undefined') {
+      const hash = window.location.hash;
+      const query = hash.split('?')[1];
+      if (query) {
+        const params = new URLSearchParams(query);
+        const t = params.get('tab');
+        if (t === 'sla' || t === 'ledger') return 'sla';
+        if (t === 'kanban') return 'kanban';
+        if (t === 'cad' || t === 'backlog') return 'cad';
+      }
+    }
+    return 'cad';
+  };
+
+  const [activeTab, setActiveTab] = useState<'cad' | 'kanban' | 'sla'>(getInitialTab);
+
+  const handleTabChange = (tab: 'cad' | 'kanban' | 'sla') => {
+    setActiveTab(tab);
+    if (typeof window !== 'undefined') {
+      const [base] = window.location.hash.split('?');
+      window.location.hash = `${base || '#/work-orders'}?tab=${tab}`;
+    }
+  };
+
+  useEffect(() => {
+    const handleHashChange = () => {
+      const hash = window.location.hash;
+      const query = hash.split('?')[1];
+      if (query) {
+        const params = new URLSearchParams(query);
+        const t = params.get('tab');
+        if (t === 'sla' || t === 'ledger') setActiveTab('sla');
+        else if (t === 'kanban') setActiveTab('kanban');
+        else if (t === 'cad' || t === 'backlog') setActiveTab('cad');
+      }
+    };
+    window.addEventListener('hashchange', handleHashChange);
+    return () => window.removeEventListener('hashchange', handleHashChange);
+  }, []);
 
   // Search, Filter Chips & Sorting States
   const [search, setSearch] = useState('');
@@ -288,38 +327,38 @@ export const WorkOrders: React.FC<WorkOrdersProps> = ({ clusters, onUpdateStatus
           </div>
 
           <div className="flex items-center gap-2 shrink-0 self-start sm:self-auto flex-wrap">
-            <div className="flex bg-white dark:bg-zinc-900 p-1 rounded-lg border border-zinc-200 dark:border-zinc-800 text-xs font-semibold">
+            <div className="flex items-center gap-1.5 p-1 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl shadow-xs">
               <button
-                onClick={() => setActiveTab('cad')}
-                className={`px-3 py-1.5 rounded-md transition cursor-pointer ${
+                onClick={() => handleTabChange('cad')}
+                className={`px-3.5 py-1.5 rounded-lg text-xs transition-all cursor-pointer ${
                   activeTab === 'cad'
-                    ? 'bg-blue-700 text-white shadow-xs font-bold'
-                    : 'text-zinc-600 dark:text-zinc-300 hover:text-zinc-900 dark:hover:text-white'
+                    ? 'font-semibold bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800/80 shadow-xs'
+                    : 'font-medium text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800/60 border border-transparent'
                 }`}
               >
-                CAD Backlog Table
+                CAD Work Orders Backlog
               </button>
               <button
-                onClick={() => setActiveTab('kanban')}
-                className={`px-3 py-1.5 rounded-md transition flex items-center gap-1.5 cursor-pointer ${
+                onClick={() => handleTabChange('kanban')}
+                className={`px-3.5 py-1.5 rounded-lg text-xs transition-all flex items-center gap-1.5 cursor-pointer ${
                   activeTab === 'kanban'
-                    ? 'bg-blue-700 text-white shadow-xs font-bold'
-                    : 'text-zinc-600 dark:text-zinc-300 hover:text-zinc-900 dark:hover:text-white'
+                    ? 'font-semibold bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800/80 shadow-xs'
+                    : 'font-medium text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800/60 border border-transparent'
                 }`}
               >
                 <span>Kanban Board</span>
-                <span className="w-2 h-2 rounded-full bg-emerald-500" />
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
               </button>
               <button
-                onClick={() => setActiveTab('sla')}
-                className={`px-3 py-1.5 rounded-md transition flex items-center gap-1.5 cursor-pointer ${
+                onClick={() => handleTabChange('sla')}
+                className={`px-3.5 py-1.5 rounded-lg text-xs transition-all flex items-center gap-1.5 cursor-pointer ${
                   activeTab === 'sla'
-                    ? 'bg-blue-700 text-white shadow-xs font-bold'
-                    : 'text-zinc-600 dark:text-zinc-300 hover:text-zinc-900 dark:hover:text-white'
+                    ? 'font-semibold bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800/80 shadow-xs'
+                    : 'font-medium text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800/60 border border-transparent'
                 }`}
               >
-                <span>SLA &amp; Escrow Ledger</span>
-                <span className="w-2 h-2 rounded-full bg-amber-500" />
+                <span>Contractor Financial SLA Ledger</span>
+                <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
               </button>
             </div>
 

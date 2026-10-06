@@ -3,14 +3,12 @@ import {
   LayoutDashboard,
   Bus,
   Compass,
-  AlertTriangle,
   Wrench,
   ChartColumn,
   ChevronLeft,
   ChevronRight,
   X,
-  Camera,
-  Cpu
+  Cpu,
 } from "lucide-react";
 import { useLanguage } from "../../context/LanguageContext";
 import { useAuth } from "../../context/AuthContext";
@@ -26,7 +24,7 @@ interface SidebarNavProps {
   fleetCount: number;
   clustersCount: number;
   isBackendConnected: boolean;
-  onTriggerDedup: () => void;
+  onTriggerDedup?: () => void;
 }
 
 interface NavItem {
@@ -34,9 +32,9 @@ interface NavItem {
   label: string;
   icon: React.ElementType;
   route: string;
-  tier: "edge" | "central";
   badge?: string | number | null;
   badgeVariant?: "indigo" | "cyan" | "rose" | "amber" | "emerald" | "zinc";
+  pulseDot?: boolean;
 }
 
 export const SidebarNav: React.FC<SidebarNavProps> = ({
@@ -55,134 +53,55 @@ export const SidebarNav: React.FC<SidebarNavProps> = ({
   const { user, hasAccessToRoute } = useAuth();
   const isExpanded = !isCollapsed || isMobileOpen;
 
+  // ── 5 Core High-Cohesion Municipal Workspaces ──
   const allMenuItems: NavItem[] = [
-    // ── Tier 1: On-Bus Edge Perception ──
-    {
-      id: "fleet",
-      label: t("nav.fleet", "Fleet Edge Nodes"),
-      icon: Bus,
-      route: "fleet",
-      tier: "edge",
-      badge: fleetCount > 0 ? `${fleetCount} Nodes` : "5 Nodes",
-      badgeVariant: "indigo"
-    },
-    {
-      id: "capture",
-      label: t("nav.capture", "Dashcam Ingest"),
-      icon: Camera,
-      route: "capture",
-      tier: "edge",
-      badge: "AIS-140",
-      badgeVariant: "zinc"
-    },
-    // ── Tier 2: Civic Command & Governance ──
     {
       id: "command",
-      label: t("nav.command", "Command Center"),
+      label: t("nav.command", "Command Center & Map"),
       icon: LayoutDashboard,
       route: "command",
-      tier: "central"
-    },
-    {
-      id: "incidents",
-      label: t("nav.incidents", "Incidents & ANPR"),
-      icon: AlertTriangle,
-      route: "incidents",
-      tier: "central",
-      badge: incidentsCount > 0 ? incidentsCount : "7",
-      badgeVariant: "rose"
+      pulseDot: true,
     },
     {
       id: "work-orders",
       label: t("nav.workOrders", "Work Orders & SLA"),
       icon: Wrench,
       route: "work-orders",
-      tier: "central",
       badge: clustersCount > 0 ? clustersCount : "8",
-      badgeVariant: "amber"
-    },
-    {
-      id: "memory",
-      label: t("nav.memory", "Road Intelligence"),
-      icon: Compass,
-      route: "memory",
-      tier: "central"
+      badgeVariant: "amber",
     },
     {
       id: "analytics",
-      label: user.role === "admin2" ? "Edge AI Analytics" : t("nav.analytics", "Transit Analytics"),
+      label: user.role === "admin2" ? "Edge AI Analytics" : t("nav.analytics", "Safety & Traffic Analytics"),
       icon: user.role === "admin2" ? Cpu : ChartColumn,
       route: "analytics",
-      tier: user.role === "admin2" ? "edge" : "central",
-      badge: user.role === "admin2" ? "RK3588" : "GTFS",
-      badgeVariant: "indigo"
-    }
+      badge: user.role === "admin2" ? "RK3588" : (incidentsCount > 0 ? incidentsCount : "7"),
+      badgeVariant: "rose",
+    },
+    {
+      id: "fleet",
+      label: t("nav.fleet", "Fleet Perception & Edge"),
+      icon: Bus,
+      route: "fleet",
+      badge: fleetCount > 0 ? `${fleetCount} Nodes` : "5 Nodes",
+      badgeVariant: "indigo",
+    },
+    {
+      id: "memory",
+      label: t("nav.memory", "Governance & Memory"),
+      icon: Compass,
+      route: "memory",
+      badge: "MoHUA",
+      badgeVariant: "zinc",
+    },
   ];
 
   // Filter items authorized for active persona
   const menuItems = allMenuItems.filter((item) => hasAccessToRoute(item.route));
-  const edgeItems = menuItems.filter((item) => item.tier === "edge");
-  const centralItems = menuItems.filter((item) => item.tier === "central");
 
   const handleClick = (route: string) => {
     onNavigate(route);
     if (isMobileOpen) onCloseMobile();
-  };
-
-  const renderNavGroup = (title: string, items: NavItem[]) => {
-    if (items.length === 0) return null;
-    return (
-      <div className="mb-4">
-        {isExpanded && (
-          <div className="px-3 mb-1.5">
-            <div className="text-[11px] font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider">
-              {title}
-            </div>
-          </div>
-        )}
-        <div className="space-y-1">
-          {items.map((item) => {
-            const Icon = item.icon;
-            const isActive = currentRoute === item.route;
-            return (
-              <button
-                key={item.id}
-                onClick={() => handleClick(item.route)}
-                title={!isExpanded ? item.label : undefined}
-                className={`
-                  w-full min-h-[38px] flex items-center gap-3 px-3 py-2 text-xs transition-all text-left rounded-lg cursor-pointer
-                  ${isActive 
-                    ? "border-l-3 border-indigo-600 dark:border-indigo-400 bg-indigo-50/80 dark:bg-indigo-950/50 text-indigo-950 dark:text-indigo-100 font-semibold shadow-xs" 
-                    : "border-l-3 border-transparent text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800/60 hover:text-slate-900 dark:hover:text-slate-200 font-medium"
-                  }
-                  ${!isExpanded ? "justify-center px-0 border-l-0" : ""}
-                `}
-              >
-                <Icon className={`w-4 h-4 shrink-0 ${isActive ? "text-indigo-700 dark:text-indigo-400" : "text-slate-400 dark:text-slate-500"}`} />
-                {isExpanded && (
-                  <span className="flex-1 whitespace-nowrap overflow-hidden text-ellipsis">{item.label}</span>
-                )}
-                {isExpanded && item.badge && (
-                  <span
-                    className={`
-                      text-xs px-2 py-0.5 rounded-full font-semibold tabular-nums shrink-0
-                      ${item.badgeVariant === "rose" ? "bg-rose-100 dark:bg-rose-950/80 text-rose-700 dark:text-rose-300" : ""}
-                      ${item.badgeVariant === "amber" ? "bg-amber-100 dark:bg-amber-950/80 text-amber-700 dark:text-amber-300" : ""}
-                      ${item.badgeVariant === "indigo" ? "bg-indigo-100 dark:bg-indigo-950/80 text-indigo-700 dark:text-indigo-300" : ""}
-                      ${item.badgeVariant === "cyan" ? "bg-cyan-100 dark:bg-cyan-950/80 text-cyan-700 dark:text-cyan-300" : ""}
-                      ${item.badgeVariant === "emerald" ? "bg-emerald-100 dark:bg-emerald-950/80 text-emerald-700 dark:text-emerald-300" : ""}
-                      ${item.badgeVariant === "zinc" || !item.badgeVariant ? "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400" : ""}
-                    `}
-                  >
-                    {item.badge}
-                  </span>
-                )}
-              </button>
-            );
-          })}
-        </div>
-      </div>
-    );
   };
 
   return (
@@ -212,17 +131,84 @@ export const SidebarNav: React.FC<SidebarNavProps> = ({
             <div className="w-6 h-6 rounded bg-indigo-600 dark:bg-indigo-500 text-white flex items-center justify-center font-bold text-xs tracking-wider">
               RS
             </div>
-            <span className="font-bold text-xs font-mono text-slate-900 dark:text-slate-100 uppercase tracking-wider">RoadSaathi</span>
+            <span className="font-bold text-xs font-mono text-slate-900 dark:text-slate-100 uppercase tracking-wider">
+              RoadSaathi
+            </span>
           </div>
-          <button onClick={onCloseMobile} className="p-1 rounded text-slate-500 hover:text-slate-900 dark:hover:text-slate-100">
+          <button
+            onClick={onCloseMobile}
+            className="p-1 rounded text-slate-500 hover:text-slate-900 dark:hover:text-slate-100"
+            aria-label="Close menu"
+          >
             <X className="w-5 h-5" />
           </button>
         </div>
 
-        {/* Navigation Sections */}
+        {/* Navigation Section */}
         <div className="flex-1 overflow-y-auto py-3 px-2 space-y-1">
-          {renderNavGroup("Tier 1: On-Bus Edge Perception", edgeItems)}
-          {renderNavGroup("Tier 2: Civic Command & Governance", centralItems)}
+          {menuItems.map((item) => {
+            const Icon = item.icon;
+            const isActive = currentRoute === item.route;
+            return (
+              <div key={item.id} className="relative group">
+                <button
+                  onClick={() => handleClick(item.route)}
+                  className={`
+                    w-full min-h-[40px] flex items-center gap-3 px-3 py-2 text-xs transition-all text-left rounded-lg cursor-pointer
+                    ${isActive
+                      ? "border-l-3 border-indigo-600 dark:border-indigo-400 bg-indigo-50/80 dark:bg-indigo-950/50 text-indigo-950 dark:text-indigo-100 font-semibold shadow-xs"
+                      : "border-l-3 border-transparent text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800/60 hover:text-slate-900 dark:hover:text-slate-200 font-medium"
+                    }
+                    ${!isExpanded ? "justify-center px-0 border-l-0" : ""}
+                  `}
+                  aria-label={item.label}
+                >
+                  <div className="relative shrink-0 flex items-center justify-center">
+                    <Icon
+                      className={`w-4 h-4 ${
+                        isActive ? "text-indigo-700 dark:text-indigo-400" : "text-slate-400 dark:text-slate-500"
+                      }`}
+                    />
+                    {item.pulseDot && (
+                      <span className="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" />
+                    )}
+                  </div>
+                  {isExpanded && (
+                    <span className="flex-1 whitespace-nowrap overflow-hidden text-ellipsis">
+                      {item.label}
+                    </span>
+                  )}
+                  {isExpanded && item.badge && (
+                    <span
+                      className={`
+                        text-[11px] px-2 py-0.5 rounded-full font-semibold tabular-nums shrink-0
+                        ${item.badgeVariant === "rose" ? "bg-rose-100 dark:bg-rose-950/80 text-rose-700 dark:text-rose-300" : ""}
+                        ${item.badgeVariant === "amber" ? "bg-amber-100 dark:bg-amber-950/80 text-amber-700 dark:text-amber-300" : ""}
+                        ${item.badgeVariant === "indigo" ? "bg-indigo-100 dark:bg-indigo-950/80 text-indigo-700 dark:text-indigo-300" : ""}
+                        ${item.badgeVariant === "cyan" ? "bg-cyan-100 dark:bg-cyan-950/80 text-cyan-700 dark:text-cyan-300" : ""}
+                        ${item.badgeVariant === "emerald" ? "bg-emerald-100 dark:bg-emerald-950/80 text-emerald-700 dark:text-emerald-300" : ""}
+                        ${item.badgeVariant === "zinc" || !item.badgeVariant ? "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400" : ""}
+                      `}
+                    >
+                      {item.badge}
+                    </span>
+                  )}
+                </button>
+
+                {/* Floating Tooltip in Collapsed Desktop Mode */}
+                {!isExpanded && (
+                  <div className="absolute left-full ml-2 top-1/2 -translate-y-1/2 z-50 whitespace-nowrap bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 text-xs px-2.5 py-1 rounded-md shadow-lg pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity hidden md:flex items-center gap-1.5">
+                    <span>{item.label}</span>
+                    {item.badge && (
+                      <span className="text-[10px] px-1.5 py-0.2 rounded bg-zinc-700 dark:bg-zinc-300 text-white dark:text-zinc-900 font-mono">
+                        {item.badge}
+                      </span>
+                    )}
+                  </div>
+                )}
+              </div>
+            );
+          })}
         </div>
 
         {/* Bottom Collapse Toggle & System Status */}
@@ -231,12 +217,15 @@ export const SidebarNav: React.FC<SidebarNavProps> = ({
             <>
               <div className="flex items-center gap-2">
                 <span className={`w-2 h-2 rounded-full ${isBackendConnected ? "bg-emerald-500" : "bg-rose-500"}`}></span>
-                <span className="text-slate-500 font-medium">{isBackendConnected ? "Connected" : "Disconnected"}</span>
+                <span className="text-slate-500 font-medium">
+                  {isBackendConnected ? "Connected" : "Disconnected"}
+                </span>
               </div>
               <button
                 onClick={onToggleCollapse}
                 className="p-1 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 rounded cursor-pointer"
                 title="Collapse sidebar"
+                aria-label="Collapse sidebar"
               >
                 <ChevronLeft className="w-4 h-4" />
               </button>
@@ -246,6 +235,7 @@ export const SidebarNav: React.FC<SidebarNavProps> = ({
               onClick={onToggleCollapse}
               className="w-full flex justify-center py-1 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 rounded cursor-pointer"
               title="Expand sidebar"
+              aria-label="Expand sidebar"
             >
               <ChevronRight className="w-4 h-4" />
             </button>

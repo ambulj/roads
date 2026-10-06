@@ -13,14 +13,12 @@ interface ShortcutItem {
 }
 
 const SHORTCUTS: ShortcutItem[] = [
-  // Navigation
-  { keys: ['1'], description: 'Jump to Command Center (WebGIS Map)', category: 'Navigation' },
-  { keys: ['2'], description: 'Jump to Traffic Incidents & E-Challans', category: 'Navigation' },
-  { keys: ['3'], description: 'Jump to Road Memory & Time-Machine', category: 'Navigation' },
-  { keys: ['4'], description: 'Jump to Analytics & QC Audits', category: 'Navigation' },
-  { keys: ['5'], description: 'Jump to Fleet Telematics Nodes', category: 'Navigation' },
-  { keys: ['6'], description: 'Jump to Work Orders & SLA Ledger', category: 'Navigation' },
-  { keys: ['7'], description: 'Jump to Mobile Dashcam Ingest', category: 'Navigation' },
+  // Navigation (5 Core Workspaces)
+  { keys: ['1'], description: 'Jump to Command Center & Map', category: 'Navigation' },
+  { keys: ['2'], description: 'Jump to Work Orders & SLA', category: 'Navigation' },
+  { keys: ['3'], description: 'Jump to Safety & Traffic Analytics', category: 'Navigation' },
+  { keys: ['4'], description: 'Jump to Fleet Perception & Edge', category: 'Navigation' },
+  { keys: ['5'], description: 'Jump to Governance & Memory', category: 'Navigation' },
 
   // Control Room Actions
   { keys: ['Ctrl', 'K'], description: 'Open Universal Command Palette & Search', category: 'Global Controls' },

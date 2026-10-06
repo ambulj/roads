@@ -79,7 +79,7 @@ export const OFFICER_DETAILS: Record<CivicRole, { profile: UserProfile; meta: Of
       jurisdiction: 'Greater Chennai Police Commissionerate (All 4 Traffic Zones)',
       commandFocus: 'Hit & Run Evasions, Rash Driving, Low-Confidence ANPR Review & PCR 112 Rapid Dispatch',
       activeQueueCount: 7,
-      allowedRoutes: ['command', 'incidents', 'capture'],
+      allowedRoutes: ['command', 'analytics', 'fleet', 'incidents', 'capture'],
       primaryMetrics: [
         { label: 'Active Violations', value: '7 Ingested', hint: 'Hit & Run, Rash Driving, Pedestrians' },
         { label: 'Draft e-Challans', value: '₹21,000 pending', hint: 'MVA Sec 184 / 177 / 134 citation sum' },
@@ -105,7 +105,7 @@ export const OFFICER_DETAILS: Record<CivicRole, { profile: UserProfile; meta: Of
       jurisdiction: 'Chennai Arterial Corridors & PWD Division 4 (GST Rd, OMR, Anna Salai)',
       commandFocus: 'Pothole Triaging, 3D Mesh Depth Audits, Contractor Work Orders & SLA Enforcement',
       activeQueueCount: 8,
-      allowedRoutes: ['command', 'work-orders', 'memory', 'capture'],
+      allowedRoutes: ['command', 'work-orders', 'memory', 'fleet', 'capture'],
       primaryMetrics: [
         { label: 'Open Work Orders', value: '8 Active', hint: '3 Critical P0 hazards' },
         { label: 'Asphalt Demanded', value: '3.36 Tonnes', hint: 'Dense Bituminous Macadam (DBM)' },
@@ -131,7 +131,7 @@ export const OFFICER_DETAILS: Record<CivicRole, { profile: UserProfile; meta: Of
       jurisdiction: 'Regional Transport Office Network (TN-01 to TN-22 Jurisdictions)',
       commandFocus: 'Confirmed ANPR Hits, VAHAN National Registry Cross-Reference & HSRP Compliance Audits',
       activeQueueCount: 5,
-      allowedRoutes: ['command', 'incidents'],
+      allowedRoutes: ['command', 'analytics', 'incidents'],
       primaryMetrics: [
         { label: 'Confirmed ANPR Hits', value: '7 Plates', hint: 'Multi-bus verified vehicle reads' },
         { label: 'RTO Jurisdictions', value: 'TN-01 to TN-22', hint: 'Chennai Central, South, West & OMR' },

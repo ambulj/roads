@@ -29,18 +29,16 @@ import { useTheme } from "./context/ThemeContext";
 import { useToast } from "./context/ToastContext";
 import { useAuth } from "./context/AuthContext";
 
-const VALID_ROUTES = ["command", "incidents", "memory", "analytics", "fleet", "work-orders", "capture"] as const;
+const VALID_ROUTES = ["command", "work-orders", "analytics", "fleet", "memory", "incidents", "capture"] as const;
 type AppRoute = typeof VALID_ROUTES[number];
 
-// Keyboard shortcut map: digit key → route
+// Keyboard shortcut map: digit key → 5 primary workspaces
 const ROUTE_SHORTCUTS: Record<string, AppRoute> = {
   "1": "command",
-  "2": "incidents",
-  "3": "memory",
-  "4": "analytics",
-  "5": "fleet",
-  "6": "work-orders",
-  "7": "capture",
+  "2": "work-orders",
+  "3": "analytics",
+  "4": "fleet",
+  "5": "memory",
 };
 
 const PageSkeletonLoader: React.FC = () => (
@@ -80,10 +78,17 @@ const PageSkeletonLoader: React.FC = () => (
 
 const getInitialRoute = (): AppRoute => {
   const hash = window.location.hash.replace(/^#\/?/, "").trim();
-  if (VALID_ROUTES.includes(hash as AppRoute)) return hash as AppRoute;
+  const [baseRoute] = hash.split('?');
+  if (baseRoute === "incidents") return "analytics";
+  if (baseRoute === "capture") return "fleet";
+  if (VALID_ROUTES.includes(baseRoute as AppRoute)) return baseRoute as AppRoute;
   try {
-    const saved = localStorage.getItem("SeherSaathi_active_route") || localStorage.getItem("SeherSaathi_active_route");
-    if (saved && VALID_ROUTES.includes(saved as AppRoute)) return saved as AppRoute;
+    const saved = localStorage.getItem("SeherSaathi_active_route");
+    if (saved) {
+      if (saved === "incidents") return "analytics";
+      if (saved === "capture") return "fleet";
+      if (VALID_ROUTES.includes(saved as AppRoute)) return saved as AppRoute;
+    }
   } catch {}
   return "command";
 };
@@ -147,7 +152,20 @@ export const App: React.FC = () => {
   }, []);
 
   const handleNavigate = useCallback((route: string) => {
-    const target = route.replace(/^#\/?/, "").trim() as AppRoute;
+    const cleaned = route.replace(/^#\/?/, "").trim();
+    const [routePart, queryPart] = cleaned.split('?');
+    
+    // Resolve legacy route aliases to consolidated workspaces with sub-tab deep links
+    let target = routePart as AppRoute;
+    let effectiveQuery = queryPart;
+    if (target === "incidents") {
+      target = "analytics";
+      effectiveQuery = effectiveQuery ? `${effectiveQuery}&tab=incidents` : "tab=incidents";
+    } else if (target === "capture") {
+      target = "fleet";
+      effectiveQuery = effectiveQuery ? `${effectiveQuery}&tab=capture` : "tab=capture";
+    }
+
     if (VALID_ROUTES.includes(target)) {
       if (!hasAccessToRoute(target)) {
         showWarningToast("Access Restricted", `Your officer clearance (${user.designation}) does not permit access to this module.`);
@@ -156,9 +174,9 @@ export const App: React.FC = () => {
         return;
       }
       setCurrentRoute(target);
-      window.location.hash = `#/${target}`;
+      const newHash = effectiveQuery ? `#/${target}?${effectiveQuery}` : `#/${target}`;
+      window.location.hash = newHash;
       try {
-        localStorage.setItem("SeherSaathi_active_route", target);
         localStorage.setItem("SeherSaathi_active_route", target);
       } catch {}
       setIsMobileMenuOpen(false);
@@ -251,13 +269,24 @@ export const App: React.FC = () => {
     const handleDeepLink = () => {
       const rawHash = window.location.hash.replace(/^#\/?/, "").trim();
       const [routePart, queryPart] = rawHash.split('?');
-      const targetRoute = routePart as AppRoute;
+      let targetRoute = routePart as AppRoute;
+
+      // Canonical redirect for legacy bookmarks
+      if (targetRoute === "incidents") {
+        targetRoute = "analytics";
+        window.location.hash = queryPart ? `#/analytics?${queryPart}&tab=incidents` : "#/analytics?tab=incidents";
+        return;
+      }
+      if (targetRoute === "capture") {
+        targetRoute = "fleet";
+        window.location.hash = queryPart ? `#/fleet?${queryPart}&tab=capture` : "#/fleet?tab=capture";
+        return;
+      }
 
       if (VALID_ROUTES.includes(targetRoute)) {
         if (hasAccessToRoute(targetRoute)) {
           setCurrentRoute(targetRoute);
           try {
-            localStorage.setItem("SeherSaathi_active_route", targetRoute);
             localStorage.setItem("SeherSaathi_active_route", targetRoute);
           } catch {}
         }
@@ -378,7 +407,7 @@ export const App: React.FC = () => {
                 auditLogs={auditLogs}
                 onOpenRPIModal={() => setIsRPIModalOpen(true)}
                 onOpenBriefModal={() => setIsBriefModalOpen(true)}
-                onNavigateToCapture={() => handleNavigate("capture")}
+                onNavigateToCapture={() => handleNavigate("fleet?tab=capture")}
                 onNavigate={handleNavigate}
                 onOpenLifecycleDemo={() => setIsLifecycleModalOpen(true)}
                 selectedIncident={selectedIncident}
@@ -414,7 +443,16 @@ export const App: React.FC = () => {
               <WorkOrders clusters={clusters} onUpdateStatus={handleUpdateStatus} />
             )}
             {currentRoute === "fleet" && hasAccessToRoute("fleet") && (
-              <FleetNodes fleet={fleet} onFleetChange={setFleet} />
+              <FleetNodes 
+                fleet={fleet} 
+                onFleetChange={setFleet}
+                clusters={clusters}
+                onSendIngest={sendIngest}
+                onSendIncident={sendIncident}
+                onUpdateWorkOrder={handleUpdateStatus}
+                onAddCluster={(newCl) => setClusters((prev) => [newCl, ...prev])}
+                onBackToDashboard={() => handleNavigate("command")}
+              />
             )}
             {currentRoute === "capture" && hasAccessToRoute("capture") && (
               <MobileDashcam
@@ -430,7 +468,12 @@ export const App: React.FC = () => {
         </main>
 
         {/* Mobile Bottom Nav */}
-        <BottomNav currentRoute={currentRoute} onNavigate={handleNavigate} />
+        <BottomNav
+          currentRoute={currentRoute}
+          onNavigate={handleNavigate}
+          onOpenAuthModal={() => setIsAuthModalOpen(true)}
+          onOpenShortcutsModal={() => setIsShortcutsModalOpen(true)}
+        />
       </div>
 
       {/* Modals */}
