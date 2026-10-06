@@ -26,7 +26,7 @@ import {
 } from 'lucide-react';
 import { HazardCluster, FleetNode, TrafficIncident } from '../../types';
 import { Button } from '../ui/Button';
-import { CHENNAI_POIS } from '../../services/api';
+import { api, CHENNAI_POIS } from '../../services/api';
 import { useTheme } from '../../context/ThemeContext';
 
 interface WebGISMapProps {
@@ -138,6 +138,29 @@ const MONSOON_CONTOURS = [
   }
 ];
 
+export function generateBezierArc(p0: [number, number], p2: [number, number], curvature = 0.18, numPoints = 24): [number, number][] {
+  const lng0 = p0[0];
+  const lat0 = p0[1];
+  const lng2 = p2[0];
+  const lat2 = p2[1];
+  const midLng = (lng0 + lng2) / 2.0;
+  const midLat = (lat0 + lat2) / 2.0;
+  const dx = lng2 - lng0;
+  const dy = lat2 - lat0;
+  const p1Lng = midLng - dy * curvature;
+  const p1Lat = midLat + dx * curvature;
+
+  const coords: [number, number][] = [];
+  for (let i = 0; i <= numPoints; i++) {
+    const t = i / numPoints;
+    const invT = 1.0 - t;
+    const lng = (invT ** 2) * lng0 + 2.0 * invT * t * p1Lng + (t ** 2) * lng2;
+    const lat = (invT ** 2) * lat0 + 2.0 * invT * t * p1Lat + (t ** 2) * lat2;
+    coords.push([Number(lng.toFixed(6)), Number(lat.toFixed(6))]);
+  }
+  return coords;
+}
+
 export const OD_DESIRE_LINES_GEOJSON = {
   type: 'FeatureCollection',
   features: [
@@ -145,23 +168,28 @@ export const OD_DESIRE_LINES_GEOJSON = {
       type: 'Feature',
       geometry: {
         type: 'LineString',
-        coordinates: [
-          [80.1462, 12.9516],
-          [80.1650, 12.9850],
-          [80.2030, 13.0067],
-          [80.2450, 13.0410],
-          [80.2850, 13.0850]
-        ]
+        coordinates: generateBezierArc([80.1462, 12.9516], [80.2850, 13.0850], 0.16)
       },
       properties: {
         id: 'od-tambaram-broadway',
         name: 'GST Arterial Transit Trunk (Route 21G)',
+        origin: 'Tambaram Sanatorium (South Gateway)',
+        destination: 'Broadway Bus Terminal (Central Hub)',
         originZone: 'Zone 12 (Tambaram Gateway)',
         destZone: 'Zone 05 (Broadway CBD Hub)',
+        route_code: '21G',
         tripsPerDay: 4820,
+        daily_passengers: 4820,
+        peak_hour_flow: 2840,
+        hourly_pcu_flow: 2840,
+        corridor_iri: 4.8,
+        roughness_delay_minutes: 5.4,
+        distressDelayMins: '5.4 min lost to road distress',
+        distress_delay_attribution_mins: 5.4,
+        congestion_factor: 1.18,
         cabinLoadProxy: '84% Cabin Capacity',
-        distressDelayMins: '5.4 min lost to potholes',
         los: 'LoS D (Approaching Capacity)',
+        level_of_service: 'LoS D (Approaching Capacity)',
         color: '#06b6d4'
       }
     },
@@ -169,23 +197,28 @@ export const OD_DESIRE_LINES_GEOJSON = {
       type: 'Feature',
       geometry: {
         type: 'LineString',
-        coordinates: [
-          [80.1900, 13.0700],
-          [80.2120, 13.0110],
-          [80.2480, 12.9890],
-          [80.2360, 12.9380],
-          [80.2280, 12.8600]
-        ]
+        coordinates: generateBezierArc([80.1948, 13.0694], [80.2280, 12.8600], 0.18)
       },
       properties: {
         id: 'od-koyambedu-siruseri',
         name: 'OMR IT Expressway Express (Route 570X)',
+        origin: 'CMBT Koyambedu Terminal',
+        destination: 'Siruseri IT Park (Tech Corridor)',
         originZone: 'Zone 10 (CMBT Koyambedu)',
         destZone: 'Zone 15 (Siruseri Tech SEZ)',
+        route_code: '570X',
         tripsPerDay: 6450,
+        daily_passengers: 6450,
+        peak_hour_flow: 3450,
+        hourly_pcu_flow: 3450,
+        corridor_iri: 3.8,
+        roughness_delay_minutes: 7.2,
+        distressDelayMins: '7.2 min lost to road distress',
+        distress_delay_attribution_mins: 7.2,
+        congestion_factor: 1.20,
         cabinLoadProxy: '92% Cabin Capacity',
-        distressDelayMins: '7.2 min lost to potholes',
         los: 'LoS E (Peak Choke-points)',
+        level_of_service: 'LoS E (Peak Choke-points)',
         color: '#8b5cf6'
       }
     },
@@ -193,22 +226,28 @@ export const OD_DESIRE_LINES_GEOJSON = {
       type: 'Feature',
       geometry: {
         type: 'LineString',
-        coordinates: [
-          [80.2707, 13.0827],
-          [80.2520, 13.0580],
-          [80.2250, 13.0210],
-          [80.2030, 13.0067]
-        ]
+        coordinates: generateBezierArc([80.2707, 13.0827], [80.2030, 13.0067], -0.15)
       },
       properties: {
         id: 'od-central-guindy',
         name: 'Mount Road Metro Spine (Route 1B)',
+        origin: 'Chennai Central Station Hub',
+        destination: 'Guindy Intermodal / Kathipara Cloverleaf',
         originZone: 'Zone 05 (Central Rail Station)',
         destZone: 'Zone 13 (Guindy Industrial)',
+        route_code: '1B',
         tripsPerDay: 5200,
+        daily_passengers: 5200,
+        peak_hour_flow: 3120,
+        hourly_pcu_flow: 3120,
+        corridor_iri: 2.4,
+        roughness_delay_minutes: 3.8,
+        distressDelayMins: '3.8 min lost to road distress',
+        distress_delay_attribution_mins: 3.8,
+        congestion_factor: 1.18,
         cabinLoadProxy: '78% Cabin Capacity',
-        distressDelayMins: '3.8 min lost to potholes',
         los: 'LoS C (Stable Flow)',
+        level_of_service: 'LoS C (Stable Flow)',
         color: '#10b981'
       }
     },
@@ -216,23 +255,58 @@ export const OD_DESIRE_LINES_GEOJSON = {
       type: 'Feature',
       geometry: {
         type: 'LineString',
-        coordinates: [
-          [80.2850, 13.0850],
-          [80.2700, 13.0000],
-          [80.2550, 12.9000],
-          [80.2450, 12.7900]
-        ]
+        coordinates: generateBezierArc([80.2850, 13.0850], [80.2450, 12.7900], 0.14)
       },
       properties: {
         id: 'od-broadway-kelambakkam',
         name: 'East Coast Marine Link (Route 102)',
+        origin: 'Broadway Bus Terminal',
+        destination: 'Kelambakkam Junction Hub',
         originZone: 'Zone 05 (Broadway Terminal)',
         destZone: 'Zone 14 (Kelambakkam Gateway)',
+        route_code: '102',
         tripsPerDay: 3180,
+        daily_passengers: 3180,
+        peak_hour_flow: 1960,
+        hourly_pcu_flow: 1960,
+        corridor_iri: 2.1,
+        roughness_delay_minutes: 3.6,
+        distressDelayMins: '3.6 min lost to road distress',
+        distress_delay_attribution_mins: 3.6,
+        congestion_factor: 1.09,
         cabinLoadProxy: '65% Cabin Capacity',
-        distressDelayMins: '3.6 min lost to potholes',
         los: 'LoS C (Free Flow)',
+        level_of_service: 'LoS C (Free Flow)',
         color: '#f59e0b'
+      }
+    },
+    {
+      type: 'Feature',
+      geometry: {
+        type: 'LineString',
+        coordinates: generateBezierArc([80.2030, 13.0067], [80.2480, 12.9890], -0.16)
+      },
+      properties: {
+        id: 'od-kathipara-omr',
+        name: 'Kathipara to OMR Tidel Transit Spine (Route 570S)',
+        origin: 'Kathipara Cloverleaf Interchange',
+        destination: 'OMR Tidel Park (Tech Corridor)',
+        originZone: 'Zone 12 (Kathipara Cloverleaf)',
+        destZone: 'Zone 11 (OMR Tidel Park)',
+        route_code: '570S',
+        tripsPerDay: 4100,
+        daily_passengers: 4100,
+        peak_hour_flow: 2750,
+        hourly_pcu_flow: 2750,
+        corridor_iri: 3.1,
+        roughness_delay_minutes: 4.2,
+        distressDelayMins: '4.2 min lost to road distress',
+        distress_delay_attribution_mins: 4.2,
+        congestion_factor: 1.22,
+        cabinLoadProxy: '74% Cabin Capacity',
+        los: 'LoS D (Approaching Capacity)',
+        level_of_service: 'LoS D (Approaching Capacity)',
+        color: '#38bdf8'
       }
     }
   ]
@@ -624,9 +698,17 @@ export const WebGISMap: React.FC<WebGISMapProps> = ({
         },
         paint: {
           'line-color': ['get', 'color'],
-          'line-width': 4.5,
+          'line-width': ['interpolate', ['linear'], ['get', 'tripsPerDay'], 3000, 3.5, 5000, 4.5, 7000, 5.5],
           'line-opacity': 0.85
         }
+      });
+
+      map.on('mouseenter', 'od-desire-lines-layer', () => {
+        map.getCanvas().style.cursor = 'pointer';
+      });
+
+      map.on('mouseleave', 'od-desire-lines-layer', () => {
+        map.getCanvas().style.cursor = '';
       });
 
       map.on('click', 'od-desire-lines-layer', (e) => {
@@ -635,18 +717,20 @@ export const WebGISMap: React.FC<WebGISMapProps> = ({
         new maplibregl.Popup({ offset: 12 })
           .setLngLat(e.lngLat)
           .setHTML(`
-            <div style="font-family: system-ui, sans-serif; font-size: 11px; padding: 4px; min-width: 210px;">
-              <div style="font-weight: 800; font-size: 12px; color: ${p.color}; margin-bottom: 2px;">
-                ${p.name}
+            <div style="font-family: system-ui, -apple-system, sans-serif; font-size: 11px; padding: 4px; min-width: 230px;">
+              <div style="font-weight: 800; font-size: 12px; color: ${p.color || '#06b6d4'}; margin-bottom: 2px;">
+                ${p.name || 'Transit Corridor'}
               </div>
               <div style="font-size: 10px; color: #64748b; margin-bottom: 6px;">
-                <b>Origin:</b> ${p.originZone} &rarr; <b>Dest:</b> ${p.destZone}
+                <b>Origin:</b> ${p.origin || p.originZone} &rarr; <b>Dest:</b> ${p.destination || p.destZone}
               </div>
               <div style="background: #f1f5f9; padding: 6px; border-radius: 6px; font-family: monospace; font-size: 10px; line-height: 1.5; color: #0f172a;">
-                <div>Daily Transit: <b>${Number(p.tripsPerDay).toLocaleString()} trips/day</b></div>
-                <div>Passenger Load: <b style="color: #0284c7;">${p.cabinLoadProxy}</b></div>
-                <div>Distress Delay: <b style="color: #dc2626;">${p.distressDelayMins}</b></div>
-                <div>LoS Rating: <b>${p.los}</b></div>
+                <div>Daily Transit: <b>${Number(p.daily_passengers || p.tripsPerDay || 0).toLocaleString()} trips/day</b></div>
+                <div>Peak Hour Flow: <b>${Number(p.peak_hour_flow || p.hourly_pcu_flow || 0).toLocaleString()} PCU/hr</b></div>
+                <div>Passenger Load: <b style="color: #0284c7;">${p.cabinLoadProxy || '80% Capacity'}</b></div>
+                <div>Corridor Roughness: <b>${p.corridor_iri ? `${p.corridor_iri} m/km (IRI)` : '3.2 m/km'}</b></div>
+                <div>Distress Delay Penalty: <b style="color: #dc2626;">${p.distressDelayMins || `${p.roughness_delay_minutes || 4.5}m delay`}</b></div>
+                <div>Level of Service: <b>${p.level_of_service || p.los || 'LoS D'}</b></div>
               </div>
             </div>
           `)
@@ -656,6 +740,17 @@ export const WebGISMap: React.FC<WebGISMapProps> = ({
       if (map.getLayer('od-desire-lines-layer')) {
         map.setLayoutProperty('od-desire-lines-layer', 'visibility', showODDesireLines ? 'visible' : 'none');
       }
+    }
+
+    // Attempt live fetch from backend traffic API if active
+    if (showODDesireLines) {
+      api.getODMatrix().then((res) => {
+        if (res && res.geojson && map.getSource('od-desire-lines-src')) {
+          (map.getSource('od-desire-lines-src') as maplibregl.GeoJSONSource).setData(res.geojson as any);
+        }
+      }).catch((err) => {
+        console.warn('OD Matrix live fetch fallback:', err);
+      });
     }
   }, [showODDesireLines, isMapReady]);
 
@@ -1173,14 +1268,15 @@ export const WebGISMap: React.FC<WebGISMapProps> = ({
             <p className="text-[10.5px] text-slate-400 mb-2 leading-tight">
               Aggregated passenger-load proxies from cabin cameras &amp; bus GPS trip frequencies across city wards.
             </p>
-            <div className="space-y-1.5 font-mono text-[10.5px]">
+            <div className="space-y-1.5 font-mono text-[10.5px] max-h-64 overflow-y-auto pr-1">
               <div className="p-1.5 rounded bg-slate-900 border border-slate-800 flex items-center justify-between">
                 <div>
                   <span className="font-bold text-cyan-300">Tambaram &rarr; Broadway</span>
                   <div className="text-[9.5px] text-slate-400 font-sans">Route 21G &bull; GST Trunk</div>
+                  <div className="text-[9px] text-rose-400 font-sans">IRI 4.8 &bull; 5.4 min distress delay</div>
                 </div>
                 <div className="text-right">
-                  <span className="font-bold text-white">4,820 trips/day</span>
+                  <span className="font-bold text-white">4,820 trips/d</span>
                   <div className="text-[9px] text-emerald-400">84% Cabin Load</div>
                 </div>
               </div>
@@ -1188,20 +1284,44 @@ export const WebGISMap: React.FC<WebGISMapProps> = ({
                 <div>
                   <span className="font-bold text-purple-300">Koyambedu &rarr; Siruseri</span>
                   <div className="text-[9.5px] text-slate-400 font-sans">Route 570X &bull; OMR Tech SEZ</div>
+                  <div className="text-[9px] text-rose-400 font-sans">IRI 3.8 &bull; 7.2 min distress delay</div>
                 </div>
                 <div className="text-right">
-                  <span className="font-bold text-white">6,450 trips/day</span>
-                  <div className="text-[9px] text-rose-400">92% Cabin Load (Choke)</div>
+                  <span className="font-bold text-white">6,450 trips/d</span>
+                  <div className="text-[9px] text-rose-400">92% Load (LoS E)</div>
                 </div>
               </div>
               <div className="p-1.5 rounded bg-slate-900 border border-slate-800 flex items-center justify-between">
                 <div>
                   <span className="font-bold text-emerald-300">Central &rarr; Guindy</span>
                   <div className="text-[9.5px] text-slate-400 font-sans">Route 1B &bull; Mount Road Spine</div>
+                  <div className="text-[9px] text-amber-400 font-sans">IRI 2.4 &bull; 3.8 min distress delay</div>
                 </div>
                 <div className="text-right">
-                  <span className="font-bold text-white">5,200 trips/day</span>
+                  <span className="font-bold text-white">5,200 trips/d</span>
                   <div className="text-[9px] text-cyan-400">78% Cabin Load</div>
+                </div>
+              </div>
+              <div className="p-1.5 rounded bg-slate-900 border border-slate-800 flex items-center justify-between">
+                <div>
+                  <span className="font-bold text-amber-300">Broadway &rarr; Kelambakkam</span>
+                  <div className="text-[9.5px] text-slate-400 font-sans">Route 102 &bull; East Coast Link</div>
+                  <div className="text-[9px] text-emerald-400 font-sans">IRI 2.1 &bull; 3.6 min distress delay</div>
+                </div>
+                <div className="text-right">
+                  <span className="font-bold text-white">3,180 trips/d</span>
+                  <div className="text-[9px] text-slate-300">65% Cabin Load</div>
+                </div>
+              </div>
+              <div className="p-1.5 rounded bg-slate-900 border border-slate-800 flex items-center justify-between">
+                <div>
+                  <span className="font-bold text-sky-300">Kathipara &rarr; OMR Tidel</span>
+                  <div className="text-[9.5px] text-slate-400 font-sans">Route 570S &bull; IT Feeder Link</div>
+                  <div className="text-[9px] text-rose-400 font-sans">IRI 3.1 &bull; 4.2 min distress delay</div>
+                </div>
+                <div className="text-right">
+                  <span className="font-bold text-white">4,100 trips/d</span>
+                  <div className="text-[9px] text-sky-400">74% Cabin Load</div>
                 </div>
               </div>
             </div>

@@ -817,4 +817,82 @@ export interface PrivacyConfigPayload {
   blur_intensity?: number;
 }
 
+// ── Traffic & OD Matrix Types (PS 26124) ──────────────────────────────────
+export interface ODCorridor {
+  id: string;
+  corridor_name: string;
+  origin: string;
+  destination: string;
+  route_code: string;
+  distance_km: number;
+  scheduled_mins: number;
+  actual_transit_mins: number;
+  delay_mins: number;
+  hourly_pcu_flow: number;
+  peak_hour_flow?: number;
+  daily_passengers?: number;
+  corridor_iri?: number;
+  roughness_delay_minutes?: number;
+  congestion_factor?: number;
+  peak_travel_time_ratio: number;
+  level_of_service: string;
+  distress_delay_attribution_mins: number;
+  critical_chokepoints: string[];
+  primary_transit_mode: string;
+  color?: string;
+}
+
+export interface ODMatrixResponse {
+  status: string;
+  data_provenance: string;
+  total_monitored_od_pairs: number;
+  network_avg_travel_time_ratio: number;
+  corridors: ODCorridor[];
+  geojson?: {
+    type: string;
+    features: Array<{
+      type: string;
+      geometry: {
+        type: string;
+        coordinates: number[][];
+      };
+      properties: Record<string, any>;
+    }>;
+  };
+  gtfs_delay_reports?: any;
+}
+
+export interface TrafficDensityRecord {
+  id: string;
+  corridor_id: string;
+  road_name: string;
+  lat: number;
+  lng: number;
+  vehicle_count: number;
+  density_pcu_per_km: number;
+  average_speed_kmh: number;
+  free_flow_speed_kmh: number;
+  congestion_level: string;
+  is_bottleneck: boolean;
+  bottleneck_cause?: string | null;
+  reported_by: string;
+  measured_at: string;
+}
+
+export interface BottleneckAlert {
+  id: string;
+  corridor_id: string;
+  road_name: string;
+  lat: number;
+  lng: number;
+  congestion_level: string;
+  density_pcu_per_km: number;
+  average_speed_kmh: number;
+  speed_drop_pct: number;
+  cause: string;
+  recommended_diversion: string;
+  detected_at: string;
+}
+
+
 

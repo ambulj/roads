@@ -418,6 +418,31 @@ def ingest_frame_reading(payload: TrafficFrameIngest, db: Session = Depends(get_
         raise HTTPException(status_code=400, detail=res.get("error", "Frame processing failed"))
     return res
 
+def generate_bezier_arc(p0: List[float], p2: List[float], curvature: float = 0.18, num_points: int = 24) -> List[List[float]]:
+    """
+    Generates quadratic Bezier arc coordinates between p0 [lng, lat] and p2 [lng, lat].
+    Control point p1 is offset perpendicular to the chord (p0 -> p2).
+    """
+    lng0, lat0 = p0
+    lng2, lat2 = p2
+    mid_lng = (lng0 + lng2) / 2.0
+    mid_lat = (lat0 + lat2) / 2.0
+    
+    # Vector perpendicular to p0 -> p2: (-dy, dx)
+    dx = lng2 - lng0
+    dy = lat2 - lat0
+    p1_lng = mid_lng - dy * curvature
+    p1_lat = mid_lat + dx * curvature
+    
+    coords = []
+    for i in range(num_points + 1):
+        t = i / float(num_points)
+        inv_t = 1.0 - t
+        lng = (inv_t ** 2) * lng0 + 2.0 * inv_t * t * p1_lng + (t ** 2) * lng2
+        lat = (inv_t ** 2) * lat0 + 2.0 * inv_t * t * p1_lat + (t ** 2) * lat2
+        coords.append([round(lng, 6), round(lat, 6)])
+    return coords
+
 @router.get("/od-matrix")
 def get_origin_destination_matrix():
     """
@@ -430,78 +455,208 @@ def get_origin_destination_matrix():
     from app.storage.mock_database import store
     
     delays = gtfs_analytics_engine.compute_corridor_delays()
-    clusters = store.get_clusters()
+    
+    # Node coordinates for Chennai and regional transit hubs
+    HUBS = {
+        "tambaram": [80.1462, 12.9516],
+        "broadway": [80.2850, 13.0850],
+        "koyambedu": [80.1948, 13.0694],
+        "siruseri": [80.2280, 12.8600],
+        "central": [80.2707, 13.0827],
+        "guindy": [80.2030, 13.0067],
+        "kathipara": [80.2030, 13.0067],
+        "tidel_park": [80.2480, 12.9890],
+        "kelambakkam": [80.2450, 12.7900],
+        "swargate": [73.8567, 18.5018],
+        "hinjewadi": [73.7188, 18.5913]
+    }
     
     od_corridors = [
         {
             "id": "od-tambaram-broadway",
             "corridor_name": "GST Road Arterial Corridor",
-            "origin": "Tambaram Sanatorium Bus Stand (South Gateway)",
+            "origin": "Tambaram Sanatorium (South Gateway)",
             "destination": "Broadway Bus Terminal (Central Hub)",
+            "origin_coords": HUBS["tambaram"],
+            "dest_coords": HUBS["broadway"],
             "route_code": "21G",
             "distance_km": 28.5,
             "scheduled_mins": 72.0,
             "actual_transit_mins": 84.6,
             "delay_mins": 12.6,
             "hourly_pcu_flow": 2840,
+            "peak_hour_flow": 2840,
+            "daily_passengers": 4820,
+            "corridor_iri": 4.8,
+            "roughness_delay_minutes": 5.4,
+            "distress_delay_attribution_mins": 5.4,
+            "congestion_factor": 1.18,
             "peak_travel_time_ratio": 1.18,
             "level_of_service": "LoS D (Approaching Capacity)",
-            "distress_delay_attribution_mins": 5.4,
             "critical_chokepoints": ["Airport Flyover Approach", "Kathipara Cloverleaf"],
-            "primary_transit_mode": "MTC Electric Low-Floor Fleet"
+            "primary_transit_mode": "MTC Electric Low-Floor Fleet",
+            "color": "#06b6d4"
         },
         {
             "id": "od-koyambedu-siruseri",
             "corridor_name": "OMR IT Expressway Corridor",
             "origin": "CMBT Koyambedu Terminal",
             "destination": "Siruseri IT Park (Tech Corridor)",
+            "origin_coords": HUBS["koyambedu"],
+            "dest_coords": HUBS["siruseri"],
             "route_code": "570X",
             "distance_km": 34.2,
             "scheduled_mins": 85.0,
             "actual_transit_mins": 102.4,
             "delay_mins": 17.4,
             "hourly_pcu_flow": 3450,
+            "peak_hour_flow": 3450,
+            "daily_passengers": 6450,
+            "corridor_iri": 3.8,
+            "roughness_delay_minutes": 7.2,
+            "distress_delay_attribution_mins": 7.2,
+            "congestion_factor": 1.20,
             "peak_travel_time_ratio": 1.20,
             "level_of_service": "LoS E (Unstable Flow / Choke Points)",
-            "distress_delay_attribution_mins": 7.2,
             "critical_chokepoints": ["Sholinganallur Junction", "Perungudi Toll Plaza"],
-            "primary_transit_mode": "MTC Volvo AC Arterial"
+            "primary_transit_mode": "MTC Volvo AC Arterial",
+            "color": "#8b5cf6"
+        },
+        {
+            "id": "od-central-guindy",
+            "corridor_name": "Mount Road Metro Spine",
+            "origin": "Chennai Central Station Hub",
+            "destination": "Guindy Intermodal / Kathipara Cloverleaf",
+            "origin_coords": HUBS["central"],
+            "dest_coords": HUBS["guindy"],
+            "route_code": "1B",
+            "distance_km": 14.8,
+            "scheduled_mins": 45.0,
+            "actual_transit_mins": 53.2,
+            "delay_mins": 8.2,
+            "hourly_pcu_flow": 3120,
+            "peak_hour_flow": 3120,
+            "daily_passengers": 5200,
+            "corridor_iri": 2.4,
+            "roughness_delay_minutes": 3.8,
+            "distress_delay_attribution_mins": 3.8,
+            "congestion_factor": 1.18,
+            "peak_travel_time_ratio": 1.18,
+            "level_of_service": "LoS C (Stable Flow)",
+            "critical_chokepoints": ["Anna Flyover", "Saidapet Bridge"],
+            "primary_transit_mode": "MTC Electric Low-Floor Fleet",
+            "color": "#10b981"
         },
         {
             "id": "od-broadway-kelambakkam",
-            "corridor_name": "East Coast Marine Corridor",
+            "corridor_name": "East Coast Marine Link",
             "origin": "Broadway Bus Terminal",
-            "destination": "Kelambakkam Junction",
+            "destination": "Kelambakkam Junction Hub",
+            "origin_coords": HUBS["broadway"],
+            "dest_coords": HUBS["kelambakkam"],
             "route_code": "102",
             "distance_km": 36.0,
             "scheduled_mins": 90.0,
             "actual_transit_mins": 98.2,
             "delay_mins": 8.2,
             "hourly_pcu_flow": 1960,
+            "peak_hour_flow": 1960,
+            "daily_passengers": 3180,
+            "corridor_iri": 2.1,
+            "roughness_delay_minutes": 3.6,
+            "distress_delay_attribution_mins": 3.6,
+            "congestion_factor": 1.09,
             "peak_travel_time_ratio": 1.09,
             "level_of_service": "LoS C (Stable Flow)",
-            "distress_delay_attribution_mins": 3.6,
             "critical_chokepoints": ["Thiruvanmiyur RTO Junction"],
-            "primary_transit_mode": "Standard BS-VI City Transit"
+            "primary_transit_mode": "Standard BS-VI City Transit",
+            "color": "#f59e0b"
+        },
+        {
+            "id": "od-kathipara-omr",
+            "corridor_name": "Kathipara to OMR Tidel Transit Spine",
+            "origin": "Kathipara Cloverleaf Interchange",
+            "destination": "OMR Tidel Park (Tech Corridor)",
+            "origin_coords": HUBS["kathipara"],
+            "dest_coords": HUBS["tidel_park"],
+            "route_code": "570S",
+            "distance_km": 11.2,
+            "scheduled_mins": 30.0,
+            "actual_transit_mins": 36.5,
+            "delay_mins": 6.5,
+            "hourly_pcu_flow": 2750,
+            "peak_hour_flow": 2750,
+            "daily_passengers": 4100,
+            "corridor_iri": 3.1,
+            "roughness_delay_minutes": 4.2,
+            "distress_delay_attribution_mins": 4.2,
+            "congestion_factor": 1.22,
+            "peak_travel_time_ratio": 1.22,
+            "level_of_service": "LoS D (Approaching Capacity)",
+            "critical_chokepoints": ["Velachery Bypass", "SRP Tools Junction"],
+            "primary_transit_mode": "MTC Feeder Metro Express",
+            "color": "#38bdf8"
         },
         {
             "id": "od-swargate-hinjewadi",
             "corridor_name": "Pune Tech Metro Link",
             "origin": "Swargate Multimodal Hub (Pune)",
             "destination": "Hinjewadi Phase 3 IT Park",
+            "origin_coords": HUBS["swargate"],
+            "dest_coords": HUBS["hinjewadi"],
             "route_code": "PMPML-100",
             "distance_km": 24.8,
             "scheduled_mins": 65.0,
             "actual_transit_mins": 79.5,
             "delay_mins": 14.5,
             "hourly_pcu_flow": 2680,
+            "peak_hour_flow": 2680,
+            "daily_passengers": 2680,
+            "corridor_iri": 3.9,
+            "roughness_delay_minutes": 6.0,
+            "distress_delay_attribution_mins": 6.0,
+            "congestion_factor": 1.22,
             "peak_travel_time_ratio": 1.22,
             "level_of_service": "LoS D (Congested Peak)",
-            "distress_delay_attribution_mins": 6.0,
             "critical_chokepoints": ["Wakad Bridge", "Chandani Chowk"],
-            "primary_transit_mode": "PMPML Electric Midi-Bus"
+            "primary_transit_mode": "PMPML Electric Midi-Bus",
+            "color": "#ec4899"
         }
     ]
+    
+    # Generate GeoJSON FeatureCollection with curved Bezier desire lines
+    geojson_features = []
+    for c in od_corridors:
+        bezier_coords = generate_bezier_arc(c["origin_coords"], c["dest_coords"], curvature=0.18, num_points=24)
+        geojson_features.append({
+            "type": "Feature",
+            "geometry": {
+                "type": "LineString",
+                "coordinates": bezier_coords
+            },
+            "properties": {
+                "id": c["id"],
+                "name": c["corridor_name"],
+                "origin": c["origin"],
+                "destination": c["destination"],
+                "originZone": c["origin"],
+                "destZone": c["destination"],
+                "route_code": c["route_code"],
+                "daily_passengers": c["daily_passengers"],
+                "tripsPerDay": c["daily_passengers"],
+                "peak_hour_flow": c["peak_hour_flow"],
+                "hourly_pcu_flow": c["hourly_pcu_flow"],
+                "corridor_iri": c["corridor_iri"],
+                "roughness_delay_minutes": c["roughness_delay_minutes"],
+                "distress_delay_attribution_mins": c["distress_delay_attribution_mins"],
+                "distressDelayMins": f"{c['roughness_delay_minutes']} min lost to pavement distress",
+                "congestion_factor": c["congestion_factor"],
+                "cabinLoadProxy": f"{round(min(98, 60 + c['congestion_factor'] * 25))}% Cabin Capacity",
+                "level_of_service": c["level_of_service"],
+                "los": c["level_of_service"],
+                "color": c["color"]
+            }
+        })
     
     return {
         "status": "success",
@@ -509,7 +664,12 @@ def get_origin_destination_matrix():
         "total_monitored_od_pairs": len(od_corridors),
         "network_avg_travel_time_ratio": 1.17,
         "corridors": od_corridors,
+        "geojson": {
+            "type": "FeatureCollection",
+            "features": geojson_features
+        },
         "gtfs_delay_reports": delays
     }
+
 
 

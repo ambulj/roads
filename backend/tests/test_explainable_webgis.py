@@ -151,29 +151,76 @@ def test_pothole_volume_formula():
     assert 27.0 <= vol_litres <= 29.0
 
 def test_traffic_od_matrix_endpoint():
-    """Verify GET /api/traffic/od-matrix returns valid PS 26124 transit desire lines."""
+    """Verify GET /api/traffic/od-matrix returns valid PS 26124 transit desire lines and GeoJSON."""
     response = client.get("/api/traffic/od-matrix")
     assert response.status_code == 200
     data = response.json()
     assert data["status"] == "success"
-    assert data["total_monitored_od_pairs"] >= 3
+    assert data["total_monitored_od_pairs"] >= 5
+    assert "network_avg_travel_time_ratio" in data
+    assert data["network_avg_travel_time_ratio"] > 0
+    
     corridors = data["corridors"]
     assert any(c["id"] == "od-tambaram-broadway" for c in corridors)
     assert any(c["id"] == "od-koyambedu-siruseri" for c in corridors)
+    assert any(c["id"] == "od-central-guindy" for c in corridors)
+    assert any(c["id"] == "od-broadway-kelambakkam" for c in corridors)
+    assert any(c["id"] == "od-kathipara-omr" for c in corridors)
     
     for c in corridors:
-        assert "hourly_pcu_flow" in c
-        assert "distress_delay_attribution_mins" in c
-        assert "level_of_service" in c
+        assert "hourly_pcu_flow" in c and c["hourly_pcu_flow"] > 0
+        assert "peak_hour_flow" in c and c["peak_hour_flow"] > 0
+        assert "daily_passengers" in c and c["daily_passengers"] > 0
+        assert "corridor_iri" in c and c["corridor_iri"] > 0
+        assert "roughness_delay_minutes" in c and c["roughness_delay_minutes"] >= 0
+        assert "distress_delay_attribution_mins" in c and c["distress_delay_attribution_mins"] >= 0
+        assert "congestion_factor" in c and c["congestion_factor"] >= 1.0
+        assert "level_of_service" in c and "LoS" in c["level_of_service"]
+        assert "origin" in c and len(c["origin"]) > 0
+        assert "destination" in c and len(c["destination"]) > 0
+
+    # Verify GeoJSON FeatureCollection
+    assert "geojson" in data
+    geojson = data["geojson"]
+    assert geojson["type"] == "FeatureCollection"
+    assert len(geojson["features"]) == len(corridors)
+    for feat in geojson["features"]:
+        assert feat["type"] == "Feature"
+        assert feat["geometry"]["type"] == "LineString"
+        coords = feat["geometry"]["coordinates"]
+        assert len(coords) >= 10  # Curvature interpolated Bezier points
+        # Verify longitudes (approx 70-85) and latitudes (approx 10-20)
+        for pt in coords:
+            assert len(pt) == 2
+            assert 70.0 <= pt[0] <= 85.0
+            assert 10.0 <= pt[1] <= 25.0
+        props = feat["properties"]
+        assert "origin" in props
+        assert "destination" in props
+        assert "daily_passengers" in props
+        assert "peak_hour_flow" in props
+        assert "corridor_iri" in props
+        assert "roughness_delay_minutes" in props
+        assert "congestion_factor" in props
 
 def test_traffic_density_and_bottlenecks():
-    """Verify GET /api/traffic/density and GET /api/traffic/bottlenecks."""
+    """Verify GET /api/traffic/density and GET /api/traffic/bottlenecks calculate PCU flows and choke-points."""
     res_dens = client.get("/api/traffic/density")
     assert res_dens.status_code == 200
     dens_list = res_dens.json()
     assert len(dens_list) >= 1
+    for d in dens_list:
+        assert "density_pcu_per_km" in d and d["density_pcu_per_km"] >= 0
+        assert "average_speed_kmh" in d and d["average_speed_kmh"] >= 0
+        assert "congestion_level" in d
+        assert "road_name" in d
 
     res_bn = client.get("/api/traffic/bottlenecks")
     assert res_bn.status_code == 200
     bn_list = res_bn.json()
     assert isinstance(bn_list, list)
+    for b in bn_list:
+        assert "cause" in b or "bottleneck_cause" in b
+        assert "recommended_diversion" in b
+        assert "speed_drop_pct" in b and b["speed_drop_pct"] >= 0
+

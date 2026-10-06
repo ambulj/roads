@@ -5,7 +5,8 @@ import {
   OpenManholeAlert, SubmergedPotholeAlert, ObscuredSignAudit, ContractorDebarmentDossier, AsphaltQualityAudit,
   RoadMemoryCorridor, LearningStatusResponse, LearningQueueItem, RoadMemorySummaryResponse,
   BudgetOptimizationResult, ShiftTriageResult, XAIReasoningTrace, ChronicFailuresResult,
-  FleetEdgeDiagnosticsResult, FederatedRoundResult, PrivacyStatus, PrivacyConfigPayload
+  FleetEdgeDiagnosticsResult, FederatedRoundResult, PrivacyStatus, PrivacyConfigPayload,
+  ODMatrixResponse, TrafficDensityRecord, BottleneckAlert
 } from '../types';
 
 export interface ContractorAgency {
@@ -863,12 +864,38 @@ class ApiService {
     return { success: false };
   }
 
-  async getTrafficDensity(): Promise<any[]> {
+  async getTrafficDensity(): Promise<TrafficDensityRecord[]> {
     try {
-      const res = await fetch(`${API_BASE}/traffic/density`);
+      const res = await fetch(`${API_BASE}/traffic/density`, {
+        headers: this.getAuthHeaders()
+      });
       if (res.ok) return await res.json();
     } catch (e) {
       console.warn("Failed to fetch traffic density:", e);
+    }
+    return [];
+  }
+
+  async getODMatrix(): Promise<ODMatrixResponse | null> {
+    try {
+      const res = await fetch(`${API_BASE}/traffic/od-matrix`, {
+        headers: this.getAuthHeaders()
+      });
+      if (res.ok) return await res.json();
+    } catch (e) {
+      console.warn("Failed to fetch OD transit matrix:", e);
+    }
+    return null;
+  }
+
+  async getBottlenecks(): Promise<BottleneckAlert[]> {
+    try {
+      const res = await fetch(`${API_BASE}/traffic/bottlenecks`, {
+        headers: this.getAuthHeaders()
+      });
+      if (res.ok) return await res.json();
+    } catch (e) {
+      console.warn("Failed to fetch traffic bottlenecks:", e);
     }
     return [];
   }
