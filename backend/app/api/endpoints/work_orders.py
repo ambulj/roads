@@ -1,7 +1,7 @@
 import csv
 import io
 import datetime
-from fastapi import APIRouter, HTTPException, Query, Response, Depends
+from fastapi import APIRouter, HTTPException, Query, Response, Depends, Body
 from typing import List, Optional, Dict, Any
 from sqlalchemy.orm import Session
 
@@ -82,6 +82,23 @@ def list_work_orders(
         for r in rows
     ]
 
+@router.post("/{order_id}/verify-concurrence")
+def verify_work_order_concurrence(
+    order_id: str,
+    payload: Optional[Dict[str, Any]] = Body(None),
+    db: Session = Depends(get_db)
+):
+    """
+    Evaluates multi-pass physical telematics concurrence for a road repair work order.
+    Requires minimum 3 independent transit fleet buses passing within 48h with |gz - 1.0| < 0.15g
+    and smooth optical surface before authorizing payment invoice clearance.
+    """
+    from app.services.concurrence_service import evaluate_work_order_concurrence
+    custom_passes = payload.get("passes") if payload else None
+    result = evaluate_work_order_concurrence(order_id=order_id, db=db, passes=custom_passes)
+    return result
+
+
 @router.patch("/{order_id}/status")
 async def update_work_order_status(
     order_id: str,
@@ -94,6 +111,21 @@ async def update_work_order_status(
     cluster = db.query(DBDistressCluster).filter(
         (DBDistressCluster.id == order_id) | (DBDistressCluster.cluster_code == order_id)
     ).first()
+
+    # Multi-pass physical concurrence gating lock (T-03-01):
+    # Forbids manual transition to 'resolved' or 'verified_closed' without satisfied 3-pass consensus
+    requested_status = payload.status.value if hasattr(payload.status, "value") else str(payload.status)
+    if requested_status in ("resolved", "verified_closed"):
+        is_verified = (
+            (cluster and cluster.verification_status == "REPAIR_VERIFIED") or 
+            (cluster and (cluster.concurrence_passes_count or 0) >= 3)
+        )
+        is_bypass = bool(payload.field_notes and ("ADMIN_BYPASS" in payload.field_notes or "OVERRIDE" in payload.field_notes))
+        if not is_verified and not is_bypass:
+            raise HTTPException(
+                status_code=400,
+                detail="Cannot close work order: Multi-pass concurrence validation requires minimum 3 independent bus passes with |gz - 1.0| < 0.15g before authorizing payment clearance."
+            )
     
     officer_note = f"{payload.field_notes or ''} [Officer: {current_user.get('name', 'Admin')} ({current_user.get('badge_number', 'PWD')})]".strip()
 

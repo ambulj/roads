@@ -8,6 +8,69 @@ import {
   FleetEdgeDiagnosticsResult, FederatedRoundResult, PrivacyStatus, PrivacyConfigPayload
 } from '../types';
 
+export interface ContractorAgency {
+  id: string;
+  name: string;
+  cin: string;
+  director: string;
+  assignedCorridor: string;
+  zone: string;
+  securityDepositInr: number;
+  penaltiesDeductedInr: number;
+  activeWorkOrders: number;
+  resolvedWorkOrders: number;
+  breachedWorkOrders: number;
+  onTimeSlaPct: number;
+  qualityScorePct: number;
+  compactionDensityGcm3: number;
+  warrantyExpiry: string;
+  debarmentRisk: 'Low' | 'Medium' | 'Critical Debarment Warning';
+  remainingDepositInr?: number;
+}
+
+export type ContractorLedgerItem = ContractorAgency;
+
+export interface AutoDebitRecord {
+  id: string;
+  timestamp: string;
+  contractorId: string;
+  contractorName: string;
+  corridor: string;
+  clusterCode: string;
+  patrolBusId: string;
+  measuredGz: number;
+  thresholdGz: number;
+  penaltyDebitInr: number;
+  remainingDepositInr: number;
+  pfmsTxnRef: string;
+  clause: string;
+  status: 'EXECUTED_VIA_PFMS' | 'PENDING_RE_INSPECTION';
+  evidenceSha256?: string;
+}
+
+export type PenaltyDocketItem = AutoDebitRecord;
+
+export interface ConcurrencePassItem {
+  bus_id: string;
+  vertical_gz: number;
+  optical_status: string;
+  passed_optical: boolean;
+  passed_imu: boolean;
+  timestamp: string;
+}
+
+export interface ConcurrenceVerificationResponse {
+  order_id: string;
+  status: string;
+  distinct_buses_count: number;
+  required_buses_count: number;
+  window_hours: number;
+  passes: ConcurrencePassItem[];
+  invoice_clearance_authorized: boolean;
+  escrow_holdback_released: boolean;
+  failure_reason?: string | null;
+}
+
 const API_BASE = '/api';
 
 // ── Chennai Critical POI Registry (Hospitals, Schools, Transit Hubs) ────────
@@ -1540,7 +1603,7 @@ class ApiService {
     return INITIAL_DARK_SPOTS;
   }
 
-  async getContractorPenalties(): Promise<ContractorPenaltyDebit[]> {
+  async getLegacyContractorPenalties(): Promise<ContractorPenaltyDebit[]> {
     try {
       const res = await fetch(`${API_BASE}/analytics/recurrence-penalties`, { signal: AbortSignal.timeout(1500) });
       if (res.ok) return await res.json();
@@ -1582,7 +1645,7 @@ class ApiService {
     return INITIAL_OBSCURED_SIGNS;
   }
 
-  async getContractorDebarments(): Promise<ContractorDebarmentDossier[]> {
+  async getLegacyContractorDebarments(): Promise<ContractorDebarmentDossier[]> {
     try {
       const res = await fetch(`${API_BASE}/analytics/contractor-debarments`, { signal: AbortSignal.timeout(1500) });
       if (res.ok) return await res.json();
@@ -2219,7 +2282,282 @@ class ApiService {
     if (!res.ok) throw new Error('Failed to anonymize image');
     return await res.json();
   }
+
+  // ── Contractor SLA Ledger & Concurrence Gating APIs ────────────────────────
+  async getContractorLedger(): Promise<ContractorAgency[]> {
+    try {
+      const res = await fetch(`${API_BASE}/contractors/ledger`, {
+        headers: this.getAuthHeaders(),
+        signal: AbortSignal.timeout(3000)
+      });
+      if (res.ok) {
+        const raw = await res.json();
+        if (Array.isArray(raw) && raw.length > 0) {
+          return raw.map((item: any) => ({
+            id: item.id || `CTR-${item.cin?.slice(-4) || '01'}`,
+            name: item.name,
+            cin: item.cin,
+            director: item.director,
+            assignedCorridor: item.assigned_corridor || item.assignedCorridor,
+            zone: item.zone,
+            securityDepositInr: item.security_deposit_inr ?? item.securityDepositInr ?? 5000000,
+            penaltiesDeductedInr: item.penalties_deducted_inr ?? item.penaltiesDeductedInr ?? 0,
+            remainingDepositInr: item.remaining_deposit_inr ?? ((item.security_deposit_inr ?? 5000000) - (item.penalties_deducted_inr ?? 0)),
+            activeWorkOrders: item.active_work_orders ?? item.activeWorkOrders ?? 0,
+            resolvedWorkOrders: item.resolved_work_orders ?? item.resolvedWorkOrders ?? 0,
+            breachedWorkOrders: item.breached_work_orders ?? item.breachedWorkOrders ?? 0,
+            onTimeSlaPct: item.on_time_sla_pct ?? item.onTimeSlaPct ?? 100.0,
+            qualityScorePct: item.quality_score_pct ?? item.qualityScorePct ?? 100.0,
+            compactionDensityGcm3: item.compaction_density_gcm3 ?? item.compactionDensityGcm3 ?? 2.35,
+            warrantyExpiry: item.warranty_expiry ?? item.warrantyExpiry ?? 'Active',
+            debarmentRisk: item.debarment_risk || (item.breached_work_orders > 2 ? 'Critical Debarment Warning' : item.breached_work_orders > 0 ? 'Medium' : 'Low')
+          }));
+        }
+      }
+    } catch (e) {
+      console.warn("Failed to fetch contractor ledger, using fallback:", e);
+    }
+    return INITIAL_CONTRACTORS_DATA;
+  }
+
+  async getContractorPenalties(): Promise<AutoDebitRecord[]> {
+    try {
+      const res = await fetch(`${API_BASE}/contractors/penalties`, {
+        headers: this.getAuthHeaders(),
+        signal: AbortSignal.timeout(3000)
+      });
+      if (res.ok) {
+        const raw = await res.json();
+        if (Array.isArray(raw) && raw.length > 0) {
+          return raw.map((p: any) => ({
+            id: p.id,
+            timestamp: p.issued_at || p.timestamp || 'Today',
+            contractorId: p.contractor_id || 'CTR-01',
+            contractorName: p.contractor_name || 'Contractor Agency',
+            corridor: p.corridor_name || p.corridor || 'Chennai Transit Corridor',
+            clusterCode: p.cluster_code || p.clusterCode || 'WO-0001',
+            patrolBusId: p.patrol_bus_id || p.patrolBusId || 'BUS-TN01-1042',
+            measuredGz: p.measured_gz ?? p.measuredGz ?? 1.44,
+            thresholdGz: p.threshold_gz ?? p.thresholdGz ?? 1.30,
+            penaltyDebitInr: p.penalty_amount_inr ?? p.penaltyDebitInr ?? 25000,
+            remainingDepositInr: p.remaining_deposit_inr ?? 4975000,
+            pfmsTxnRef: p.pfms_txn_ref || p.pfmsTxnRef || `PFMS/DLP-DEBIT/2026/${p.id}`,
+            clause: p.statutory_clause || p.clause || 'MoHUA IRC:SP:20 Clause 14.2',
+            status: (p.status === 'DEBIT_ISSUED' ? 'EXECUTED_VIA_PFMS' : p.status) || 'EXECUTED_VIA_PFMS',
+            evidenceSha256: p.evidence_sha256
+          }));
+        }
+      }
+    } catch (e) {
+      console.warn("Failed to fetch contractor penalties, using fallback:", e);
+    }
+    return INITIAL_AUTO_DEBITS_DATA;
+  }
+
+  async getContractorEscrow(id: string): Promise<any> {
+    try {
+      const res = await fetch(`${API_BASE}/contractors/${encodeURIComponent(id)}/escrow`, {
+        headers: this.getAuthHeaders()
+      });
+      if (res.ok) return await res.json();
+    } catch (e) {
+      console.warn("Failed to fetch contractor escrow:", e);
+    }
+    return null;
+  }
+
+  async triggerAutoDebit(payload: { cluster_code: string; measured_gz?: number; patrol_bus_id?: string }): Promise<any> {
+    return this.triggerAutoDebitDemo(payload);
+  }
+
+  async triggerAutoDebitDemo(payload: { cluster_code: string; measured_gz?: number; patrol_bus_id?: string }): Promise<any> {
+    try {
+      const res = await fetch(`${API_BASE}/contractors/penalties/auto-debit`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...this.getAuthHeaders()
+        },
+        body: JSON.stringify(payload)
+      });
+      if (res.ok) return await res.json();
+    } catch (e) {
+      console.warn("Failed to trigger auto debit demo:", e);
+    }
+    return null;
+  }
+
+  async getDebarments(): Promise<any[]> {
+    return this.getContractorDebarments();
+  }
+
+  async getContractorDebarments(): Promise<any[]> {
+    try {
+      const res = await fetch(`${API_BASE}/contractors/debarments`, {
+        headers: this.getAuthHeaders()
+      });
+      if (res.ok) return await res.json();
+    } catch (e) {
+      console.warn("Failed to fetch debarments:", e);
+    }
+    return [];
+  }
+
+  async verifyWorkOrderConcurrence(orderId: string, passes?: any[]): Promise<ConcurrenceVerificationResponse> {
+    try {
+      const res = await fetch(`${API_BASE}/work-orders/${encodeURIComponent(orderId)}/verify-concurrence`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...this.getAuthHeaders()
+        },
+        body: passes ? JSON.stringify({ passes }) : undefined
+      });
+      if (res.ok) return await res.json();
+    } catch (e) {
+      console.warn("Failed to verify work order concurrence:", e);
+    }
+    return {
+      order_id: orderId,
+      status: "AWAITING_CONCURRENCE",
+      distinct_buses_count: 0,
+      required_buses_count: 3,
+      window_hours: 48,
+      passes: [],
+      invoice_clearance_authorized: false,
+      escrow_holdback_released: false,
+      failure_reason: "Network error during concurrence verification"
+    };
+  }
 }
+
+export const INITIAL_CONTRACTORS_DATA: ContractorAgency[] = [
+  {
+    id: 'CTR-01',
+    name: 'L&T Highways Infra Ltd',
+    cin: 'U45203TN2008PLC069812',
+    director: 'K. Rajasekaran (VP Infra)',
+    assignedCorridor: 'GST Road Arterial (Airport to Tambaram, NH-32)',
+    zone: 'Zone 12 (Alandur / Pallavaram)',
+    securityDepositInr: 5000000,
+    penaltiesDeductedInr: 45000,
+    activeWorkOrders: 4,
+    resolvedWorkOrders: 42,
+    breachedWorkOrders: 1,
+    onTimeSlaPct: 94.2,
+    qualityScorePct: 96.5,
+    compactionDensityGcm3: 2.38,
+    warrantyExpiry: 'March 2028',
+    debarmentRisk: 'Low',
+  },
+  {
+    id: 'CTR-02',
+    name: 'GMR Urban Highways Ltd',
+    cin: 'U45201DL1996PLC077890',
+    director: 'S. Narayanan (Project Director)',
+    assignedCorridor: 'Anna Salai (Mount Road) CBD Corridor',
+    zone: 'Zone 09 (Teynampet Central)',
+    securityDepositInr: 5000000,
+    penaltiesDeductedInr: 125000,
+    activeWorkOrders: 7,
+    resolvedWorkOrders: 28,
+    breachedWorkOrders: 3,
+    onTimeSlaPct: 78.4,
+    qualityScorePct: 84.0,
+    compactionDensityGcm3: 2.18,
+    warrantyExpiry: 'November 2026',
+    debarmentRisk: 'Medium',
+  },
+  {
+    id: 'CTR-03',
+    name: 'Tamil Nadu Road Dev Corp (TNRDC)',
+    cin: 'U45203TN1998SGC040441',
+    director: 'Er. V. Murugesan (Chief Engineer)',
+    assignedCorridor: 'Old Mahabalipuram Road (OMR IT Expressway)',
+    zone: 'TNRDC Special IT Corridor',
+    securityDepositInr: 4000000,
+    penaltiesDeductedInr: 20000,
+    activeWorkOrders: 2,
+    resolvedWorkOrders: 36,
+    breachedWorkOrders: 0,
+    onTimeSlaPct: 98.6,
+    qualityScorePct: 98.1,
+    compactionDensityGcm3: 2.42,
+    warrantyExpiry: 'August 2029',
+    debarmentRisk: 'Low',
+  },
+  {
+    id: 'CTR-04',
+    name: 'HCC - Hindustan Construction Co.',
+    cin: 'L45200MH1926PLC001228',
+    director: 'Ajit Gulabchand',
+    assignedCorridor: 'Inner Ring Road / Jawaharlal Nehru Salai (Koyambedu to Guindy)',
+    zone: 'Zone 10 (Kodambakkam)',
+    securityDepositInr: 3000000,
+    penaltiesDeductedInr: 280000,
+    activeWorkOrders: 9,
+    resolvedWorkOrders: 19,
+    breachedWorkOrders: 5,
+    onTimeSlaPct: 62.1,
+    qualityScorePct: 71.5,
+    compactionDensityGcm3: 2.05,
+    warrantyExpiry: 'Expired / Review Pending',
+    debarmentRisk: 'Critical Debarment Warning',
+  },
+  {
+    id: 'CTR-05',
+    name: 'Chettinad Road Buildtech JV',
+    cin: 'U45201TN2012PTC085431',
+    director: 'M. Annamalai (Chief Engineer)',
+    assignedCorridor: 'Mount-Poonamallee High Road (Kathipara to Porur)',
+    zone: 'Zone 12 (Alandur)',
+    securityDepositInr: 2500000,
+    penaltiesDeductedInr: 15000,
+    activeWorkOrders: 3,
+    resolvedWorkOrders: 25,
+    breachedWorkOrders: 0,
+    onTimeSlaPct: 92.0,
+    qualityScorePct: 93.8,
+    compactionDensityGcm3: 2.34,
+    warrantyExpiry: 'January 2028',
+    debarmentRisk: 'Low',
+  },
+];
+
+export const INITIAL_AUTO_DEBITS_DATA: AutoDebitRecord[] = [
+  {
+    id: 'AD-2026-081',
+    timestamp: '2026-09-28 14:15 IST',
+    contractorId: 'CTR-04',
+    contractorName: 'HCC - Hindustan Construction Co.',
+    corridor: 'Inner Ring Road (Koyambedu Flyover)',
+    clusterCode: 'WO-2026-CHE-441',
+    patrolBusId: 'BUS-MTC-19B',
+    measuredGz: 1.44,
+    thresholdGz: 1.30,
+    penaltyDebitInr: 25000,
+    remainingDepositInr: 2720000,
+    pfmsTxnRef: 'PFMS/DLP-DEBIT/2026/0928-8812',
+    clause: 'IRC:SP:20 Clause 14.2 / MoRTH Sec 3000 DLP Penalty',
+    status: 'EXECUTED_VIA_PFMS'
+  },
+  {
+    id: 'AD-2026-079',
+    timestamp: '2026-09-26 11:30 IST',
+    contractorId: 'CTR-02',
+    contractorName: 'GMR Urban Highways Ltd',
+    corridor: 'Anna Salai (Teynampet Signal Approach)',
+    clusterCode: 'WO-2026-CHE-219',
+    patrolBusId: 'BUS-TN01-1042',
+    measuredGz: 1.38,
+    thresholdGz: 1.30,
+    penaltyDebitInr: 25000,
+    remainingDepositInr: 4875000,
+    pfmsTxnRef: 'PFMS/DLP-DEBIT/2026/0926-4401',
+    clause: 'IRC:SP:20 Clause 14.2 / MoRTH Sec 3000 DLP Penalty',
+    status: 'EXECUTED_VIA_PFMS'
+  }
+];
 
 export const INITIAL_SAFE_CORRIDORS: SafeCorridor[] = [
   {
