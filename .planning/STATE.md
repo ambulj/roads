@@ -1,39 +1,39 @@
 ---
 gsd_state_version: "1.0"
-milestone: v3.1
-current_phase: 7
-status: complete
-stopped_at: Phase 7 completed and verified (Milestone v3.1 Complete)
-last_updated: "2026-10-06T19:15:00.000Z"
+milestone: v3.2
+current_phase: 8
+status: ready_to_discuss
+stopped_at: Initialized Milestone v3.2 (Sleek Minimalist Civic Cockpit & UI De-cluttering)
+last_updated: "2026-10-06T19:30:00.000Z"
 last_activity: 2026-10-06
-last_activity_desc: Phase 7 verified and completed. Milestone v3.1 complete.
+last_activity_desc: Initialized Milestone v3.2 for UI streamlining and de-cluttering
 state_head: HEAD
 progress:
-  total_phases: 7
+  total_phases: 10
   completed_phases: 7
-  total_plans: 11
+  total_plans: 14
   completed_plans: 11
-  percent: 100
-current_phase_name: Municipal Dashboard, Work Orders & SLA Action Console Polish
+  percent: 78
+current_phase_name: Sidebar Workspace Consolidation & Global Navigation
 ---
 
 # Project State
 
 ## Project Reference
 
-See: `.planning/PROJECT.md` (updated 2026-10-06)
+See: `.planning/PROJECT.md` (updated 2026-10-07)
 
 **Core value:** Empower municipal authorities with automated, unassailable, multi-pass verified road distress evidence that protects taxpayer funds through autonomous contractor liability enforcement and protects lives through proactive safety intervention.
-**Current focus:** Milestone v3.1 (Modern Civic Portal & UI/UX Polish) — 100% Complete
+**Current focus:** Milestone v3.2 (Sleek Minimalist Civic Cockpit & UI De-cluttering) — Phase 8
 
 ## Current Position
 
-Phase: 7 — COMPLETE
-Plan: 1 of 1 in Phase 7 completed
-Status: Milestone v3.1 complete & verified
-Last activity: 2026-10-06 — Phase 7 verified and completed
+Phase: 8 — Ready to Discuss & Plan
+Plan: 0 of 1 in Phase 8 completed
+Status: Milestone v3.2 Active
+Last activity: 2026-10-06 — Initialized Milestone v3.2
 
-Progress: [██████████] 100%
+Progress: [████████░░] 78%
 
 ## Performance Metrics
 
@@ -53,18 +53,22 @@ Progress: [██████████] 100%
 | 5. Design Tokens & Minimalist Government Portal Theme | 1/1 | Complete | 15m |
 | 6. WebGIS Map HUD & Interactive Inspection Overlays | 1/1 | Complete | 15m |
 | 7. Municipal Dashboard, Work Orders & SLA Action Console Polish | 1/1 | Complete | 15m |
+| 8. Sidebar Workspace Consolidation & Global Navigation | 0/1 | Ready | - |
+| 9. Map HUD & Command Center Viewport Optimization | 0/1 | Ready | - |
+| 10. Tabbed Executive Analytics & Clean Backlog Table Redesign | 0/1 | Ready | - |
 
 **Recent Trend:**
-- Trend: Stable & 100% Verified
+- Trend: Stable & 100% Tested
 
 ## Accumulated Context
 
 ### Decisions
 
 - **Minimalist Government Portal Theme**: Modern white/indigo clean aesthetic with high-contrast data cards, responsive layout, and refined light/dark mode.
-- **WebGIS Floating HUD Dock**: Modern glassy dock with quick corridor navigation and high-contrast cluster inspection popups.
-- **Executive Municipal Dashboard & Action Console**: High-density KPI scorecards with animated SVG progress rings, 3-tab contractor SLA action console with multi-pass concurrence payment clearance gating, and accessible backlog data tables.
+- **Progressive Disclosure Cockpit UI**: Reduce cognitive load by organizing 16+ tools into 5 core workspaces, collapsing floating HUDs into subtle trays, and segmenting analytics into 4 focused tabs.
 
 ### Pending Todos
 
-None. All 7 phases across Milestone v3.0 and Milestone v3.1 are completed and verified.
+- [ ] Phase 8: Sidebar Workspace Consolidation & Global Navigation (`DECLUTTER-01`)
+- [ ] Phase 9: Map HUD & Command Center Viewport Optimization (`DECLUTTER-02`)
+- [ ] Phase 10: Tabbed Executive Analytics & Clean Backlog Table Redesign (`DECLUTTER-03`)

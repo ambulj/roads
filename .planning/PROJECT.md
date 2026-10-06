@@ -32,12 +32,15 @@ Empower municipal authorities with automated, unassailable, multi-pass verified 
 - ✓ Zero-copy Rockchip RK3588 NPU C++ pipeline, INT8 ONNX license plate OCR, and AIS-140 telematics parser — Phase 2
 - ✓ IRC:SP:20 Clause 14 automated contractor debit ledger, CAG/PFMS escrow accounting, and 3-pass concurrence gates — Phase 3
 - ✓ Explainable RPI mathematical explainer modal, 30 FPS dashcam video HUD, and PS 26124 transit desire lines — Phase 4
+- ✓ Modern white/indigo civic design tokens, typography, and theme toggle — Phase 5
+- ✓ WebGIS map floating dock, cluster inspection popups, and layer visibility controls — Phase 6
+- ✓ Executive KPI scorecards, SLA action console, and backlog table styling — Phase 7
 
-### Active (Milestone v3.1: Modern Civic Portal & UI/UX Polish)
+### Active (Milestone v3.2: Sleek Minimalist Civic Cockpit & UI De-cluttering)
 
-- [ ] **Modern Civic Design System & Theme Polish**: Clean, accessible white/indigo government portal aesthetic with high-contrast data cards, unified design tokens, typography, and polished dark/light mode toggle.
-- [ ] **WebGIS Map HUD & Inspection Controls**: Streamlined map control floating dock, responsive sidebar split-view, smooth 3D layer selectors, and clean cluster inspect popups.
-- [ ] **Executive Dashboard & SLA Action Console UI**: High-density KPI scorecards, accessible data tables, contractor escrow status pills, and intuitive multi-pass concurrence payment clearance workflow.
+- [ ] **Sidebar Workspace Consolidation & Global Layout Simplification**: Consolidate 16+ sidebar links into 5 core intuitive workspaces (Map Command, Work Orders, Analytics, Fleet, Settings) with clean sub-navigation.
+- [ ] **Map HUD & Command Center Viewport Optimization**: Streamline top dock, collapse floating HUD cards into discrete bottom trays, maximize map viewport, and refine operator triage drawer.
+- [ ] **Tabbed Executive Analytics & Clean Backlog Table Redesign**: Segment analytics into 4 focused tabs and streamline work orders table with progressive disclosure slide-overs.
 
 ### Out of Scope
 
@@ -48,7 +51,7 @@ Empower municipal authorities with automated, unassailable, multi-pass verified 
 
 - **Ecosystem**: Built for deployment across Indian state transport corporations (e.g., MTC Chennai) and smart city command centers.
 - **Hardware Targets**: Rockchip RK3588 (Orange Pi 5 Plus), Raspberry Pi 5 with AI Kit, and legacy x86 edge compute units.
-- **Codebase Baseline**: FastAPI async backend with 113 passing automated tests, React 18 + Vite WebGIS frontend with locked 60 FPS performance, standalone C++/Python edge agent.
+- **Codebase Baseline**: FastAPI async backend with 34 passing automated tests, React 18 + Vite WebGIS frontend with locked 60 FPS performance, standalone C++/Python edge agent.
 
 ## Constraints
 
@@ -65,24 +68,8 @@ Empower municipal authorities with automated, unassailable, multi-pass verified 
 | SQLite WAL with 15s Busy Timeout | Supports concurrent testing and local demo execution without external service dependencies | ✓ Good |
 | PostgreSQL+PostGIS Migration for v3.0 | Required for scaling beyond 500+ concurrent fleet buses and spatial query acceleration | ✓ Good |
 | Zero-Copy RKNN Pipeline | C++ NPU pipeline maximizes frame rate to 30+ FPS on Rockchip RK3588 with < 12W power | ✓ Good |
-| Minimalist Government Portal Theme | Modern white/indigo clean aesthetic ensures high accessibility and rapid municipal adoption | — Pending |
-
-## Evolution
-
-This document evolves at phase transitions and milestone boundaries.
-
-**After each phase transition** (via `/gsd-transition`):
-1. Requirements invalidated? → Move to Out of Scope with reason
-2. Requirements validated? → Move to Validated with phase reference
-3. New requirements emerged? → Add to Active
-4. Decisions to log? → Add to Key Decisions
-5. "What This Is" still accurate? → Update if drifted
-
-**After each milestone** (via `/gsd-complete-milestone`):
-1. Full review of all sections
-2. Core Value check — still the right priority?
-3. Audit Out of Scope — reasons still valid?
-4. Update Context with current state
+| Minimalist Government Portal Theme | Modern white/indigo clean aesthetic ensures high accessibility and rapid municipal adoption | ✓ Good |
+| Progressive Disclosure Cockpit UI | Reduces cognitive load on municipal operators by organizing 16+ tools into 5 core workspaces | — Pending |
 
 ---
-*Last updated: 2026-10-06 after initialization*
+*Last updated: 2026-10-07 for Milestone v3.2*
