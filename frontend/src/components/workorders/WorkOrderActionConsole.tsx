@@ -1,4 +1,4 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import {
   X,
   ShieldCheck,
@@ -12,17 +12,24 @@ import {
   Copy,
   Check,
   Activity,
-  Bus
+  Bus,
+  AlertTriangle,
+  Scale,
+  DollarSign,
+  Lock,
+  Unlock,
+  Layers,
+  Sparkles
 } from "lucide-react";
 import { HazardCluster } from "../../types";
 
-export type WorkOrderConsoleTab = "cad_audit" | "dispatch" | "repass" | "notice";
+export type WorkOrderConsoleTab = "cad_audit" | "contractor_sla" | "concurrence_release";
 
 interface WorkOrderActionConsoleProps {
   isOpen: boolean;
   onClose: () => void;
   cluster: HazardCluster | null;
-  initialTab?: WorkOrderConsoleTab;
+  initialTab?: WorkOrderConsoleTab | "dispatch" | "repass" | "notice";
   onAutoClose?: (clusterId: string, afterImageUrl: string, notes: string) => void;
   onUpdateStatus?: (orderId: string, status: any, afterImg?: string, notes?: string) => void;
 }
@@ -126,6 +133,54 @@ const CONSOLE_EVIDENCE_PASSES: ConsoleEvidencePass[] = [
   },
 ];
 
+export interface ConcurrencePassRecord {
+  busId: string;
+  busPlate: string;
+  route: string;
+  timestamp: string;
+  timeRelative: string;
+  gzValue: number;
+  opticalVerdict: "SMOOTH_SURFACE" | "DEFECT_PRESENT";
+  imuVerdict: "VERIFIED_PASS" | "SHOCK_DETECTED";
+  isQualified: boolean;
+}
+
+const INITIAL_CONCURRENCE_PASSES: ConcurrencePassRecord[] = [
+  {
+    busId: "BUS-TN01-1042",
+    busPlate: "TN-01-N-1042",
+    route: "MTC 19B (GST Road)",
+    timestamp: "Today, 07:14 IST",
+    timeRelative: "T+0.0h",
+    gzValue: 0.98,
+    opticalVerdict: "SMOOTH_SURFACE",
+    imuVerdict: "VERIFIED_PASS",
+    isQualified: true,
+  },
+  {
+    busId: "BUS-TN02-3891",
+    busPlate: "TN-02-N-3891",
+    route: "MTC 570 (Kathipara)",
+    timestamp: "Today, 09:32 IST",
+    timeRelative: "+2h 18m",
+    gzValue: 1.02,
+    opticalVerdict: "SMOOTH_SURFACE",
+    imuVerdict: "VERIFIED_PASS",
+    isQualified: true,
+  },
+  {
+    busId: "BUS-TN09-7721",
+    busPlate: "TN-09-E-7721",
+    route: "MTC 21G (Vandalur)",
+    timestamp: "Today, 11:05 IST",
+    timeRelative: "+3h 51m",
+    gzValue: 0.96,
+    opticalVerdict: "SMOOTH_SURFACE",
+    imuVerdict: "VERIFIED_PASS",
+    isQualified: true,
+  },
+];
+
 /**
  * Pure SVG QR Code Generator (Zero external dependencies)
  */
@@ -200,22 +255,34 @@ export const WorkOrderActionConsole: React.FC<WorkOrderActionConsoleProps> = ({
   onAutoClose,
   onUpdateStatus,
 }) => {
-  const [activeTab, setActiveTab] = useState<WorkOrderConsoleTab>(initialTab);
+  // Normalize initialTab to modern 3-tab layout
+  const resolveTab = (tab: string): WorkOrderConsoleTab => {
+    if (tab === "dispatch" || tab === "notice" || tab === "contractor_sla") return "contractor_sla";
+    if (tab === "repass" || tab === "concurrence_release") return "concurrence_release";
+    return "cad_audit";
+  };
+
+  const [activeTab, setActiveTab] = useState<WorkOrderConsoleTab>(resolveTab(initialTab));
+
+  useEffect(() => {
+    setActiveTab(resolveTab(initialTab));
+  }, [initialTab]);
 
   // Tab 1: CAD Audit Slider State
   const [sliderPosition, setSliderPosition] = useState(50);
   const [selectedPassIdx, setSelectedPassIdx] = useState(0);
   const containerRef = useRef<HTMLDivElement>(null);
 
-  // Tab 2: Dispatch State
+  // Tab 2: Contractor Assignment & SLA State
   const [selectedContact, setSelectedContact] = useState(WARD_ENGINEERS[0]);
   const [isCopied, setIsCopied] = useState(false);
   const [isDispatched, setIsDispatched] = useState(false);
 
-  // Tab 3: Re-Pass State
-  const [isScanning, setIsScanning] = useState(false);
-  const [scanStep, setScanStep] = useState(0);
-  const [isVerified, setIsVerified] = useState(false);
+  // Tab 3: Multi-Pass Concurrence & Payment Release State
+  const [concurrencePasses, setConcurrencePasses] = useState<ConcurrencePassRecord[]>(INITIAL_CONCURRENCE_PASSES);
+  const [isAuthorizing, setIsAuthorizing] = useState(false);
+  const [isPaymentReleased, setIsPaymentReleased] = useState(false);
+  const [isSimulatingPatrol, setIsSimulatingPatrol] = useState(false);
 
   if (!isOpen || !cluster) return null;
 
@@ -237,6 +304,7 @@ export const WorkOrderActionConsole: React.FC<WorkOrderActionConsoleProps> = ({
     ? cluster.before_image_url
     : currentPass.url;
 
+  // Handle slider mouse and touch drag
   const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
     if (!containerRef.current) return;
     const rect = containerRef.current.getBoundingClientRect();
@@ -244,27 +312,14 @@ export const WorkOrderActionConsole: React.FC<WorkOrderActionConsoleProps> = ({
     setSliderPosition((x / rect.width) * 100);
   };
 
-  const handleTriggerRePass = () => {
-    setIsScanning(true);
-    setScanStep(1);
-
-    setTimeout(() => {
-      setScanStep(2);
-      setTimeout(() => {
-        setScanStep(3);
-        setTimeout(() => {
-          setIsScanning(false);
-          setIsVerified(true);
-          onAutoClose?.(
-            cluster.id,
-            VERIFIED_ASPHALT_IMG,
-            `[AUTONOMOUS_FLEET_CLOSURE] Verified closed by Fleet Node BUS-MTC-21G on re-pass patrol. Vertical jerk dropped from 2.8g to 0.98g.`
-          );
-        }, 800);
-      }, 900);
-    }, 800);
+  const handleTouchMove = (e: React.TouchEvent<HTMLDivElement>) => {
+    if (!containerRef.current || !e.touches[0]) return;
+    const rect = containerRef.current.getBoundingClientRect();
+    const x = Math.max(0, Math.min(e.touches[0].clientX - rect.left, rect.width));
+    setSliderPosition((x / rect.width) * 100);
   };
 
+  // WhatsApp formatted payload
   const whatsappMessage = `*GREATER CHENNAI CORPORATION • PWD HIGHWAYS DISPATCH*\n----------------------------------------\n*Docket ID:* ${orderId}\n*Corridor:* ${location}\n*Defect:* ${defect}\n*Severity:* ${cluster.severity_level?.toUpperCase() || "CRITICAL"}\n*SLA Target:* ${cluster.sla_hours || 24} Hours\n*Contractor:* ${agency}\n*Material Spec:* ${asphaltKg} kg VG-30 Hot-Mix DBM (${volumeLiters} Liters)\n*Coordinates:* ${cluster.lat.toFixed(5)}, ${cluster.lng.toFixed(5)}\n----------------------------------------\n_Automated dispatch via RoadSaathi System._`;
 
   const handleCopyWhatsApp = () => {
@@ -277,6 +332,51 @@ export const WorkOrderActionConsole: React.FC<WorkOrderActionConsoleProps> = ({
     setIsDispatched(true);
     const encoded = encodeURIComponent(whatsappMessage);
     window.open(`https://wa.me/${selectedContact.phone.replace(/[^0-9]/g, "")}?text=${encoded}`, "_blank");
+  };
+
+  // Concurrence Gate calculations (T-07-03)
+  const qualifyingPasses = concurrencePasses.filter(
+    (p) => p.isQualified && Math.abs(p.gzValue - 1.0) < 0.15 && p.opticalVerdict === "SMOOTH_SURFACE"
+  );
+  const qualifyingCount = qualifyingPasses.length;
+  const isConcurrenceMet = qualifyingCount >= 3;
+
+  const handleAuthorizePayment = () => {
+    if (!isConcurrenceMet || isAuthorizing) return;
+    setIsAuthorizing(true);
+
+    setTimeout(() => {
+      setIsAuthorizing(false);
+      setIsPaymentReleased(true);
+      const auditNotes = `[AUTONOMOUS_PAYMENT_RELEASE] Concurrence verified by ${qualifyingCount}/3 fleet passes (|gz-1.0| < 0.15g). Milestone payment authorized under IRC:SP:20 Clause 14. Escrow released.`;
+      
+      onUpdateStatus?.(cluster.id, "verified_closed", VERIFIED_ASPHALT_IMG, auditNotes);
+      onAutoClose?.(cluster.id, VERIFIED_ASPHALT_IMG, auditNotes);
+    }, 900);
+  };
+
+  const handleSimulatePass = () => {
+    if (isSimulatingPatrol) return;
+    setIsSimulatingPatrol(true);
+
+    setTimeout(() => {
+      const newBusNumber = Math.floor(10 + Math.random() * 89);
+      const newGz = Math.round((0.95 + Math.random() * 0.1) * 100) / 100;
+      const newPass: ConcurrencePassRecord = {
+        busId: `BUS-TN${newBusNumber}-9942`,
+        busPlate: `TN-${newBusNumber}-P-9942`,
+        route: "MTC 19B Express",
+        timestamp: "Just Now",
+        timeRelative: "+4h 12m",
+        gzValue: newGz,
+        opticalVerdict: "SMOOTH_SURFACE",
+        imuVerdict: "VERIFIED_PASS",
+        isQualified: true,
+      };
+
+      setConcurrencePasses((prev) => [...prev, newPass]);
+      setIsSimulatingPatrol(false);
+    }, 800);
   };
 
   return (
@@ -295,7 +395,7 @@ export const WorkOrderActionConsole: React.FC<WorkOrderActionConsoleProps> = ({
             <div>
               <div className="flex items-center gap-2">
                 <h3 className="font-bold text-sm text-white tracking-wide">
-                  Work Order Action Console
+                  Contractor SLA &amp; Action Console
                 </h3>
                 <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-slate-800 text-slate-300 border border-slate-700">
                   {orderId}
@@ -318,66 +418,60 @@ export const WorkOrderActionConsole: React.FC<WorkOrderActionConsoleProps> = ({
 
           <button
             onClick={onClose}
-            className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition"
+            className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition cursor-pointer"
           >
             <X className="w-4 h-4" />
           </button>
         </div>
 
-        {/* Tab Navigation Strip */}
-        <div className="flex items-center gap-1 px-5 py-2 border-b border-slate-800 bg-[#0a0f1a] text-xs font-mono">
+        {/* 3-Tab Navigation Strip */}
+        <div className="flex items-center gap-1.5 px-5 py-2 border-b border-slate-800 bg-[#0a0f1a] text-xs font-mono">
           <button
             onClick={() => setActiveTab("cad_audit")}
-            className={`px-3 py-1.5 rounded-lg font-bold transition flex items-center gap-1.5 ${
+            className={`px-3.5 py-1.5 rounded-lg font-bold transition flex items-center gap-2 cursor-pointer ${
               activeTab === "cad_audit"
-                ? "bg-blue-600 text-white"
+                ? "bg-blue-600 text-white shadow-xs"
                 : "text-slate-400 hover:text-slate-200 hover:bg-slate-800/60"
             }`}
           >
             <Sliders className="w-3.5 h-3.5" />
-            <span>1. CAD &amp; MoRTH Audit</span>
+            <span>1. CAD &amp; Defect Audit</span>
           </button>
 
           <button
-            onClick={() => setActiveTab("dispatch")}
-            className={`px-3 py-1.5 rounded-lg font-bold transition flex items-center gap-1.5 ${
-              activeTab === "dispatch"
-                ? "bg-blue-600 text-white"
+            onClick={() => setActiveTab("contractor_sla")}
+            className={`px-3.5 py-1.5 rounded-lg font-bold transition flex items-center gap-2 cursor-pointer ${
+              activeTab === "contractor_sla"
+                ? "bg-blue-600 text-white shadow-xs"
                 : "text-slate-400 hover:text-slate-200 hover:bg-slate-800/60"
             }`}
           >
             <QrCode className="w-3.5 h-3.5" />
-            <span>2. Field Dispatch &amp; QR</span>
+            <span>2. Contractor Assignment &amp; SLA</span>
           </button>
 
           <button
-            onClick={() => setActiveTab("repass")}
-            className={`px-3 py-1.5 rounded-lg font-bold transition flex items-center gap-1.5 ${
-              activeTab === "repass"
-                ? "bg-blue-600 text-white"
+            onClick={() => setActiveTab("concurrence_release")}
+            className={`px-3.5 py-1.5 rounded-lg font-bold transition flex items-center gap-2 cursor-pointer ${
+              activeTab === "concurrence_release"
+                ? "bg-emerald-600 text-white shadow-xs"
                 : "text-slate-400 hover:text-slate-200 hover:bg-slate-800/60"
             }`}
           >
             <Bus className="w-3.5 h-3.5" />
-            <span>3. Fleet Re-Pass Verification</span>
-          </button>
-
-          <button
-            onClick={() => setActiveTab("notice")}
-            className={`px-3 py-1.5 rounded-lg font-bold transition flex items-center gap-1.5 ${
-              activeTab === "notice"
-                ? "bg-blue-600 text-white"
-                : "text-slate-400 hover:text-slate-200 hover:bg-slate-800/60"
-            }`}
-          >
-            <Printer className="w-3.5 h-3.5" />
-            <span>4. Notice &amp; Audit Docket</span>
+            <span>3. Multi-Pass Concurrence &amp; Payment Release</span>
+            <span className={`px-1.5 py-0.2 rounded-full text-[9px] font-mono font-bold ${
+              isConcurrenceMet ? "bg-emerald-400 text-emerald-950" : "bg-amber-400 text-amber-950"
+            }`}>
+              {qualifyingCount}/3
+            </span>
           </button>
         </div>
 
         {/* Tab Body */}
         <div className="flex-1 overflow-y-auto p-5 custom-scrollbar min-h-[420px]">
-          {/* TAB 1: CAD & MORTH AUDIT */}
+          
+          {/* TAB 1: CAD & DEFECT AUDIT */}
           {activeTab === "cad_audit" && (
             <div className="space-y-4">
               <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
@@ -386,14 +480,15 @@ export const WorkOrderActionConsole: React.FC<WorkOrderActionConsoleProps> = ({
                   <div className="text-xs font-mono text-slate-400 flex items-center justify-between">
                     <span className="flex items-center gap-1.5 text-slate-300 font-semibold">
                       <Sliders className="w-3.5 h-3.5 text-blue-400" />
-                      Pre-Repair Defect vs Post-Compaction Overlay
+                      Pre-Repair Distress vs Post-Compaction VG-30 Asphalt Overlay
                     </span>
-                    <span className="text-blue-400 font-bold">Slider: {Math.round(sliderPosition)}%</span>
+                    <span className="text-blue-400 font-bold tabular-nums">Split: {Math.round(sliderPosition)}%</span>
                   </div>
 
                   <div
                     ref={containerRef}
                     onMouseMove={handleMouseMove}
+                    onTouchMove={handleTouchMove}
                     className="relative w-full h-64 rounded-lg overflow-hidden border border-slate-700 bg-slate-950 cursor-ew-resize select-none shadow-inner"
                   >
                     <img
@@ -431,7 +526,7 @@ export const WorkOrderActionConsole: React.FC<WorkOrderActionConsoleProps> = ({
                     <div className="flex items-center justify-between text-[11px] font-mono text-slate-400">
                       <span className="flex items-center gap-1 font-bold text-slate-300">
                         <Bus className="w-3.5 h-3.5 text-blue-400" />
-                        Captured Optical &amp; IMU Evidence Passes ({CONSOLE_EVIDENCE_PASSES.length})
+                        5-Pass Optical &amp; IMU Evidence Gallery
                       </span>
                       <span className="text-[10px] text-blue-400 font-semibold">Select pass to inspect in slider</span>
                     </div>
@@ -442,7 +537,7 @@ export const WorkOrderActionConsole: React.FC<WorkOrderActionConsoleProps> = ({
                           key={pass.id}
                           type="button"
                           onClick={() => setSelectedPassIdx(idx)}
-                          className={`flex flex-col p-1.5 rounded-lg border text-left transition ${
+                          className={`flex flex-col p-1.5 rounded-lg border text-left transition cursor-pointer ${
                             selectedPassIdx === idx
                               ? "bg-blue-600/25 border-blue-500 ring-1 ring-blue-500/50"
                               : "bg-slate-950/70 border-slate-800 hover:border-slate-700 hover:bg-slate-900"
@@ -493,358 +588,348 @@ export const WorkOrderActionConsole: React.FC<WorkOrderActionConsoleProps> = ({
                   <div>
                     <h4 className="font-bold text-slate-200 uppercase tracking-wide text-xs mb-2 flex items-center gap-1.5">
                       <Building className="w-3.5 h-3.5 text-blue-400" />
-                      <span>MoRTH Standard Specifications (SOR 2025)</span>
+                      <span>Volumetric Material &amp; SOR 2025 Cost</span>
                     </h4>
 
                     <div className="space-y-2 font-mono text-[11px]">
                       <div className="p-2 rounded bg-slate-950 border border-slate-800 flex justify-between">
-                        <span className="text-slate-400">Surface Defect Area:</span>
-                        <strong className="text-slate-200">{areaM2} m²</strong>
+                        <span className="text-slate-400">Defect Cavity Area:</span>
+                        <strong className="text-slate-200 tabular-nums">{areaM2} m²</strong>
                       </div>
                       <div className="p-2 rounded bg-slate-950 border border-slate-800 flex justify-between">
-                        <span className="text-slate-400">Mean Cavity Depth:</span>
-                        <strong className="text-slate-200">{depthCm} cm</strong>
+                        <span className="text-slate-400">Mean Depth (Z-axis):</span>
+                        <strong className="text-slate-200 tabular-nums">{depthCm} cm</strong>
                       </div>
                       <div className="p-2 rounded bg-slate-950 border border-slate-800 flex justify-between">
                         <span className="text-slate-400">Calculated Cavity Volume:</span>
-                        <strong className="text-slate-200">{volumeLiters} Liters ({volumeM3.toFixed(4)} m³)</strong>
+                        <strong className="text-slate-200 tabular-nums">{volumeLiters} Liters ({volumeM3.toFixed(4)} m³)</strong>
                       </div>
                       <div className="p-2 rounded bg-slate-950 border border-slate-800 flex justify-between">
-                        <span className="text-slate-400">Required Asphalt (VG-30 DBM):</span>
-                        <strong className="text-blue-400 font-bold">{asphaltKg} kg Hot-Mix</strong>
+                        <span className="text-slate-400">VG-30 DBM Asphalt Required:</span>
+                        <strong className="text-blue-400 font-bold tabular-nums">{asphaltKg} kg Hot-Mix</strong>
                       </div>
                       <div className="p-2 rounded bg-slate-950 border border-slate-800 flex justify-between">
-                        <span className="text-slate-400">Schedule of Rates (SOR) Estimate:</span>
-                        <strong className="text-slate-100 font-bold">₹{costInr.toLocaleString("en-IN")}</strong>
+                        <span className="text-slate-400">SOR 2025 Standard Cost:</span>
+                        <strong className="text-emerald-400 font-bold tabular-nums">₹{costInr.toLocaleString("en-IN")}</strong>
                       </div>
                     </div>
                   </div>
 
-                  <div className="p-2.5 rounded bg-slate-950 border border-slate-800 text-[10.5px] text-slate-400">
-                    <strong>MoRTH Clause 500.4:</strong> Tack coat RS-1 required on vertical cavity edges before 8-ton vibratory roller compaction.
+                  <div className="p-2.5 rounded bg-slate-950 border border-slate-800 text-[10.5px] text-slate-400 space-y-1">
+                    <div><strong>Statutory Reference:</strong> IRC:SP:20 Clause 14 &amp; MoRTH Section 3000.</div>
+                    <div className="text-[9.5px] text-slate-500 font-mono">Tack coat RS-1 required on vertical cavity edges before 8-ton vibratory compaction.</div>
                   </div>
                 </div>
               </div>
             </div>
           )}
 
-          {/* TAB 2: FIELD DISPATCH & QR */}
-          {activeTab === "dispatch" && (
-            <div className="grid grid-cols-1 md:grid-cols-12 gap-5">
-              {/* Left: Cryptographic QR Code Ticket */}
-              <div className="md:col-span-5 p-4 rounded-lg bg-slate-900/80 border border-slate-800 flex flex-col items-center justify-between text-center space-y-3">
-                <div className="space-y-1">
-                  <h4 className="font-bold text-xs uppercase tracking-wider text-slate-300">
-                    Field Worker QR Dispatch Docket
-                  </h4>
-                  <p className="text-[11px] text-slate-400">
-                    Scan on site with mobile camera to log asphalt batch and photo proof
-                  </p>
+          {/* TAB 2: CONTRACTOR ASSIGNMENT & SLA */}
+          {activeTab === "contractor_sla" && (
+            <div className="space-y-4">
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
+                {/* Left: Assigned Contractor Agency & Escrow Pool */}
+                <div className="lg:col-span-6 space-y-3">
+                  <div className="p-4 rounded-lg bg-slate-900/80 border border-slate-800 space-y-3">
+                    <div className="flex items-center justify-between border-b border-slate-800 pb-2">
+                      <div className="flex items-center gap-2">
+                        <Building className="w-4 h-4 text-blue-400" />
+                        <h4 className="font-bold text-xs uppercase tracking-wider text-slate-200">
+                          Assigned Agency Details
+                        </h4>
+                      </div>
+                      <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-blue-950/60 text-blue-300 border border-blue-800">
+                        Primary Maintainer
+                      </span>
+                    </div>
+
+                    <div className="space-y-2 text-xs font-mono">
+                      <div className="flex justify-between">
+                        <span className="text-slate-400">Contractor Agency:</span>
+                        <strong className="text-slate-200">{agency}</strong>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-slate-400">Corporate CIN:</span>
+                        <strong className="text-slate-300">U45203TN2008PLC069812</strong>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-slate-400">Project Director:</span>
+                        <strong className="text-slate-300">Er. K. Rajasekaran, VP Infra</strong>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-slate-400">Assigned Corridor:</span>
+                        <strong className="text-slate-300 truncate max-w-[240px]">{location}</strong>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Escrow Pool & Debarment Risk Meter */}
+                  <div className="p-4 rounded-lg bg-slate-900/80 border border-slate-800 space-y-3 font-mono text-xs">
+                    <div className="flex items-center justify-between border-b border-slate-800 pb-2">
+                      <div className="flex items-center gap-2">
+                        <Scale className="w-4 h-4 text-amber-400" />
+                        <h4 className="font-bold text-xs uppercase tracking-wider text-slate-200">
+                          Escrow Security Deposit Pool
+                        </h4>
+                      </div>
+                      <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-950/60 text-emerald-300 border border-emerald-800">
+                        Low Debarment Risk
+                      </span>
+                    </div>
+
+                    <div className="grid grid-cols-3 gap-2 text-center">
+                      <div className="p-2 rounded bg-slate-950 border border-slate-800">
+                        <span className="text-[10px] text-slate-400 block">BASE DEPOSIT</span>
+                        <strong className="text-slate-200 text-xs tabular-nums">₹50,00,000</strong>
+                      </div>
+                      <div className="p-2 rounded bg-slate-950 border border-slate-800">
+                        <span className="text-[10px] text-slate-400 block">DEDUCTIONS</span>
+                        <strong className="text-rose-400 text-xs tabular-nums">-₹45,000</strong>
+                      </div>
+                      <div className="p-2 rounded bg-slate-950 border border-slate-800">
+                        <span className="text-[10px] text-slate-400 block">NET ESCROW</span>
+                        <strong className="text-emerald-400 text-xs tabular-nums">₹49,55,000</strong>
+                      </div>
+                    </div>
+
+                    <div className="space-y-1">
+                      <div className="flex justify-between text-[11px]">
+                        <span className="text-slate-400">Debarment Safety Threshold:</span>
+                        <span className="text-emerald-400 font-bold">99.1% Safe</span>
+                      </div>
+                      <div className="w-full h-1.5 bg-slate-800 rounded-full overflow-hidden">
+                        <div className="h-full bg-emerald-500 rounded-full" style={{ width: "99.1%" }} />
+                      </div>
+                    </div>
+                  </div>
                 </div>
 
-                <SvgQRCode value={`https://roadsaathi.gov.in/wo/${orderId}?lat=${cluster.lat}&lng=${cluster.lng}`} size={160} />
+                {/* Right: Direct WhatsApp Dispatch & Cryptographic QR Code */}
+                <div className="lg:col-span-6 space-y-3">
+                  <div className="p-4 rounded-lg bg-slate-900/80 border border-slate-800 space-y-3 text-xs">
+                    <div className="flex items-center justify-between border-b border-slate-800 pb-2">
+                      <h4 className="font-bold text-slate-200 uppercase tracking-wide text-xs flex items-center gap-1.5">
+                        <Send className="w-3.5 h-3.5 text-blue-400" />
+                        <span>Direct WhatsApp Dispatch Payload</span>
+                      </h4>
+                      <span className="text-[10px] font-mono text-emerald-400">Zero Gateway Lag</span>
+                    </div>
 
-                <div className="text-[10px] font-mono text-slate-400 space-y-0.5">
-                  <div>TICKET HASH: SHA-256: 8a4f91...c3e2</div>
-                  <div>GEO-LOCK: [{cluster.lat.toFixed(5)}, {cluster.lng.toFixed(5)}]</div>
-                </div>
-              </div>
+                    <div className="space-y-2">
+                      <div>
+                        <label className="text-[11px] text-slate-400 font-mono block mb-1">Select Officer / Site Incharge:</label>
+                        <select
+                          value={selectedContact.phone}
+                          onChange={(e) => {
+                            const c = WARD_ENGINEERS.find((w) => w.phone === e.target.value);
+                            if (c) setSelectedContact(c);
+                          }}
+                          className="w-full p-2 rounded-lg bg-slate-950 border border-slate-700 text-xs font-mono text-slate-200 cursor-pointer"
+                        >
+                          {WARD_ENGINEERS.map((w) => (
+                            <option key={w.phone} value={w.phone}>
+                              {w.role} • {w.name}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
 
-              {/* Right: Ward Engineer WhatsApp Direct Dispatch */}
-              <div className="md:col-span-7 p-4 rounded-lg bg-slate-900/80 border border-slate-800 flex flex-col justify-between space-y-3 text-xs">
-                <div>
-                  <h4 className="font-bold text-slate-200 uppercase tracking-wide text-xs mb-2 flex items-center gap-1.5">
-                    <Send className="w-3.5 h-3.5 text-blue-400" />
-                    <span>Direct WhatsApp Dispatch to Field Engineer</span>
-                  </h4>
+                      <div className="flex gap-3">
+                        <div className="flex-1">
+                          <label className="text-[11px] text-slate-400 font-mono block mb-1">Payload:</label>
+                          <pre className="p-2.5 rounded-lg bg-slate-950 border border-slate-800 font-mono text-[10px] text-slate-300 whitespace-pre-wrap leading-relaxed max-h-32 overflow-y-auto custom-scrollbar">
+                            {whatsappMessage}
+                          </pre>
+                        </div>
+                        <div className="shrink-0 flex flex-col items-center justify-center p-2 rounded-lg bg-slate-950 border border-slate-800">
+                          <SvgQRCode value={`https://roadsaathi.gov.in/wo/${orderId}`} size={96} />
+                          <span className="text-[9px] font-mono text-slate-400 mt-1">Field QR</span>
+                        </div>
+                      </div>
+                    </div>
 
-                  <div className="space-y-2">
-                    <div>
-                      <label className="text-[11px] text-slate-400 font-mono block mb-1">Select Designated Officer / Contractor:</label>
-                      <select
-                        value={selectedContact.phone}
-                        onChange={(e) => {
-                          const c = WARD_ENGINEERS.find((w) => w.phone === e.target.value);
-                          if (c) setSelectedContact(c);
-                        }}
-                        className="w-full p-2 rounded-lg bg-slate-950 border border-slate-700 text-xs font-mono text-slate-200"
+                    <div className="flex items-center gap-2 pt-2 border-t border-slate-800">
+                      <button
+                        onClick={handleCopyWhatsApp}
+                        className="flex-1 py-2 px-3 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 font-mono font-bold text-xs flex items-center justify-center gap-1.5 transition cursor-pointer"
                       >
-                        {WARD_ENGINEERS.map((w) => (
-                          <option key={w.phone} value={w.phone}>
-                            {w.role} • {w.name} ({w.zone})
-                          </option>
-                        ))}
-                      </select>
-                    </div>
+                        {isCopied ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+                        <span>{isCopied ? "Copied" : "Copy Payload"}</span>
+                      </button>
 
-                    <div>
-                      <label className="text-[11px] text-slate-400 font-mono block mb-1">Generated Dispatch Payload:</label>
-                      <pre className="p-3 rounded-lg bg-slate-950 border border-slate-800 font-mono text-[10.5px] text-slate-300 whitespace-pre-wrap leading-relaxed max-h-36 overflow-y-auto custom-scrollbar">
-                        {whatsappMessage}
-                      </pre>
+                      <button
+                        onClick={handleLaunchWhatsApp}
+                        className="flex-1 py-2 px-3 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-mono font-bold text-xs flex items-center justify-center gap-1.5 transition shadow-xs cursor-pointer"
+                      >
+                        <ExternalLink className="w-3.5 h-3.5" />
+                        <span>Launch WhatsApp</span>
+                      </button>
                     </div>
                   </div>
-                </div>
-
-                <div className="flex items-center gap-2 pt-2 border-t border-slate-800">
-                  <button
-                    onClick={handleCopyWhatsApp}
-                    className="flex-1 py-2 px-3 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 font-mono font-bold text-xs flex items-center justify-center gap-1.5 transition"
-                  >
-                    {isCopied ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
-                    <span>{isCopied ? "Copied Payload" : "Copy Payload"}</span>
-                  </button>
-
-                  <button
-                    onClick={handleLaunchWhatsApp}
-                    className="flex-1 py-2 px-3 rounded-lg bg-blue-600 hover:bg-blue-500 text-white font-mono font-bold text-xs flex items-center justify-center gap-1.5 transition shadow-xs"
-                  >
-                    <ExternalLink className="w-3.5 h-3.5" />
-                    <span>Launch WhatsApp</span>
-                  </button>
                 </div>
               </div>
             </div>
           )}
 
-          {/* TAB 3: FLEET RE-PASS VERIFICATION */}
-          {activeTab === "repass" && (
-            <div className="p-5 rounded-lg bg-slate-900/80 border border-slate-800 space-y-4">
-              <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-                <div className="flex items-center gap-2">
-                  <Bus className="w-4 h-4 text-blue-400" />
-                  <div>
-                    <h4 className="font-bold text-sm text-slate-200">
-                      Autonomous Transit Fleet Re-Pass Verification
+          {/* TAB 3: MULTI-PASS CONCURRENCE & PAYMENT RELEASE */}
+          {activeTab === "concurrence_release" && (
+            <div className="space-y-4">
+              {/* Header Info */}
+              <div className="p-4 rounded-lg bg-slate-900/80 border border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div className="space-y-0.5">
+                  <div className="flex items-center gap-2">
+                    <Bus className="w-4 h-4 text-emerald-400" />
+                    <h4 className="font-bold text-sm text-slate-100">
+                      Multi-Pass Transit Fleet Concurrence &amp; Escrow Release Gate
                     </h4>
-                    <p className="text-[11px] text-slate-400">
-                      Regular public bus patrol passes over repaired coordinates to verify road smoothness (Gz &lt; 1.15g)
-                    </p>
                   </div>
-                </div>
-
-                <span className="px-2.5 py-1 rounded bg-slate-800 text-slate-300 font-mono text-[11px] font-bold border border-slate-700">
-                  Node: BUS-MTC-21G (Route 19B)
-                </span>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-3 font-mono text-xs">
-                <div className="p-3 rounded-lg bg-slate-950 border border-slate-800 space-y-1">
-                  <span className="text-slate-400 text-[10px] block">PRE-REPAIR SHOCK</span>
-                  <strong className="text-rose-400 text-sm">+2.80g (Severe)</strong>
-                  <div className="text-[10px] text-slate-500">D40 Cavity Drop</div>
-                </div>
-
-                <div className="p-3 rounded-lg bg-slate-950 border border-slate-800 space-y-1">
-                  <span className="text-slate-400 text-[10px] block">RE-PASS PATROL ACCELERATION</span>
-                  <strong className={isVerified ? "text-emerald-400 text-sm" : "text-slate-300 text-sm"}>
-                    {isVerified ? "+0.98g (Smooth)" : "Pending Verification"}
-                  </strong>
-                  <div className="text-[10px] text-slate-500">Heuristic threshold: &lt; 1.15g</div>
-                </div>
-
-                <div className="p-3 rounded-lg bg-slate-950 border border-slate-800 space-y-1">
-                  <span className="text-slate-400 text-[10px] block">COMPACTION DENSITY</span>
-                  <strong className={isVerified ? "text-emerald-400 text-sm" : "text-slate-300 text-sm"}>
-                    {isVerified ? "2.38 g/cm³ (98.4%)" : "Awaiting sensor sweep"}
-                  </strong>
-                  <div className="text-[10px] text-slate-500">IRC:SP:20 Standard</div>
-                </div>
-              </div>
-
-              {/* Dual Photographic Evidence Inspection */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
-                <div className="p-3 rounded-lg bg-slate-950 border border-slate-800 space-y-2">
-                  <div className="flex items-center justify-between text-[11px] font-mono font-bold text-rose-400">
-                    <span>1. PRE-REPAIR DISTRESS FRAME</span>
-                    <span className="px-1.5 py-0.5 rounded bg-rose-950/80 border border-rose-800/80 text-[10px]">Gz = +2.80g</span>
-                  </div>
-                  <div className="aspect-video rounded-lg overflow-hidden border border-slate-800 relative bg-slate-900">
-                    <img
-                      src="/evidence/bus_pass_1_impact.jpg"
-                      alt="Pre repair cavity"
-                      className="w-full h-full object-cover"
-                      onError={(e) => {
-                        (e.currentTarget as HTMLImageElement).src = "/evidence/bus_pass_1_detect.jpg";
-                      }}
-                    />
-                    <div className="absolute top-1.5 left-1.5 px-2 py-0.5 rounded bg-rose-950/90 text-rose-300 font-mono text-[9px] font-bold border border-rose-800">
-                      DEFECT IMPACT (T 0.0s)
-                    </div>
-                  </div>
-                  <div className="text-[10px] text-slate-400 font-mono flex justify-between">
-                    <span>Node: BUS-TN-01-N-1042</span>
-                    <span className="text-rose-400 font-bold">Unrepaired Void</span>
-                  </div>
-                </div>
-
-                <div className="p-3 rounded-lg bg-slate-950 border border-slate-800 space-y-2">
-                  <div className="flex items-center justify-between text-[11px] font-mono font-bold text-emerald-400">
-                    <span>2. RE-PASS REPAVED PROOF</span>
-                    <span className={`px-1.5 py-0.5 rounded text-[10px] ${isVerified ? "bg-emerald-950/80 border border-emerald-800/80 text-emerald-300" : "bg-slate-800 border border-slate-700 text-slate-400"}`}>
-                      {isVerified ? "Gz = +0.98g (Smooth)" : "Awaiting Patrol"}
-                    </span>
-                  </div>
-                  <div className="aspect-video rounded-lg overflow-hidden border border-slate-800 relative bg-slate-900">
-                    <img
-                      src={VERIFIED_ASPHALT_IMG}
-                      alt="Post repair overlay"
-                      className="w-full h-full object-cover"
-                      onError={(e) => {
-                        (e.currentTarget as HTMLImageElement).src = "/evidence/bus_pass_3_concurrence.jpg";
-                      }}
-                    />
-                    <div className={`absolute top-1.5 left-1.5 px-2 py-0.5 rounded font-mono text-[9px] font-bold border ${
-                      isVerified
-                        ? "bg-emerald-950/90 text-emerald-300 border-emerald-700"
-                        : "bg-slate-900/90 text-slate-400 border-slate-700"
-                    }`}>
-                      {isVerified ? "AUTONOMOUSLY VERIFIED REPAVED" : "HOT-MIX ASPHALT TARGET"}
-                    </div>
-                  </div>
-                  <div className="text-[10px] text-slate-400 font-mono flex justify-between">
-                    <span>Node: BUS-MTC-21G</span>
-                    <span className={isVerified ? "text-emerald-400 font-bold" : "text-amber-400 font-bold"}>
-                      {isVerified ? "SLA Closed (IRC:SP:20)" : "Pending Verification"}
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              {isScanning && (
-                <div className="p-3 rounded-lg bg-slate-950 border border-slate-800 text-xs font-mono space-y-2">
-                  <div className="flex justify-between text-[11px]">
-                    <span className="text-slate-400">Patrol Progress:</span>
-                    <span className="text-blue-400 font-bold">
-                      {scanStep === 1 ? "1/3 Bus Telemetry Ingest..." : scanStep === 2 ? "2/3 Accelerometer Gz Heuristic Check..." : "3/3 Dual-Camera Verification..."}
-                    </span>
-                  </div>
-                  <div className="w-full h-1.5 bg-slate-800 rounded-full overflow-hidden">
-                    <div
-                      className="h-full bg-blue-500 transition-all duration-300"
-                      style={{ width: `${scanStep * 33.3}%` }}
-                    />
-                  </div>
-                </div>
-              )}
-
-              {isVerified && (
-                <div className="p-3 rounded-lg bg-emerald-950/40 border border-emerald-800/80 text-xs font-mono text-emerald-300 space-y-1">
-                  <div className="font-bold flex items-center gap-1.5">
-                    <CheckCircle2 className="w-4 h-4 text-emerald-400" />
-                    <span>Re-Pass Verification Succeeded • Work Order Closed</span>
-                  </div>
-                  <p className="text-[11px] text-slate-300">
-                    MTC Bus #21G confirmed zero cavity rebound (+0.98g). Milestone clearance authorized in SLA compliance ledger.
+                  <p className="text-xs text-slate-400">
+                    Statutory requirement: At least <strong className="text-slate-200">3 distinct transit bus passes</strong> must verify smooth surface telemetry (<strong className="text-emerald-400 font-mono">|gz - 1.0| &lt; 0.15g</strong>) to authorize milestone payment.
                   </p>
                 </div>
-              )}
 
-              {!isVerified && (
-                <button
-                  onClick={handleTriggerRePass}
-                  disabled={isScanning}
-                  className="w-full py-2.5 px-4 rounded-lg bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white font-mono font-bold text-xs flex items-center justify-center gap-2 transition"
-                >
-                  <Activity className="w-4 h-4" />
-                  <span>{isScanning ? "Running Fleet Patrol Verification..." : "Simulate Fleet Re-Pass Patrol Verification"}</span>
-                </button>
-              )}
-            </div>
-          )}
+                <div className="flex items-center gap-2">
+                  <span className={`px-3 py-1 rounded-full font-mono text-xs font-bold border flex items-center gap-1.5 ${
+                    isConcurrenceMet
+                      ? "bg-emerald-950/80 border-emerald-700 text-emerald-300"
+                      : "bg-amber-950/80 border-amber-700 text-amber-300"
+                  }`}>
+                    {isConcurrenceMet ? <Unlock className="w-3.5 h-3.5" /> : <Lock className="w-3.5 h-3.5" />}
+                    <span>{qualifyingCount} / 3 Passes Verified</span>
+                  </span>
+                </div>
+              </div>
 
-          {/* TAB 4: NOTICE & AUDIT DOCKET */}
-          {activeTab === "notice" && (
-            <div className="p-5 rounded-lg bg-slate-900/80 border border-slate-800 space-y-4 text-xs font-mono">
-              <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-                <div>
-                  <h4 className="font-bold text-sm text-slate-200">
-                    Municipal Notice &amp; Audit Docket Draft
+              {/* 3-Pass Verification Cards */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                {concurrencePasses.map((pass, idx) => {
+                  const isSmooth = Math.abs(pass.gzValue - 1.0) < 0.15;
+                  return (
+                    <div
+                      key={idx}
+                      className="p-3.5 rounded-xl bg-slate-950 border border-slate-800 flex flex-col justify-between gap-3 shadow-xs"
+                    >
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between">
+                          <span className="px-2 py-0.5 rounded font-mono font-bold text-xs bg-slate-900 border border-slate-700 text-slate-200">
+                            {pass.busId}
+                          </span>
+                          <span className="text-[10px] font-mono text-slate-400">
+                            {pass.timeRelative} ({pass.timestamp})
+                          </span>
+                        </div>
+
+                        <div className="text-xs font-semibold text-slate-300 truncate">
+                          Route: {pass.route}
+                        </div>
+
+                        <div className="p-2 rounded-lg bg-slate-900/90 border border-slate-800 space-y-1 font-mono text-xs">
+                          <div className="flex items-center justify-between">
+                            <span className="text-slate-400 text-[11px]">Vertical Shock (Gz):</span>
+                            <strong className={`tabular-nums font-bold ${isSmooth ? "text-emerald-400" : "text-rose-400"}`}>
+                              {pass.gzValue.toFixed(2)}g
+                            </strong>
+                          </div>
+                          <div className="flex items-center justify-between">
+                            <span className="text-slate-400 text-[11px]">Optical Consensus:</span>
+                            <span className="text-emerald-400 font-bold text-[10.5px]">SMOOTH_SURFACE</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="pt-2 border-t border-slate-800 flex items-center justify-between text-[10px] font-mono">
+                        <span className="px-1.5 py-0.5 rounded bg-emerald-950/60 text-emerald-400 border border-emerald-800/60 font-semibold">
+                          |gz - 1.0| &lt; 0.15g ✓
+                        </span>
+                        <span className="text-slate-500">Pass #{idx + 1} Cleared</span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Payment Release Authorization Gate */}
+              <div className="p-4 rounded-xl bg-slate-900/90 border border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div className="space-y-1">
+                  <h4 className="font-bold text-xs uppercase tracking-wider text-slate-200 flex items-center gap-1.5">
+                    <DollarSign className="w-3.5 h-3.5 text-emerald-400" />
+                    <span>Statutory Escrow Payment Authorization</span>
                   </h4>
                   <p className="text-[11px] text-slate-400">
-                    Standard draft documentation formatted for GCC / PWD highways engineering division
+                    {isConcurrenceMet
+                      ? "All 3 fleet buses confirmed road smoothness within tolerance. Milestone release ready for contractor."
+                      : `Requires at least 3 qualifying transit bus passes to authorize payment (Currently: ${qualifyingCount} / 3).`}
                   </p>
                 </div>
 
-                <button
-                  onClick={() => window.print()}
-                  className="py-1.5 px-3 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-xs flex items-center gap-1.5 transition"
-                >
-                  <Printer className="w-3.5 h-3.5" />
-                  <span>Print Document</span>
-                </button>
-              </div>
+                <div className="flex items-center gap-2 shrink-0">
+                  <button
+                    onClick={handleSimulatePass}
+                    disabled={isSimulatingPatrol}
+                    className="px-3 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 font-mono text-xs font-semibold border border-slate-700 transition cursor-pointer disabled:opacity-50"
+                  >
+                    <Sparkles className="w-3.5 h-3.5 inline mr-1 text-cyan-400" />
+                    <span>{isSimulatingPatrol ? "Patrolling..." : "+ Simulate Bus Pass"}</span>
+                  </button>
 
-              <div className="p-4 rounded bg-slate-950 border border-slate-800 space-y-3">
-                <div className="text-center border-b border-slate-800 pb-2">
-                  <div className="font-bold uppercase text-slate-200 text-xs">GREATER CHENNAI CORPORATION • SPECIAL HIGHWAYS WING</div>
-                  <div className="text-[10.5px] text-slate-400">Ripon Building, Chennai - 600003 | SLA Compliance Record</div>
-                </div>
+                  <div className="relative group">
+                    <button
+                      onClick={handleAuthorizePayment}
+                      disabled={!isConcurrenceMet || isAuthorizing || isPaymentReleased}
+                      className={`px-4 py-2 rounded-lg font-mono font-bold text-xs flex items-center gap-2 transition shadow-md ${
+                        isPaymentReleased
+                          ? "bg-emerald-800 text-emerald-100 cursor-default"
+                          : isConcurrenceMet
+                          ? "bg-emerald-600 hover:bg-emerald-500 text-white cursor-pointer active:scale-95"
+                          : "bg-slate-800 text-slate-500 border border-slate-700 cursor-not-allowed opacity-60"
+                      }`}
+                    >
+                      {isPaymentReleased ? (
+                        <>
+                          <CheckCircle2 className="w-4 h-4 text-emerald-300" />
+                          <span>Payment Released &bull; Closed</span>
+                        </>
+                      ) : (
+                        <>
+                          <ShieldCheck className="w-4 h-4" />
+                          <span>{isAuthorizing ? "Authorizing Escrow..." : "Authorize Payment & Release Escrow"}</span>
+                        </>
+                      )}
+                    </button>
 
-                <div className="grid grid-cols-2 gap-3 text-[11px]">
-                  <div>
-                    <span className="text-slate-500 block">DOCKET REFERENCE:</span>
-                    <strong className="text-slate-200">{orderId}</strong>
+                    {!isConcurrenceMet && (
+                      <div className="absolute bottom-full right-0 mb-2 hidden group-hover:block w-64 p-2 rounded-lg bg-slate-950 border border-slate-700 text-[10.5px] font-mono text-amber-300 shadow-xl z-20">
+                        ⚠️ Requires &ge; 3 qualifying bus passes to authorize payment (Currently: {qualifyingCount} / 3).
+                      </div>
+                    )}
                   </div>
-                  <div>
-                    <span className="text-slate-500 block">CORRIDOR LOCATION:</span>
-                    <strong className="text-slate-200">{location}</strong>
-                  </div>
-                  <div>
-                    <span className="text-slate-500 block">ASSIGNED CONTRACTOR:</span>
-                    <strong className="text-slate-200">{agency}</strong>
-                  </div>
-                  <div>
-                    <span className="text-slate-500 block">SLA DURATION:</span>
-                    <strong className="text-slate-200">{cluster.sla_hours || 24} Hours</strong>
-                  </div>
-                </div>
-
-                <table className="w-full text-left border-collapse border border-slate-800 text-[10.5px]">
-                  <thead>
-                    <tr className="bg-slate-900 border-b border-slate-800 text-slate-400">
-                      <th className="p-2">Item Description</th>
-                      <th className="p-2 text-right">Quantity / Vol</th>
-                      <th className="p-2 text-right">Rate</th>
-                      <th className="p-2 text-right">Assessed Amount</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr className="border-b border-slate-800/80">
-                      <td className="p-2">Hot-Mix Asphalt (DBM VG-30) Rectification</td>
-                      <td className="p-2 text-right">{asphaltKg} kg</td>
-                      <td className="p-2 text-right">₹68/kg</td>
-                      <td className="p-2 text-right">₹{costInr.toLocaleString("en-IN")}</td>
-                    </tr>
-                    <tr>
-                      <td className="p-2">Tack Coat &amp; Compaction Compliance Audit</td>
-                      <td className="p-2 text-right">{areaM2} m²</td>
-                      <td className="p-2 text-right">Standard</td>
-                      <td className="p-2 text-right">Included</td>
-                    </tr>
-                  </tbody>
-                </table>
-
-                <div className="pt-2 border-t border-slate-800 flex justify-between text-[10px] text-slate-500">
-                  <span>FORENSIC STAMP: SHA-256: 7b31e9...204f</span>
-                  <span>STATUS: DRAFT AUDIT DOCKET</span>
                 </div>
               </div>
+
+              {isPaymentReleased && (
+                <div className="p-3.5 rounded-lg bg-emerald-950/40 border border-emerald-800/80 text-xs font-mono text-emerald-300 flex items-center gap-2">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+                  <span>
+                    Work Order #{orderId} successfully verified &amp; closed. Milestone payment of ₹{costInr.toLocaleString("en-IN")} authorized and PFMS audit trail recorded.
+                  </span>
+                </div>
+              )}
             </div>
           )}
+
         </div>
 
         {/* Footer */}
         <div className="h-12 px-5 border-t border-slate-800 flex items-center justify-between bg-[#121826] text-xs font-mono shrink-0">
           <span className="text-slate-400 text-[11px]">
-            RoadSaathi Autonomous Civic Infrastructure Console
+            RoadSaathi Autonomous Municipal Infrastructure Console &bull; MoHUA Compliant
           </span>
 
           <button
             onClick={onClose}
-            className="px-4 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold transition"
+            className="px-4 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold transition cursor-pointer"
           >
-            Close Panel
+            Close Console
           </button>
         </div>
       </div>

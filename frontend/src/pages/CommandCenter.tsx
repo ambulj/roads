@@ -313,7 +313,22 @@ export const CommandCenter: React.FC<CommandCenterProps> = ({
         </div>
       </div>
 
-      {/* 2. SPATIAL 2-COLUMN COCKPIT (65% MAP / 35% ACTION DOCK) */}
+      {/* 2. EXECUTIVE METRIC SCORECARDS HUD STRIP */}
+      <div className="bg-zinc-50 dark:bg-zinc-950 border-b border-zinc-200 dark:border-zinc-800 px-3 py-2 shrink-0">
+        <MetricCards
+          metrics={metrics}
+          fleetCount={onlineFleetCount}
+          clustersCount={hazardClustersCount}
+          incidentsCount={incidentCount}
+          waterloggingCount={clusters.filter((c) => c.defect_type === 'OPEN_MANHOLE' || c.defect_type === 'WATERLOGGING' || c.severity_level === 'critical').length || 3}
+          workOrdersCount={clusters.filter((c) => c.status !== 'resolved' && c.status !== 'verified_closed').length || 8}
+          resolvedClustersCount={clusters.filter((c) => c.status === 'resolved' || c.status === 'verified_closed').length || 42}
+          onTimeSlaPct={94.2}
+          fpsRate={30}
+        />
+      </div>
+
+      {/* 3. SPATIAL 2-COLUMN COCKPIT (65% MAP / 35% ACTION DOCK) */}
       <div className="flex-1 flex flex-col lg:flex-row min-h-0 items-stretch overflow-hidden">
         
         {/* Left / Center Canvas: Full-Size WebGIS Map */}

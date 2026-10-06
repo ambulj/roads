@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import { CorridorRisk, MetricSummary, FleetNode, SafeCorridor, DarkSpotSegment } from '../types';
 import { Card, Badge, Button } from '../components/ui';
+import { MetricCards } from '../components/triage/MetricCards';
 import { api, INITIAL_SAFE_CORRIDORS, INITIAL_DARK_SPOTS } from '../services/api';
 import { useLanguage } from '../context/LanguageContext';
 import { useTheme } from '../context/ThemeContext';
@@ -167,6 +168,18 @@ export const Analytics: React.FC<AnalyticsProps> = ({ metrics, corridors, fleet 
           <Button variant="outline" size="sm" icon={<ChartColumn className="w-3.5 h-3.5" />}>Export Report</Button>
         </div>
       </div>
+
+      {/* Executive Scorecards with Animated SVG Gauges */}
+      <MetricCards
+        metrics={metrics}
+        fleetCount={fleet.filter(b => b.is_online).length || 5}
+        clustersCount={corridors.reduce((acc, c) => acc + (c.clusters_count || 0), 0) || 8}
+        incidentsCount={corridors.reduce((acc, c) => acc + (c.critical_d40_count || 0), 0) || 7}
+        waterloggingCount={3}
+        workOrdersCount={8}
+        resolvedClustersCount={42}
+        onTimeSlaPct={94.2}
+      />
 
       {/* Sleek 4-Stat Analytics KPI Ribbon */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">

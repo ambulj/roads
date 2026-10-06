@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { 
   ClipboardList, 
   Download, 
@@ -23,7 +23,11 @@ import {
   Plus,
   Box,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  ArrowUpDown,
+  ArrowUp,
+  ArrowDown,
+  Printer
 } from 'lucide-react';
 import { HazardCluster, WorkOrderStatus } from '../types';
 import { useLanguage } from '../context/LanguageContext';
@@ -42,6 +46,9 @@ interface WorkOrdersProps {
   onUpdateStatus: (orderId: string, status: WorkOrderStatus, afterImg?: string, notes?: string) => void;
 }
 
+type SortField = 'code' | 'rpi' | 'road' | 'cost' | 'sla' | 'status';
+type SortDirection = 'asc' | 'desc';
+
 export const WorkOrders: React.FC<WorkOrdersProps> = ({ clusters, onUpdateStatus }) => {
   const { t } = useLanguage();
   const { canDispatchWorkOrder } = useAuth();
@@ -53,6 +60,19 @@ export const WorkOrders: React.FC<WorkOrdersProps> = ({ clusters, onUpdateStatus
   const [consoleCluster, setConsoleCluster] = useState<HazardCluster | null>(null);
   const [consoleTab, setConsoleTab] = useState<WorkOrderConsoleTab>('cad_audit');
   const [isConsoleOpen, setIsConsoleOpen] = useState(false);
+
+  // Tab View
+  const [activeTab, setActiveTab] = useState<'cad' | 'kanban' | 'sla'>('cad');
+
+  // Search, Filter Chips & Sorting States
+  const [search, setSearch] = useState('');
+  const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [severityFilter, setSeverityFilter] = useState<string>('all');
+  const [contractorFilter, setContractorFilter] = useState<string>('all');
+  const [sortField, setSortField] = useState<SortField>('rpi');
+  const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
+
+  const [inspectingMeshCluster, setInspectingMeshCluster] = useState<HazardCluster | null>(null);
 
   const handleRunLifecycleDrill = async () => {
     if (isDrillRunning) return;
@@ -119,8 +139,6 @@ export const WorkOrders: React.FC<WorkOrdersProps> = ({ clusters, onUpdateStatus
     }, 1200);
   };
 
-  const [activeTab, setActiveTab] = useState<'cad' | 'kanban' | 'sla'>('cad');
-
   const requestStatusUpdate = (orderId: string, status: WorkOrderStatus, afterImg?: string, notes?: string) => {
     onUpdateStatus(orderId, status, afterImg, notes);
     showSuccessToast(
@@ -128,12 +146,6 @@ export const WorkOrders: React.FC<WorkOrdersProps> = ({ clusters, onUpdateStatus
       `Order #${orderId} marked as ${status.replace('_', ' ').toUpperCase()}`
     );
   };
-
-  const [search, setSearch] = useState('');
-  const [statusFilter, setStatusFilter] = useState<string>('all');
-  const [severityFilter, setSeverityFilter] = useState<string>('all');
-
-  const [inspectingMeshCluster, setInspectingMeshCluster] = useState<HazardCluster | null>(null);
 
   const openConsole = (cluster: HazardCluster | null, tab: WorkOrderConsoleTab = 'cad_audit') => {
     setConsoleCluster(cluster || clusters[0] || null);
@@ -152,22 +164,76 @@ export const WorkOrders: React.FC<WorkOrdersProps> = ({ clusters, onUpdateStatus
     return { volumeLiters, asphaltKg, costInr };
   };
 
-  // Filtered tickets
-  const filteredClusters = clusters.filter((c) => {
-    const matchesSearch = 
-      (c.cluster_code && c.cluster_code.toLowerCase().includes(search.toLowerCase())) ||
-      (c.road_name && c.road_name.toLowerCase().includes(search.toLowerCase())) ||
-      (c.defect_name && c.defect_name.toLowerCase().includes(search.toLowerCase())) ||
-      (c.assigned_agency && c.assigned_agency.toLowerCase().includes(search.toLowerCase()));
+  const handleSort = (field: SortField) => {
+    if (sortField === field) {
+      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortField(field);
+      setSortDirection('desc');
+    }
+  };
 
-    const matchesStatus = 
-      statusFilter === 'all' || 
-      c.status === statusFilter || 
-      (statusFilter === 'verified_closed' && (c.status === 'resolved' || c.status === 'verified_closed'));
-    const matchesSeverity = severityFilter === 'all' || c.severity_level === severityFilter;
+  // Filtered & Sorted Tickets
+  const filteredAndSortedClusters = useMemo(() => {
+    const filtered = clusters.filter((c) => {
+      const matchesSearch = 
+        (c.cluster_code && c.cluster_code.toLowerCase().includes(search.toLowerCase())) ||
+        (c.road_name && c.road_name.toLowerCase().includes(search.toLowerCase())) ||
+        (c.defect_name && c.defect_name.toLowerCase().includes(search.toLowerCase())) ||
+        (c.assigned_agency && c.assigned_agency.toLowerCase().includes(search.toLowerCase()));
 
-    return matchesSearch && matchesStatus && matchesSeverity;
-  });
+      const matchesStatus = 
+        statusFilter === 'all' || 
+        c.status === statusFilter || 
+        (statusFilter === 'verified_closed' && (c.status === 'resolved' || c.status === 'verified_closed')) ||
+        (statusFilter === 'active' && c.status !== 'resolved' && c.status !== 'verified_closed') ||
+        (statusFilter === 'breached' && (c as any).is_breached);
+
+      const matchesSeverity = severityFilter === 'all' || c.severity_level === severityFilter;
+
+      const matchesContractor = contractorFilter === 'all' || 
+        (c.assigned_agency && c.assigned_agency.toLowerCase().includes(contractorFilter.toLowerCase()));
+
+      return matchesSearch && matchesStatus && matchesSeverity && matchesContractor;
+    });
+
+    return filtered.sort((a, b) => {
+      let valA: any = 0;
+      let valB: any = 0;
+
+      switch (sortField) {
+        case 'code':
+          valA = a.cluster_code || a.id;
+          valB = b.cluster_code || b.id;
+          break;
+        case 'rpi':
+          valA = a.rpi_boosted ?? a.rpi_score ?? 0;
+          valB = b.rpi_boosted ?? b.rpi_score ?? 0;
+          break;
+        case 'road':
+          valA = a.road_name || '';
+          valB = b.road_name || '';
+          break;
+        case 'cost':
+          valA = calculateMaterial(a).costInr;
+          valB = calculateMaterial(b).costInr;
+          break;
+        case 'sla':
+          valA = a.sla_hours || 24;
+          valB = b.sla_hours || 24;
+          break;
+        case 'status':
+          valA = a.status || '';
+          valB = b.status || '';
+          break;
+      }
+
+      if (typeof valA === 'string') {
+        return sortDirection === 'asc' ? valA.localeCompare(valB) : valB.localeCompare(valA);
+      }
+      return sortDirection === 'asc' ? valA - valB : valB - valA;
+    });
+  }, [clusters, search, statusFilter, severityFilter, contractorFilter, sortField, sortDirection]);
 
   // Pagination State
   const [currentPage, setCurrentPage] = useState(1);
@@ -175,10 +241,10 @@ export const WorkOrders: React.FC<WorkOrdersProps> = ({ clusters, onUpdateStatus
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [search, statusFilter, severityFilter]);
+  }, [search, statusFilter, severityFilter, contractorFilter, sortField, sortDirection]);
 
-  const totalPages = Math.max(1, Math.ceil(filteredClusters.length / PAGE_SIZE));
-  const paginatedClusters = filteredClusters.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
+  const totalPages = Math.max(1, Math.ceil(filteredAndSortedClusters.length / PAGE_SIZE));
+  const paginatedClusters = filteredAndSortedClusters.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
 
   // KPI calculations
   const totalCount = clusters.length;
@@ -189,9 +255,17 @@ export const WorkOrders: React.FC<WorkOrdersProps> = ({ clusters, onUpdateStatus
 
   const handleExportCSV = () => {
     window.open('/api/work-orders/export/csv', '_blank');
-    showInfoToast("Downloading PWD Work Orders CSV", "Exporting live database records to CSV.");
+    showInfoToast("Exporting PWD Work Orders", "Streaming complete work order backlog audit trail in CSV format.");
   };
 
+  const contractorsList = [
+    { label: 'All Agencies', value: 'all' },
+    { label: 'L&T Highways', value: 'L&T' },
+    { label: 'GMR Urban', value: 'GMR' },
+    { label: 'TNRDC', value: 'TNRDC' },
+    { label: 'HCC', value: 'HCC' },
+    { label: 'Chettinad', value: 'Chettinad' },
+  ];
 
   return (
     <div className="flex-1 flex flex-col min-h-0 overflow-y-auto custom-scrollbar bg-zinc-100 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 select-none transition-colors">
@@ -213,21 +287,21 @@ export const WorkOrders: React.FC<WorkOrdersProps> = ({ clusters, onUpdateStatus
             </div>
           </div>
 
-          <div className="flex items-center gap-2 shrink-0 self-start sm:self-auto">
+          <div className="flex items-center gap-2 shrink-0 self-start sm:self-auto flex-wrap">
             <div className="flex bg-white dark:bg-zinc-900 p-1 rounded-lg border border-zinc-200 dark:border-zinc-800 text-xs font-semibold">
               <button
                 onClick={() => setActiveTab('cad')}
-                className={`px-3 py-1.5 rounded-md transition ${
+                className={`px-3 py-1.5 rounded-md transition cursor-pointer ${
                   activeTab === 'cad'
                     ? 'bg-blue-700 text-white shadow-xs font-bold'
                     : 'text-zinc-600 dark:text-zinc-300 hover:text-zinc-900 dark:hover:text-white'
                 }`}
               >
-                CAD Table
+                CAD Backlog Table
               </button>
               <button
                 onClick={() => setActiveTab('kanban')}
-                className={`px-3 py-1.5 rounded-md transition flex items-center gap-1.5 ${
+                className={`px-3 py-1.5 rounded-md transition flex items-center gap-1.5 cursor-pointer ${
                   activeTab === 'kanban'
                     ? 'bg-blue-700 text-white shadow-xs font-bold'
                     : 'text-zinc-600 dark:text-zinc-300 hover:text-zinc-900 dark:hover:text-white'
@@ -238,13 +312,13 @@ export const WorkOrders: React.FC<WorkOrdersProps> = ({ clusters, onUpdateStatus
               </button>
               <button
                 onClick={() => setActiveTab('sla')}
-                className={`px-3 py-1.5 rounded-md transition flex items-center gap-1.5 ${
+                className={`px-3 py-1.5 rounded-md transition flex items-center gap-1.5 cursor-pointer ${
                   activeTab === 'sla'
                     ? 'bg-blue-700 text-white shadow-xs font-bold'
                     : 'text-zinc-600 dark:text-zinc-300 hover:text-zinc-900 dark:hover:text-white'
                 }`}
               >
-                <span>SLA &amp; Compliance</span>
+                <span>SLA &amp; Escrow Ledger</span>
                 <span className="w-2 h-2 rounded-full bg-amber-500" />
               </button>
             </div>
@@ -252,16 +326,16 @@ export const WorkOrders: React.FC<WorkOrdersProps> = ({ clusters, onUpdateStatus
             <SyntheticGeneratorControl />
 
             <button
-              onClick={() => openConsole(clusters[0] || null, 'repass')}
-              className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 hover:bg-zinc-100 dark:hover:bg-zinc-800 text-xs font-semibold text-zinc-700 dark:text-zinc-200 transition"
+              onClick={() => openConsole(clusters[0] || null, 'concurrence_release')}
+              className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 hover:bg-zinc-100 dark:hover:bg-zinc-800 text-xs font-semibold text-zinc-700 dark:text-zinc-200 transition cursor-pointer"
             >
-              <Sparkles className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
-              <span>Fleet Re-Pass</span>
+              <Sparkles className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+              <span>Concurrence Gate</span>
             </button>
 
             <button
               onClick={handleExportCSV}
-              className="flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-blue-700 hover:bg-blue-800 text-white font-bold text-xs transition active:scale-95"
+              className="flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-blue-700 hover:bg-blue-800 text-white font-bold text-xs transition active:scale-95 cursor-pointer shadow-xs"
             >
               <Download className="w-3.5 h-3.5" />
               <span>Export CSV</span>
@@ -455,18 +529,18 @@ export const WorkOrders: React.FC<WorkOrdersProps> = ({ clusters, onUpdateStatus
         ) : (
           <>
             {/* AUTONOMOUS DEFECT-TO-CLOSURE LIFECYCLE BANNER */}
-            <div className="p-4 rounded-md bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-800 shadow-none">
+            <div className="p-4 rounded-xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-xs">
               <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
                 <div className="space-y-1">
                   <div className="flex items-center gap-2">
-                    <h3 className="font-bold text-sm sm:text-base text-slate-900 dark:text-white">
+                    <h3 className="font-bold text-sm sm:text-base text-zinc-900 dark:text-white">
                       {t("lifecycle.title", "Automated Defect-to-Closure Lifecycle")}
                     </h3>
-                    <span className="px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200 font-mono text-xs font-bold border border-slate-300 dark:border-slate-700">
+                    <span className="px-2 py-0.5 rounded bg-zinc-100 dark:bg-zinc-800 text-zinc-800 dark:text-zinc-200 font-mono text-xs font-bold border border-zinc-200 dark:border-zinc-700">
                       Standard Operating Procedure
                     </span>
                   </div>
-                  <p className="text-xs text-slate-600 dark:text-slate-300">
+                  <p className="text-xs text-zinc-600 dark:text-zinc-300">
                     {t("lifecycle.subtitle", "Optical Detection -> Service Order Registered -> Contractor SLA Repair -> Re-Inspection Verification")}
                   </p>
                 </div>
@@ -475,7 +549,7 @@ export const WorkOrders: React.FC<WorkOrdersProps> = ({ clusters, onUpdateStatus
                   <button
                     onClick={handleRunLifecycleDrill}
                     disabled={isDrillRunning}
-                    className="flex-1 lg:flex-none flex items-center justify-center gap-2 px-4 py-2 rounded-md bg-emerald-700 hover:bg-emerald-800 text-white font-semibold text-xs transition disabled:opacity-60 cursor-pointer"
+                    className="flex-1 lg:flex-none flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-xs transition disabled:opacity-60 cursor-pointer shadow-xs"
                   >
                     <Sparkles className={`w-4 h-4 ${isDrillRunning ? 'animate-spin' : ''}`} />
                     <span>
@@ -488,38 +562,38 @@ export const WorkOrders: React.FC<WorkOrdersProps> = ({ clusters, onUpdateStatus
               </div>
 
               {/* 4 Pipeline Stages Progress Visualization */}
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-2.5 mt-4 pt-3 border-t border-slate-200 dark:border-slate-800 text-xs font-mono">
-                <div className={`p-2 rounded-md border flex items-center gap-2 transition ${
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-2.5 mt-4 pt-3 border-t border-zinc-200 dark:border-zinc-800 text-xs font-mono">
+                <div className={`p-2 rounded-lg border flex items-center gap-2 transition ${
                   drillStep === 1 
                     ? 'bg-blue-50 dark:bg-blue-950/60 border-blue-400 text-blue-900 dark:text-blue-200 font-bold' 
-                    : 'bg-slate-50 dark:bg-slate-850 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300'
+                    : 'bg-zinc-50 dark:bg-zinc-950 border-zinc-200 dark:border-zinc-800 text-zinc-700 dark:text-zinc-300'
                 }`}>
                   <span className="w-5 h-5 rounded bg-blue-700 text-white flex items-center justify-center font-bold text-xs shrink-0">1</span>
                   <span className="truncate">{t("lifecycle.step1", "1. Impact & Camera Detection")}</span>
                 </div>
 
-                <div className={`p-2 rounded-md border flex items-center gap-2 transition ${
+                <div className={`p-2 rounded-lg border flex items-center gap-2 transition ${
                   drillStep === 2 
                     ? 'bg-amber-50 dark:bg-amber-950/60 border-amber-400 text-amber-900 dark:text-amber-200 font-bold' 
-                    : 'bg-slate-50 dark:bg-slate-850 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300'
+                    : 'bg-zinc-50 dark:bg-zinc-950 border-zinc-200 dark:border-zinc-800 text-zinc-700 dark:text-zinc-300'
                 }`}>
                   <span className="w-5 h-5 rounded bg-amber-700 text-white flex items-center justify-center font-bold text-xs shrink-0">2</span>
                   <span className="truncate">{t("lifecycle.step2", "2. Order Open (SLA Active)")}</span>
                 </div>
 
-                <div className={`p-2 rounded-md border flex items-center gap-2 transition ${
+                <div className={`p-2 rounded-lg border flex items-center gap-2 transition ${
                   drillStep === 3 
                     ? 'bg-blue-50 dark:bg-blue-950/60 border-blue-400 text-blue-900 dark:text-blue-200 font-bold' 
-                    : 'bg-slate-50 dark:bg-slate-850 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300'
+                    : 'bg-zinc-50 dark:bg-zinc-950 border-zinc-200 dark:border-zinc-800 text-zinc-700 dark:text-zinc-300'
                 }`}>
                   <span className="w-5 h-5 rounded bg-blue-700 text-white flex items-center justify-center font-bold text-xs shrink-0">3</span>
                   <span className="truncate">{t("lifecycle.step3", "3. Contractor Patch")}</span>
                 </div>
 
-                <div className={`p-2 rounded-md border flex items-center gap-2 transition ${
+                <div className={`p-2 rounded-lg border flex items-center gap-2 transition ${
                   drillStep === 4 
                     ? 'bg-emerald-50 dark:bg-emerald-950/60 border-emerald-400 text-emerald-900 dark:text-emerald-200 font-bold' 
-                    : 'bg-slate-50 dark:bg-slate-850 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300'
+                    : 'bg-zinc-50 dark:bg-zinc-950 border-zinc-200 dark:border-zinc-800 text-zinc-700 dark:text-zinc-300'
                 }`}>
                   <span className="w-5 h-5 rounded bg-emerald-700 text-white flex items-center justify-center font-bold text-xs shrink-0">4</span>
                   <span className="truncate">{t("lifecycle.step4", "4. Re-Pass Closure")}</span>
@@ -529,121 +603,244 @@ export const WorkOrders: React.FC<WorkOrdersProps> = ({ clusters, onUpdateStatus
 
             {/* 2. TOP 4 KPI SUMMARY CARDS */}
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-              {/* Card 1: Total Orders */}
-              <div className="p-3.5 rounded-md bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-800 shadow-none flex items-center justify-between">
+              <div className="p-3.5 rounded-xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-xs flex items-center justify-between">
                 <div>
-                  <span className="text-xs font-semibold text-slate-600 dark:text-slate-300">Total Work Orders</span>
-                  <div className="text-2xl font-bold text-slate-900 dark:text-white font-mono mt-0.5">{totalCount}</div>
+                  <span className="text-xs font-semibold text-zinc-600 dark:text-zinc-300">Total Work Orders</span>
+                  <div className="text-2xl font-bold text-zinc-900 dark:text-white font-mono tabular-nums mt-0.5">{totalCount}</div>
                   <span className="text-xs text-blue-700 dark:text-blue-400 font-medium">Logged in CAD</span>
                 </div>
-                <div className="w-9 h-9 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 flex items-center justify-center">
+                <div className="w-9 h-9 rounded-lg bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 flex items-center justify-center">
                   <ClipboardList className="w-4 h-4" />
                 </div>
               </div>
 
-              {/* Card 2: Open / Pending */}
-              <div className="p-3.5 rounded-md bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-800 shadow-none flex items-center justify-between">
+              <div className="p-3.5 rounded-xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-xs flex items-center justify-between">
                 <div>
-                  <span className="text-xs font-semibold text-slate-600 dark:text-slate-300">Pending / Open</span>
-                  <div className="text-2xl font-bold text-amber-700 dark:text-amber-400 font-mono mt-0.5">{openCount}</div>
-                  <span className="text-xs text-slate-600 dark:text-slate-400 font-medium">Under SLA Countdown</span>
+                  <span className="text-xs font-semibold text-zinc-600 dark:text-zinc-300">Pending / Open</span>
+                  <div className="text-2xl font-bold text-amber-700 dark:text-amber-400 font-mono tabular-nums mt-0.5">{openCount}</div>
+                  <span className="text-xs text-zinc-600 dark:text-zinc-400 font-medium">Under SLA Countdown</span>
                 </div>
-                <div className="w-9 h-9 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 flex items-center justify-center">
+                <div className="w-9 h-9 rounded-lg bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 flex items-center justify-center">
                   <Clock className="w-4 h-4" />
                 </div>
               </div>
 
-              {/* Card 3: In Progress */}
-              <div className="p-3.5 rounded-md bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-800 shadow-none flex items-center justify-between">
+              <div className="p-3.5 rounded-xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-xs flex items-center justify-between">
                 <div>
-                  <span className="text-xs font-semibold text-slate-600 dark:text-slate-300">In Progress</span>
-                  <div className="text-2xl font-bold text-blue-700 dark:text-blue-400 font-mono mt-0.5">{inProgressCount}</div>
-                  <span className="text-xs text-slate-600 dark:text-slate-400 font-medium">Contractor on Site</span>
+                  <span className="text-xs font-semibold text-zinc-600 dark:text-zinc-300">In Progress</span>
+                  <div className="text-2xl font-bold text-blue-700 dark:text-blue-400 font-mono tabular-nums mt-0.5">{inProgressCount}</div>
+                  <span className="text-xs text-zinc-600 dark:text-zinc-400 font-medium">Contractor on Site</span>
                 </div>
-                <div className="w-9 h-9 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 flex items-center justify-center">
+                <div className="w-9 h-9 rounded-lg bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 flex items-center justify-center">
                   <Wrench className="w-4 h-4" />
                 </div>
               </div>
 
-              {/* Card 4: Estimated Budget */}
-              <div className="p-3.5 rounded-md bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-800 shadow-none flex items-center justify-between">
+              <div className="p-3.5 rounded-xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-xs flex items-center justify-between">
                 <div>
-                  <span className="text-xs font-semibold text-slate-600 dark:text-slate-300">Est. Repair Budget</span>
-                  <div className="text-2xl font-bold text-emerald-700 dark:text-emerald-400 font-mono mt-0.5">₹{totalBudget.toLocaleString()}</div>
-                  <span className="text-xs text-slate-600 dark:text-slate-400 font-medium">Standard Schedule of Rates</span>
+                  <span className="text-xs font-semibold text-zinc-600 dark:text-zinc-300">Est. Repair Budget</span>
+                  <div className="text-2xl font-bold text-emerald-700 dark:text-emerald-400 font-mono tabular-nums mt-0.5">₹{totalBudget.toLocaleString()}</div>
+                  <span className="text-xs text-zinc-600 dark:text-zinc-400 font-medium">Standard SOR Rates</span>
                 </div>
-                <div className="w-9 h-9 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 flex items-center justify-center">
+                <div className="w-9 h-9 rounded-lg bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 flex items-center justify-center">
                   <ShieldCheck className="w-4 h-4" />
                 </div>
               </div>
             </div>
 
-            {/* 3. SEARCH & FILTERS BAR */}
-            <div className="p-3 rounded-md bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-800 shadow-none flex flex-col md:flex-row md:items-center justify-between gap-3">
-              <div className="relative flex-1 max-w-md">
-                <Search className="w-4 h-4 text-slate-500 absolute left-3 top-1/2 -translate-y-1/2" />
-                <input
-                  type="text"
-                  placeholder="Filter by Order ID, Corridor, Defect, Contractor..."
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  className="w-full h-8 pl-9 pr-3 rounded-md bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 text-xs text-slate-900 dark:text-slate-100 placeholder-slate-500 outline-hidden focus:border-blue-600 transition"
-                />
+            {/* 3. MULTI-CRITERIA QUICK FILTER CHIPS & SEARCH BAR */}
+            <div className="p-3.5 rounded-xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-xs space-y-3">
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
+                <div className="relative flex-1 max-w-md">
+                  <Search className="w-4 h-4 text-zinc-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                  <input
+                    type="text"
+                    placeholder="Search Order ID, Corridor, Defect, Agency..."
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                    className="w-full h-8 pl-9 pr-3 rounded-lg bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 text-xs text-zinc-900 dark:text-zinc-100 placeholder-zinc-500 focus:outline-hidden focus:border-blue-600 transition"
+                  />
+                </div>
+
+                <div className="flex items-center gap-2 flex-wrap text-xs">
+                  <button
+                    onClick={() => {
+                      setSearch('');
+                      setStatusFilter('all');
+                      setSeverityFilter('all');
+                      setContractorFilter('all');
+                    }}
+                    className="px-2.5 py-1 rounded-md bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-600 dark:text-zinc-300 font-medium text-[11px] transition cursor-pointer"
+                  >
+                    Reset Filters
+                  </button>
+                </div>
               </div>
 
-              <div className="flex items-center gap-2 flex-wrap">
-                <select
-                  value={statusFilter}
-                  onChange={(e) => setStatusFilter(e.target.value)}
-                  className="h-8 px-3 rounded-md bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 text-xs text-slate-800 dark:text-slate-200 outline-hidden cursor-pointer"
-                >
-                  <option value="all">All Statuses</option>
-                  <option value="open">Open / Unassigned</option>
-                  <option value="assigned">Assigned to Contractor</option>
-                  <option value="in_progress">In Progress (Repair)</option>
-                  <option value="resolved">Resolved (Awaiting Re-pass)</option>
-                  <option value="reinspection_pending">Reinspection Pending</option>
-                  <option value="verified_closed">Verified Closed</option>
-                </select>
+              {/* Quick Filter Chips Row */}
+              <div className="flex items-center gap-4 flex-wrap pt-2 border-t border-zinc-100 dark:border-zinc-800 text-xs font-mono">
+                {/* Severity Filter Chips */}
+                <div className="flex items-center gap-1.5">
+                  <span className="text-[11px] text-zinc-400 font-sans">Severity:</span>
+                  {[
+                    { label: 'All', value: 'all' },
+                    { label: 'P0 Critical', value: 'critical' },
+                    { label: 'P1 High', value: 'high' },
+                    { label: 'P2 Medium', value: 'medium' },
+                  ].map((chip) => (
+                    <button
+                      key={chip.value}
+                      onClick={() => setSeverityFilter(chip.value)}
+                      className={`px-2 py-0.5 rounded-full text-[10.5px] transition cursor-pointer border ${
+                        severityFilter === chip.value
+                          ? 'bg-blue-600 text-white border-blue-600 font-bold'
+                          : 'bg-zinc-50 dark:bg-zinc-950 text-zinc-600 dark:text-zinc-400 border-zinc-200 dark:border-zinc-800 hover:border-zinc-400'
+                      }`}
+                    >
+                      {chip.label}
+                    </button>
+                  ))}
+                </div>
 
-                <select
-                  value={severityFilter}
-                  onChange={(e) => setSeverityFilter(e.target.value)}
-                  className="h-9 px-3 rounded-lg bg-slate-50 dark:bg-slate-850 border border-slate-200 dark:border-slate-700 text-xs text-slate-700 dark:text-slate-200 outline-none cursor-pointer"
-                >
-                  <option value="all">All Severities</option>
-                  <option value="critical">Critical (P0)</option>
-                  <option value="high">High (P1)</option>
-                  <option value="medium">Medium (P2)</option>
-                  <option value="low">Low (P3)</option>
-                </select>
+                {/* Contractor Filter Chips */}
+                <div className="flex items-center gap-1.5">
+                  <span className="text-[11px] text-zinc-400 font-sans">Agency:</span>
+                  {contractorsList.map((chip) => (
+                    <button
+                      key={chip.value}
+                      onClick={() => setContractorFilter(chip.value)}
+                      className={`px-2 py-0.5 rounded-full text-[10.5px] transition cursor-pointer border ${
+                        contractorFilter === chip.value
+                          ? 'bg-blue-600 text-white border-blue-600 font-bold'
+                          : 'bg-zinc-50 dark:bg-zinc-950 text-zinc-600 dark:text-zinc-400 border-zinc-200 dark:border-zinc-800 hover:border-zinc-400'
+                      }`}
+                    >
+                      {chip.label}
+                    </button>
+                  ))}
+                </div>
+
+                {/* SLA State Chips */}
+                <div className="flex items-center gap-1.5">
+                  <span className="text-[11px] text-zinc-400 font-sans">SLA:</span>
+                  {[
+                    { label: 'All States', value: 'all' },
+                    { label: 'Active', value: 'active' },
+                    { label: 'Breached', value: 'breached' },
+                    { label: 'Verified Closed', value: 'verified_closed' },
+                  ].map((chip) => (
+                    <button
+                      key={chip.value}
+                      onClick={() => setStatusFilter(chip.value)}
+                      className={`px-2 py-0.5 rounded-full text-[10.5px] transition cursor-pointer border ${
+                        statusFilter === chip.value
+                          ? 'bg-blue-600 text-white border-blue-600 font-bold'
+                          : 'bg-zinc-50 dark:bg-zinc-950 text-zinc-600 dark:text-zinc-400 border-zinc-200 dark:border-zinc-800 hover:border-zinc-400'
+                      }`}
+                    >
+                      {chip.label}
+                    </button>
+                  ))}
+                </div>
               </div>
             </div>
 
-            {/* 4. CAD WORK ORDER TABLE */}
-            <div className="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-xs overflow-hidden">
-              <div className="overflow-x-auto">
+            {/* 4. ACCESSIBLE DATA TABLE WITH STICKY HEADER & MULTI-COLUMN SORT */}
+            <div className="rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-xs overflow-hidden">
+              <div className="overflow-x-auto max-h-[580px] custom-scrollbar">
                 <table className="w-full text-left text-xs border-collapse">
-                  <thead>
-                    <tr className="bg-slate-50 dark:bg-slate-850 border-b border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400 font-semibold">
-                      <th className="py-3 px-4">Ticket ID</th>
-                      <th className="py-3 px-4">Severity</th>
-                      <th className="py-3 px-4">Defect &amp; Location</th>
-                      <th className="py-3 px-4">Volumetric Cost</th>
+                  <thead className="sticky top-0 z-10 bg-slate-50 dark:bg-zinc-900 border-b border-zinc-200 dark:border-zinc-800 shadow-xs">
+                    <tr className="text-zinc-600 dark:text-zinc-400 font-semibold uppercase text-[11px]">
+                      <th 
+                        onClick={() => handleSort('code')}
+                        className="py-3 px-4 cursor-pointer hover:text-zinc-900 dark:hover:text-white transition"
+                      >
+                        <div className="flex items-center gap-1">
+                          <span>Ticket ID</span>
+                          {sortField === 'code' ? (
+                            sortDirection === 'asc' ? <ArrowUp className="w-3.5 h-3.5 text-blue-500" /> : <ArrowDown className="w-3.5 h-3.5 text-blue-500" />
+                          ) : (
+                            <ArrowUpDown className="w-3 h-3 text-zinc-400 opacity-60" />
+                          )}
+                        </div>
+                      </th>
+                      <th 
+                        onClick={() => handleSort('rpi')}
+                        className="py-3 px-4 cursor-pointer hover:text-zinc-900 dark:hover:text-white transition"
+                      >
+                        <div className="flex items-center gap-1">
+                          <span>RPI Score</span>
+                          {sortField === 'rpi' ? (
+                            sortDirection === 'asc' ? <ArrowUp className="w-3.5 h-3.5 text-blue-500" /> : <ArrowDown className="w-3.5 h-3.5 text-blue-500" />
+                          ) : (
+                            <ArrowUpDown className="w-3 h-3 text-zinc-400 opacity-60" />
+                          )}
+                        </div>
+                      </th>
+                      <th 
+                        onClick={() => handleSort('road')}
+                        className="py-3 px-4 cursor-pointer hover:text-zinc-900 dark:hover:text-white transition"
+                      >
+                        <div className="flex items-center gap-1">
+                          <span>Defect &amp; Corridor</span>
+                          {sortField === 'road' ? (
+                            sortDirection === 'asc' ? <ArrowUp className="w-3.5 h-3.5 text-blue-500" /> : <ArrowDown className="w-3.5 h-3.5 text-blue-500" />
+                          ) : (
+                            <ArrowUpDown className="w-3 h-3 text-zinc-400 opacity-60" />
+                          )}
+                        </div>
+                      </th>
+                      <th 
+                        onClick={() => handleSort('cost')}
+                        className="py-3 px-4 cursor-pointer hover:text-zinc-900 dark:hover:text-white transition"
+                      >
+                        <div className="flex items-center gap-1">
+                          <span>Volumetric Cost</span>
+                          {sortField === 'cost' ? (
+                            sortDirection === 'asc' ? <ArrowUp className="w-3.5 h-3.5 text-blue-500" /> : <ArrowDown className="w-3.5 h-3.5 text-blue-500" />
+                          ) : (
+                            <ArrowUpDown className="w-3 h-3 text-zinc-400 opacity-60" />
+                          )}
+                        </div>
+                      </th>
                       <th className="py-3 px-4">Contractor Agency</th>
-                      <th className="py-3 px-4">SLA Time</th>
-                      <th className="py-3 px-4">Status</th>
+                      <th 
+                        onClick={() => handleSort('sla')}
+                        className="py-3 px-4 cursor-pointer hover:text-zinc-900 dark:hover:text-white transition"
+                      >
+                        <div className="flex items-center gap-1">
+                          <span>SLA Countdown</span>
+                          {sortField === 'sla' ? (
+                            sortDirection === 'asc' ? <ArrowUp className="w-3.5 h-3.5 text-blue-500" /> : <ArrowDown className="w-3.5 h-3.5 text-blue-500" />
+                          ) : (
+                            <ArrowUpDown className="w-3 h-3 text-zinc-400 opacity-60" />
+                          )}
+                        </div>
+                      </th>
+                      <th 
+                        onClick={() => handleSort('status')}
+                        className="py-3 px-4 cursor-pointer hover:text-zinc-900 dark:hover:text-white transition"
+                      >
+                        <div className="flex items-center gap-1">
+                          <span>Status</span>
+                          {sortField === 'status' ? (
+                            sortDirection === 'asc' ? <ArrowUp className="w-3.5 h-3.5 text-blue-500" /> : <ArrowDown className="w-3.5 h-3.5 text-blue-500" />
+                          ) : (
+                            <ArrowUpDown className="w-3 h-3 text-zinc-400 opacity-60" />
+                          )}
+                        </div>
+                      </th>
                       <th className="py-3 px-4 text-right">Actions</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                  <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800">
                     {paginatedClusters.length === 0 ? (
                       <tr>
                         <td colSpan={8} className="p-8 text-center">
                           <EmptyState
                             icon={ClipboardList}
                             title="No Work Orders Found"
-                            description="Adjust your search or status filters to view records."
+                            description="Adjust your search or filter chips to view records."
                           />
                         </td>
                       </tr>
@@ -655,29 +852,29 @@ export const WorkOrders: React.FC<WorkOrdersProps> = ({ clusters, onUpdateStatus
                         return (
                           <tr
                             key={cluster.id}
-                            className="hover:bg-slate-50/60 dark:hover:bg-slate-850/40 transition"
+                            className="hover:bg-zinc-50/70 dark:hover:bg-zinc-800/40 transition"
                           >
-                            <td className="py-3 px-4 font-mono font-bold text-slate-900 dark:text-white">
+                            <td className="py-3 px-4 font-mono font-bold text-zinc-900 dark:text-white">
                               {cluster.cluster_code || cluster.id}
                             </td>
 
-                            <td className="py-3 px-4">
-                              <span className={`px-2 py-0.5 rounded-full font-mono text-[10px] font-bold border ${
+                            <td className="py-3 px-4 font-mono">
+                              <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold border tabular-nums ${
                                 cluster.severity_level === "critical"
-                                  ? "bg-red-50 text-red-700 border-red-200 dark:bg-red-950/60 dark:text-red-300 dark:border-red-900"
+                                  ? "bg-rose-50 text-rose-700 border-rose-200 dark:bg-rose-950/60 dark:text-rose-300 dark:border-rose-900"
                                   : cluster.severity_level === "high"
                                     ? "bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/60 dark:text-amber-300 dark:border-amber-900"
-                                    : "bg-slate-100 text-slate-700 border-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700"
+                                    : "bg-zinc-100 text-zinc-700 border-zinc-200 dark:bg-zinc-800 dark:text-zinc-300 dark:border-zinc-700"
                               }`}>
-                                {cluster.severity_level?.toUpperCase() || "MEDIUM"}
+                                RPI {cluster.rpi_boosted ?? cluster.rpi_score ?? 75}
                               </span>
                             </td>
 
                             <td className="py-3 px-4">
-                              <div className="font-semibold text-slate-900 dark:text-white">
+                              <div className="font-semibold text-zinc-900 dark:text-white">
                                 {cluster.defect_name}
                               </div>
-                              <div className="text-[11px] text-slate-500 dark:text-slate-400 truncate max-w-xs mt-0.5">
+                              <div className="text-[11px] text-zinc-500 dark:text-zinc-400 truncate max-w-xs mt-0.5">
                                 {cluster.road_name || "Chennai Metropolitan Corridor"}
                               </div>
                               <div className="mt-1">
@@ -691,29 +888,29 @@ export const WorkOrders: React.FC<WorkOrdersProps> = ({ clusters, onUpdateStatus
                             </td>
 
                             <td className="py-3 px-4">
-                              <div className="font-mono font-bold text-emerald-600 dark:text-emerald-400">
+                              <div className="font-mono font-bold text-emerald-600 dark:text-emerald-400 tabular-nums">
                                 ₹{material.costInr.toLocaleString()}
                               </div>
-                              <div className="text-[10.5px] text-slate-400">
+                              <div className="text-[10.5px] text-zinc-400 font-mono">
                                 {material.asphaltKg} kg Bitumen Mix
                               </div>
                             </td>
 
                             <td className="py-3 px-4">
-                              <div className="font-medium text-slate-800 dark:text-slate-200">
+                              <div className="font-medium text-zinc-800 dark:text-zinc-200">
                                 {cluster.assigned_agency || "Apex Urban Infra Ltd"}
                               </div>
-                              <div className="text-[10.5px] text-slate-400 font-mono">
+                              <div className="text-[10.5px] text-zinc-400 font-mono">
                                 {cluster.agency_phone || "+91 98401 22345"}
                               </div>
                             </td>
 
                             <td className="py-3 px-4">
-                              <div className="flex items-center gap-1 text-slate-700 dark:text-slate-300">
-                                <Clock className="w-3 h-3 text-slate-400" />
+                              <div className="flex items-center gap-1 text-zinc-700 dark:text-zinc-300 font-mono">
+                                <Clock className="w-3 h-3 text-zinc-400" />
                                 <span>{cluster.sla_hours || 24}h SLA</span>
                               </div>
-                              <div className="text-[10.5px] text-slate-400">
+                              <div className="text-[10.5px] text-zinc-400 font-mono">
                                 {(cluster as any).turnaround_hrs ? `${(cluster as any).turnaround_hrs}h spent` : "14h remaining"}
                               </div>
                             </td>
@@ -749,7 +946,7 @@ export const WorkOrders: React.FC<WorkOrdersProps> = ({ clusters, onUpdateStatus
                               <div className="flex items-center justify-end gap-1.5">
                                 <button
                                   onClick={() => openConsole(cluster, 'cad_audit')}
-                                  className="px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 border border-slate-300 dark:border-slate-700 font-semibold text-[11px] flex items-center gap-1 transition"
+                                  className="px-2.5 py-1 rounded-lg bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-800 dark:text-zinc-200 border border-zinc-200 dark:border-zinc-700 font-semibold text-[11px] flex items-center gap-1 transition cursor-pointer"
                                   title="Audit Contractor Repair Quality with Before/After Slider & Volumetrics"
                                 >
                                   <ShieldCheck className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
@@ -759,7 +956,7 @@ export const WorkOrders: React.FC<WorkOrdersProps> = ({ clusters, onUpdateStatus
                                 {isRoadSurfaceDefect(cluster.defect_name || cluster.defect_type) && (
                                   <button
                                     onClick={() => setInspectingMeshCluster(cluster)}
-                                    className="px-2 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 border border-slate-300 dark:border-slate-700 font-semibold text-[11px] flex items-center gap-1 transition"
+                                    className="px-2 py-1 rounded-lg bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-700 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-700 font-semibold text-[11px] flex items-center gap-1 transition cursor-pointer"
                                     title="Inspect 3D Surface Depth Mesh for this road defect"
                                   >
                                     <Box className="w-3.5 h-3.5" />
@@ -768,12 +965,12 @@ export const WorkOrders: React.FC<WorkOrdersProps> = ({ clusters, onUpdateStatus
                                 )}
 
                                 <button
-                                  onClick={() => openConsole(cluster, 'dispatch')}
+                                  onClick={() => openConsole(cluster, 'contractor_sla')}
                                   disabled={!canDispatchWorkOrder}
                                   className={`p-1.5 rounded-lg border transition ${
                                     canDispatchWorkOrder
-                                      ? 'bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 border-slate-300 dark:border-slate-700'
-                                      : 'opacity-40 cursor-not-allowed bg-slate-100 dark:bg-slate-800 text-slate-400 border-slate-200 dark:border-slate-700'
+                                      ? 'bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-700 dark:text-zinc-300 border-zinc-200 dark:border-zinc-700 cursor-pointer'
+                                      : 'opacity-40 cursor-not-allowed bg-zinc-100 dark:bg-zinc-800 text-zinc-400 border-zinc-200 dark:border-zinc-700'
                                   }`}
                                   title={canDispatchWorkOrder ? "Instant WhatsApp & QR Dispatch" : "Dispatch disabled: Read-Only Analyst role"}
                                 >
@@ -789,29 +986,29 @@ export const WorkOrders: React.FC<WorkOrdersProps> = ({ clusters, onUpdateStatus
                 </table>
               </div>
 
-              {filteredClusters.length > PAGE_SIZE && (
-                <div className="flex flex-col sm:flex-row items-center justify-between gap-3 px-4 py-3 border-t border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-850 text-xs text-slate-500 dark:text-slate-400">
+              {filteredAndSortedClusters.length > PAGE_SIZE && (
+                <div className="flex flex-col sm:flex-row items-center justify-between gap-3 px-4 py-3 border-t border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900 text-xs text-zinc-500 dark:text-zinc-400">
                   <div>
-                    Showing <span className="font-semibold text-slate-800 dark:text-slate-200">{(currentPage - 1) * PAGE_SIZE + 1}</span> to{' '}
-                    <span className="font-semibold text-slate-800 dark:text-slate-200">{Math.min(currentPage * PAGE_SIZE, filteredClusters.length)}</span> of{' '}
-                    <span className="font-semibold text-slate-800 dark:text-slate-200">{filteredClusters.length}</span> work orders
+                    Showing <span className="font-semibold text-zinc-800 dark:text-zinc-200 font-mono">{(currentPage - 1) * PAGE_SIZE + 1}</span> to{' '}
+                    <span className="font-semibold text-zinc-800 dark:text-zinc-200 font-mono">{Math.min(currentPage * PAGE_SIZE, filteredAndSortedClusters.length)}</span> of{' '}
+                    <span className="font-semibold text-zinc-800 dark:text-zinc-200 font-mono">{filteredAndSortedClusters.length}</span> work orders
                   </div>
-                  <div className="flex items-center gap-1.5">
+                  <div className="flex items-center gap-1.5 font-mono">
                     <button
                       onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
                       disabled={currentPage === 1}
-                      className="p-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-slate-50 dark:hover:bg-slate-700 transition"
+                      className="p-1.5 rounded-lg border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-zinc-50 dark:hover:bg-zinc-700 transition cursor-pointer"
                       title="Previous Page"
                     >
                       <ChevronLeft className="w-4 h-4" />
                     </button>
-                    <span className="px-2.5 py-1 rounded-lg font-medium text-slate-700 dark:text-slate-300">
+                    <span className="px-2.5 py-1 rounded-lg font-medium text-zinc-700 dark:text-zinc-300">
                       Page {currentPage} of {totalPages}
                     </span>
                     <button
                       onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
                       disabled={currentPage === totalPages}
-                      className="p-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-slate-50 dark:hover:bg-slate-700 transition"
+                      className="p-1.5 rounded-lg border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-zinc-50 dark:hover:bg-zinc-700 transition cursor-pointer"
                       title="Next Page"
                     >
                       <ChevronRight className="w-4 h-4" />
