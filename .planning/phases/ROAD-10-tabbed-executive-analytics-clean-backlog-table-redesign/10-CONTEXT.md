@@ -12,22 +12,22 @@
 
 ### D-01: Analytics 5-Tab Segmented Workspace
 Reorganize `Analytics.tsx` from a single heavyweight scrolling page into a 5-tab segmented workspace:
-1. **Overview KPI (`overview`)**:
+1. **📊 Overview KPI (`overview`)**:
    - High-density executive KPI scorecards (`MetricCards`).
    - Speed vs Distress Ingestion Rate dual-spline ApexCharts area graph.
    - Statutory RPI IRC:SP:20 Weightings radial bar graph.
-2. **Corridor Health (`corridors`)**:
+2. **🛣️ Corridor Health (`corridors`)**:
    - Corridor Risk Ranking (GST Road, OMR Expressway, Anna Salai, Kathipara Cloverleaf, Central Link).
    - Defect severity breakdown per corridor (P0 Critical, P1 High, P2 Routine).
    - Maintenance urgency scorecards.
-3. **Traffic & OD Flow (`traffic`)**:
+3. **🚦 Traffic & OD Flow (`traffic`)**:
    - Traffic bottlenecks and congestion hotspots.
    - Live transit bus speed delays and distress correlation.
    - PS 26124 Origin-Destination (OD) Transit Desire Lines flow matrix.
-4. **Safety & Lighting (`safety`)**:
+4. **🛡️ Safety & Lighting (`safety`)**:
    - Safe Pedestrian School Zones & crossings with speed enforcement metrics.
    - Night Darkspots & unlit road segments with lighting infrastructure defect alerts.
-5. **Edge ANPR & Vision AI (`anpr`)**:
+5. **👁️ Edge ANPR & Vision AI (`anpr`)**:
    - Interactive license plate OCR scanner test.
    - Vehicle class distribution and automatic incident classification.
 
