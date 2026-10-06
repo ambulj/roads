@@ -2,7 +2,15 @@ import React, { useState, useMemo } from "react";
 import {
   Search,
   RotateCcw,
-  Sparkles
+  Sparkles,
+  LayoutGrid,
+  ChevronDown,
+  ChevronUp,
+  ChevronsLeft,
+  ChevronsRight,
+  Layers,
+  Eye,
+  X
 } from "lucide-react";
 import { MetricCards } from "../components/triage/MetricCards";
 import { PriorityQueue } from "../components/triage/PriorityQueue";
@@ -51,6 +59,10 @@ export const CommandCenter: React.FC<CommandCenterProps> = ({
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [selectedStatus, setSelectedStatus] = useState<string>("ACTIVE");
   const [selectedSeverity, setSelectedSeverity] = useState<string>("ALL");
+
+  // Accordion & Dock Collapse States
+  const [isMetricsExpanded, setIsMetricsExpanded] = useState<boolean>(false);
+  const [isDockCollapsed, setIsDockCollapsed] = useState<boolean>(false);
 
   // Selection & Modal States
   const [selectedCluster, setSelectedCluster] = useState<HazardCluster | null>(clusters[0] ?? null);
@@ -224,33 +236,48 @@ export const CommandCenter: React.FC<CommandCenterProps> = ({
     setSelectedCluster(c);
     handleSelectIncident(null);
     setDockTab('inspector');
+    if (isDockCollapsed) {
+      setIsDockCollapsed(false);
+    }
   };
 
   const handleSelectIncidentItem = (inc: TrafficIncident) => {
     handleSelectIncident(inc);
     setDockTab('inspector');
+    if (isDockCollapsed) {
+      setIsDockCollapsed(false);
+    }
   };
 
   return (
     <div className="flex-1 flex flex-col min-h-0 bg-zinc-100 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 select-none overflow-hidden">
       
-      {/* 1. SLIM INTEGRATED TOP COMMAND & FILTER BAR */}
-      <div className="bg-white dark:bg-zinc-900 border-b border-zinc-200 dark:border-zinc-800 px-3 py-2 flex flex-col md:flex-row items-stretch md:items-center justify-between gap-2.5 shrink-0 z-10">
+      {/* 1. SLIM 44px (h-11) SINGLE-LINE EXECUTIVE TELEMETRY & FILTER BAR */}
+      <div className="h-11 bg-white dark:bg-zinc-900 border-b border-zinc-200 dark:border-zinc-800 px-3 py-1.5 flex items-center justify-between gap-2.5 shrink-0 z-10">
         
         {/* Left: Quick Search */}
-        <div className="relative flex-1 min-w-[220px] max-w-sm">
-          <Search className="w-3.5 h-3.5 text-zinc-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
+        <div className="relative flex-1 min-w-[180px] max-w-xs sm:max-w-sm">
+          <Search className="w-3.5 h-3.5 text-zinc-400 absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
           <input
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Search corridor, POI, or defect..."
-            className="w-full h-7 pl-8 pr-2.5 text-xs bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-500 focus:outline-hidden focus:border-cyan-500 font-mono transition"
+            className="w-full h-7 pl-8 pr-7 text-xs bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-500 focus:outline-hidden focus:border-cyan-500 font-mono transition"
           />
+          {searchQuery && (
+            <button
+              onClick={() => setSearchQuery("")}
+              className="absolute right-2 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200"
+              title="Clear search"
+            >
+              <X className="w-3 h-3" />
+            </button>
+          )}
         </div>
 
         {/* Center: Real-Time Live Metric Chips */}
-        <div className="flex items-center gap-1.5 overflow-x-auto text-[11px] font-mono">
+        <div className="hidden sm:flex items-center gap-1.5 overflow-x-auto text-[11px] font-mono shrink-0">
           <div className="flex items-center gap-1 px-2 py-0.5 rounded bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-700">
             <span className="text-zinc-400">Fleet:</span>
             <strong className="text-cyan-600 dark:text-cyan-400">{onlineFleetCount}/5 Active</strong>
@@ -265,8 +292,8 @@ export const CommandCenter: React.FC<CommandCenterProps> = ({
           </div>
         </div>
 
-        {/* Right: Quick Filters & Actions */}
-        <div className="flex items-center gap-1.5 justify-end flex-wrap text-xs font-mono">
+        {/* Right: Quick Filters & KPI Toggle */}
+        <div className="flex items-center gap-1.5 justify-end shrink-0 text-xs font-mono">
           <select
             value={selectedStatus}
             onChange={(e) => setSelectedStatus(e.target.value)}
@@ -280,7 +307,7 @@ export const CommandCenter: React.FC<CommandCenterProps> = ({
           <select
             value={selectedSeverity}
             onChange={(e) => setSelectedSeverity(e.target.value)}
-            className="h-7 px-2 bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded text-zinc-800 dark:text-zinc-200 text-[11px] font-medium focus:outline-hidden focus:border-cyan-500 transition cursor-pointer"
+            className="h-7 px-2 bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded text-zinc-800 dark:text-zinc-200 text-[11px] font-medium focus:outline-hidden focus:border-cyan-500 transition cursor-pointer hidden md:inline-block"
           >
             <option value="ALL">All Severities</option>
             <option value="critical">Critical (P0)</option>
@@ -296,9 +323,28 @@ export const CommandCenter: React.FC<CommandCenterProps> = ({
               title="Reset filters"
             >
               <RotateCcw className="w-3 h-3" />
-              <span>Reset</span>
+              <span className="hidden sm:inline">Reset</span>
             </button>
           )}
+
+          {/* KPI Scorecards Toggle Button */}
+          <button
+            onClick={() => setIsMetricsExpanded(!isMetricsExpanded)}
+            className={`h-7 px-2 rounded text-[11px] font-semibold flex items-center gap-1 transition cursor-pointer border ${
+              isMetricsExpanded
+                ? 'bg-cyan-50 dark:bg-cyan-950/70 border-cyan-500/50 text-cyan-600 dark:text-cyan-400'
+                : 'bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-750 text-zinc-700 dark:text-zinc-300 border-zinc-200 dark:border-zinc-700'
+            }`}
+            title={isMetricsExpanded ? "Collapse Detailed KPI Scorecards" : "Expand Detailed KPI Scorecards"}
+          >
+            <LayoutGrid className="w-3.5 h-3.5" />
+            <span className="hidden lg:inline">KPIs</span>
+            {isMetricsExpanded ? (
+              <ChevronUp className="w-3 h-3" />
+            ) : (
+              <ChevronDown className="w-3 h-3" />
+            )}
+          </button>
 
           {onOpenLifecycleDemo && (
             <button
@@ -307,14 +353,16 @@ export const CommandCenter: React.FC<CommandCenterProps> = ({
               title="Interactive Lifecycle Demonstration"
             >
               <Sparkles className="w-3 h-3" />
-              <span>Lifecycle Demo</span>
+              <span className="hidden sm:inline">Lifecycle Demo</span>
             </button>
           )}
         </div>
       </div>
 
-      {/* 2. EXECUTIVE METRIC SCORECARDS HUD STRIP */}
-      <div className="bg-zinc-50 dark:bg-zinc-950 border-b border-zinc-200 dark:border-zinc-800 px-3 py-2 shrink-0">
+      {/* 2. COLLAPSIBLE ACCORDION CONTAINER FOR METRIC CARDS */}
+      <div className={`transition-all duration-300 ease-in-out overflow-hidden bg-zinc-50 dark:bg-zinc-950 border-b border-zinc-200 dark:border-zinc-800 ${
+        isMetricsExpanded ? 'max-h-96 opacity-100 py-2 px-3' : 'max-h-0 opacity-0 py-0 px-3 border-b-0 pointer-events-none'
+      }`}>
         <MetricCards
           metrics={metrics}
           fleetCount={onlineFleetCount}
@@ -328,7 +376,7 @@ export const CommandCenter: React.FC<CommandCenterProps> = ({
         />
       </div>
 
-      {/* 3. SPATIAL 2-COLUMN COCKPIT (65% MAP / 35% ACTION DOCK) */}
+      {/* 3. SPATIAL 2-COLUMN COCKPIT (MAP / COLLAPSIBLE ACTION DOCK) */}
       <div className="flex-1 flex flex-col lg:flex-row min-h-0 items-stretch overflow-hidden">
         
         {/* Left / Center Canvas: Full-Size WebGIS Map */}
@@ -349,60 +397,117 @@ export const CommandCenter: React.FC<CommandCenterProps> = ({
           />
         </div>
 
-        {/* Right: Unified Triage Queue & Inspector Dock */}
-        <div className="w-full lg:w-[380px] xl:w-[420px] shrink-0 border-t lg:border-t-0 lg:border-l border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 flex flex-col min-h-0 h-[480px] lg:h-full z-10">
-          
-          {/* Dock Tab Selector */}
-          <div className="h-9 flex items-stretch border-b border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950 font-mono text-xs">
+        {/* Right: Collapsible Triage Queue & Inspector Dock */}
+        {isDockCollapsed ? (
+          <div className="w-11 shrink-0 border-t lg:border-t-0 lg:border-l border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 flex flex-col items-center py-2 gap-3 z-10 font-mono transition-all duration-300">
             <button
-              onClick={() => setDockTab('queue')}
-              className={`flex-1 h-full px-3 text-center border-b-2 transition-colors text-[11px] font-medium flex items-center justify-center ${
-                dockTab === 'queue'
-                  ? 'border-cyan-500 text-cyan-600 dark:text-cyan-400 bg-white dark:bg-zinc-900 font-semibold'
-                  : 'border-transparent text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-200'
-              }`}
+              onClick={() => setIsDockCollapsed(false)}
+              className="p-2 rounded hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 transition"
+              title="Expand Triage Dock"
             >
-              <span>Triage Queue ({hazardClustersCount + incidentCount})</span>
+              <ChevronsLeft className="w-4 h-4" />
             </button>
-            <button
-              onClick={() => setDockTab('inspector')}
-              className={`flex-1 h-full px-3 text-center border-b-2 transition-colors text-[11px] font-medium flex items-center justify-center ${
-                dockTab === 'inspector'
-                  ? 'border-cyan-500 text-cyan-600 dark:text-cyan-400 bg-white dark:bg-zinc-900 font-semibold'
-                  : 'border-transparent text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-200'
-              }`}
-            >
-              <span>Forensic Inspector</span>
-            </button>
-          </div>
 
-          {/* Dock Content */}
-          <div className="flex-1 min-h-0 overflow-hidden flex flex-col">
-            {dockTab === 'queue' ? (
-              <PriorityQueue
-                clusters={filteredClusters}
-                incidents={filteredIncidents}
-                selectedClusterId={selectedCluster?.id || null}
-                selectedIncidentId={activeSelectedIncident?.id || null}
-                onSelectCluster={handleSelectClusterItem}
-                onSelectIncident={handleSelectIncidentItem}
-                auditLogs={auditLogs}
-              />
-            ) : (
-              <OperatorInspectorPanel
-                selectedCluster={activeSelectedIncident ? null : selectedCluster}
-                selectedIncident={activeSelectedIncident}
-                onDispatchWorkOrder={handleDispatchWorkOrder}
-                onResolveCluster={handleResolveCluster}
-                onEscalateIncident={handleEscalateIncident}
-                onNavigateToWorkOrders={() => onNavigate?.("work-orders")}
-                onOpenDossierModal={() => {
-                  if (activeSelectedIncident) setIsDossierOpen(true);
-                }}
-              />
-            )}
+            <button
+              onClick={() => {
+                setDockTab('queue');
+                setIsDockCollapsed(false);
+              }}
+              className={`p-2 rounded relative transition ${
+                dockTab === 'queue'
+                  ? 'bg-cyan-50 dark:bg-cyan-950/70 text-cyan-600 dark:text-cyan-400'
+                  : 'hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-500 dark:text-zinc-400'
+              }`}
+              title={`Triage Queue (${hazardClustersCount + incidentCount} items)`}
+            >
+              <Layers className="w-4 h-4" />
+              {(hazardClustersCount + incidentCount) > 0 && (
+                <span className="absolute -top-1 -right-1 px-1 min-w-[14px] h-[14px] rounded-full bg-cyan-600 text-white text-[9px] font-bold flex items-center justify-center">
+                  {hazardClustersCount + incidentCount}
+                </span>
+              )}
+            </button>
+
+            <button
+              onClick={() => {
+                setDockTab('inspector');
+                setIsDockCollapsed(false);
+              }}
+              className={`p-2 rounded relative transition ${
+                dockTab === 'inspector'
+                  ? 'bg-cyan-50 dark:bg-cyan-950/70 text-cyan-600 dark:text-cyan-400'
+                  : 'hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-500 dark:text-zinc-400'
+              }`}
+              title="Forensic Inspector"
+            >
+              <Eye className="w-4 h-4" />
+              {(selectedCluster || activeSelectedIncident) && (
+                <span className="absolute top-1 right-1 w-2 h-2 rounded-full bg-cyan-500 animate-pulse" />
+              )}
+            </button>
           </div>
-        </div>
+        ) : (
+          <div className="w-full lg:w-[380px] xl:w-[420px] shrink-0 border-t lg:border-t-0 lg:border-l border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 flex flex-col min-h-0 h-[480px] lg:h-full z-10 transition-all duration-300">
+            
+            {/* Dock Tab Selector with Collapse Button */}
+            <div className="h-9 flex items-stretch border-b border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950 font-mono text-xs">
+              <button
+                onClick={() => setDockTab('queue')}
+                className={`flex-1 h-full px-3 text-center border-b-2 transition-colors text-[11px] font-medium flex items-center justify-center ${
+                  dockTab === 'queue'
+                    ? 'border-cyan-500 text-cyan-600 dark:text-cyan-400 bg-white dark:bg-zinc-900 font-semibold'
+                    : 'border-transparent text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-200'
+                }`}
+              >
+                <span>Triage Queue ({hazardClustersCount + incidentCount})</span>
+              </button>
+              <button
+                onClick={() => setDockTab('inspector')}
+                className={`flex-1 h-full px-3 text-center border-b-2 transition-colors text-[11px] font-medium flex items-center justify-center ${
+                  dockTab === 'inspector'
+                    ? 'border-cyan-500 text-cyan-600 dark:text-cyan-400 bg-white dark:bg-zinc-900 font-semibold'
+                    : 'border-transparent text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-200'
+                }`}
+              >
+                <span>Forensic Inspector</span>
+              </button>
+              <button
+                onClick={() => setIsDockCollapsed(true)}
+                className="px-2.5 h-full flex items-center justify-center text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition border-l border-zinc-200 dark:border-zinc-800"
+                title="Collapse Triage Dock (Gain 100% Map Width)"
+              >
+                <ChevronsRight className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Dock Content */}
+            <div className="flex-1 min-h-0 overflow-hidden flex flex-col">
+              {dockTab === 'queue' ? (
+                <PriorityQueue
+                  clusters={filteredClusters}
+                  incidents={filteredIncidents}
+                  selectedClusterId={selectedCluster?.id || null}
+                  selectedIncidentId={activeSelectedIncident?.id || null}
+                  onSelectCluster={handleSelectClusterItem}
+                  onSelectIncident={handleSelectIncidentItem}
+                  auditLogs={auditLogs}
+                />
+              ) : (
+                <OperatorInspectorPanel
+                  selectedCluster={activeSelectedIncident ? null : selectedCluster}
+                  selectedIncident={activeSelectedIncident}
+                  onDispatchWorkOrder={handleDispatchWorkOrder}
+                  onResolveCluster={handleResolveCluster}
+                  onEscalateIncident={handleEscalateIncident}
+                  onNavigateToWorkOrders={() => onNavigate?.("work-orders")}
+                  onOpenDossierModal={() => {
+                    if (activeSelectedIncident) setIsDossierOpen(true);
+                  }}
+                />
+              )}
+            </div>
+          </div>
+        )}
 
       </div>
 
@@ -443,3 +548,4 @@ export const CommandCenter: React.FC<CommandCenterProps> = ({
     </div>
   );
 };
+

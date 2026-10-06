@@ -12,6 +12,7 @@ import {
   Navigation, 
   Waves,
   ChevronDown,
+  ChevronUp,
   Check,
   Info,
   PanelLeftClose,
@@ -465,6 +466,9 @@ export const WebGISMap: React.FC<WebGISMapProps> = ({
   // Elevation & Roughness Profile Bottom Pop-up state
   const [activeProfileCorridor, setActiveProfileCorridor] = useState<string | null>(null);
   const [hoveredProfileIndex, setHoveredProfileIndex] = useState<number | null>(null);
+  const [isODTrayMinimized, setIsODTrayMinimized] = useState<boolean>(false);
+  const [isCoverageTrayMinimized, setIsCoverageTrayMinimized] = useState<boolean>(false);
+  const [isProfileTrayMinimized, setIsProfileTrayMinimized] = useState<boolean>(false);
 
   const activeGisCount = 
     (showDefects ? 1 : 0) + 
@@ -1517,9 +1521,9 @@ export const WebGISMap: React.FC<WebGISMapProps> = ({
   return (
     <main className="flex-1 w-full h-full flex flex-col relative overflow-hidden bg-slate-100 dark:bg-slate-950 select-none">
       
-      {/* Top Glassy Floating Map Control Dock & Animated Quick Corridor Navigation */}
+      {/* Top Glassy Minimalist Micro-Dock Capsule */}
       <div className="absolute top-3 left-3 right-3 sm:left-auto sm:right-3 z-30 flex items-center justify-end pointer-events-none">
-        <div className="flex items-center gap-1.5 pointer-events-auto bg-white/95 dark:bg-slate-900/95 backdrop-blur-md px-2 py-1.5 rounded-2xl border border-slate-200/80 dark:border-slate-800/80 shadow-float text-xs font-medium relative">
+        <div className="flex items-center gap-1.5 pointer-events-auto bg-white/95 dark:bg-slate-900/95 backdrop-blur-md px-2 py-1 rounded-2xl border border-slate-200/80 dark:border-slate-800/80 shadow-float text-xs font-medium relative">
           
           {/* Quick Corridor Jump Pills (Contained Horizontal Scroll) */}
           <div className="flex items-center gap-1 shrink-0 border-r border-slate-200 dark:border-slate-800 pr-1.5 mr-0.5 max-w-[170px] sm:max-w-xs md:max-w-sm lg:max-w-md overflow-x-auto custom-scrollbar py-0.5">
@@ -1531,7 +1535,7 @@ export const WebGISMap: React.FC<WebGISMapProps> = ({
                   key={c.name}
                   onClick={() => handleCorridorJump(c)}
                   title={`Jump camera to ${c.name}`}
-                  className={`px-2 py-1 rounded-xl text-[11px] font-semibold transition whitespace-nowrap flex items-center gap-1 shrink-0 ${
+                  className={`px-2 py-0.5 rounded-xl text-[11px] font-semibold transition whitespace-nowrap flex items-center gap-1 shrink-0 ${
                     isActive
                       ? 'bg-blue-600 text-white shadow-xs'
                       : 'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
@@ -1560,7 +1564,7 @@ export const WebGISMap: React.FC<WebGISMapProps> = ({
               setBasemap(nextMap);
             }}
             title={`Current Basemap: ${basemap}. Click to switch.`}
-            className="px-2 py-1 rounded-xl transition bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 capitalize font-mono text-[11px] flex items-center gap-1 shrink-0"
+            className="px-2 py-0.5 rounded-xl transition bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 capitalize font-mono text-[11px] flex items-center gap-1 shrink-0"
           >
             <Layers className="w-3 h-3 text-slate-500" />
             <span>{basemap}</span>
@@ -1570,7 +1574,7 @@ export const WebGISMap: React.FC<WebGISMapProps> = ({
           <div className="relative" ref={gisMenuRef}>
             <button
               onClick={() => setIsGisMenuOpen(!isGisMenuOpen)}
-              className={`px-2.5 py-1 rounded-xl flex items-center gap-1.5 text-[11px] font-bold transition shrink-0 ${
+              className={`px-2.5 py-0.5 rounded-xl flex items-center gap-1.5 text-[11px] font-bold transition shrink-0 ${
                 activeGisCount > 0
                   ? 'bg-amber-500 text-white shadow-xs'
                   : 'text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800'
@@ -1791,7 +1795,7 @@ export const WebGISMap: React.FC<WebGISMapProps> = ({
           <button
             onClick={onToggleSplitView}
             title={isSplitView ? "Close Split-View Telemetry Panel" : "Open Split-View Telemetry Panel"}
-            className={`px-2 py-1 rounded-xl text-[11px] font-semibold transition flex items-center gap-1 shrink-0 ${
+            className={`px-2 py-0.5 rounded-xl text-[11px] font-semibold transition flex items-center gap-1 shrink-0 ${
               isSplitView
                 ? 'bg-indigo-600 text-white shadow-xs'
                 : 'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
@@ -1823,106 +1827,212 @@ export const WebGISMap: React.FC<WebGISMapProps> = ({
       <div className="flex-1 w-full h-full relative">
         <div ref={mapContainerRef} className="w-full h-full" style={{ width: "100%", height: "100%", minHeight: "460px" }} />
 
-        {/* FLOATING HUD 1: O-D FLOW MATRIX CARD (WHEN ACTIVE) */}
-        {showODDesireLines && (
-          <div className="absolute top-14 right-3 z-20 max-w-sm w-full bg-slate-950/90 backdrop-blur-md border border-cyan-500/40 rounded-xl p-3 shadow-xl text-xs text-slate-200 font-sans animate-fadeIn">
-            <div className="flex items-center justify-between border-b border-slate-800 pb-2 mb-2">
-              <div className="flex items-center gap-1.5 font-bold text-cyan-400">
-                <TrendingUp className="w-4 h-4" />
-                <span>O-D Transit Desire Lines (PS 26124)</span>
+        {/* SLIDE-UP BOTTOM ANALYTICAL TRAYS (DOCKED ABOVE LEGEND) */}
+        <div className="absolute bottom-12 left-3 sm:left-4 z-20 max-w-md lg:max-w-lg w-full pointer-events-auto flex flex-col gap-2">
+          
+          {/* TRAY 1: O-D TRANSIT DESIRE LINES SHEET (PS 26124) */}
+          {showODDesireLines && (
+            <div className="w-full bg-slate-950/95 backdrop-blur-md border border-cyan-500/40 rounded-xl shadow-2xl text-xs text-slate-200 font-sans animate-fadeIn overflow-hidden">
+              <div className="bg-slate-900/90 px-3 py-2 border-b border-slate-800/80 flex items-center justify-between">
+                <div className="flex items-center gap-1.5 font-bold text-cyan-400 text-xs">
+                  <TrendingUp className="w-4 h-4 text-cyan-400 shrink-0" />
+                  <span>O-D Transit Desire Lines (PS 26124)</span>
+                </div>
+                <div className="flex items-center gap-1 text-slate-400">
+                  <button
+                    onClick={() => setIsODTrayMinimized(!isODTrayMinimized)}
+                    className="p-1 rounded hover:bg-slate-800 text-slate-400 hover:text-white transition cursor-pointer"
+                    title={isODTrayMinimized ? "Expand Tray" : "Minimize Tray"}
+                  >
+                    {isODTrayMinimized ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+                  </button>
+                  <button
+                    onClick={() => setShowODDesireLines(false)}
+                    className="p-1 rounded hover:bg-slate-800 text-slate-400 hover:text-white transition cursor-pointer"
+                    title="Close Desire Lines Layer"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                </div>
               </div>
-              <button 
-                onClick={() => setShowODDesireLines(false)}
-                className="text-slate-400 hover:text-white"
-              >
-                <X className="w-3.5 h-3.5" />
-              </button>
+              {!isODTrayMinimized && (
+                <div className="p-3">
+                  <p className="text-[10.5px] text-slate-400 mb-2 leading-tight">
+                    Aggregated passenger-load proxies from cabin cameras &amp; bus GPS trip frequencies across city wards.
+                  </p>
+                  <div className="space-y-1.5 font-mono text-[10.5px] max-h-52 overflow-y-auto pr-1 custom-scrollbar">
+                    <div className="p-1.5 rounded bg-slate-900 border border-slate-800 flex items-center justify-between">
+                      <div>
+                        <span className="font-bold text-cyan-300">Tambaram &rarr; Broadway</span>
+                        <div className="text-[9.5px] text-slate-400 font-sans">Route 21G &bull; GST Trunk</div>
+                        <div className="text-[9px] text-rose-400 font-sans">IRI 4.8 &bull; 5.4 min distress delay</div>
+                      </div>
+                      <div className="text-right">
+                        <span className="font-bold text-white">4,820 trips/d</span>
+                        <div className="text-[9px] text-emerald-400">84% Cabin Load</div>
+                      </div>
+                    </div>
+                    <div className="p-1.5 rounded bg-slate-900 border border-slate-800 flex items-center justify-between">
+                      <div>
+                        <span className="font-bold text-purple-300">Koyambedu &rarr; Siruseri</span>
+                        <div className="text-[9.5px] text-slate-400 font-sans">Route 570X &bull; OMR Tech SEZ</div>
+                        <div className="text-[9px] text-rose-400 font-sans">IRI 3.8 &bull; 7.2 min distress delay</div>
+                      </div>
+                      <div className="text-right">
+                        <span className="font-bold text-white">6,450 trips/d</span>
+                        <div className="text-[9px] text-rose-400">92% Load (LoS E)</div>
+                      </div>
+                    </div>
+                    <div className="p-1.5 rounded bg-slate-900 border border-slate-800 flex items-center justify-between">
+                      <div>
+                        <span className="font-bold text-emerald-300">Central &rarr; Guindy</span>
+                        <div className="text-[9.5px] text-slate-400 font-sans">Route 1B &bull; Mount Road Spine</div>
+                        <div className="text-[9px] text-amber-400 font-sans">IRI 2.4 &bull; 3.8 min distress delay</div>
+                      </div>
+                      <div className="text-right">
+                        <span className="font-bold text-white">5,200 trips/d</span>
+                        <div className="text-[9px] text-cyan-400">78% Cabin Load</div>
+                      </div>
+                    </div>
+                    <div className="p-1.5 rounded bg-slate-900 border border-slate-800 flex items-center justify-between">
+                      <div>
+                        <span className="font-bold text-amber-300">Broadway &rarr; Kelambakkam</span>
+                        <div className="text-[9.5px] text-slate-400 font-sans">Route 102 &bull; East Coast Link</div>
+                        <div className="text-[9px] text-emerald-400 font-sans">IRI 2.1 &bull; 3.6 min distress delay</div>
+                      </div>
+                      <div className="text-right">
+                        <span className="font-bold text-white">3,180 trips/d</span>
+                        <div className="text-[9px] text-slate-300">65% Cabin Load</div>
+                      </div>
+                    </div>
+                    <div className="p-1.5 rounded bg-slate-900 border border-slate-800 flex items-center justify-between">
+                      <div>
+                        <span className="font-bold text-sky-300">Kathipara &rarr; OMR Tidel</span>
+                        <div className="text-[9.5px] text-slate-400 font-sans">Route 570S &bull; IT Feeder Link</div>
+                        <div className="text-[9px] text-rose-400 font-sans">IRI 3.1 &bull; 4.2 min distress delay</div>
+                      </div>
+                      <div className="text-right">
+                        <span className="font-bold text-white">4,100 trips/d</span>
+                        <div className="text-[9px] text-sky-400">74% Cabin Load</div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
-            <p className="text-[10.5px] text-slate-400 mb-2 leading-tight">
-              Aggregated passenger-load proxies from cabin cameras &amp; bus GPS trip frequencies across city wards.
-            </p>
-            <div className="space-y-1.5 font-mono text-[10.5px] max-h-64 overflow-y-auto pr-1">
-              <div className="p-1.5 rounded bg-slate-900 border border-slate-800 flex items-center justify-between">
-                <div>
-                  <span className="font-bold text-cyan-300">Tambaram &rarr; Broadway</span>
-                  <div className="text-[9.5px] text-slate-400 font-sans">Route 21G &bull; GST Trunk</div>
-                  <div className="text-[9px] text-rose-400 font-sans">IRI 4.8 &bull; 5.4 min distress delay</div>
-                </div>
-                <div className="text-right">
-                  <span className="font-bold text-white">4,820 trips/d</span>
-                  <div className="text-[9px] text-emerald-400">84% Cabin Load</div>
-                </div>
-              </div>
-              <div className="p-1.5 rounded bg-slate-900 border border-slate-800 flex items-center justify-between">
-                <div>
-                  <span className="font-bold text-purple-300">Koyambedu &rarr; Siruseri</span>
-                  <div className="text-[9.5px] text-slate-400 font-sans">Route 570X &bull; OMR Tech SEZ</div>
-                  <div className="text-[9px] text-rose-400 font-sans">IRI 3.8 &bull; 7.2 min distress delay</div>
-                </div>
-                <div className="text-right">
-                  <span className="font-bold text-white">6,450 trips/d</span>
-                  <div className="text-[9px] text-rose-400">92% Load (LoS E)</div>
-                </div>
-              </div>
-              <div className="p-1.5 rounded bg-slate-900 border border-slate-800 flex items-center justify-between">
-                <div>
-                  <span className="font-bold text-emerald-300">Central &rarr; Guindy</span>
-                  <div className="text-[9.5px] text-slate-400 font-sans">Route 1B &bull; Mount Road Spine</div>
-                  <div className="text-[9px] text-amber-400 font-sans">IRI 2.4 &bull; 3.8 min distress delay</div>
-                </div>
-                <div className="text-right">
-                  <span className="font-bold text-white">5,200 trips/d</span>
-                  <div className="text-[9px] text-cyan-400">78% Cabin Load</div>
-                </div>
-              </div>
-              <div className="p-1.5 rounded bg-slate-900 border border-slate-800 flex items-center justify-between">
-                <div>
-                  <span className="font-bold text-amber-300">Broadway &rarr; Kelambakkam</span>
-                  <div className="text-[9.5px] text-slate-400 font-sans">Route 102 &bull; East Coast Link</div>
-                  <div className="text-[9px] text-emerald-400 font-sans">IRI 2.1 &bull; 3.6 min distress delay</div>
-                </div>
-                <div className="text-right">
-                  <span className="font-bold text-white">3,180 trips/d</span>
-                  <div className="text-[9px] text-slate-300">65% Cabin Load</div>
-                </div>
-              </div>
-              <div className="p-1.5 rounded bg-slate-900 border border-slate-800 flex items-center justify-between">
-                <div>
-                  <span className="font-bold text-sky-300">Kathipara &rarr; OMR Tidel</span>
-                  <div className="text-[9.5px] text-slate-400 font-sans">Route 570S &bull; IT Feeder Link</div>
-                  <div className="text-[9px] text-rose-400 font-sans">IRI 3.1 &bull; 4.2 min distress delay</div>
-                </div>
-                <div className="text-right">
-                  <span className="font-bold text-white">4,100 trips/d</span>
-                  <div className="text-[9px] text-sky-400">74% Cabin Load</div>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
+          )}
 
-        {/* FLOATING HUD 2: COVERAGE GAPS & PHASE 2 EXPANSION BANNER */}
-        {showCoverageGaps && (
-          <div className="absolute top-14 left-1/2 -translate-x-1/2 z-20 bg-slate-950/90 backdrop-blur-md border border-amber-500/50 rounded-xl px-4 py-2.5 shadow-xl text-xs text-slate-200 max-w-md w-full animate-fadeIn flex items-center justify-between gap-3">
-            <div className="flex items-center gap-2">
-              <AlertCircle className="w-5 h-5 text-amber-400 shrink-0" />
-              <div>
-                <div className="font-bold text-amber-300 text-[11px]">
-                  Municipal Blind Spots (Dashed Amber Lines)
+          {/* TRAY 2: MUNICIPAL COVERAGE BLIND SPOTS (PHASE 2 EXPANSION) */}
+          {showCoverageGaps && (
+            <div className="w-full bg-slate-950/95 backdrop-blur-md border border-amber-500/50 rounded-xl shadow-2xl text-xs text-slate-200 font-sans animate-fadeIn overflow-hidden">
+              <div className="bg-slate-900/90 px-3 py-2 border-b border-slate-800/80 flex items-center justify-between">
+                <div className="flex items-center gap-1.5 font-bold text-amber-300 text-xs">
+                  <AlertCircle className="w-4 h-4 text-amber-400 shrink-0" />
+                  <span>Municipal Coverage Blind Spots (Phase 2)</span>
                 </div>
-                <div className="text-[10px] text-slate-400 leading-tight">
-                  Streets with 0 transit bus passes in 14 days. <strong>Phase 2 Scope:</strong> Deploy Edge AI on Swachh Bharat garbage trucks &amp; utility fleets to close coverage gap.
+                <div className="flex items-center gap-1 text-slate-400">
+                  <button
+                    onClick={() => setIsCoverageTrayMinimized(!isCoverageTrayMinimized)}
+                    className="p-1 rounded hover:bg-slate-800 text-slate-400 hover:text-white transition cursor-pointer"
+                    title={isCoverageTrayMinimized ? "Expand Tray" : "Minimize Tray"}
+                  >
+                    {isCoverageTrayMinimized ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+                  </button>
+                  <button
+                    onClick={() => setShowCoverageGaps(false)}
+                    className="p-1 rounded hover:bg-slate-800 text-slate-400 hover:text-white transition cursor-pointer"
+                    title="Close Blind Spots Layer"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
                 </div>
               </div>
+              {!isCoverageTrayMinimized && (
+                <div className="p-3 space-y-2">
+                  <p className="text-[10px] text-slate-400 leading-tight">
+                    Streets with 0 transit bus passes in 14 days. <strong>Phase 2 Scope:</strong> Deploy Edge AI on Swachh Bharat garbage trucks &amp; municipal fleets to close coverage gap.
+                  </p>
+                  <div className="space-y-1.5 font-mono text-[10.5px] max-h-48 overflow-y-auto pr-1 custom-scrollbar">
+                    {COVERAGE_GAPS_GEOJSON.features.map((f, idx) => (
+                      <div key={idx} className="p-2 rounded bg-slate-900 border border-slate-800 space-y-1">
+                        <div className="flex items-center justify-between text-amber-300 font-bold text-[11px]">
+                          <span>{f.properties.sector}</span>
+                          <span className="text-[9px] px-1.5 py-0.5 rounded bg-amber-950 text-amber-300 border border-amber-700">0 Passes / 14d</span>
+                        </div>
+                        <div className="text-[9.5px] text-slate-400 font-sans flex items-center justify-between">
+                          <span>Grid: {f.properties.gapType}</span>
+                          <span className="text-cyan-400">{f.properties.targetFleet}</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
-            <button 
-              onClick={() => setShowCoverageGaps(false)}
-              className="text-slate-400 hover:text-white shrink-0"
-            >
-              <X className="w-4 h-4" />
-            </button>
-          </div>
-        )}
+          )}
+
+          {/* TRAY 3: CORRIDOR ELEVATION & ROUGHNESS PROFILE */}
+          {activeProfileCorridor && CORRIDOR_PROFILES[activeProfileCorridor] && (
+            <div className="w-full bg-slate-950/95 backdrop-blur-md border border-indigo-500/50 rounded-xl shadow-2xl text-xs text-slate-200 font-sans animate-fadeIn overflow-hidden">
+              <div className="bg-slate-900/90 px-3 py-2 border-b border-slate-800/80 flex items-center justify-between">
+                <div className="flex items-center gap-1.5 font-bold text-indigo-300 text-xs">
+                  <Activity className="w-4 h-4 text-indigo-400 shrink-0" />
+                  <span>{activeProfileCorridor} Elevation &amp; Roughness Profile</span>
+                </div>
+                <div className="flex items-center gap-1 text-slate-400">
+                  <button
+                    onClick={() => setIsProfileTrayMinimized(!isProfileTrayMinimized)}
+                    className="p-1 rounded hover:bg-slate-800 text-slate-400 hover:text-white transition cursor-pointer"
+                    title={isProfileTrayMinimized ? "Expand Tray" : "Minimize Tray"}
+                  >
+                    {isProfileTrayMinimized ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+                  </button>
+                  <button
+                    onClick={() => setActiveProfileCorridor(null)}
+                    className="p-1 rounded hover:bg-slate-800 text-slate-400 hover:text-white transition cursor-pointer"
+                    title="Close Corridor Profile"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              </div>
+              {!isProfileTrayMinimized && (
+                <div className="p-3 space-y-2">
+                  <div className="flex items-center justify-between text-[10px] text-slate-400 font-mono">
+                    <span>Chainage Milestone</span>
+                    <span>Elevation (m MSL) · IRI Roughness (m/km)</span>
+                  </div>
+                  <div className="space-y-1.5 font-mono text-[10.5px] max-h-48 overflow-y-auto pr-1 custom-scrollbar">
+                    {CORRIDOR_PROFILES[activeProfileCorridor].map((pt, idx) => {
+                      const isRough = pt.iri > 4.0;
+                      const isMod = pt.iri > 2.5 && pt.iri <= 4.0;
+                      const iriCol = isRough ? 'text-rose-400 bg-rose-950/60 border-rose-800' : isMod ? 'text-amber-400 bg-amber-950/60 border-amber-800' : 'text-emerald-400 bg-emerald-950/60 border-emerald-800';
+                      return (
+                        <div 
+                          key={idx} 
+                          onMouseEnter={() => setHoveredProfileIndex(idx)}
+                          onMouseLeave={() => setHoveredProfileIndex(null)}
+                          className={`p-1.5 rounded bg-slate-900 border flex items-center justify-between transition ${
+                            hoveredProfileIndex === idx ? 'border-indigo-500 bg-slate-800/80' : 'border-slate-800'
+                          }`}
+                        >
+                          <div>
+                            <div className="font-bold text-slate-200 text-[10.5px]">{pt.road}</div>
+                            <div className="text-[9.5px] text-slate-400 font-sans">Km {pt.km.toFixed(1)} &bull; Elev: {pt.elevation}m MSL</div>
+                          </div>
+                          <div className={`text-[10px] font-bold px-2 py-0.5 rounded border ${iriCol}`}>
+                            IRI {pt.iri} m/km
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+        </div>
 
         {/* Bottom Legend */}
         <div className="absolute bottom-3 left-3 z-10 pointer-events-none flex items-center gap-2">
