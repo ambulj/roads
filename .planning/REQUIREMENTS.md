@@ -39,7 +39,7 @@
 
 ### 6. WebGIS Map HUD & Inspection Controls (MAP-UI)
 
-- [ ] **UI-02**: Modernize MapLibre WebGIS controls with a sleek floating HUD dock, responsive sidebar split-view, high-contrast cluster inspection cards, and streamlined layer visibility selector.
+- [x] **UI-02**: Modernize MapLibre WebGIS controls with a sleek floating HUD dock, responsive sidebar split-view, high-contrast cluster inspection cards, and streamlined layer visibility selector.
 
 ### 7. Municipal Dashboard & SLA Action Console Polish (DASH-UI)
 
@@ -82,14 +82,14 @@
 | GIS-02 | v3.0 | Phase 4 | Complete |
 | GIS-03 | v3.0 | Phase 4 | Complete |
 | UI-01 | v3.1 | Phase 5 | Complete |
-| UI-02 | v3.1 | Phase 6 | Pending |
+| UI-02 | v3.1 | Phase 6 | Complete |
 | UI-03 | v3.1 | Phase 7 | Pending |
 
 **Coverage:**
 - Total Requirements: 15
 - Mapped to Phases: 15
-- Completed: 13 / 15 (86.7%)
-- Active in Milestone v3.1: 2
+- Completed: 14 / 15 (93.3%)
+- Active in Milestone v3.1: 1
 
 ---
 *Requirements updated: 2026-10-06 for Milestone v3.1*
