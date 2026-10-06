@@ -47,11 +47,11 @@ interface WebGISMapProps {
 }
 
 const CHENNAI_QUICK_CORRIDORS = [
-  { name: "GST Road", lat: 12.9516, lng: 80.1462, zoom: 15.0 },
-  { name: "Kathipara Cloverleaf", lat: 13.0067, lng: 80.2030, zoom: 15.2 },
-  { name: "OMR IT Expressway", lat: 12.9719, lng: 80.2500, zoom: 14.8 },
-  { name: "Anna Salai CBD", lat: 13.0604, lng: 80.2496, zoom: 15.0 },
-  { name: "Central Station Link", lat: 13.0827, lng: 80.2707, zoom: 15.4 },
+  { name: "GST Road (NH-32)", lat: 12.9516, lng: 80.1462, zoom: 15.0, pitch: 35, bearing: -10 },
+  { name: "Kathipara Cloverleaf", lat: 13.0067, lng: 80.2030, zoom: 15.2, pitch: 45, bearing: 25 },
+  { name: "OMR IT Expressway", lat: 12.9719, lng: 80.2500, zoom: 14.8, pitch: 30, bearing: 0 },
+  { name: "Anna Salai CBD", lat: 13.0604, lng: 80.2496, zoom: 15.0, pitch: 40, bearing: -15 },
+  { name: "Central Station Link", lat: 13.0827, lng: 80.2707, zoom: 15.4, pitch: 35, bearing: 10 },
 ];
 
 const SAMPLE_BREADCRUMBS = [
@@ -432,21 +432,51 @@ export const WebGISMap: React.FC<WebGISMapProps> = ({
 
   const [layerFilter, setLayerFilter] = useState<'all' | 'hazards' | 'incidents' | 'safety'>('all');
   const [isMapReady, setIsMapReady] = useState(false);
+  const [showDefects, setShowDefects] = useState(true);
+  const [showFleet, setShowFleet] = useState(true);
   const [showHeatmap, setShowHeatmap] = useState(false);
   const [showTrafficCongestion, setShowTrafficCongestion] = useState(false);
   const [showBreadcrumbs, setShowBreadcrumbs] = useState(false);
   const [showMonsoonContours, setShowMonsoonContours] = useState(false);
   const [showODDesireLines, setShowODDesireLines] = useState(false);
+  const [showPOIs, setShowPOIs] = useState(true);
   const [showCoverageGaps, setShowCoverageGaps] = useState(false);
+  const [activeCorridor, setActiveCorridor] = useState<string | null>(null);
   const [isGisMenuOpen, setIsGisMenuOpen] = useState(false);
   const [isInfoMenuOpen, setIsInfoMenuOpen] = useState(false);
-
 
   // Elevation & Roughness Profile Bottom Pop-up state
   const [activeProfileCorridor, setActiveProfileCorridor] = useState<string | null>(null);
   const [hoveredProfileIndex, setHoveredProfileIndex] = useState<number | null>(null);
 
-  const activeGisCount = (showHeatmap ? 1 : 0) + (showTrafficCongestion ? 1 : 0) + (showBreadcrumbs ? 1 : 0) + (showMonsoonContours ? 1 : 0) + (showODDesireLines ? 1 : 0) + (showCoverageGaps ? 1 : 0);
+  const activeGisCount = 
+    (showDefects ? 1 : 0) + 
+    (showFleet ? 1 : 0) + 
+    (showODDesireLines ? 1 : 0) + 
+    (showMonsoonContours ? 1 : 0) + 
+    (showPOIs ? 1 : 0) + 
+    (showTrafficCongestion ? 1 : 0);
+
+  const handleCorridorJump = (corridor: typeof CHENNAI_QUICK_CORRIDORS[number]) => {
+    const map = mapRef.current;
+    if (!map) return;
+    setActiveCorridor(corridor.name);
+    map.flyTo({
+      center: [corridor.lng, corridor.lat],
+      zoom: corridor.zoom,
+      pitch: corridor.pitch ?? 35,
+      bearing: corridor.bearing ?? 0,
+      speed: 1.2,
+      curve: 1.4,
+      essential: true
+    });
+  };
+
+  const handleResetCompass = () => {
+    const map = mapRef.current;
+    if (!map) return;
+    map.resetNorthPitch({ duration: 800 });
+  };
 
   const UNIFIED_BASEMAP_STYLE = {
     version: 8,
@@ -522,6 +552,14 @@ export const WebGISMap: React.FC<WebGISMapProps> = ({
     }
 
     return () => {
+      Object.values(markersRef.current).forEach((m) => m.remove());
+      Object.values(busMarkersRef.current).forEach((m) => m.remove());
+      Object.values(incidentMarkersRef.current).forEach((m) => m.remove());
+      Object.values(poiMarkersRef.current).forEach((m) => m.remove());
+      markersRef.current = {};
+      busMarkersRef.current = {};
+      incidentMarkersRef.current = {};
+      poiMarkersRef.current = {};
       map.remove();
       mapRef.current = null;
       setIsMapReady(false);
@@ -575,7 +613,7 @@ export const WebGISMap: React.FC<WebGISMapProps> = ({
         id: 'potholes-heat-layer',
         type: 'heatmap',
         source: 'potholes-heatmap-src',
-        layout: { visibility: showHeatmap ? 'visible' : 'none' },
+        layout: { visibility: (showDefects && showHeatmap) ? 'visible' : 'none' },
         paint: {
           'heatmap-weight': ['interpolate', ['linear'], ['get', 'rpi'], 0, 0, 100, 1],
           'heatmap-intensity': 1.8,
@@ -597,7 +635,7 @@ export const WebGISMap: React.FC<WebGISMapProps> = ({
     } else {
       (map.getSource('potholes-heatmap-src') as maplibregl.GeoJSONSource).setData(heatmapGeoJSON as any);
       if (map.getLayer('potholes-heat-layer')) {
-        map.setLayoutProperty('potholes-heat-layer', 'visibility', showHeatmap ? 'visible' : 'none');
+        map.setLayoutProperty('potholes-heat-layer', 'visibility', (showDefects && showHeatmap) ? 'visible' : 'none');
       }
     }
 
@@ -674,7 +712,7 @@ export const WebGISMap: React.FC<WebGISMapProps> = ({
         map.setLayoutProperty('traffic-congestion-lines', 'visibility', showTrafficCongestion ? 'visible' : 'none');
       }
     }
-  }, [clusters, showHeatmap, showTrafficCongestion, isMapReady]);
+  }, [clusters, showDefects, showHeatmap, showTrafficCongestion, isMapReady]);
 
   // 3. Origin-Destination Transit Desire Lines (PS 26124)
   useEffect(() => {
@@ -754,7 +792,147 @@ export const WebGISMap: React.FC<WebGISMapProps> = ({
     }
   }, [showODDesireLines, isMapReady]);
 
-  // 4. Municipal Coverage Gaps & Blind Spots (Phase 2 Expansion)
+  // 4. Monsoon Hydro Flood Contours Layer
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !isMapReady) return;
+
+    const monsoonGeoJSON = {
+      type: 'FeatureCollection',
+      features: MONSOON_CONTOURS.map((c) => ({
+        type: 'Feature',
+        geometry: {
+          type: 'Polygon',
+          coordinates: [c.coordinates]
+        },
+        properties: {
+          id: c.id,
+          name: c.name,
+          elevation_m: c.elevation_m,
+          water_depth_mm: c.water_depth_mm,
+          risk: c.risk,
+          bottleneck: c.bottleneck
+        }
+      }))
+    };
+
+    if (!map.getSource('monsoon-contours-src')) {
+      map.addSource('monsoon-contours-src', {
+        type: 'geojson',
+        data: monsoonGeoJSON as any
+      });
+
+      map.addLayer({
+        id: 'monsoon-contours-fill',
+        type: 'fill',
+        source: 'monsoon-contours-src',
+        layout: { visibility: showMonsoonContours ? 'visible' : 'none' },
+        paint: {
+          'fill-color': '#06b6d4',
+          'fill-opacity': 0.28
+        }
+      });
+
+      map.addLayer({
+        id: 'monsoon-contours-line',
+        type: 'line',
+        source: 'monsoon-contours-src',
+        layout: { visibility: showMonsoonContours ? 'visible' : 'none' },
+        paint: {
+          'line-color': '#0284c7',
+          'line-width': 2.0,
+          'line-dasharray': [2, 2]
+        }
+      });
+
+      map.on('mouseenter', 'monsoon-contours-fill', () => {
+        map.getCanvas().style.cursor = 'pointer';
+      });
+
+      map.on('mouseleave', 'monsoon-contours-fill', () => {
+        map.getCanvas().style.cursor = '';
+      });
+
+      map.on('click', 'monsoon-contours-fill', (e) => {
+        if (!e.features || !e.features[0]) return;
+        const p = e.features[0].properties;
+        new maplibregl.Popup({ offset: 10 })
+          .setLngLat(e.lngLat)
+          .setHTML(`
+            <div style="font-family: system-ui, sans-serif; font-size: 11px; padding: 3px; min-width: 220px;">
+              <div style="font-weight: 800; font-size: 12px; color: #0284c7; margin-bottom: 2px;">
+                🌊 ${p.name}
+              </div>
+              <div style="background: #ecfeff; border: 1px solid #a5f3fc; border-radius: 6px; padding: 5px 6px; font-size: 10px; color: #0e7490; margin-top: 4px; line-height: 1.45;">
+                <div>Depression Elevation: <b>${p.elevation_m}m MSL</b></div>
+                <div>Estimated Water Depth: <b style="color: #dc2626;">${p.water_depth_mm}mm</b></div>
+                <div>Risk Classification: <b style="color: #ea580c;">${p.risk}</b></div>
+                <div style="margin-top: 3px; color: #475569;"><b>Bottleneck:</b> ${p.bottleneck}</div>
+              </div>
+            </div>
+          `)
+          .addTo(map);
+      });
+    } else {
+      if (map.getLayer('monsoon-contours-fill')) {
+        map.setLayoutProperty('monsoon-contours-fill', 'visibility', showMonsoonContours ? 'visible' : 'none');
+      }
+      if (map.getLayer('monsoon-contours-line')) {
+        map.setLayoutProperty('monsoon-contours-line', 'visibility', showMonsoonContours ? 'visible' : 'none');
+      }
+    }
+  }, [showMonsoonContours, isMapReady]);
+
+  // 5. Sensitive POI Markers (Hospitals, Schools, Transit Interchanges)
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !isMapReady) return;
+
+    CHENNAI_POIS.forEach((poi) => {
+      if (!poiMarkersRef.current[poi.id]) {
+        const isHospital = poi.category === 'hospital';
+        const isSchool = poi.category === 'school' || poi.category === 'college';
+        const bgCol = isHospital ? '#ef4444' : isSchool ? '#3b82f6' : '#f59e0b';
+        const icon = isHospital ? '🏥' : isSchool ? '🎓' : '🚏';
+
+        const el = document.createElement('div');
+        el.className = 'cursor-pointer transition-transform hover:scale-125';
+        el.style.display = showPOIs ? 'block' : 'none';
+        el.innerHTML = `
+          <div style="position: relative; display: flex; align-items: center; justify-content: center;">
+            <div style="width: 22px; height: 22px; border-radius: 50%; background: ${bgCol}; border: 2px solid #ffffff; box-shadow: 0 2px 8px rgba(0,0,0,0.3); display: flex; align-items: center; justify-content: center; font-size: 11px;">
+              ${icon}
+            </div>
+          </div>
+        `;
+
+        const popup = new maplibregl.Popup({ offset: 12 }).setHTML(`
+          <div style="font-family: system-ui, sans-serif; font-size: 11px; padding: 2px; min-width: 210px;">
+            <div style="font-weight: 800; color: ${bgCol}; font-size: 12px; margin-bottom: 2px; display: flex; align-items: center; gap: 4px;">
+              <span>${icon}</span> <span>${poi.name}</span>
+            </div>
+            <div style="font-size: 10px; color: #64748b; margin-bottom: 4px;">
+              <b>Category:</b> <span style="text-transform: capitalize;">${poi.category}</span> Zone &bull; <b>Radius:</b> ${poi.radius_m}m
+            </div>
+            <div style="background: #f1f5f9; padding: 5px 6px; border-radius: 6px; font-size: 10px; color: #0f172a;">
+              Statutory RPI Proximity Boost: <b style="color: ${bgCol};">+${poi.rpi_boost} pts</b>
+            </div>
+          </div>
+        `);
+
+        const marker = new maplibregl.Marker({ element: el })
+          .setLngLat([poi.lng, poi.lat])
+          .setPopup(popup)
+          .addTo(map);
+
+        poiMarkersRef.current[poi.id] = marker;
+      } else {
+        poiMarkersRef.current[poi.id].getElement().style.display = showPOIs ? 'block' : 'none';
+      }
+    });
+  }, [showPOIs, isMapReady]);
+
+  // 6. Municipal Coverage Gaps & Blind Spots (Phase 2 Expansion)
   useEffect(() => {
     const map = mapRef.current;
     if (!map || !isMapReady) return;
@@ -822,7 +1000,7 @@ export const WebGISMap: React.FC<WebGISMapProps> = ({
     };
   }, [clusters, selectedCluster, onSelectCluster, onOpenRPIModal]);
 
-  // Render Defect Cluster Markers
+  // Render Defect Cluster Markers with High-Contrast Inspection Popup Cards
   useEffect(() => {
     const map = mapRef.current;
     if (!map || !isMapReady) return;
@@ -835,18 +1013,20 @@ export const WebGISMap: React.FC<WebGISMapProps> = ({
       }
     });
 
-    const showClusters = layerFilter === 'all' || layerFilter === 'hazards';
+    const isVisible = showDefects && (layerFilter === 'all' || layerFilter === 'hazards');
 
     clusters.forEach((cluster) => {
       const isCritical = cluster.severity_level === 'critical';
       const isHigh = cluster.severity_level === 'high';
       const isResolved = cluster.status === 'resolved' || cluster.status === 'verified_closed';
       const color = isResolved ? '#10b981' : isCritical ? '#f43f5e' : isHigh ? '#f59e0b' : '#3b82f6';
+      const priorityBadge = isCritical ? 'P0 CRITICAL' : isHigh ? 'P1 HIGH' : 'P2 ROUTINE';
+      const badgeBg = isCritical ? '#ffe4e6' : isHigh ? '#fef3c7' : '#dbeafe';
 
       if (!markersRef.current[cluster.id]) {
         const el = document.createElement('div');
         el.className = 'cursor-pointer transition-transform hover:scale-125';
-        el.style.display = showClusters ? 'block' : 'none';
+        el.style.display = isVisible ? 'block' : 'none';
         el.innerHTML = `
           <div style="position: relative; display: flex; align-items: center; justify-content: center;">
             <div style="width: 24px; height: 24px; border-radius: 50%; background: #ffffff; border: 2.5px solid ${color}; box-shadow: 0 2px 8px rgba(0,0,0,0.25); display: flex; align-items: center; justify-content: center;">
@@ -858,22 +1038,58 @@ export const WebGISMap: React.FC<WebGISMapProps> = ({
           </div>
         `;
 
-        const popup = new maplibregl.Popup({ offset: 15, closeButton: false }).setHTML(`
-          <div style="font-family: system-ui, -apple-system, sans-serif; font-size: 11px; padding: 2px;">
-            <div style="font-weight: 700; color: ${color}; font-size: 12px; margin-bottom: 2px;">
-              ${cluster.defect_name} &bull; RPI: ${cluster.rpi_score}
+        const popupHtml = `
+          <div class="defect-inspection-card" style="font-family: system-ui, -apple-system, sans-serif; font-size: 11px; padding: 2px; min-width: 240px; max-width: 270px; color: #0f172a;">
+            <!-- Header: Defect Badge & RPI Priority Pill -->
+            <div style="display: flex; align-items: center; justify-content: space-between; gap: 4px; margin-bottom: 6px;">
+              <span style="font-family: monospace; font-size: 9.5px; font-weight: 800; background: ${badgeBg}; color: ${color}; padding: 2px 5px; border-radius: 5px; border: 1px solid ${color}40;">
+                ${cluster.defect_type || 'D40'} ${cluster.defect_name || 'Pothole'}
+              </span>
+              <span style="font-family: monospace; font-size: 9.5px; font-weight: 800; background: ${color}; color: #ffffff; padding: 2px 5px; border-radius: 5px; box-shadow: 0 1px 4px ${color}60;">
+                ${priorityBadge} ${cluster.rpi_score}/100
+              </span>
             </div>
-            <div style="font-weight: 600; opacity: 0.9; margin-bottom: 4px;">${cluster.road_name}</div>
-            <div style="font-size: 10px; opacity: 0.8; line-height: 1.4;">
-              Near: <b>${cluster.nearest_poi}</b> (${cluster.poi_distance_m}m)<br/>
-              Contractor: <b>${cluster.assigned_agency}</b><br/>
-              Status: <span style="text-transform: uppercase; color: ${color}; font-weight: bold;">${cluster.status}</span> &bull; ${cluster.pass_count} passes
+
+            <!-- Forensic Before / Evidence Thumbnail -->
+            <div style="position: relative; width: 100%; height: 90px; border-radius: 6px; overflow: hidden; background: #0f172a; margin-bottom: 6px; border: 1px solid #cbd5e1;">
+              <img 
+                src="${cluster.before_image_url || '/uploads/evidence/pothole_annotated.jpg'}" 
+                alt="${cluster.defect_name}" 
+                style="width: 100%; height: 100%; object-fit: cover;" 
+                onerror="this.src='/evidence/bus_pass_1_detect.jpg'" 
+              />
+              <div style="position: absolute; top: 3px; left: 3px; background: rgba(15,23,42,0.85); color: #38bdf8; font-family: monospace; font-size: 8px; font-weight: 700; padding: 1px 4px; border-radius: 3px;">
+                CONF: ${Math.round(((cluster as any).optical_confidence || 0.96) * 100)}% · YOLO
+              </div>
+              <div style="position: absolute; bottom: 3px; right: 3px; background: rgba(15,23,42,0.85); color: #facc15; font-family: monospace; font-size: 8px; font-weight: 700; padding: 1px 4px; border-radius: 3px;">
+                ${cluster.cluster_code || 'WO-0001'}
+              </div>
             </div>
-            <button onclick="window.__roadsaathi_open_rpi_modal?.('${cluster.id}')" style="margin-top: 6px; width: 100%; padding: 4px 6px; background: #2563eb; color: #ffffff; font-size: 10px; font-weight: 700; border-radius: 4px; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 4px;">
-              Explain RPI Formula Live &rarr;
+
+            <!-- Road Name & Classification -->
+            <div style="font-weight: 700; font-size: 11px; color: #1e293b; margin-bottom: 2px; line-height: 1.3;">
+              ${cluster.road_name}
+            </div>
+            
+            <!-- Forensic Metadata Block -->
+            <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 4px 6px; font-size: 9.5px; color: #475569; margin-bottom: 6px; line-height: 1.45;">
+              <div>Pass Consensus: <strong style="color: #0f172a;">${cluster.pass_count} Fleet Passes confirmed</strong></div>
+              <div>Vertical IMU Impact: <strong style="color: #0f172a;">gz: ${(cluster as any).max_gz_impact || '1.58g'}</strong></div>
+              <div>Nearest POI: <strong style="color: #0284c7;">${cluster.nearest_poi || 'MIOT Hospital'}</strong> (${cluster.poi_distance_m || 240}m)</div>
+              <div>Contractor: <strong style="color: #0f172a;">${cluster.assigned_agency || 'Tamil Nadu PWD'}</strong></div>
+            </div>
+
+            <!-- 1-Click Action CTA Button -->
+            <button 
+              onclick="window.__roadsaathi_open_rpi_modal?.('${cluster.id}')"
+              style="width: 100%; padding: 5px 6px; background: #2563eb; color: #ffffff; font-size: 10px; font-weight: 700; border-radius: 5px; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 4px; transition: background 0.15s; box-shadow: 0 2px 5px rgba(37,99,235,0.3);"
+            >
+              <span>Inspect RPI Formula &rarr;</span>
             </button>
           </div>
-        `);
+        `;
+
+        const popup = new maplibregl.Popup({ offset: 15, closeButton: false }).setHTML(popupHtml);
 
         el.addEventListener('click', () => {
           onSelectCluster(cluster);
@@ -889,11 +1105,11 @@ export const WebGISMap: React.FC<WebGISMapProps> = ({
 
         markersRef.current[cluster.id] = marker;
       } else {
-        markersRef.current[cluster.id].getElement().style.display = showClusters ? 'block' : 'none';
+        markersRef.current[cluster.id].getElement().style.display = isVisible ? 'block' : 'none';
         markersRef.current[cluster.id].setLngLat([cluster.lng, cluster.lat]);
       }
     });
-  }, [clusters, layerFilter, isMapReady, onSelectCluster]);
+  }, [clusters, showDefects, layerFilter, isMapReady, onSelectCluster]);
 
   // Render Fleet Bus Markers
   useEffect(() => {
@@ -970,6 +1186,22 @@ export const WebGISMap: React.FC<WebGISMapProps> = ({
     });
   }, [fleet, isMapReady]);
 
+  // Synchronize Fleet Live Bus Visibility (Zero WebGL Context Loss)
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !isMapReady) return;
+
+    Object.keys(busMarkersRef.current).forEach((id) => {
+      if (busMarkersRef.current[id]) {
+        busMarkersRef.current[id].getElement().style.display = showFleet ? 'block' : 'none';
+      }
+    });
+
+    if (map.getLayer('bus-positions-pulse')) {
+      map.setLayoutProperty('bus-positions-pulse', 'visibility', showFleet ? 'visible' : 'none');
+    }
+  }, [showFleet, isMapReady]);
+
   // Decoupled 5Hz Telemetry Listener & 'bus-positions' MapLibre GeoJSON source:
   // Directly updates MapLibre GeoJSON source and DOM markers to maintain locked 60 FPS WebGIS performance
   useEffect(() => {
@@ -988,6 +1220,9 @@ export const WebGISMap: React.FC<WebGISMapProps> = ({
         id: 'bus-positions-pulse',
         type: 'circle',
         source: 'bus-positions',
+        layout: {
+          visibility: showFleet ? 'visible' : 'none'
+        },
         paint: {
           'circle-radius': 16,
           'circle-color': '#0284c7',
@@ -1033,7 +1268,7 @@ export const WebGISMap: React.FC<WebGISMapProps> = ({
     return () => {
       window.removeEventListener('roadsaathi:telemetry:fleet', handleFleetTelemetry);
     };
-  }, [isMapReady]);
+  }, [isMapReady, showFleet]);
 
   // Render Incidents
   useEffect(() => {
@@ -1123,30 +1358,69 @@ export const WebGISMap: React.FC<WebGISMapProps> = ({
   return (
     <main className="flex-1 w-full h-full flex flex-col relative overflow-hidden bg-slate-100 dark:bg-slate-950 select-none">
       
-      {/* Top Map Action Toolbar - Sleek Minimal Pill */}
-      <div className="absolute top-3 right-3 z-20 flex items-center gap-2 pointer-events-none">
-        <div className="flex items-center gap-1 pointer-events-auto bg-white/90 dark:bg-slate-900/90 backdrop-blur-md p-1 rounded-xl border border-slate-200/80 dark:border-slate-800 shadow-md text-xs font-semibold">
+      {/* Top Glassy Floating Map Control Dock & Animated Quick Corridor Navigation */}
+      <div className="absolute top-3 left-3 right-3 sm:left-auto sm:right-3 z-20 flex flex-wrap items-center gap-2 pointer-events-none">
+        <div className="flex items-center gap-1.5 pointer-events-auto bg-white/90 dark:bg-slate-900/90 backdrop-blur-md px-2 py-1.5 rounded-2xl border border-slate-200/80 dark:border-slate-800/80 shadow-float text-xs font-medium max-w-full overflow-x-auto custom-scrollbar">
+          
+          {/* Quick Corridor Jump Pills */}
+          <div className="flex items-center gap-1 shrink-0 border-r border-slate-200 dark:border-slate-800 pr-1.5 mr-0.5">
+            <span className="text-[10px] font-mono text-slate-400 uppercase tracking-wider hidden lg:inline mr-0.5">Corridors:</span>
+            {CHENNAI_QUICK_CORRIDORS.map((c) => {
+              const isActive = activeCorridor === c.name;
+              return (
+                <button
+                  key={c.name}
+                  onClick={() => handleCorridorJump(c)}
+                  title={`Jump camera to ${c.name}`}
+                  className={`px-2 py-1 rounded-xl text-[11px] font-semibold transition whitespace-nowrap flex items-center gap-1 ${
+                    isActive
+                      ? 'bg-blue-600 text-white shadow-xs'
+                      : 'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
+                  }`}
+                >
+                  <MapPin className={`w-3 h-3 ${isActive ? 'text-white' : 'text-blue-500'}`} />
+                  <span>{c.name.replace(' (NH-32)', '').replace(' (Mount Road)', '').replace(' IT Expressway', '').replace(' Cloverleaf', '')}</span>
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Compass Heading & Pitch Reset */}
           <button
-            onClick={() => setBasemap(basemap === 'dark' ? 'street' : basemap === 'street' ? 'satellite' : 'dark')}
-            title="Switch Basemap Mode"
-            className="px-2.5 py-1 rounded-lg transition bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 capitalize font-mono text-[11px]"
+            onClick={handleResetCompass}
+            title="Reset Bearing & Pitch to North"
+            className="p-1.5 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 transition shrink-0 flex items-center justify-center"
           >
-            {basemap}
+            <Navigation className="w-3.5 h-3.5 text-slate-600 dark:text-slate-400 hover:text-blue-500" />
           </button>
 
+          {/* Basemap Mode Switcher */}
+          <button
+            onClick={() => {
+              const nextMap = basemap === 'dark' ? 'street' : basemap === 'street' ? 'satellite' : basemap === 'satellite' ? 'topo' : 'dark';
+              setBasemap(nextMap);
+            }}
+            title={`Current Basemap: ${basemap}. Click to switch.`}
+            className="px-2 py-1 rounded-xl transition bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 capitalize font-mono text-[11px] flex items-center gap-1 shrink-0"
+          >
+            <Layers className="w-3 h-3 text-slate-500" />
+            <span>{basemap}</span>
+          </button>
+
+          {/* Streamlined Analytical Layer Menu */}
           <div className="relative">
             <button
               onClick={() => setIsGisMenuOpen(!isGisMenuOpen)}
-              className={`px-2.5 py-1 rounded-lg flex items-center gap-1.5 text-[11px] font-bold transition ${
+              className={`px-2.5 py-1 rounded-xl flex items-center gap-1.5 text-[11px] font-bold transition shrink-0 ${
                 activeGisCount > 0
-                  ? 'bg-amber-500 text-white'
+                  ? 'bg-amber-500 text-white shadow-xs'
                   : 'text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800'
               }`}
             >
               <Flame className="w-3 h-3" />
               <span>Layers</span>
               {activeGisCount > 0 && (
-                <span className="w-3.5 h-3.5 rounded-full bg-white text-amber-600 text-[9px] font-bold flex items-center justify-center">
+                <span className="w-4 h-4 rounded-full bg-white text-amber-600 text-[10px] font-bold flex items-center justify-center">
                   {activeGisCount}
                 </span>
               )}
@@ -1154,67 +1428,43 @@ export const WebGISMap: React.FC<WebGISMapProps> = ({
 
             {isGisMenuOpen && (
               <div 
-                className="absolute right-0 mt-2 w-56 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-2 shadow-2xl z-50 text-xs flex flex-col gap-1"
+                className="absolute right-0 mt-2 w-64 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-2 shadow-2xl z-50 text-xs flex flex-col gap-1 animate-fadeIn"
                 onMouseLeave={() => setIsGisMenuOpen(false)}
               >
-                <div className="px-2 py-1 text-[10px] font-mono font-bold uppercase text-slate-400 border-b border-slate-100 dark:border-slate-800">
-                  Analytical Layers
+                <div className="px-2 py-1 text-[10px] font-mono font-bold uppercase text-slate-400 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
+                  <span>Analytical GIS Layers</span>
+                  <span className="text-amber-500 font-bold">{activeGisCount}/6 Active</span>
                 </div>
 
+                {/* 1. Defect Clusters & Potholes */}
                 <button
-                  onClick={() => setShowHeatmap(!showHeatmap)}
+                  onClick={() => setShowDefects(!showDefects)}
                   className={`flex items-center justify-between p-2 rounded-xl text-left transition ${
-                    showHeatmap ? 'bg-rose-50 dark:bg-rose-950/60 text-rose-700 dark:text-rose-300 font-bold' : 'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
+                    showDefects ? 'bg-rose-50 dark:bg-rose-950/60 text-rose-700 dark:text-rose-300 font-bold' : 'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
                   }`}
                 >
                   <div className="flex items-center gap-2">
                     <Flame className="w-4 h-4 text-rose-500" />
-                    <span>Pothole Severity Heatmap</span>
+                    <span>Defect Clusters & Potholes</span>
                   </div>
-                  {showHeatmap && <Check className="w-4 h-4 text-rose-500" />}
+                  {showDefects && <Check className="w-4 h-4 text-rose-500" />}
                 </button>
 
+                {/* 2. Transit Fleet Live Buses */}
                 <button
-                  onClick={() => setShowTrafficCongestion(!showTrafficCongestion)}
+                  onClick={() => setShowFleet(!showFleet)}
                   className={`flex items-center justify-between p-2 rounded-xl text-left transition ${
-                    showTrafficCongestion ? 'bg-purple-50 dark:bg-purple-950/60 text-purple-700 dark:text-purple-300 font-bold' : 'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
+                    showFleet ? 'bg-sky-50 dark:bg-sky-950/60 text-sky-700 dark:text-sky-300 font-bold' : 'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
                   }`}
                 >
                   <div className="flex items-center gap-2">
-                    <Activity className="w-4 h-4 text-purple-500" />
-                    <span>Speed Congestion Flow</span>
+                    <Radio className="w-4 h-4 text-sky-500" />
+                    <span>Transit Fleet Live Buses</span>
                   </div>
-                  {showTrafficCongestion && <Check className="w-4 h-4 text-purple-500" />}
+                  {showFleet && <Check className="w-4 h-4 text-sky-500" />}
                 </button>
 
-                <button
-                  onClick={() => setShowBreadcrumbs(!showBreadcrumbs)}
-                  className={`flex items-center justify-between p-2 rounded-xl text-left transition ${
-                    showBreadcrumbs ? 'bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 font-bold' : 'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
-                  }`}
-                >
-                  <div className="flex items-center gap-2">
-                    <Navigation className="w-4 h-4 text-emerald-500" />
-                    <span>24h Bus Trajectory</span>
-                  </div>
-                  {showBreadcrumbs && <Check className="w-4 h-4 text-emerald-500" />}
-                </button>
-
-                <button
-                  onClick={() => setShowMonsoonContours(!showMonsoonContours)}
-                  className={`flex items-center justify-between p-2 rounded-xl text-left transition ${
-                    showMonsoonContours ? 'bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 font-bold' : 'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
-                  }`}
-                >
-                  <div className="flex items-center gap-2">
-                    <Waves className="w-4 h-4 text-blue-500" />
-                    <span>Monsoon Hydro Contours</span>
-                  </div>
-                  {showMonsoonContours && <Check className="w-4 h-4 text-blue-500" />}
-                </button>
-
-                <div className="my-1 border-t border-slate-100 dark:border-slate-800" />
-
+                {/* 3. PS 26124 OD Transit Desire Lines */}
                 <button
                   onClick={() => setShowODDesireLines(!showODDesireLines)}
                   className={`flex items-center justify-between p-2 rounded-xl text-left transition ${
@@ -1223,11 +1473,84 @@ export const WebGISMap: React.FC<WebGISMapProps> = ({
                 >
                   <div className="flex items-center gap-2">
                     <TrendingUp className="w-4 h-4 text-cyan-500" />
-                    <span>O-D Transit Desire Lines (PS 26124)</span>
+                    <span>PS 26124 OD Transit Desire Lines</span>
                   </div>
                   {showODDesireLines && <Check className="w-4 h-4 text-cyan-500" />}
                 </button>
 
+                {/* 4. Monsoon Hydro Flood Contours */}
+                <button
+                  onClick={() => setShowMonsoonContours(!showMonsoonContours)}
+                  className={`flex items-center justify-between p-2 rounded-xl text-left transition ${
+                    showMonsoonContours ? 'bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 font-bold' : 'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
+                  }`}
+                >
+                  <div className="flex items-center gap-2">
+                    <Waves className="w-4 h-4 text-blue-500" />
+                    <span>Monsoon Flood Contours</span>
+                  </div>
+                  {showMonsoonContours && <Check className="w-4 h-4 text-blue-500" />}
+                </button>
+
+                {/* 5. Sensitive POIs */}
+                <button
+                  onClick={() => setShowPOIs(!showPOIs)}
+                  className={`flex items-center justify-between p-2 rounded-xl text-left transition ${
+                    showPOIs ? 'bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 font-bold' : 'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
+                  }`}
+                >
+                  <div className="flex items-center gap-2">
+                    <Hospital className="w-4 h-4 text-emerald-500" />
+                    <span>Sensitive POIs (Hospitals, Schools)</span>
+                  </div>
+                  {showPOIs && <Check className="w-4 h-4 text-emerald-500" />}
+                </button>
+
+                {/* 6. Traffic Bottlenecks & Congestion Flow */}
+                <button
+                  onClick={() => setShowTrafficCongestion(!showTrafficCongestion)}
+                  className={`flex items-center justify-between p-2 rounded-xl text-left transition ${
+                    showTrafficCongestion ? 'bg-purple-50 dark:bg-purple-950/60 text-purple-700 dark:text-purple-300 font-bold' : 'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
+                  }`}
+                >
+                  <div className="flex items-center gap-2">
+                    <Activity className="w-4 h-4 text-purple-500" />
+                    <span>Traffic Bottlenecks & Congestion</span>
+                  </div>
+                  {showTrafficCongestion && <Check className="w-4 h-4 text-purple-500" />}
+                </button>
+
+                <div className="my-1 border-t border-slate-100 dark:border-slate-800" />
+
+                {/* Secondary: Pothole Severity Heatmap */}
+                <button
+                  onClick={() => setShowHeatmap(!showHeatmap)}
+                  className={`flex items-center justify-between p-2 rounded-xl text-left transition ${
+                    showHeatmap ? 'bg-orange-50 dark:bg-orange-950/60 text-orange-700 dark:text-orange-300 font-bold' : 'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
+                  }`}
+                >
+                  <div className="flex items-center gap-2">
+                    <Flame className="w-4 h-4 text-orange-500" />
+                    <span>Density Heatmap Overlay</span>
+                  </div>
+                  {showHeatmap && <Check className="w-4 h-4 text-orange-500" />}
+                </button>
+
+                {/* Secondary: 24h Bus Trajectory Breadcrumbs */}
+                <button
+                  onClick={() => setShowBreadcrumbs(!showBreadcrumbs)}
+                  className={`flex items-center justify-between p-2 rounded-xl text-left transition ${
+                    showBreadcrumbs ? 'bg-teal-50 dark:bg-teal-950/60 text-teal-700 dark:text-teal-300 font-bold' : 'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
+                  }`}
+                >
+                  <div className="flex items-center gap-2">
+                    <Navigation className="w-4 h-4 text-teal-500" />
+                    <span>24h Bus Trajectory</span>
+                  </div>
+                  {showBreadcrumbs && <Check className="w-4 h-4 text-teal-500" />}
+                </button>
+
+                {/* Secondary: Municipal Coverage Blind Spots */}
                 <button
                   onClick={() => setShowCoverageGaps(!showCoverageGaps)}
                   className={`flex items-center justify-between p-2 rounded-xl text-left transition ${
@@ -1243,6 +1566,36 @@ export const WebGISMap: React.FC<WebGISMapProps> = ({
               </div>
             )}
           </div>
+
+          {/* Split-View Toggle Button */}
+          <button
+            onClick={onToggleSplitView}
+            title={isSplitView ? "Close Split-View Telemetry Panel" : "Open Split-View Telemetry Panel"}
+            className={`px-2 py-1 rounded-xl text-[11px] font-semibold transition flex items-center gap-1 shrink-0 ${
+              isSplitView
+                ? 'bg-indigo-600 text-white shadow-xs'
+                : 'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
+            }`}
+          >
+            {isSplitView ? <PanelLeftClose className="w-3.5 h-3.5" /> : <PanelLeft className="w-3.5 h-3.5" />}
+            <span className="hidden sm:inline">Split View</span>
+          </button>
+
+          {/* Telemetry Queue Drawer Trigger */}
+          {onToggleQueue && (
+            <button
+              onClick={onToggleQueue}
+              title={isQueueOpen ? "Hide Defect Queue" : "Show Defect Queue"}
+              className={`p-1.5 rounded-xl transition shrink-0 ${
+                isQueueOpen
+                  ? 'bg-blue-100 dark:bg-blue-950/70 text-blue-600 dark:text-blue-400'
+                  : 'text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800'
+              }`}
+            >
+              <Radio className="w-3.5 h-3.5" />
+            </button>
+          )}
+
         </div>
       </div>
 

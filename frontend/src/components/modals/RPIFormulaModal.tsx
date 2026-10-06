@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { X, Calculator, ShieldCheck, Sliders, CheckCircle2, AlertTriangle, Layers, MapPin, Activity } from 'lucide-react';
 import { HazardCluster } from '../../types';
 
@@ -47,6 +47,18 @@ export const RPIFormulaModal: React.FC<RPIFormulaModalProps> = ({
   const [roadClassWeight, setRoadClassWeight] = useState<number>(initialRoadWeight);
   const [poiDistanceM, setPoiDistanceM] = useState<number>(initialPoiDist);
   const [monsoonMultiplier, setMonsoonMultiplier] = useState<number>(1.15);
+
+  // Synchronize state whenever selectedCluster changes
+  useEffect(() => {
+    if (selectedCluster) {
+      setActiveClusterId(selectedCluster.id);
+      const isPot = (selectedCluster as any).defect_type === 'D40' || selectedCluster.defect_name?.toLowerCase().includes('pothole');
+      setDefectSeverity(isPot ? 100 : (selectedCluster as any).defect_type === 'D20' ? 75 : 55);
+      setPassCount((selectedCluster as any).pass_count || 5);
+      setRoadClassWeight(selectedCluster.road_name?.includes('NH') ? 100 : selectedCluster.road_name?.includes('OMR') ? 85 : 70);
+      setPoiDistanceM((selectedCluster as any).poi_distance_m || 240);
+    }
+  }, [selectedCluster]);
 
   if (!isOpen) return null;
 
