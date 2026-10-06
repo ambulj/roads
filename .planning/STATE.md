@@ -1,20 +1,20 @@
 ---
 gsd_state_version: "1.0"
-milestone: v3.0
-current_phase: 4
-status: milestone_complete
-stopped_at: Phase 4 completed and verified — Milestone v3.0 Complete
-last_updated: "2026-10-06T18:18:00.000Z"
+milestone: v3.1
+current_phase: 5
+status: ready_to_discuss
+stopped_at: Initialized Milestone v3.1 (Modern Civic Portal & UI/UX Polish)
+last_updated: "2026-10-06T18:24:00.000Z"
 last_activity: 2026-10-06
-last_activity_desc: Milestone v3.0 complete (all 4 phases and 8 plans verified)
-state_head: 0257d9c
+last_activity_desc: Milestone v3.1 initialized with Phases 5, 6, 7
+state_head: 5bc65e5
 progress:
-  total_phases: 4
+  total_phases: 7
   completed_phases: 4
-  total_plans: 8
+  total_plans: 11
   completed_plans: 8
-  percent: 100
-current_phase_name: Explainable WebGIS & Live Presentation Visualizer
+  percent: 73
+current_phase_name: Design Tokens & Minimalist Government Portal Theme
 ---
 
 # Project State
@@ -24,16 +24,16 @@ current_phase_name: Explainable WebGIS & Live Presentation Visualizer
 See: `.planning/PROJECT.md` (updated 2026-10-06)
 
 **Core value:** Empower municipal authorities with automated, unassailable, multi-pass verified road distress evidence that protects taxpayer funds through autonomous contractor liability enforcement and protects lives through proactive safety intervention.
-**Current focus:** Milestone v3.0 Complete
+**Current focus:** Phase 5: Design Tokens & Minimalist Government Portal Theme (Milestone v3.1)
 
 ## Current Position
 
-Phase: 4 — COMPLETE (Milestone v3.0 Complete)
-Plan: 8 of 8 in milestone completed
-Status: All 4 phases complete & verified
-Last activity: 2026-10-06 — Milestone v3.0 verified and completed
+Phase: 5 — Ready to discuss
+Plan: 0 of 1 in Phase 5
+Status: Initialized Milestone v3.1
+Last activity: 2026-10-06 — Initialized Milestone v3.1
 
-Progress: [██████████] 100%
+Progress: [███████░░░] 73%
 
 ## Performance Metrics
 
@@ -50,6 +50,9 @@ Progress: [██████████] 100%
 | 2. Edge NPU & Hardware Telematics Suite | 2/2 | Complete | 15m |
 | 3. Contractor Financial Accountability & SLA Ledger | 2/2 | Complete | 15m |
 | 4. Explainable WebGIS & Live Presentation Visualizer | 2/2 | Complete | 15m |
+| 5. Design Tokens & Minimalist Government Portal Theme | 0/1 | Pending | - |
+| 6. WebGIS Map HUD & Interactive Inspection Overlays | 0/1 | Pending | - |
+| 7. Municipal Dashboard, Work Orders & SLA Action Console Polish | 0/1 | Pending | - |
 
 **Recent Trend:**
 - Trend: Stable
@@ -58,30 +61,8 @@ Progress: [██████████] 100%
 
 ### Decisions
 
-Decisions are logged in `PROJECT.md` Key Decisions table.
-Recent decisions affecting current work:
-
-- **Dual-Dialect Database Support**: Retain SQLite WAL for zero-dependency local runs and automated tests, while establishing PostgreSQL 16 + PostGIS 3.4 for production scaling.
-- **Zero-Copy RKNN Pipeline**: C++ Rockchip NPU acceleration on RK3588 with INT8 quantized character OCR.
-- **IRC:SP:20 Clause 14 Auto-Debit**: Automated contractor penalty ledger with multi-pass concurrence validation.
+- **Minimalist Government Portal Theme**: Modern white/indigo clean aesthetic with high-contrast data cards, responsive layout, and refined light/dark mode.
 
 ### Pending Todos
 
 None yet.
-
-### Blockers/Concerns
-
-- PostgreSQL container or test instance availability for CI environments (handled via dual-engine abstraction in `database.py`).
-
-## Deferred Items
-
-| Category | Item | Status | Deferred At | Milestone |
-|---|---|---|---|---|
-| Aerial Survey | Autonomous drone inspection integration | Deferred | 2026-10-06 | v3.0 |
-| Citizen Reporting | WhatsApp citizen defect reporting bot | Deferred | 2026-10-06 | v3.0 |
-
-## Session Continuity
-
-Last session: 2026-10-06T14:34:54.274Z
-Stopped at: Phase 2 context gathered
-Resume file: .planning/phases/ROAD-02-edge-npu-hardware-telematics-suite/02-CONTEXT.md

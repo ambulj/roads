@@ -1,108 +1,81 @@
-# Roadmap: RoadSaathi v3.0
+# Roadmap: RoadSaathi v3.1 (Modern Civic Portal & UI/UX Polish)
 
 ## Overview
 
-RoadSaathi v3.0 delivers enterprise-scale municipal transit perception and financial enforcement. The roadmap transitions the architecture from single-city prototype to high-concurrency multi-fleet production: establishing PostgreSQL/PostGIS spatial clustering, zero-copy Rockchip RK3588 NPU acceleration, automated contractor defect liability auto-debits under IRC:SP:20 Clause 14, and explainable interactive WebGIS features.
+RoadSaathi v3.1 elevates the municipal user experience into a modern, high-contrast, accessible government civic command center. Building upon the robust v3.0 backend (PostgreSQL/PostGIS, NPU acceleration, IRC:SP:20 Clause 14 penalty ledger, and explainable WebGIS), Milestone v3.1 delivers polished minimalist white/indigo and slate design tokens, refined WebGIS floating HUD docks, and streamlined executive dashboards for civic administrators.
 
 ## Phases
 
+### Milestone v3.0: Core Perception & Statutory Ledger (Complete)
 - [x] **Phase 1: Enterprise Scalability & Spatial Engine** - Dual SQLite/PostgreSQL engine, PostGIS spatial clustering, and connection pooling for 500+ buses.
 - [x] **Phase 2: Edge NPU & Hardware Telematics Suite** - C++ RKNN2 zero-copy inference on Rockchip RK3588, INT8 OCR, and cellular reconnect watchdog.
 - [x] **Phase 3: Contractor Financial Accountability & SLA Ledger** - IRC:SP:20 Clause 14 auto-debit penalty ledger, 36-month defect liability tracking, and multi-pass concurrence gates.
 - [x] **Phase 4: Explainable WebGIS & Live Presentation Visualizer** - Interactive RPI click-to-explain modal, live dashcam 30 FPS visualizer, and Origin-Destination desire lines (PS 26124).
 
+### Milestone v3.1: Modern Civic Portal & UI/UX Polish (Active)
+- [ ] **Phase 5: Design Tokens & Minimalist Government Portal Theme** - Modern white/indigo civic theme with crisp contrast, unified design tokens, typography, and polished dark/light mode toggle.
+- [ ] **Phase 6: WebGIS Map HUD & Interactive Inspection Overlays** - Polished map control floating dock, clean cluster inspect popup cards, streamlined layer selector, and responsive sidebar split view.
+- [ ] **Phase 7: Municipal Dashboard, Work Orders & SLA Action Console Polish** - Clean high-contrast KPI metric cards, modern data tables, contractor escrow status pills, and intuitive multi-pass concurrence payment clearance workflow.
+
 ---
 
 ## Phase Details
 
-### Phase 1: Enterprise Scalability & Spatial Engine
+### Phase 5: Design Tokens & Minimalist Government Portal Theme
 
-**Goal**: Enable high-concurrency ingestion for large municipal fleets with sub-50ms spatial clustering and dual database support.
-**Depends on**: Existing codebase foundation
-**Requirements**: SCALE-01, SCALE-02, SCALE-03
+**Goal**: Establish a unified modern civic design system with clean white/indigo & slate styling, high-contrast data cards, and responsive navigation.
+**Depends on**: Phase 4
+**Requirements**: UI-01
 **Success Criteria** (what must be TRUE):
-  1. System seamlessly connects to PostgreSQL 16 + PostGIS 3.4 when configured in `.env`, while retaining SQLite WAL fallback for zero-dependency local demo runs.
-  2. Spatial clustering queries over 100,000 historical passes execute in <50ms using native PostGIS R-Tree spatial indexing.
-  3. Load testing demonstrates concurrent 5Hz telemetry streams from 500 simulated vehicle nodes without database connection timeouts.
+  1. Frontend adopts refined civic color tokens, crisp typography, and high-contrast styling meeting WCAG AAA accessibility.
+  2. Light and dark modes transition smoothly without unstyled flashes or broken contrast.
+  3. Global navigation bar, breadcrumbs, and status headers provide consistent responsive layout across screen sizes.
 
-**Plans**: 2 plans
+**Plans**: 1 plan
 
 Plans:
-**Wave 1**
-- [x] 01-01: Dual database dialect layer with SQLAlchemy and PostGIS spatial geometry mapping.
-
-**Wave 2** *(blocked on Wave 1 completion)*
-- [x] 01-02: Native PostGIS spatial clustering queries and PgBouncer-compatible connection pool recycling.
+- [ ] 05-01: Civic design tokens, theme engine, and global navigation polish.
 
 ---
 
-### Phase 2: Edge NPU & Hardware Telematics Suite
+### Phase 6: WebGIS Map HUD & Interactive Inspection Overlays
 
-**Goal**: Maximize onboard vehicle perception frame rates to 30+ FPS while drastically reducing edge thermal and memory footprints.
-**Depends on**: Phase 1
-**Requirements**: EDGE-01, EDGE-02, EDGE-03
+**Goal**: Polish MapLibre WebGIS controls with floating HUD docks, sleek inspection cards, and streamlined layer selectors.
+**Depends on**: Phase 5
+**Requirements**: UI-02
 **Success Criteria** (what must be TRUE):
-  1. Zero-copy C++ RKNN2 pipeline executes on Rockchip RK3588 NPU achieving >=30 FPS sustained hazard detection at <12W board power.
-  2. Vehicle edge license plate OCR uses INT8 quantized ONNX models, maintaining <150MB VRAM footprint without OOM errors.
-  3. Edge telematics agent automatically recovers from simulated cellular blackouts and tunnel transitions via exponential jitter backoff without process crashes.
+  1. Map control dock floats cleanly over WebGIS with modern glassy styling and responsive placement.
+  2. Clicking defect pins opens high-contrast inspection cards with forensic previews and direct navigation to RPI modal.
+  3. Layer visibility panel allows toggling clusters, fleet buses, transit desire lines, and weather layers cleanly without UI clutter.
 
-**Plans**: 2 plans
+**Plans**: 1 plan
 
 Plans:
-**Wave 1**
-- [x] 02-01: Zero-copy RKNN2 pipeline integration and INT8 quantized license plate model optimization.
-
-**Wave 2** *(blocked on Wave 1 completion)*
-- [x] 02-02: Resilient edge watchdog loop with cellular network monitoring and depot Wi-Fi flush automation.
+- [ ] 06-01: WebGIS map floating dock, cluster inspection popups, and layer panel polish.
 
 ---
 
-### Phase 3: Contractor Financial Accountability & SLA Ledger
+### Phase 7: Municipal Dashboard, Work Orders & SLA Action Console Polish
 
-**Goal**: Automate contractor defect liability recovery under IRC:SP:20 Clause 14, providing unassailable evidence to protect taxpayer road budgets.
-**Depends on**: Phase 1, Phase 2
-**Requirements**: LEDGER-01, LEDGER-02, LEDGER-03
+**Goal**: Refine executive analytics dashboard, data tables, and contractor SLA action console for municipal presentation.
+**Depends on**: Phase 6
+**Requirements**: UI-03
 **Success Criteria** (what must be TRUE):
-  1. Recurrent surface distress within 36-month liability windows automatically calculates penalty debits according to IRC:SP:20 Clause 14 formula.
-  2. Municipal contractor SLA ledger presents transparent debit accruals, repair turnaround countdowns, and escrow holdbacks.
-  3. Work order verification requires multi-pass concurrence (minimum 3 independent bus passes across 48 hours + vertical IMU z-axis acceleration) before authorizing contractor invoice clearance.
+  1. Executive dashboard displays high-density KPI cards with animated progress gauges and live fleet metrics.
+  2. Contractor SLA ledger and work order console feature intuitive 3-pass concurrence cards and streamlined payment clearance buttons.
+  3. All data tables provide accessible sorting, filtering, and export controls.
 
-**Plans**: 2 plans
+**Plans**: 1 plan
 
 Plans:
-**Wave 1**
-- [x] 03-01: IRC:SP:20 Clause 14 automated contractor penalty calculation and escrow ledger backend.
-
-**Wave 2** *(blocked on Wave 1 completion)*
-- [x] 03-02: Work order multi-pass concurrence gating UI and contractor SLA audit console.
-
----
-
-### Phase 4: Explainable WebGIS & Live Presentation Visualizer
-
-**Goal**: Deliver an interactive, explainable WebGIS experience that lets municipal judges and civic stakeholders inspect formulas, video frames, and city-wide transit patterns.
-**Depends on**: Phase 3
-**Requirements**: GIS-01, GIS-02, GIS-03
-**Success Criteria** (what must be TRUE):
-  1. Clicking any road defect on MapLibre opens the interactive RPI Formula modal, rendering the live mathematical breakdown and contributing weights.
-  2. Uploading a video clip in `UploadFootageModal.tsx` demonstrates real-time 30 FPS bounding box hazard tracking side-by-side with telemetry logs.
-  3. MapLibre displays an interactive Origin-Destination (OD) Transit Desire Lines layer with zone-to-zone passenger flow matrices fulfilling PS 26124 requirements.
-
-**Plans**: 2 plans
-
-Plans:
-**Wave 1**
-- [x] 04-01: Interactive RPI click-to-explain map integration and live 30 FPS dashcam upload video visualizer.
-
-**Wave 2** *(blocked on Wave 1 completion)*
-- [x] 04-02: PS 26124 Origin-Destination transit desire lines layer and passenger flow matrix visualization.
+- [ ] 07-01: Executive dashboard KPI scorecards, SLA console polish, and data table styling.
 
 ---
 
 ## Progress
 
 **Execution Order:**
-Phases execute in numeric order: 1 → 2 → 3 → 4
+Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7
 
 | Phase | Plans Complete | Status | Completed |
 |---|---|---|---|
@@ -110,6 +83,9 @@ Phases execute in numeric order: 1 → 2 → 3 → 4
 | 2. Edge NPU & Hardware Telematics Suite | 2/2 | Complete | 2026-10-06 |
 | 3. Contractor Financial Accountability & SLA Ledger | 2/2 | Complete | 2026-10-06 |
 | 4. Explainable WebGIS & Live Presentation Visualizer | 2/2 | Complete | 2026-10-06 |
+| 5. Design Tokens & Minimalist Government Portal Theme | 0/1 | Ready to start | - |
+| 6. WebGIS Map HUD & Interactive Inspection Overlays | 0/1 | Pending | - |
+| 7. Municipal Dashboard, Work Orders & SLA Action Console Polish | 0/1 | Pending | - |
 
 ---
 *Roadmap defined: 2026-10-06*

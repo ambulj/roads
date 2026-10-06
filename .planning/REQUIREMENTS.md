@@ -31,6 +31,22 @@
 
 ---
 
+## v1.1 Requirements (Milestone v3.1: Modern Civic Portal & UI/UX Polish)
+
+### 5. Modern Civic Design System & Theme Polish (CIVIC)
+
+- [ ] **UI-01**: Implement unified modern government portal design system with refined white/indigo & slate design tokens, crisp typography, WCAG AAA accessibility, and seamless dark/light mode switching.
+
+### 6. WebGIS Map HUD & Inspection Controls (MAP-UI)
+
+- [ ] **UI-02**: Modernize MapLibre WebGIS controls with a sleek floating HUD dock, responsive sidebar split-view, high-contrast cluster inspection cards, and streamlined layer visibility selector.
+
+### 7. Municipal Dashboard & SLA Action Console Polish (DASH-UI)
+
+- [ ] **UI-03**: Polish municipal executive dashboard and contractor SLA action console with high-density KPI scorecards, accessible data tables, contractor escrow status pills, and intuitive 3-pass concurrence payment clearance workflow.
+
+---
+
 ## v2 Requirements (Deferred to Future Milestones)
 
 - **DRONE-01**: Autonomous aerial drone survey integration for highway corridor inspections.
@@ -51,26 +67,29 @@
 
 ## Traceability Matrix
 
-| Requirement | Phase | Status |
-|---|---|---|
-| SCALE-01 | Phase 1 | Complete |
-| SCALE-02 | Phase 1 | Complete |
-| SCALE-03 | Phase 1 | Complete |
-| EDGE-01 | Phase 2 | Complete |
-| EDGE-02 | Phase 2 | Complete |
-| EDGE-03 | Phase 2 | Complete |
-| LEDGER-01 | Phase 3 | Complete |
-| LEDGER-02 | Phase 3 | Complete |
-| LEDGER-03 | Phase 3 | Complete |
-| GIS-01 | Phase 4 | Complete |
-| GIS-02 | Phase 4 | Complete |
-| GIS-03 | Phase 4 | Complete |
+| Requirement | Milestone | Phase | Status |
+|---|---|---|---|
+| SCALE-01 | v3.0 | Phase 1 | Complete |
+| SCALE-02 | v3.0 | Phase 1 | Complete |
+| SCALE-03 | v3.0 | Phase 1 | Complete |
+| EDGE-01 | v3.0 | Phase 2 | Complete |
+| EDGE-02 | v3.0 | Phase 2 | Complete |
+| EDGE-03 | v3.0 | Phase 2 | Complete |
+| LEDGER-01 | v3.0 | Phase 3 | Complete |
+| LEDGER-02 | v3.0 | Phase 3 | Complete |
+| LEDGER-03 | v3.0 | Phase 3 | Complete |
+| GIS-01 | v3.0 | Phase 4 | Complete |
+| GIS-02 | v3.0 | Phase 4 | Complete |
+| GIS-03 | v3.0 | Phase 4 | Complete |
+| UI-01 | v3.1 | Phase 5 | Pending |
+| UI-02 | v3.1 | Phase 6 | Pending |
+| UI-03 | v3.1 | Phase 7 | Pending |
 
 **Coverage:**
-- Total v1 Requirements: 12
-- Mapped to Phases: 12
-- Unmapped: 0
-- Completed: 12 / 12 (100%)
+- Total Requirements: 15
+- Mapped to Phases: 15
+- Completed: 12 / 15 (80%)
+- Active in Milestone v3.1: 3
 
 ---
-*Requirements defined: 2026-10-06*
+*Requirements updated: 2026-10-06 for Milestone v3.1*

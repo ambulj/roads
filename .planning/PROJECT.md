@@ -22,21 +22,22 @@ Empower municipal authorities with automated, unassailable, multi-pass verified 
 - ✓ MapLibre WebGL command center with decoupled 60 FPS vehicle tracking (`bus-positions`) — existing
 - ✓ Spatial DBSCAN clustering with GPS noise filtering and multi-pass concurrence validation — existing
 - ✓ Multi-model YOLO hazard suite with adaptive ambient illumination lux thresholding — existing
-- ✓ Indian HSRP license plate detection and MoRTH format parsing (EasyOCR singleton) — existing
+- ✓ Indian HSRP license plate detection and MoRTH format parsing (EasyOCR & INT8 ONNX singleton) — existing
 - ✓ Statutory traffic violation citation engine (MVA 1988/2019 Sections 184, 134, 119) with e-Challan generation — existing
 - ✓ Digital Personal Data Protection (DPDP) Act 2023 certified evidence vault with role-gated downloads (`/api/evidence/{id}/download`) — existing
 - ✓ Edge SBC append-only JSONL ring buffer with atomic batch compaction to eliminate flash storage wear — existing
 - ✓ Role-Based Access Control (RBAC) with 4 official municipal personas (Admin, Traffic Police, PWD Engineer, RTO Officer) — existing
 - ✓ Multi-channel contractor work order dispatch gateway (WhatsApp Cloud API / Twilio) — existing
+- ✓ PostgreSQL 16 + PostGIS 3.4 & SQLite WAL dual dialect engine with 500+ bus telemetry queue flusher — Phase 1
+- ✓ Zero-copy Rockchip RK3588 NPU C++ pipeline, INT8 ONNX license plate OCR, and AIS-140 telematics parser — Phase 2
+- ✓ IRC:SP:20 Clause 14 automated contractor debit ledger, CAG/PFMS escrow accounting, and 3-pass concurrence gates — Phase 3
+- ✓ Explainable RPI mathematical explainer modal, 30 FPS dashcam video HUD, and PS 26124 transit desire lines — Phase 4
 
-### Active
+### Active (Milestone v3.1: Modern Civic Portal & UI/UX Polish)
 
-- [ ] **PostgreSQL + PostGIS Migration**: Replace SQLite WAL with enterprise PostgreSQL + PostGIS spatial indexing (`ST_DWithin`, `ST_ClusterDBSCAN`) to scale beyond 500+ concurrent transit buses without table locks.
-- [ ] **Edge NPU & Hardware Telematics Suite**: Complete zero-copy Rockchip RK3588 NPU acceleration (`rknn_pipeline.cpp`), INT8 quantized OCR character recognition, and robust cellular modem reconnect watchdog.
-- [ ] **Contractor Penalty & Statutory Audit Portal**: Automated IRC:SP:20 Clause 14 contractor debit ledger with 36-month defect liability tracking, auto-debit escrow accounting, and municipal treasury settlement approval workflows.
-- [ ] **Interactive RPI Explainability on Map**: Click-to-explain modal allowing municipal judges and engineers to inspect live component breakdowns (depth, volume, traffic multiplier, age penalty, passenger exposure) for any defect directly on MapLibre.
-- [ ] **Live Dashcam Video Ingestion & 30 FPS Visualizer**: Interactive side-by-side video upload modal (`UploadFootageModal.tsx`) with frame-by-frame 30 FPS bounding box rendering for jury and stakeholder demonstrations.
-- [ ] **Origin-Destination (OD) Transit Desire Lines (PS 26124)**: Zone-to-zone passenger desire lines and flow matrices derived from bus GPS coordinates and stop route metadata, displayed as an interactive GIS layer.
+- [ ] **Modern Civic Design System & Theme Polish**: Clean, accessible white/indigo government portal aesthetic with high-contrast data cards, unified design tokens, typography, and polished dark/light mode toggle.
+- [ ] **WebGIS Map HUD & Inspection Controls**: Streamlined map control floating dock, responsive sidebar split-view, smooth 3D layer selectors, and clean cluster inspect popups.
+- [ ] **Executive Dashboard & SLA Action Console UI**: High-density KPI scorecards, accessible data tables, contractor escrow status pills, and intuitive multi-pass concurrence payment clearance workflow.
 
 ### Out of Scope
 
@@ -47,7 +48,7 @@ Empower municipal authorities with automated, unassailable, multi-pass verified 
 
 - **Ecosystem**: Built for deployment across Indian state transport corporations (e.g., MTC Chennai) and smart city command centers.
 - **Hardware Targets**: Rockchip RK3588 (Orange Pi 5 Plus), Raspberry Pi 5 with AI Kit, and legacy x86 edge compute units.
-- **Codebase Baseline**: FastAPI async backend with 51 passing automated tests, React 18 + Vite WebGIS frontend with locked 60 FPS performance, standalone C++/Python edge agent.
+- **Codebase Baseline**: FastAPI async backend with 113 passing automated tests, React 18 + Vite WebGIS frontend with locked 60 FPS performance, standalone C++/Python edge agent.
 
 ## Constraints
 
@@ -62,8 +63,9 @@ Empower municipal authorities with automated, unassailable, multi-pass verified 
 | Append-Only JSONL for Edge Buffering | Full-file JSON serialization caused severe flash memory wear on vehicle SD/eMMC cards | ✓ Good |
 | Decoupled MapLibre 5Hz Telemetry | Direct WebGL GeoJSON source updates bypass React reconciliation to lock 60 FPS panning | ✓ Good |
 | SQLite WAL with 15s Busy Timeout | Supports concurrent testing and local demo execution without external service dependencies | ✓ Good |
-| PostgreSQL+PostGIS Migration for v3.0 | Required for scaling beyond 500+ concurrent fleet buses and spatial query acceleration | — Pending |
-| Zero-Copy RKNN Pipeline | C++ NPU pipeline maximizes frame rate to 30+ FPS on Rockchip RK3588 with < 12W power | — Pending |
+| PostgreSQL+PostGIS Migration for v3.0 | Required for scaling beyond 500+ concurrent fleet buses and spatial query acceleration | ✓ Good |
+| Zero-Copy RKNN Pipeline | C++ NPU pipeline maximizes frame rate to 30+ FPS on Rockchip RK3588 with < 12W power | ✓ Good |
+| Minimalist Government Portal Theme | Modern white/indigo clean aesthetic ensures high accessibility and rapid municipal adoption | — Pending |
 
 ## Evolution
 
