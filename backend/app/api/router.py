@@ -11,7 +11,7 @@ from fastapi import APIRouter
 from app.api.endpoints import (
     telemetry, clusters, work_orders, fleet, analytics, incidents,
     models, streams, auth, traffic, dispatch, simulation, learning, road_memory, city_brain, privacy, evidence,
-    pedestrian
+    pedestrian, contractors
 )
 from app.api import websockets
 
@@ -79,6 +79,11 @@ api_router.include_router(
     work_orders.router, 
     prefix="/work-orders", 
     tags=["[Tier 2 Central] PWD Work Orders, Contractor SLA & Debarment"]
+)
+api_router.include_router(
+    contractors.router,
+    prefix="/contractors",
+    tags=["[Tier 2 Central] Contractor SLA Ledger, IRC:SP:20 & Escrow Account"]
 )
 api_router.include_router(
     analytics.router, 

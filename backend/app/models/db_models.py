@@ -35,6 +35,11 @@ class DBDistressCluster(Base):
     field_notes = Column(Text, nullable=True)
     detecting_camera_position = Column(String(32), default="FRONT_WINDSHIELD")
     detecting_channel = Column(Integer, default=1)
+    contractor_id = Column(String(64), nullable=True, index=True)
+    warranty_end_date = Column(String(64), nullable=True)
+    escrow_deposit_inr = Column(Float, default=5000000.0)
+    concurrence_passes_count = Column(Integer, default=0)
+    verification_status = Column(String(32), default="UNVERIFIED")
     created_at = Column(String(64))
     updated_at = Column(String(64))
 
@@ -156,10 +161,33 @@ class DBTrafficDensity(Base):
     reported_by = Column(String(64), nullable=True)
     measured_at = Column(String(64))
 
+class DBContractor(Base):
+    __tablename__ = "contractors"
+
+    id = Column(String(64), primary_key=True, index=True)
+    name = Column(String(128), nullable=False, index=True)
+    cin = Column(String(32), unique=True, index=True, nullable=False)
+    director = Column(String(128), nullable=False)
+    assigned_corridor = Column(String(255), nullable=False)
+    zone = Column(String(64), nullable=False)
+    security_deposit_inr = Column(Float, default=5000000.0)
+    penalties_deducted_inr = Column(Float, default=0.0)
+    active_work_orders = Column(Integer, default=0)
+    resolved_work_orders = Column(Integer, default=0)
+    breached_work_orders = Column(Integer, default=0)
+    on_time_sla_pct = Column(Float, default=100.0)
+    quality_score_pct = Column(Float, default=100.0)
+    compaction_density_gcm3 = Column(Float, default=2.35)
+    warranty_expiry = Column(String(64), nullable=True)
+    debarment_risk = Column(String(32), default="Low")  # Low, Medium, Critical Debarment Warning
+    created_at = Column(String(64))
+    updated_at = Column(String(64))
+
 class DBContractorPenalty(Base):
     __tablename__ = "contractor_penalties"
 
     id = Column(String(64), primary_key=True, index=True)
+    contractor_id = Column(String(64), nullable=True, index=True)
     contractor_name = Column(String(128), nullable=False, index=True)
     cluster_code = Column(String(32), nullable=False)
     corridor_name = Column(String(255), nullable=False)
@@ -168,6 +196,11 @@ class DBContractorPenalty(Base):
     statutory_clause = Column(String(128), default="MoHUA IRC:SP:20 Clause 14.2")
     status = Column(String(32), default="DEBIT_ISSUED") # DEBIT_ISSUED, CONTESTED, RECOVERED
     provenance = Column(String(64), default="DERIVED_FROM_RECURRENT_DISTRESS")
+    pfms_txn_ref = Column(String(64), unique=True, index=True, nullable=True)
+    evidence_sha256 = Column(String(64), nullable=True)
+    patrol_bus_id = Column(String(64), nullable=True)
+    measured_gz = Column(Float, default=1.0)
+    threshold_gz = Column(Float, default=1.35)
     issued_at = Column(String(64))
 
 class DBOpenManholeAlert(Base):

@@ -23,7 +23,7 @@ from sqlalchemy.orm import sessionmaker, Session
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
 
 from app.models.db_models import (
-    Base, DBDistressCluster, DBTrafficIncident, DBFleetNode, DBRawIngest
+    Base, DBDistressCluster, DBTrafficIncident, DBFleetNode, DBRawIngest, DBContractor
 )
 
 # ── Load .env from backend root ──────────────────────────────────────────────
@@ -239,11 +239,27 @@ def init_db():
         cursor = conn.cursor()
         cursor.execute("PRAGMA table_info(distress_clusters)")
         existing_cols = {row[1] for row in cursor.fetchall()}
-        for col in ("before_image_url", "after_image_url", "field_notes", "detecting_camera_position", "geom"):
+        for col in ("before_image_url", "after_image_url", "field_notes", "detecting_camera_position", "geom", "contractor_id", "warranty_end_date"):
             if col not in existing_cols and existing_cols:
                 cursor.execute(f"ALTER TABLE distress_clusters ADD COLUMN {col} TEXT")
         if "detecting_channel" not in existing_cols and existing_cols:
             cursor.execute("ALTER TABLE distress_clusters ADD COLUMN detecting_channel INTEGER DEFAULT 1")
+        if "escrow_deposit_inr" not in existing_cols and existing_cols:
+            cursor.execute("ALTER TABLE distress_clusters ADD COLUMN escrow_deposit_inr REAL DEFAULT 5000000.0")
+        if "concurrence_passes_count" not in existing_cols and existing_cols:
+            cursor.execute("ALTER TABLE distress_clusters ADD COLUMN concurrence_passes_count INTEGER DEFAULT 0")
+        if "verification_status" not in existing_cols and existing_cols:
+            cursor.execute("ALTER TABLE distress_clusters ADD COLUMN verification_status TEXT DEFAULT 'UNVERIFIED'")
+
+        cursor.execute("PRAGMA table_info(contractor_penalties)")
+        existing_pen_cols = {row[1] for row in cursor.fetchall()}
+        for col in ("contractor_id", "pfms_txn_ref", "evidence_sha256", "patrol_bus_id"):
+            if col not in existing_pen_cols and existing_pen_cols:
+                cursor.execute(f"ALTER TABLE contractor_penalties ADD COLUMN {col} TEXT")
+        if "measured_gz" not in existing_pen_cols and existing_pen_cols:
+            cursor.execute("ALTER TABLE contractor_penalties ADD COLUMN measured_gz REAL DEFAULT 1.0")
+        if "threshold_gz" not in existing_pen_cols and existing_pen_cols:
+            cursor.execute("ALTER TABLE contractor_penalties ADD COLUMN threshold_gz REAL DEFAULT 1.35")
         
         cursor.execute("PRAGMA table_info(traffic_incidents)")
         existing_inc_cols = {row[1] for row in cursor.fetchall()}
@@ -433,6 +449,73 @@ def init_db():
             from app.api.endpoints.traffic import INITIAL_TRAFFIC_SEEDS
             for t in INITIAL_TRAFFIC_SEEDS:
                 db.add(DBTrafficDensity(**t))
+
+        # ── Seed contractors (IRC:SP:20 Cl 14 & Escrow) ──────────────────────
+        if db.query(DBContractor).count() == 0:
+            initial_contractors = [
+                {
+                    "id": "CTR-01",
+                    "name": "L&T Highways Infra Ltd",
+                    "cin": "U45203TN2001PLC047123",
+                    "director": "Er. R. Sundararaman",
+                    "assigned_corridor": "GST Road (NH-32) Airport Corridor",
+                    "zone": "Zone 12 (Alandur / Guindy)",
+                    "security_deposit_inr": 5000000.0,
+                    "penalties_deducted_inr": 45000.0,
+                    "active_work_orders": 3,
+                    "resolved_work_orders": 14,
+                    "breached_work_orders": 0,
+                    "on_time_sla_pct": 96.5,
+                    "quality_score_pct": 94.2,
+                    "compaction_density_gcm3": 2.38,
+                    "warranty_expiry": "2028-10-15",
+                    "debarment_risk": "Low",
+                    "created_at": "2026-01-15T00:00:00Z",
+                    "updated_at": "2026-10-06T00:00:00Z"
+                },
+                {
+                    "id": "CTR-02",
+                    "name": "GMR Urban Highways Ltd",
+                    "cin": "U45201DL1996PLC078234",
+                    "director": "Er. K. Venkatraman",
+                    "assigned_corridor": "Anna Salai Arterial Link",
+                    "zone": "Zone 9 (Teynampet)",
+                    "security_deposit_inr": 5000000.0,
+                    "penalties_deducted_inr": 30000.0,
+                    "active_work_orders": 2,
+                    "resolved_work_orders": 18,
+                    "breached_work_orders": 1,
+                    "on_time_sla_pct": 91.0,
+                    "quality_score_pct": 88.5,
+                    "compaction_density_gcm3": 2.34,
+                    "warranty_expiry": "2027-12-31",
+                    "debarment_risk": "Low",
+                    "created_at": "2026-01-15T00:00:00Z",
+                    "updated_at": "2026-10-06T00:00:00Z"
+                },
+                {
+                    "id": "CTR-03",
+                    "name": "TNRDC",
+                    "cin": "U45203TN1998SGC040120",
+                    "director": "Er. M. Rajasekaran",
+                    "assigned_corridor": "Rajiv Gandhi IT Expressway (OMR)",
+                    "zone": "Zone 13 (Adyar)",
+                    "security_deposit_inr": 5000000.0,
+                    "penalties_deducted_inr": 0.0,
+                    "active_work_orders": 1,
+                    "resolved_work_orders": 22,
+                    "breached_work_orders": 0,
+                    "on_time_sla_pct": 99.2,
+                    "quality_score_pct": 98.0,
+                    "compaction_density_gcm3": 2.42,
+                    "warranty_expiry": "2029-03-31",
+                    "debarment_risk": "Low",
+                    "created_at": "2026-01-15T00:00:00Z",
+                    "updated_at": "2026-10-06T00:00:00Z"
+                }
+            ]
+            for c in initial_contractors:
+                db.add(DBContractor(**c))
 
         # ── Seed contractor penalties (MoHUA IRC:SP:20 Cl 14.2) ───────────────
         if db.query(DBContractorPenalty).count() == 0:
