@@ -37,7 +37,7 @@
   with sleek sub-tab switchers, breadcrumb navigation, and responsive collapse.
 
 ### 9. Map HUD & Command Center Viewport Optimization (MAP-CLEAN)
-- [ ] **DECLUTTER-02**: Maximize map viewport real estate in `CommandCenter.tsx` and `WebGISMap.tsx`:
+- [x] **DECLUTTER-02**: Maximize map viewport real estate in `CommandCenter.tsx` and `WebGISMap.tsx`:
   - Condense the top dock into a sleek floating micro-bar.
   - Convert intrusive floating HUD cards (OD flow list, blind spots banner, profile pop-up) into subtle collapsible bottom/side trays.
   - Simplify triage search and filter bars into a compact single-line filter strip with quick toggle chips.
@@ -61,13 +61,13 @@
 | UI-02 | v3.1 | Phase 6 | Complete |
 | UI-03 | v3.1 | Phase 7 | Complete |
 | DECLUTTER-01 | v3.2 | Phase 8 | Complete |
-| DECLUTTER-02 | v3.2 | Phase 9 | Pending |
+| DECLUTTER-02 | v3.2 | Phase 9 | Complete |
 | DECLUTTER-03 | v3.2 | Phase 10 | Pending |
 
 **Coverage:**
 - Total Requirements: 18
-- Completed: 16 / 18 (88.9%)
-- Active in Milestone v3.2: 2
+- Completed: 17 / 18 (94.4%)
+- Active in Milestone v3.2: 1
 
 ---
 *Requirements updated: 2026-10-07 for Milestone v3.2*
