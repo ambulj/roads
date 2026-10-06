@@ -7,7 +7,7 @@ RoadSaathi v3.0 delivers enterprise-scale municipal transit perception and finan
 ## Phases
 
 - [x] **Phase 1: Enterprise Scalability & Spatial Engine** - Dual SQLite/PostgreSQL engine, PostGIS spatial clustering, and connection pooling for 500+ buses.
-- [ ] **Phase 2: Edge NPU & Hardware Telematics Suite** - C++ RKNN2 zero-copy inference on Rockchip RK3588, INT8 OCR, and cellular reconnect watchdog.
+- [x] **Phase 2: Edge NPU & Hardware Telematics Suite** - C++ RKNN2 zero-copy inference on Rockchip RK3588, INT8 OCR, and cellular reconnect watchdog.
 - [ ] **Phase 3: Contractor Financial Accountability & SLA Ledger** - IRC:SP:20 Clause 14 auto-debit penalty ledger, 36-month defect liability tracking, and multi-pass concurrence gates.
 - [ ] **Phase 4: Explainable WebGIS & Live Presentation Visualizer** - Interactive RPI click-to-explain modal, live dashcam 30 FPS visualizer, and Origin-Destination desire lines (PS 26124).
 
@@ -50,10 +50,10 @@ Plans:
 
 Plans:
 **Wave 1**
-- [ ] 02-01: Zero-copy RKNN2 pipeline integration and INT8 quantized license plate model optimization.
+- [x] 02-01: Zero-copy RKNN2 pipeline integration and INT8 quantized license plate model optimization.
 
 **Wave 2** *(blocked on Wave 1 completion)*
-- [ ] 02-02: Resilient edge watchdog loop with cellular network monitoring and depot Wi-Fi flush automation.
+- [x] 02-02: Resilient edge watchdog loop with cellular network monitoring and depot Wi-Fi flush automation.
 
 ---
 

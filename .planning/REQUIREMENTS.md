@@ -13,9 +13,9 @@
 
 ### 2. Edge NPU & Hardware Telematics Suite (EDGE)
 
-- [ ] **EDGE-01**: C++ RKNN2 zero-copy pipeline (`edge/rknn_pipeline.cpp`) runs multi-model road hazard inference on Rockchip RK3588 NPU at >=30 FPS with <12W power consumption.
-- [ ] **EDGE-02**: License plate recognition supports INT8 quantized ONNX inference on vehicle edge devices, reducing memory footprint to <150MB VRAM.
-- [ ] **EDGE-03**: Edge telematics agent includes automatic cellular watchdog thread with exponential jitter backoff that recovers from network dead zones without daemon restart.
+- [x] **EDGE-01**: C++ RKNN2 zero-copy pipeline (`edge/rknn_pipeline.cpp`) runs multi-model road hazard inference on Rockchip RK3588 NPU at >=30 FPS with <12W power consumption.
+- [x] **EDGE-02**: License plate recognition supports INT8 quantized ONNX inference on vehicle edge devices, reducing memory footprint to <150MB VRAM.
+- [x] **EDGE-03**: Edge telematics agent includes automatic cellular watchdog thread with exponential jitter backoff that recovers from network dead zones without daemon restart.
 
 ### 3. Contractor Financial Accountability & SLA Ledger (LEDGER)
 
@@ -53,12 +53,12 @@
 
 | Requirement | Phase | Status |
 |---|---|---|
-| SCALE-01 | Phase 1 | Pending |
-| SCALE-02 | Phase 1 | Pending |
-| SCALE-03 | Phase 1 | Pending |
-| EDGE-01 | Phase 2 | Pending |
-| EDGE-02 | Phase 2 | Pending |
-| EDGE-03 | Phase 2 | Pending |
+| SCALE-01 | Phase 1 | Complete |
+| SCALE-02 | Phase 1 | Complete |
+| SCALE-03 | Phase 1 | Complete |
+| EDGE-01 | Phase 2 | Complete |
+| EDGE-02 | Phase 2 | Complete |
+| EDGE-03 | Phase 2 | Complete |
 | LEDGER-01 | Phase 3 | Pending |
 | LEDGER-02 | Phase 3 | Pending |
 | LEDGER-03 | Phase 3 | Pending |

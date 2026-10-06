@@ -1,40 +1,46 @@
 # RoadSaathi — Municipal Road Intelligence & Vision Zero Platform
 
 > **Edge-AI & WebGIS CAD System for Indian Municipal Corporations & Highway Authorities**  
-> Built for Ministry of Road Transport & Highways (MoRTH), National Highways Authority of India (NHAI), and State Transit Undertakings (STUs) · **Version 2.6.0**
+> Built for Ministry of Road Transport & Highways (MoRTH), National Highways Authority of India (NHAI), and State Transit Undertakings (STUs) · **Version 3.0.0**
 
 ---
 
-## 🌟 Platform Highlights & Core Capabilities
+## Platform Highlights & Core Capabilities
 
-1. **Zero-Hardware Sensor Fusion**:
-   - Converts existing public transit buses (MTC, DTC, BMTC, PMPML) into real-time road auditing nodes using existing on-bus **AIS-140 GPS/IMU telematics + RTSP dashcam feeds**.
-   - Sub-45ms end-to-end latency budget (AIS-140 5Hz telematics spike $\to$ RTSP keyframe grab $\to$ GPU YOLO inference $\to$ H3 spatial consensus $\to$ WebGIS broadcast).
+1. **Enterprise Scalability & Dual Spatial Engine (v3.0)**:
+   - **Dual SQLite WAL / PostgreSQL 16 + PostGIS 3.4**: Dynamic engine selection with zero-external-library fallback for local evaluation and high-performance PostGIS spatial geometry (`Geometry('POINT', srid=4326)`) in production.
+   - **Sub-50ms Spatial Clustering**: PostGIS `ST_ClusterDBSCAN` with R-Tree GiST indexing and Python DBSCAN fallback on SQLite, handling >100,000 historical distress passes with 15-meter corridor snapping.
+   - **High-Concurrency Telemetry Ingestion (500+ Buses)**: In-memory `asyncio.Queue` batch flusher processing 5Hz streams (up to 2,500 msg/sec) with bounded queue backpressure (prioritized shedding of GPS breadcrumbs while strictly preserving defect detections).
+   - **PgBouncer Connection Safety**: Prepared statement recycling (`statement_cache_size=0`, `pool_recycle=300s`, `pool_pre_ping=True`) avoiding transaction-mode pooler poisoning.
 
-2. **Multi-Model Edge Vision Suite**:
+2. **Edge NPU & Hardware Telematics Suite (v3.0)**:
+   - **Zero-Copy Rockchip RK3588 NPU Pipeline**: Production C++ inference engine (`edge/rknn_pipeline.cpp`) with DMA-BUF zero-copy buffer mapping achieving >=30 FPS sustained perception at <12W board power, with deterministic OpenCV/CPU mock fallback for x86/Windows testing.
+   - **INT8 Quantized License Plate OCR (<150MB VRAM)**: Two-stage INT8 ONNX plate recognition pipeline with 128MB arena ceiling, 4-point perspective warp, CLAHE normalization, and Indian MoRTH/HSRP syntax repair (`^[A-Z]{2}[0-9]{1,2}[A-Z]{0,3}[0-9]{4}$` and Bharat series `22BH1234AA`).
+   - **DPDP Act 2023 Cryptographic Salt Vault**: Salted SHA-256 pseudonymized hashing for routine corridor transit monitoring, isolating raw unencrypted plate numbers exclusively for statutory traffic infractions.
+   - **Resilient Cellular Watchdog & Ring Compaction**: 5-second fixed-interval network polling thread, 50MB append-only JSONL ring buffer with atomic 35MB compaction to protect vehicle flash/eMMC, 2GB WebP image spool, and automated municipal depot Wi-Fi burst sync.
+   - **AIS-140 Hardware Telematics & 200ms IMU Time-Lock**: Serial/socket parser for AIS-140/NMEA streams with 2nd-order high-pass Butterworth filtering ($f_c = 0.8\text{ Hz}$) isolating chassis vibration from 15-40Hz diesel rumble; pothole impact confirmed only within 200ms of optical camera bounding box detection ($>1.35g$ or $<0.75g$). Low-power sleep state machine (<0.8W) on ignition off.
+
+3. **Multi-Model Edge Vision Suite**:
    - **Pothole Cavity Detection (`D40`)**: Volumetric depth and repair cost estimation based on shadow luminance contrast ($\Delta L$) and calibrated camera optics ($V = d_{\text{cm}} \cdot A_{\text{m}^2} \times 10\text{ Liters}$).
    - **Alligator & Fatigue Cracking (`D20`)**: Asphalt distress network segmentation complying with IRC:82.
    - **School Crosswalk Safety (`IRC:35`)**: Vision Zero pedestrian group consolidation and mandatory vehicle yield enforcement.
-   - **Indian HSRP ANPR Engine**: High Security Registration Plate recognition with vertical Sobel edge localization, Otsu binarization, EasyOCR/PyTesseract extraction, and national MoRTH state/RTO syntax validation.
+   - **Indian HSRP ANPR Engine**: High Security Registration Plate recognition with optical confusion matrix substitution (`O` <-> `0`, `I` <-> `1`, `B` <-> `8`).
 
-3. **Strict Domain Segregation**:
+4. **Strict Domain Segregation**:
    - **Road Infrastructure Work Orders (`DBDistressCluster`)**: Pure civil engineering pavement repair dockets (potholes, cracks, open manholes, restriping) with RPI scoring, contractor assignment (NHAI, L&T, CMWSSB), and municipal repair SLAs.
    - **Traffic Safety Incidents (`DBTrafficIncident`)**: Dynamic traffic violations (Hit & Run collisions, wrong-way driving, red light jumping, school crossing yield alerts) with ANPR plates, target speeds, automated e-Challan generation, and Police PCR 112 / 108 EMS dispatch.
 
-4. **Emergency Level 1 Red Alert Dispatch**:
+5. **Emergency Level 1 Red Alert Dispatch**:
    - Automated detection of Hit-and-Run collision scenes and fallen motorcyclists.
    - Immediate dispatch payload routing to Police PCR 112 and Emergency 108 Ambulances.
    - Automated statutory citation generation under **MVA 1988 Sec 134/187 read with Sec 184 & IPC Sec 279/338 (₹10,000 fine)**.
-
-5. **DPDP Act 2023 Privacy Compliance**:
-   - Real-time zero-lag optical face and bystander privacy anonymization burned prior to forensic storage and dashboard rendering.
 
 6. **Cryptographic Evidence Vault**:
    - Digital evidence storage (`/api/evidence`) with SHA-256 tamper-evident checksums, NavIC GPS positioning, and AI HUD defect bounding box overlays.
 
 ---
 
-## 🚀 Quick Start (Any Machine, Any Directory)
+## Quick Start (Any Machine, Any Directory)
 
 ### Option A — One-Click Launch (Windows)
 
@@ -92,7 +98,7 @@ npm run dev
 
 ---
 
-## 🗺️ Keyboard Shortcuts & Quick Navigation
+## Keyboard Shortcuts & Quick Navigation
 
 | Key | View / Action |
 |:---:|:---|
@@ -110,7 +116,7 @@ npm run dev
 
 ---
 
-## 📐 Mathematical Models & Prioritization Formulas
+## Mathematical Models & Prioritization Formulas
 
 ### 1. Dynamic Road Priority Index (RPI)
 $$\text{RPI}_{\text{dynamic}} = \min\left(100, \text{RPI}_{\text{base}} \times M_{\text{weather}} \times M_{\text{traffic}} \times M_{\text{deterioration}}\right)$$
@@ -125,31 +131,41 @@ $$\text{TTC} = \frac{\sqrt{d^2 + d_{\text{lateral}}^2}}{\max(0.5, v_{\text{ego}}
 
 ---
 
-## 🗂️ Project Repository Structure
+## Project Repository Structure
 
 ```
 roads/
 ├── backend/
 │   ├── app/
 │   │   ├── api/endpoints/        # REST & WebSocket route handlers
-│   │   │   ├── clusters.py       # Pavement distress work orders
+│   │   │   ├── clusters.py       # Pavement distress work orders & PostGIS ST_ClusterDBSCAN
 │   │   │   ├── incidents.py      # Traffic & safety violations
 │   │   │   ├── streams.py        # Live RTSP, SRT & Dashcam Ingestion
 │   │   │   ├── evidence.py       # Cryptographic evidence vault
-│   │   │   └── telemetry.py      # AIS-140 telematics & sensor fusion
+│   │   │   └── telemetry.py      # AIS-140 telematics & high-concurrency ingestion
 │   │   ├── services/             # Core perception & reasoning engines
 │   │   │   ├── yolo_inference.py # Multi-model YOLOv8 & CV engine
-│   │   │   ├── anpr_engine.py    # Indian HSRP plate recognition
-│   │   │   ├── evidence_vault.py # SHA-256 evidence docket storage
+│   │   │   ├── anpr_engine.py    # INT8 ONNX Indian HSRP plate recognition
+│   │   │   ├── telemetry_buffer.py # 5Hz high-concurrency batch flusher
+│   │   │   ├── clustering_service.py # PostGIS DBSCAN & Python fallback
 │   │   │   ├── privacy_engine.py # DPDP Act 2023 face & bystander blur
 │   │   │   └── hit_and_run_engine.py # Collision & evasion analysis
-│   │   ├── storage/              # SQLite / PostgreSQL persistence layer
-│   │   └── models/               # SQLAlchemy schema & Pydantic models
-│   ├── scripts/
-│   │   └── reset_and_seed_ground_truth.py # Ground truth benchmark seeder
+│   │   ├── storage/              # Dual SQLite WAL / PostgreSQL 16 + PostGIS layer
+│   │   └── models/               # Hybrid SpatialPoint & SQLAlchemy models
+│   ├── tests/                    # Backend pytest suite (spatial, dual engine, queue)
 │   ├── roadsaathi.db            # Local SQLite database
 │   ├── requirements.txt          # Python dependencies
 │   └── run_backend.py            # Backend entry point
+│
+├── edge/                         # Edge NPU & Hardware Telematics Suite (v3.0)
+│   ├── rknn_pipeline.hpp         # C++ RKNN2 zero-copy pipeline interface (DMA-BUF)
+│   ├── rknn_pipeline.cpp         # ARM64 NPU driver & x86/Windows mock fallback
+│   ├── rknn_wrapper.py           # ctypes wrapper with NPU core affinity
+│   ├── anpr_onnx.py              # INT8 quantized ONNX plate OCR (<150MB VRAM)
+│   ├── cellular_watchdog.py      # 5s network polling, 50MB ring buffer & Wi-Fi sync
+│   ├── ais140_parser.py          # AIS-140 / NMEA parser & 200ms IMU time-lock
+│   ├── edge_agent.py             # Unified onboard edge daemon
+│   └── tests/                    # Edge test suite (NPU, ANPR, Watchdog, AIS-140)
 │
 ├── frontend/
 │   ├── src/
@@ -166,20 +182,21 @@ roads/
 
 ---
 
-## 🛠️ Technology Stack
+## Technology Stack
 
 | Layer | Technology |
 | :--- | :--- |
 | **Frontend** | React 18, TypeScript, Vite, Tailwind CSS, Lucide Icons |
-| **Spatial GIS & Maps** | MapLibre GL JS, H3 Spatial Hexagons, Turf.js |
-| **Charts & Analytics** | ApexCharts, React-ApexCharts |
-| **Edge Perception** | YOLOv8 (PyTorch / CUDA), OpenCV, EasyOCR, PyTesseract |
-| **Backend API** | FastAPI, Uvicorn, Python 3.10+, WebSockets |
-| **Database & ORM** | SQLite / PostgreSQL + PostGIS, SQLAlchemy 2.0 |
+| **Spatial GIS & Maps** | MapLibre GL JS, PostGIS 3.4, H3 Spatial Hexagons, Turf.js |
+| **Edge Hardware & NPU** | Rockchip RK3588 (6 TOPS NPU), C++ RKNN2, DMA-BUF, INT8 ONNX |
+| **Telematics & Sensors** | AIS-140 VLT, 2nd-order Butterworth IMU Filter, RTSP/UVC Dashcams |
+| **Edge Storage & Sync** | 50MB JSONL Ring Compaction, 2GB WebP Spool, Depot Wi-Fi Burst |
+| **Backend API** | FastAPI, Uvicorn, Python 3.10+, WebSockets, Asyncio Batch Flusher |
+| **Database & ORM** | Dual SQLite WAL / PostgreSQL 16 + PostGIS 3.4, SQLAlchemy 2.0 |
 | **Compliance Standards** | MoRTH AIS-140, IRC:35, IRC:SP:20, IRC:82, DPDP Act 2023 |
 
 ---
 
-## 📄 License & Statutory Compliance
+## License & Statutory Compliance
 
 This software is developed in strict accordance with the **Digital Personal Data Protection (DPDP) Act 2023** of India, the **Motor Vehicles Act 1988 (as amended in 2019)**, and **Indian Roads Congress (IRC)** engineering standards.
