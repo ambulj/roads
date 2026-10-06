@@ -207,28 +207,33 @@ export const UploadFootageModal: React.FC<UploadFootageModalProps> = ({
             ctx.fillStyle = 'rgba(239, 68, 68, 0.18)';
             ctx.fillRect(bx, by, bw, bh);
 
-            // Wireframe grid lines (3D depth simulation)
-            ctx.strokeStyle = 'rgba(248, 113, 113, 0.4)';
+            // Wireframe grid lines (3D depth simulation mesh)
+            ctx.strokeStyle = 'rgba(248, 113, 113, 0.45)';
             ctx.lineWidth = 1;
             ctx.beginPath();
-            ctx.moveTo(bx + bw * 0.33, by); ctx.lineTo(bx + bw * 0.33, by + bh);
-            ctx.moveTo(bx + bw * 0.66, by); ctx.lineTo(bx + bw * 0.66, by + bh);
-            ctx.moveTo(bx, by + bh * 0.5); ctx.lineTo(bx + bw, by + bh * 0.5);
+            ctx.moveTo(bx + bw * 0.25, by); ctx.lineTo(bx + bw * 0.25, by + bh);
+            ctx.moveTo(bx + bw * 0.50, by); ctx.lineTo(bx + bw * 0.50, by + bh);
+            ctx.moveTo(bx + bw * 0.75, by); ctx.lineTo(bx + bw * 0.75, by + bh);
+            ctx.moveTo(bx, by + bh * 0.33); ctx.lineTo(bx + bw, by + bh * 0.33);
+            ctx.moveTo(bx, by + bh * 0.66); ctx.lineTo(bx + bw, by + bh * 0.66);
+            // Depth perspective diagonals
+            ctx.moveTo(bx, by); ctx.lineTo(bx + bw * 0.5, by + bh * 0.5);
+            ctx.moveTo(bx + bw, by); ctx.lineTo(bx + bw * 0.5, by + bh * 0.5);
             ctx.stroke();
 
             // Label Banner
             ctx.fillStyle = '#ef4444';
-            ctx.fillRect(bx, by - 26, 260, 24);
+            ctx.fillRect(bx, by - 26, 280, 24);
             ctx.fillStyle = '#ffffff';
             ctx.font = 'bold 11px monospace';
             ctx.fillText('D40: POTHOLE CAVITY • 8.4cm Depth (96%)', bx + 6, by - 10);
 
-            // Telemetry subtag
-            ctx.fillStyle = 'rgba(0, 0, 0, 0.75)';
-            ctx.fillRect(bx, by + bh + 4, 180, 20);
+            // Telemetry & Cavity Vol subtag (V = pi/4 * d^2 * h)
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.85)';
+            ctx.fillRect(bx, by + bh + 4, 270, 22);
             ctx.fillStyle = '#f59e0b';
             ctx.font = 'bold 10px monospace';
-            ctx.fillText('Gz Shock: 1.48g | MoRTH 3004', bx + 6, by + bh + 18);
+            ctx.fillText('Vol: 27.9L (π/4·d²·h) | Gz Shock: 1.48g', bx + 6, by + bh + 16);
 
           } else if (selectedScenarioId === "scen-traffic" || detectionResult?.defectCode === "TRAFFIC_VEHICLE") {
             // Vehicle 1: Lead Car
@@ -349,8 +354,29 @@ export const UploadFootageModal: React.FC<UploadFootageModalProps> = ({
     setDetectionResult(null);
     setSanitizedPreviewUrl(null);
     setProcessingStage('idle');
+
+    // T-04-01: Client-side video validation (Cap 100MB & MIME check)
+    const MAX_FILE_SIZE = 100 * 1024 * 1024; // 100MB
+    if (selectedFile.size > MAX_FILE_SIZE) {
+      setFeedback({
+        type: 'error',
+        message: `File size (${(selectedFile.size / (1024 * 1024)).toFixed(1)}MB) exceeds 100MB cap. Please upload a smaller clip or select a pre-bundled demo scenario.`
+      });
+      return;
+    }
+
+    const validTypes = ['video/mp4', 'video/webm', 'video/quicktime', 'image/jpeg', 'image/png'];
+    const isValidExt = /\.(mp4|webm|mov|jpg|jpeg|png)$/i.test(selectedFile.name);
+    if (!validTypes.includes(selectedFile.type) && !isValidExt) {
+      setFeedback({
+        type: 'error',
+        message: 'Unsupported file format. Please provide MP4, WebM, MOV, JPG, or PNG.'
+      });
+      return;
+    }
+
     setFile(selectedFile);
-    setIsVideoPreview(selectedFile.type.startsWith('video/') || selectedFile.name.endsWith('.mp4'));
+    setIsVideoPreview(selectedFile.type.startsWith('video/') || selectedFile.name.endsWith('.mp4') || selectedFile.name.endsWith('.webm'));
     if (previewUrl && previewUrl.startsWith('blob:')) {
       URL.revokeObjectURL(previewUrl);
     }

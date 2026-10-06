@@ -1,4 +1,5 @@
 import math
+from typing import Dict, Any
 from app.core.config import settings
 from app.models.schemas import DefectType
 
@@ -28,6 +29,81 @@ ROAD_CLASS_SCORES = {
     "Commercial Transit Corridor": 60.0,
     "Suburban Arterial": 45.0,
 }
+
+def compute_rpi(
+    severity: float,
+    pass_count: int,
+    road_weight: float,
+    poi_distance_m: float,
+    monsoon_multiplier: float = 1.15
+) -> Dict[str, Any]:
+    """
+    Computes statutory Road Priority Index (RPI) and component terms.
+    T1 = 0.40 * S
+    T2 = 0.20 * min(100.0, 20.0 * log2(1 + N))
+    T3 = 0.20 * W
+    T4 = 0.20 * max(0.0, 100.0 * (1.0 - D / 1500.0))
+    RPI = min(100.0, round((T1 + T2 + T3 + T4) * M, 1))
+    """
+    s_clamped = min(100.0, max(0.0, float(severity)))
+    n_clamped = max(0, int(pass_count))
+    w_clamped = min(100.0, max(0.0, float(road_weight)))
+    d_clamped = min(1500.0, max(0.0, float(poi_distance_m)))
+    m_clamped = max(1.0, float(monsoon_multiplier))
+
+    t1 = 0.40 * s_clamped
+    consensus_scale = min(100.0, 20.0 * math.log2(1 + n_clamped))
+    t2 = 0.20 * consensus_scale
+    t3 = 0.20 * w_clamped
+    proximity_scale = max(0.0, 100.0 * (1.0 - d_clamped / 1500.0))
+    t4 = 0.20 * proximity_scale
+
+    raw_sum = t1 + t2 + t3 + t4
+    rpi = min(100.0, max(0.0, round(raw_sum * m_clamped, 1)))
+
+    if rpi >= 85.0:
+        sla_tier = "P0"
+        sla_label = "critical"
+        sla_hours = 24
+    elif rpi >= 70.0:
+        sla_tier = "P1"
+        sla_label = "high"
+        sla_hours = 48
+    else:
+        sla_tier = "P2"
+        sla_label = "routine"
+        sla_hours = 72
+
+    return {
+        "rpi": rpi,
+        "raw_sum": round(raw_sum, 2),
+        "monsoon_multiplier": m_clamped,
+        "terms": {
+            "t1_severity": round(t1, 2),
+            "t2_consensus": round(t2, 2),
+            "t3_road_weight": round(t3, 2),
+            "t4_poi_proximity": round(t4, 2),
+        },
+        "scales": {
+            "severity": s_clamped,
+            "consensus_scale": round(consensus_scale, 2),
+            "road_weight": w_clamped,
+            "proximity_scale": round(proximity_scale, 2),
+        },
+        "sla_tier": sla_tier,
+        "sla_label": sla_label,
+        "sla_hours": sla_hours,
+    }
+
+def compute_pothole_volume(diameter_m: float, depth_m: float) -> float:
+    """
+    Computes pothole cavity volume using standard cylinder approximation:
+    V = (pi / 4) * d^2 * h
+    Returns volume in cubic meters (m^3).
+    """
+    d = max(0.0, float(diameter_m))
+    h = max(0.0, float(depth_m))
+    return (math.pi / 4.0) * (d ** 2) * h
 
 def calculate_rpi(
     defect_type: DefectType,

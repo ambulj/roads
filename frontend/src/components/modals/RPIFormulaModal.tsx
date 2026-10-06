@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, Calculator, ShieldCheck, Sliders, CheckCircle2, AlertTriangle, Layers, MapPin } from 'lucide-react';
+import { X, Calculator, ShieldCheck, Sliders, CheckCircle2, AlertTriangle, Layers, MapPin, Activity } from 'lucide-react';
 import { HazardCluster } from '../../types';
 
 interface RPIFormulaModalProps {
@@ -50,7 +50,7 @@ export const RPIFormulaModal: React.FC<RPIFormulaModalProps> = ({
 
   if (!isOpen) return null;
 
-  // Weight constants
+  // Weight constants (Decision D-01)
   const w1 = 0.40; // Defect Severity
   const w2 = 0.20; // Multi-bus Pass Consensus
   const w3 = 0.20; // Road Hierarchy
@@ -65,15 +65,20 @@ export const RPIFormulaModal: React.FC<RPIFormulaModalProps> = ({
   const term4_poi = w4 * proximityScale;
 
   const rawSum = term1_severity + term2_passes + term3_road + term4_poi;
-  const calculatedRpi = Math.min(100.0, Math.round(rawSum * monsoonMultiplier * 10) / 10);
+  const calculatedRpi = Math.min(100.0, Math.max(0.0, Math.round(rawSum * monsoonMultiplier * 10) / 10));
 
   const getSlaRecommendation = (score: number) => {
-    if (score >= 85) return { sla: '24h Emergency SLA', color: 'rose', badge: 'P0 CRITICAL' };
-    if (score >= 70) return { sla: '48h Routine SLA', color: 'amber', badge: 'P1 HIGH' };
-    return { sla: '72h Scheduled SLA', color: 'blue', badge: 'P2 ROUTINE' };
+    if (score >= 85) return { sla: '24h Emergency SLA', color: 'rose', badge: 'P0 CRITICAL', stroke: '#f43f5e' };
+    if (score >= 70) return { sla: '48h Routine SLA', color: 'amber', badge: 'P1 HIGH', stroke: '#f59e0b' };
+    return { sla: '72h Scheduled SLA', color: 'blue', badge: 'P2 ROUTINE', stroke: '#3b82f6' };
   };
 
   const slaInfo = getSlaRecommendation(calculatedRpi);
+
+  // SVG Gauge calculations
+  const radius = 38;
+  const circumference = 2 * Math.PI * radius;
+  const strokeDashoffset = circumference - (calculatedRpi / 100) * circumference;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-900/70 backdrop-blur-xs animate-fadeIn select-none">
@@ -88,7 +93,7 @@ export const RPIFormulaModal: React.FC<RPIFormulaModalProps> = ({
             <div>
               <span>Live Road Priority Index (RPI) Mathematical Breakdown</span>
               <div className="text-[10.5px] font-mono text-slate-400 font-normal">
-                MoHUA / CRDDC Benchmark Formulation &bull; Explainable Ground-Truth Scoring
+                MoHUA / CRDDC Statutory Formula &bull; Decision D-01 &bull; Explainable Ground-Truth Scoring
               </div>
             </div>
           </div>
@@ -131,33 +136,67 @@ export const RPIFormulaModal: React.FC<RPIFormulaModalProps> = ({
           </div>
         )}
 
-        {/* Active Live Result Banner */}
-        <div className="p-4 rounded-xl bg-gradient-to-r from-blue-950/70 via-slate-900 to-indigo-950/70 border border-blue-500/40 text-white shadow-md flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-          <div>
-            <div className="text-[10px] font-mono uppercase tracking-wider text-blue-300">
-              Evaluated Cluster: <strong className="text-white">{activeCluster.cluster_code || 'WO-0001'}</strong> ({activeCluster.road_name})
+        {/* Active Live Result Banner with Animated Circular SVG Gauge */}
+        <div className="p-4 rounded-xl bg-gradient-to-r from-blue-950/80 via-slate-900 to-indigo-950/80 border border-blue-500/40 text-white shadow-md flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="flex items-center gap-4">
+            {/* Circular Animated SVG Gauge */}
+            <div className="relative flex items-center justify-center shrink-0">
+              <svg className="w-24 h-24 transform -rotate-90">
+                <circle
+                  cx="48"
+                  cy="48"
+                  r={radius}
+                  stroke="rgba(255, 255, 255, 0.15)"
+                  strokeWidth="7"
+                  fill="transparent"
+                />
+                <circle
+                  cx="48"
+                  cy="48"
+                  r={radius}
+                  stroke={slaInfo.stroke}
+                  strokeWidth="7"
+                  strokeDasharray={circumference}
+                  strokeDashoffset={strokeDashoffset}
+                  strokeLinecap="round"
+                  fill="transparent"
+                  className="transition-all duration-300 ease-out"
+                />
+              </svg>
+              <div className="absolute flex flex-col items-center justify-center">
+                <span className="font-mono text-2xl font-bold text-white tracking-tight">
+                  {calculatedRpi}
+                </span>
+                <span className="text-[9px] font-mono uppercase text-slate-400">RPI Score</span>
+              </div>
             </div>
-            <div className="text-lg font-bold mt-0.5">
-              Final RPI Score: <span className="font-mono text-cyan-400 text-2xl">{calculatedRpi}</span> / 100
-            </div>
-            <div className="text-xs text-slate-300 flex items-center gap-2 mt-1">
-              <span className={`px-2 py-0.5 rounded font-mono font-bold text-[10.5px] ${
-                slaInfo.color === 'rose' ? 'bg-rose-500/30 text-rose-300 border border-rose-500/40' :
-                slaInfo.color === 'amber' ? 'bg-amber-500/30 text-amber-300 border border-amber-500/40' :
-                'bg-blue-500/30 text-blue-300 border border-blue-500/40'
-              }`}>
-                {slaInfo.badge}
-              </span>
-              <span>Autonomous Action: <strong className="text-white">{slaInfo.sla}</strong></span>
+
+            <div>
+              <div className="text-[10px] font-mono uppercase tracking-wider text-blue-300">
+                Evaluated Cluster: <strong className="text-white">{activeCluster.cluster_code || 'WO-0001'}</strong> ({activeCluster.road_name})
+              </div>
+              <div className="text-base font-bold mt-0.5 text-slate-100">
+                Statutory Road Priority Index
+              </div>
+              <div className="text-xs text-slate-300 flex items-center gap-2 mt-1.5 flex-wrap">
+                <span className={`px-2 py-0.5 rounded font-mono font-bold text-[10.5px] ${
+                  slaInfo.color === 'rose' ? 'bg-rose-500/30 text-rose-300 border border-rose-500/40' :
+                  slaInfo.color === 'amber' ? 'bg-amber-500/30 text-amber-300 border border-amber-500/40' :
+                  'bg-blue-500/30 text-blue-300 border border-blue-500/40'
+                }`}>
+                  {slaInfo.badge}
+                </span>
+                <span>Autonomous Action: <strong className="text-white">{slaInfo.sla}</strong></span>
+              </div>
             </div>
           </div>
 
-          <div className="text-right font-mono text-xs text-slate-300 border-l border-white/10 pl-4 shrink-0">
-            <div className="text-[10px] uppercase text-slate-400">Live Breakdown:</div>
-            <div>w₁ Severity: <span className="text-rose-400 font-bold">+{term1_severity.toFixed(1)}</span></div>
-            <div>w₂ Consensus: <span className="text-amber-400 font-bold">+{term2_passes.toFixed(1)}</span></div>
-            <div>w₃ Road Class: <span className="text-blue-400 font-bold">+{term3_road.toFixed(1)}</span></div>
-            <div>w₄ POI Proximity: <span className="text-indigo-400 font-bold">+{term4_poi.toFixed(1)}</span></div>
+          <div className="text-right font-mono text-xs text-slate-300 sm:border-l sm:border-white/10 sm:pl-4 shrink-0 space-y-0.5">
+            <div className="text-[10px] uppercase text-slate-400">Live Terms Breakdown:</div>
+            <div>T₁ Severity (40%): <span className="text-rose-400 font-bold">+{term1_severity.toFixed(1)}</span></div>
+            <div>T₂ Consensus (20%): <span className="text-amber-400 font-bold">+{term2_passes.toFixed(1)}</span></div>
+            <div>T₃ Road Class (20%): <span className="text-blue-400 font-bold">+{term3_road.toFixed(1)}</span></div>
+            <div>T₄ POI Proximity (20%): <span className="text-indigo-400 font-bold">+{term4_poi.toFixed(1)}</span></div>
             <div>Monsoon Multiplier: <span className="text-emerald-400 font-bold">&times;{monsoonMultiplier}</span></div>
           </div>
         </div>
@@ -231,7 +270,7 @@ export const RPIFormulaModal: React.FC<RPIFormulaModalProps> = ({
               <input
                 type="range"
                 min="1"
-                max="25"
+                max="50"
                 step="1"
                 value={passCount}
                 onChange={(e) => setPassCount(Number(e.target.value))}
@@ -242,6 +281,7 @@ export const RPIFormulaModal: React.FC<RPIFormulaModalProps> = ({
                 <span>3 passes (40pts)</span>
                 <span>7 passes (60pts)</span>
                 <span>15+ passes (80pts)</span>
+                <span>31+ passes (100pts)</span>
               </div>
             </div>
 
