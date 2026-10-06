@@ -25,9 +25,9 @@
 
 ### 4. Explainable WebGIS & Live Visualizer (GIS)
 
-- [ ] **GIS-01**: Interactive RPI Formula modal (`RPIFormulaModal.tsx`) dynamically recalculates and displays mathematical factors (depth, volume, traffic multiplier, age penalty, passenger exposure) when clicking any defect on the map.
-- [ ] **GIS-02**: Live Dashcam Upload modal (`UploadFootageModal.tsx`) ingests sample video clips and renders real-time 30 FPS bounding box hazard overlays side-by-side with telemetry logs.
-- [ ] **GIS-03**: MapLibre WebGIS provides an interactive Origin-Destination (OD) Transit Desire Lines layer with zone-to-zone daily trip volumes and passenger load metrics (PS 26124).
+- [x] **GIS-01**: Interactive RPI Formula modal (`RPIFormulaModal.tsx`) dynamically recalculates and displays mathematical factors (depth, volume, traffic multiplier, age penalty, passenger exposure) when clicking any defect on the map.
+- [x] **GIS-02**: Live Dashcam Upload modal (`UploadFootageModal.tsx`) ingests sample video clips and renders real-time 30 FPS bounding box hazard overlays side-by-side with telemetry logs.
+- [x] **GIS-03**: MapLibre WebGIS provides an interactive Origin-Destination (OD) Transit Desire Lines layer with zone-to-zone daily trip volumes and passenger load metrics (PS 26124).
 
 ---
 
@@ -62,14 +62,15 @@
 | LEDGER-01 | Phase 3 | Complete |
 | LEDGER-02 | Phase 3 | Complete |
 | LEDGER-03 | Phase 3 | Complete |
-| GIS-01 | Phase 4 | Pending |
-| GIS-02 | Phase 4 | Pending |
-| GIS-03 | Phase 4 | Pending |
+| GIS-01 | Phase 4 | Complete |
+| GIS-02 | Phase 4 | Complete |
+| GIS-03 | Phase 4 | Complete |
 
 **Coverage:**
 - Total v1 Requirements: 12
 - Mapped to Phases: 12
 - Unmapped: 0
+- Completed: 12 / 12 (100%)
 
 ---
 *Requirements defined: 2026-10-06*
