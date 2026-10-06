@@ -1,8 +1,9 @@
 import csv
 import io
 from fastapi import APIRouter, HTTPException, Depends, Response
-from typing import List
+from typing import List, Optional, Tuple
 from sqlalchemy.orm import Session
+from sqlalchemy import text
 
 from app.storage.database import get_db
 from app.storage.mock_database import store
@@ -11,12 +12,86 @@ from app.models.db_models import DBDistressCluster
 
 router = APIRouter()
 
+
+def _parse_and_validate_bbox(bbox_str: str) -> Tuple[float, float, float, float]:
+    parts = bbox_str.split(",")
+    if len(parts) != 4:
+        raise HTTPException(
+            status_code=400,
+            detail="Invalid bbox format. Expected 'min_lon,min_lat,max_lon,max_lat'"
+        )
+    try:
+        min_lon, min_lat, max_lon, max_lat = (float(p.strip()) for p in parts)
+    except ValueError:
+        raise HTTPException(
+            status_code=400,
+            detail="Invalid bbox coordinates. All values must be valid numbers."
+        )
+
+    if not (-180.0 <= min_lon <= 180.0 and -180.0 <= max_lon <= 180.0):
+        raise HTTPException(
+            status_code=400,
+            detail="Longitude values must be within [-180.0, 180.0]"
+        )
+    if not (-90.0 <= min_lat <= 90.0 and -90.0 <= max_lat <= 90.0):
+        raise HTTPException(
+            status_code=400,
+            detail="Latitude values must be within [-90.0, 90.0]"
+        )
+    if min_lon > max_lon:
+        raise HTTPException(
+            status_code=400,
+            detail=f"min_lon ({min_lon}) cannot be greater than max_lon ({max_lon})"
+        )
+    if min_lat > max_lat:
+        raise HTTPException(
+            status_code=400,
+            detail=f"min_lat ({min_lat}) cannot be greater than max_lat ({max_lat})"
+        )
+
+    return min_lon, min_lat, max_lon, max_lat
+
+
 @router.get("", response_model=List[HazardCluster])
-def list_clusters(db: Session = Depends(get_db)):
-    """Retrieve all road distress clusters directly from persistent database."""
-    rows = db.query(DBDistressCluster).order_by(DBDistressCluster.rpi_score.desc()).all()
-    if not rows:
+def list_clusters(
+    bbox: Optional[str] = None,
+    limit: int = 500,
+    db: Session = Depends(get_db)
+):
+    """Retrieve road distress clusters directly from persistent database with optional viewport filtering."""
+    limit = max(1, min(limit, 2000))
+    query = db.query(DBDistressCluster)
+    parsed_bbox = None
+
+    if bbox:
+        parsed_bbox = _parse_and_validate_bbox(bbox)
+        min_lon, min_lat, max_lon, max_lat = parsed_bbox
+
+        is_postgres = False
+        try:
+            is_postgres = db.bind.dialect.name == "postgresql"
+        except Exception:
+            pass
+
+        if is_postgres:
+            query = query.filter(
+                text("geom && ST_MakeEnvelope(:min_lon, :min_lat, :max_lon, :max_lat, 4326)")
+            ).params(min_lon=min_lon, min_lat=min_lat, max_lon=max_lon, max_lat=max_lat)
+        else:
+            query = query.filter(
+                DBDistressCluster.lat.between(min_lat, max_lat),
+                DBDistressCluster.lng.between(min_lon, max_lon)
+            )
+
+    rows = query.order_by(DBDistressCluster.rpi_score.desc()).limit(limit).all()
+    if not rows and not bbox:
         return store.get_clusters()
+    elif not rows and parsed_bbox:
+        min_lon, min_lat, max_lon, max_lat = parsed_bbox
+        return [
+            HazardCluster(**c) for c in store.get_clusters()
+            if min_lat <= c.get("lat", 0.0) <= max_lat and min_lon <= c.get("lng", 0.0) <= max_lon
+        ]
     
     return [
         HazardCluster(

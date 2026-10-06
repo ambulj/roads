@@ -7,12 +7,16 @@ from app.core.config import settings
 from app.api.router import api_router
 from app.api import websockets
 from app.services.synthetic_generator import synthetic_generator_loop
+from app.services.telemetry_buffer import telemetry_buffer
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     sim_task = None
 
-    # 1. Start background fleet simulation loop if enabled (advances bus GPS positions)
+    # 1. Start background telemetry batch flusher (SCALE-03)
+    await telemetry_buffer.start()
+
+    # 2. Start background fleet simulation loop if enabled (advances bus GPS positions)
     if settings.ENABLE_FLEET_SIMULATION and not settings.DEMO_MODE:
         sim_task = asyncio.create_task(websockets.simulation_loop())
     
@@ -21,12 +25,15 @@ async def lifespan(app: FastAPI):
     
     yield
     
+    # Graceful shutdown: stop fleet simulation and drain pending telemetry buffer
     if sim_task is not None:
         sim_task.cancel()
         try:
             await asyncio.gather(sim_task, return_exceptions=True)
         except Exception:
             pass
+
+    await telemetry_buffer.stop()
 
 
 app = FastAPI(

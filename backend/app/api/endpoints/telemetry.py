@@ -15,6 +15,8 @@ from app.models.schemas import (
 )
 from app.models.db_models import DBRawIngest, DBAuditLog
 from app.services.yolo_inference import yolo_engine, WEIGHTS_DIR
+from app.api.websockets import manager
+from app.services.telemetry_buffer import telemetry_buffer
 
 
 router = APIRouter()
@@ -22,6 +24,11 @@ router = APIRouter()
 @router.get("/metrics", response_model=MetricSummary)
 def get_metrics():
     return store.get_metrics()
+
+@router.get("/buffer-status")
+def get_buffer_status():
+    """Returns real-time telemetry batch buffer queue depth and throughput statistics."""
+    return telemetry_buffer.get_metrics()
 
 @router.get("/audit-logs", response_model=List[PerceptionLogEntry])
 def get_audit_logs(db: Session = Depends(get_db)):
@@ -43,42 +50,36 @@ def get_audit_logs(db: Session = Depends(get_db)):
     return store.audit_logs
 
 @router.post("/ingest")
-def ingest_telemetry(payload: TelemetryIngest, db: Session = Depends(get_db)):
-    """Persists raw edge perception telemetry to database."""
+async def ingest_telemetry(payload: TelemetryIngest):
+    """
+    High-frequency vehicle ingestion buffer (SCALE-03):
+    - Broadcasts immediately to active WebSockets for 60 FPS WebGIS updates
+    - Enqueues into bounded TelemetryBatchBuffer without synchronous DB write locks
+    - Returns instant response (<15ms latency)
+    """
     data = payload.model_dump()
-    raw_id = f"raw-{uuid.uuid4().hex[:8]}"
-    now_str = datetime.datetime.now(datetime.timezone.utc).isoformat()
-    
-    # Save DBRawIngest
-    raw_record = DBRawIngest(
-        id=raw_id,
-        bus_id=data.get("bus_id", "BUS-TN01-1042"),
-        defect_type=data.get("defect_type", "D40"),
-        confidence=data.get("confidence", 0.95),
-        speed_kmh=data.get("speed_kmh", 40.0),
-        vertical_g_force=data.get("vertical_g_force", 1.0),
-        lat=data.get("lat", 12.9516),
-        lng=data.get("lng", 80.1462),
-        camera_position=data.get("camera_position", "FRONT_WINDSHIELD"),
-        channel=data.get("channel", 1),
-        captured_at=now_str
-    )
-    db.add(raw_record)
-    
-    # Save DBAuditLog
-    audit_rec = DBAuditLog(
-        id=f"aud-{uuid.uuid4().hex[:6]}",
-        bus_id=raw_record.bus_id,
-        corridor=data.get("defect_type", "D40"),
-        message=f"Defect {raw_record.defect_type} captured via {raw_record.camera_position} (CH {raw_record.channel}) with {int(raw_record.confidence * 100)}% confidence.",
-        latency_ms=38,
-        type="EDGE_INGEST",
-        timestamp="Just now",
-        created_at=now_str
-    )
-    db.add(audit_rec)
-    db.commit()
-    
+
+    # 1. Immediate broadcast to active WebSockets
+    if manager.active_connections:
+        try:
+            await manager.broadcast({
+                "type": "TELEMETRY_INGEST",
+                "bus_id": data.get("bus_id"),
+                "lat": data.get("lat"),
+                "lng": data.get("lng"),
+                "speed_kmh": data.get("speed_kmh"),
+                "heading": data.get("heading", 0.0),
+                "defect_type": data.get("defect_type"),
+                "confidence": data.get("confidence"),
+                "vertical_g_force": data.get("vertical_g_force", 1.0)
+            })
+        except Exception:
+            pass
+
+    # 2. Enqueue into high-concurrency batch buffer without awaiting database I/O
+    await telemetry_buffer.enqueue(data)
+
+    # 3. Synchronize in-memory store for instant UI state reflection
     result = store.add_ingest(data)
     return result
 

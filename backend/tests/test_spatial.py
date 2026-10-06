@@ -87,3 +87,155 @@ def test_models_retain_lat_lng_coordinates():
         assert "geom" in cols
         assert str(cols["lat"].type) == "FLOAT"
         assert str(cols["lng"].type) == "FLOAT"
+
+
+def test_viewport_query_fallback():
+    """
+    Verifies bounding box filtering on /api/v1/clusters:
+    - Clusters inside bbox [80.14, 12.95, 80.25, 13.05] are returned.
+    - Clusters outside bbox are excluded.
+    - Malformed and invalid bbox queries return HTTP 400 with descriptive error messages.
+    """
+    from fastapi.testclient import TestClient
+    from app.main import app
+    from app.storage.database import SessionLocal, init_db
+
+    init_db()
+    client = TestClient(app)
+    db = SessionLocal()
+
+    try:
+        # Insert test clusters inside and outside Chennai test bbox [80.14, 12.95, 80.25, 13.05]
+        inside_cluster = DBDistressCluster(
+            id="test-cl-inside-01",
+            cluster_code="WO-IN01",
+            defect_type="D40",
+            defect_name="Deep Structural Pothole",
+            severity_level="high",
+            rpi_score=92.0,
+            pass_count=3,
+            road_name="GST Road (NH-32)",
+            classification="National Highway",
+            lat=13.0000,
+            lng=80.2000,
+            status="open"
+        )
+        outside_cluster = DBDistressCluster(
+            id="test-cl-outside-01",
+            cluster_code="WO-OUT01",
+            defect_type="D40",
+            defect_name="Distant Surface Defect",
+            severity_level="low",
+            rpi_score=35.0,
+            pass_count=1,
+            road_name="Outer Bypass",
+            classification="State Highway",
+            lat=13.5000,
+            lng=80.5000,
+            status="open"
+        )
+        db.merge(inside_cluster)
+        db.merge(outside_cluster)
+        db.commit()
+
+        # Query with bbox [min_lon, min_lat, max_lon, max_lat] = [80.14, 12.95, 80.25, 13.05]
+        res = client.get("/api/v1/clusters?bbox=80.14,12.95,80.25,13.05")
+        assert res.status_code == 200
+        clusters = res.json()
+        assert len(clusters) > 0
+
+        returned_ids = {c["id"] for c in clusters}
+        assert "test-cl-inside-01" in returned_ids
+        assert "test-cl-outside-01" not in returned_ids
+
+        # Ensure all returned coordinates are strictly within bbox
+        for c in clusters:
+            assert 12.95 <= c["lat"] <= 13.05
+            assert 80.14 <= c["lng"] <= 80.25
+
+        # Test invalid bbox formats and range validation (T-01-03)
+        res_bad_format = client.get("/api/v1/clusters?bbox=80.14,12.95,80.25")
+        assert res_bad_format.status_code == 400
+
+        res_bad_coords = client.get("/api/v1/clusters?bbox=abc,12.95,80.25,13.05")
+        assert res_bad_coords.status_code == 400
+
+        res_inverted_lon = client.get("/api/v1/clusters?bbox=80.25,12.95,80.14,13.05")
+        assert res_inverted_lon.status_code == 400
+
+        res_inverted_lat = client.get("/api/v1/clusters?bbox=80.14,13.05,80.25,12.95")
+        assert res_inverted_lat.status_code == 400
+
+        res_out_of_bounds = client.get("/api/v1/clusters?bbox=-190.0,12.95,80.25,13.05")
+        assert res_out_of_bounds.status_code == 400
+    finally:
+        # Clean up test rows
+        db.query(DBDistressCluster).filter(
+            DBDistressCluster.id.in_(["test-cl-inside-01", "test-cl-outside-01"])
+        ).delete(synchronize_session=False)
+        db.commit()
+        db.close()
+
+
+def test_dbscan_clustering_consistency():
+    """
+    Verifies multi-pass DBSCAN clustering consistency:
+    - Points A and B within ~8m merge into 1 cluster with pass_count == 2.
+    - Point C (500m away) remains separate with pass_count == 1.
+    - Road corridor snapping associates the merged cluster with the nearest road segment.
+    """
+    from app.services.clustering_service import clustering_service
+
+    # Point A and B are ~5.5m apart (within 8m), Point C is ~489m away
+    point_a = {
+        "lat": 12.95160,
+        "lng": 80.14620,
+        "defect_type": "D40",
+        "confidence": 0.95,
+        "bus_id": "BUS-01",
+        "vertical_g_force": 1.45
+    }
+    point_b = {
+        "lat": 12.95165,
+        "lng": 80.14620,
+        "defect_type": "D40",
+        "confidence": 0.91,
+        "bus_id": "BUS-02",
+        "vertical_g_force": 1.62
+    }
+    point_c = {
+        "lat": 12.95600,
+        "lng": 80.14620,
+        "defect_type": "D40",
+        "confidence": 0.88,
+        "bus_id": "BUS-03",
+        "vertical_g_force": 1.10
+    }
+
+    clusters = clustering_service.cluster_points(
+        [point_a, point_b, point_c],
+        eps_meters=15.0,
+        min_points=2
+    )
+
+    assert len(clusters) == 2, f"Expected 2 clusters, got {len(clusters)}"
+
+    # Find the merged cluster for Points A & B
+    merged_cluster = next((c for c in clusters if c["pass_count"] == 2), None)
+    assert merged_cluster is not None, "Points A and B did not merge into a cluster with pass_count == 2"
+    assert merged_cluster["distinct_buses"] == 2
+    assert merged_cluster["is_multi_pass"] is True
+    assert merged_cluster["defect_type"] == "D40"
+    assert abs(merged_cluster["lat"] - 12.951625) < 1e-4
+
+    # Point C remains separate
+    separate_cluster = next((c for c in clusters if c["pass_count"] == 1), None)
+    assert separate_cluster is not None, "Point C was not separated into its own cluster"
+    assert separate_cluster["is_multi_pass"] is False
+    assert separate_cluster["points"][0]["bus_id"] == "BUS-03"
+
+    # Road corridor snapping verification
+    snap = clustering_service.snap_to_road_corridor(merged_cluster["lat"], merged_cluster["lng"], corridor_buffer_m=15.0)
+    assert snap is not None
+    assert "road_name" in snap
+
