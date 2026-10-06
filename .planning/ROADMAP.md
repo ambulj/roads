@@ -16,6 +16,7 @@ RoadSaathi v3.0 delivers enterprise-scale municipal transit perception and finan
 ## Phase Details
 
 ### Phase 1: Enterprise Scalability & Spatial Engine
+
 **Goal**: Enable high-concurrency ingestion for large municipal fleets with sub-50ms spatial clustering and dual database support.
 **Depends on**: Existing codebase foundation
 **Requirements**: SCALE-01, SCALE-02, SCALE-03
@@ -23,15 +24,20 @@ RoadSaathi v3.0 delivers enterprise-scale municipal transit perception and finan
   1. System seamlessly connects to PostgreSQL 16 + PostGIS 3.4 when configured in `.env`, while retaining SQLite WAL fallback for zero-dependency local demo runs.
   2. Spatial clustering queries over 100,000 historical passes execute in <50ms using native PostGIS R-Tree spatial indexing.
   3. Load testing demonstrates concurrent 5Hz telemetry streams from 500 simulated vehicle nodes without database connection timeouts.
+
 **Plans**: 2 plans
 
 Plans:
+**Wave 1**
 - [ ] 01-01: Dual database dialect layer with SQLAlchemy and PostGIS spatial geometry mapping.
+
+**Wave 2** *(blocked on Wave 1 completion)*
 - [ ] 01-02: Native PostGIS spatial clustering queries and PgBouncer-compatible connection pool recycling.
 
 ---
 
 ### Phase 2: Edge NPU & Hardware Telematics Suite
+
 **Goal**: Maximize onboard vehicle perception frame rates to 30+ FPS while drastically reducing edge thermal and memory footprints.
 **Depends on**: Phase 1
 **Requirements**: EDGE-01, EDGE-02, EDGE-03
@@ -39,6 +45,7 @@ Plans:
   1. Zero-copy C++ RKNN2 pipeline executes on Rockchip RK3588 NPU achieving >=30 FPS sustained hazard detection at <12W board power.
   2. Vehicle edge license plate OCR uses INT8 quantized ONNX models, maintaining <150MB VRAM footprint without OOM errors.
   3. Edge telematics agent automatically recovers from simulated cellular blackouts and tunnel transitions via exponential jitter backoff without process crashes.
+
 **Plans**: 2 plans
 
 Plans:
@@ -48,6 +55,7 @@ Plans:
 ---
 
 ### Phase 3: Contractor Financial Accountability & SLA Ledger
+
 **Goal**: Automate contractor defect liability recovery under IRC:SP:20 Clause 14, providing unassailable evidence to protect taxpayer road budgets.
 **Depends on**: Phase 1, Phase 2
 **Requirements**: LEDGER-01, LEDGER-02, LEDGER-03
@@ -55,6 +63,7 @@ Plans:
   1. Recurrent surface distress within 36-month liability windows automatically calculates penalty debits according to IRC:SP:20 Clause 14 formula.
   2. Municipal contractor SLA ledger presents transparent debit accruals, repair turnaround countdowns, and escrow holdbacks.
   3. Work order verification requires multi-pass concurrence (minimum 3 independent bus passes across 48 hours + vertical IMU z-axis acceleration) before authorizing contractor invoice clearance.
+
 **Plans**: 2 plans
 
 Plans:
@@ -64,6 +73,7 @@ Plans:
 ---
 
 ### Phase 4: Explainable WebGIS & Live Presentation Visualizer
+
 **Goal**: Deliver an interactive, explainable WebGIS experience that lets municipal judges and civic stakeholders inspect formulas, video frames, and city-wide transit patterns.
 **Depends on**: Phase 3
 **Requirements**: GIS-01, GIS-02, GIS-03
@@ -71,6 +81,7 @@ Plans:
   1. Clicking any road defect on MapLibre opens the interactive RPI Formula modal, rendering the live mathematical breakdown and contributing weights.
   2. Uploading a video clip in `UploadFootageModal.tsx` demonstrates real-time 30 FPS bounding box hazard tracking side-by-side with telemetry logs.
   3. MapLibre displays an interactive Origin-Destination (OD) Transit Desire Lines layer with zone-to-zone passenger flow matrices fulfilling PS 26124 requirements.
+
 **Plans**: 2 plans
 
 Plans:
