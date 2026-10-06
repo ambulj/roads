@@ -6,7 +6,7 @@ RoadSaathi v3.0 delivers enterprise-scale municipal transit perception and finan
 
 ## Phases
 
-- [ ] **Phase 1: Enterprise Scalability & Spatial Engine** - Dual SQLite/PostgreSQL engine, PostGIS spatial clustering, and connection pooling for 500+ buses.
+- [x] **Phase 1: Enterprise Scalability & Spatial Engine** - Dual SQLite/PostgreSQL engine, PostGIS spatial clustering, and connection pooling for 500+ buses.
 - [ ] **Phase 2: Edge NPU & Hardware Telematics Suite** - C++ RKNN2 zero-copy inference on Rockchip RK3588, INT8 OCR, and cellular reconnect watchdog.
 - [ ] **Phase 3: Contractor Financial Accountability & SLA Ledger** - IRC:SP:20 Clause 14 auto-debit penalty ledger, 36-month defect liability tracking, and multi-pass concurrence gates.
 - [ ] **Phase 4: Explainable WebGIS & Live Presentation Visualizer** - Interactive RPI click-to-explain modal, live dashcam 30 FPS visualizer, and Origin-Destination desire lines (PS 26124).
@@ -29,10 +29,10 @@ RoadSaathi v3.0 delivers enterprise-scale municipal transit perception and finan
 
 Plans:
 **Wave 1**
-- [ ] 01-01: Dual database dialect layer with SQLAlchemy and PostGIS spatial geometry mapping.
+- [x] 01-01: Dual database dialect layer with SQLAlchemy and PostGIS spatial geometry mapping.
 
 **Wave 2** *(blocked on Wave 1 completion)*
-- [ ] 01-02: Native PostGIS spatial clustering queries and PgBouncer-compatible connection pool recycling.
+- [x] 01-02: Native PostGIS spatial clustering queries and PgBouncer-compatible connection pool recycling.
 
 ---
 

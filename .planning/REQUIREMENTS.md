@@ -7,9 +7,9 @@
 
 ### 1. Enterprise Scalability & Spatial Engine (SCALE)
 
-- [ ] **SCALE-01**: System provides dual-dialect database support for both SQLite WAL (local testing/demo) and PostgreSQL 16 + PostGIS 3.4 (production multi-fleet).
-- [ ] **SCALE-02**: Road hazard clustering utilizes spatial R-Tree indexing (`ST_DWithin` / `ST_ClusterDBSCAN`) to handle >100,000 historical passes with sub-50ms query latency.
-- [ ] **SCALE-03**: Backend connection pool utilizes async connection recycling with PgBouncer compatibility to support 500+ concurrent fleet buses streaming 5Hz telematics.
+- [x] **SCALE-01**: System provides dual-dialect database support for both SQLite WAL (local testing/demo) and PostgreSQL 16 + PostGIS 3.4 (production multi-fleet).
+- [x] **SCALE-02**: Road hazard clustering utilizes spatial R-Tree indexing (`ST_DWithin` / `ST_ClusterDBSCAN`) to handle >100,000 historical passes with sub-50ms query latency.
+- [x] **SCALE-03**: Backend connection pool utilizes async connection recycling with PgBouncer compatibility to support 500+ concurrent fleet buses streaming 5Hz telematics.
 
 ### 2. Edge NPU & Hardware Telematics Suite (EDGE)
 
