@@ -27,7 +27,9 @@ import {
   ArrowUpDown,
   ArrowUp,
   ArrowDown,
-  Printer
+  Printer,
+  AlertOctagon,
+  Zap
 } from 'lucide-react';
 import { HazardCluster, WorkOrderStatus } from '../types';
 import { useLanguage } from '../context/LanguageContext';
@@ -40,6 +42,54 @@ import { SyntheticGeneratorControl } from '../components/common/SyntheticGenerat
 import { useAuth } from '../context/AuthContext';
 import { api } from '../services/api';
 import { useToast } from '../context/ToastContext';
+
+export interface SvgGaugeProps {
+  percentage: number;
+  strokeColor: string;
+  trackColor?: string;
+  size?: number;
+  strokeWidth?: number;
+  children?: React.ReactNode;
+}
+
+export const SvgGauge: React.FC<SvgGaugeProps> = ({
+  percentage,
+  strokeColor,
+  trackColor = "stroke-slate-200 dark:stroke-slate-800",
+  size = 48,
+  strokeWidth = 4,
+  children
+}) => {
+  const radius = (size - strokeWidth) / 2;
+  const circumference = 2 * Math.PI * radius;
+  const clamped = Math.min(100, Math.max(0, percentage));
+  const strokeDashoffset = circumference - (clamped / 100) * circumference;
+
+  return (
+    <div className="relative inline-flex items-center justify-center shrink-0" style={{ width: size, height: size }}>
+      <svg className="w-full h-full -rotate-90 transform" viewBox={`0 0 ${size} ${size}`}>
+        <circle
+          cx={size / 2}
+          cy={size / 2}
+          r={radius}
+          className={`${trackColor} fill-transparent`}
+          strokeWidth={strokeWidth}
+        />
+        <circle
+          cx={size / 2}
+          cy={size / 2}
+          r={radius}
+          className={`${strokeColor} fill-transparent transition-all duration-700 ease-out`}
+          strokeWidth={strokeWidth}
+          strokeDasharray={circumference}
+          strokeDashoffset={strokeDashoffset}
+          strokeLinecap="round"
+        />
+      </svg>
+      {children && <div className="absolute inset-0 flex items-center justify-center">{children}</div>}
+    </div>
+  );
+};
 
 interface WorkOrdersProps {
   clusters: HazardCluster[];
@@ -285,12 +335,53 @@ export const WorkOrders: React.FC<WorkOrdersProps> = ({ clusters, onUpdateStatus
   const totalPages = Math.max(1, Math.ceil(filteredAndSortedClusters.length / PAGE_SIZE));
   const paginatedClusters = filteredAndSortedClusters.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
 
-  // KPI calculations
+  // Executive KPI calculations
   const totalCount = clusters.length;
-  const openCount = clusters.filter((c) => c.status === 'open' || c.status === 'assigned').length;
-  const inProgressCount = clusters.filter((c) => c.status === 'in_progress').length;
-  const closedCount = clusters.filter((c) => c.status === 'verified_closed' || c.status === 'resolved').length;
-  const totalBudget = clusters.reduce((acc, c) => acc + calculateMaterial(c).costInr, 0);
+  const activeClusters = useMemo(() => 
+    clusters.filter(c => ['open', 'assigned', 'in_progress', 'reinspection_pending'].includes(c.status)),
+    [clusters]
+  );
+  const activeCount = activeClusters.length;
+  const inProgressCount = useMemo(() => 
+    clusters.filter(c => c.status === 'in_progress' || c.status === 'reinspection_pending').length,
+    [clusters]
+  );
+  const closedCount = useMemo(() => 
+    clusters.filter(c => c.status === 'verified_closed' || c.status === 'resolved').length,
+    [clusters]
+  );
+  const completionRatio = totalCount > 0 ? (closedCount / totalCount) * 100 : 0;
+
+  const criticalClusters = useMemo(() => 
+    clusters.filter(c => 
+      (c.severity_level === 'critical' || (c as any).severity === 'critical' || (c.sla_hours || 24) <= 6 || (c as any).is_breached) &&
+      !['resolved', 'verified_closed'].includes(c.status)
+    ),
+    [clusters]
+  );
+  const criticalCount = criticalClusters.length;
+  const breachedCount = useMemo(() => 
+    clusters.filter(c => ((c as any).is_breached || (c.sla_hours || 24) <= 0) && !['resolved', 'verified_closed'].includes(c.status)).length,
+    [clusters]
+  );
+  const criticalRiskRatio = activeCount > 0 ? Math.min(100, (criticalCount / activeCount) * 100) : 0;
+
+  const totalBudget = useMemo(() => 
+    clusters.reduce((acc, c) => acc + calculateMaterial(c).costInr, 0),
+    [clusters]
+  );
+  const activeAtRiskBudget = useMemo(() => 
+    activeClusters.reduce((acc, c) => acc + calculateMaterial(c).costInr, 0),
+    [activeClusters]
+  );
+  const escrowExposureRatio = totalBudget > 0 ? Math.min(100, (activeAtRiskBudget / totalBudget) * 100) : 0;
+
+  const verifiedClusters = useMemo(() => 
+    clusters.filter(c => c.status === 'verified_closed' || (c.total_observations && c.total_observations >= 3)),
+    [clusters]
+  );
+  const verifiedCount = verifiedClusters.length;
+  const verificationRatio = totalCount > 0 ? Math.min(100, (verifiedCount / totalCount) * 100) : 100;
 
   const handleExportCSV = () => {
     window.open('/api/work-orders/export/csv', '_blank');
@@ -382,185 +473,674 @@ export const WorkOrders: React.FC<WorkOrdersProps> = ({ clusters, onUpdateStatus
           </div>
         </div>
 
+        {/* EXECUTIVE TOP METRICS STRIP (4 PERSISTENT SCORECARDS WITH PURE SVG CIRCULAR GAUGES) */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+          {/* Card 1: Active Work Orders */}
+          <div className="p-3.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs hover:shadow-md transition">
+            <div className="flex items-center justify-between">
+              <div className="space-y-0.5">
+                <span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Active Work Orders</span>
+                <div className="text-2xl font-extrabold text-slate-900 dark:text-white font-mono tabular-nums">
+                  {activeCount}
+                </div>
+                <div className="text-[11px] text-indigo-600 dark:text-indigo-400 font-medium">
+                  {inProgressCount} repairs in progress
+                </div>
+              </div>
+              <SvgGauge
+                percentage={completionRatio}
+                strokeColor="stroke-indigo-600 dark:stroke-indigo-400"
+                trackColor="stroke-slate-100 dark:stroke-slate-800"
+                size={52}
+                strokeWidth={4.5}
+              >
+                <span className="font-mono text-[10px] font-bold text-indigo-700 dark:text-indigo-300 tabular-nums">
+                  {Math.round(completionRatio)}%
+                </span>
+              </SvgGauge>
+            </div>
+            <div className="mt-2 pt-2 border-t border-slate-100 dark:border-slate-800/80 text-[10.5px] text-slate-500 dark:text-slate-400">
+              Repairs actively underway in city corridors
+            </div>
+          </div>
+
+          {/* Card 2: Critical P0 SLA Breaches & Countdowns */}
+          <div className="p-3.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs hover:shadow-md transition">
+            <div className="flex items-center justify-between">
+              <div className="space-y-0.5">
+                <span className="text-[11px] font-semibold text-rose-600 dark:text-rose-400 uppercase tracking-wider">Critical P0 SLA Breaches</span>
+                <div className="text-2xl font-extrabold text-rose-600 dark:text-rose-400 font-mono tabular-nums">
+                  {criticalCount}
+                </div>
+                <div className="text-[11px] text-rose-500 font-medium">
+                  {breachedCount} breached / overdue
+                </div>
+              </div>
+              <SvgGauge
+                percentage={criticalRiskRatio}
+                strokeColor="stroke-rose-600 dark:stroke-rose-400"
+                trackColor="stroke-rose-100 dark:stroke-rose-950/40"
+                size={52}
+                strokeWidth={4.5}
+              >
+                <span className="font-mono text-[10px] font-bold text-rose-600 dark:text-rose-400 tabular-nums">
+                  {Math.round(criticalRiskRatio)}%
+                </span>
+              </SvgGauge>
+            </div>
+            <div className="mt-2 pt-2 border-t border-slate-100 dark:border-slate-800/80 text-[10.5px] text-slate-500 dark:text-slate-400">
+              &lt;6h or SLA breached &bull; MoRTH penalty liability
+            </div>
+          </div>
+
+          {/* Card 3: Total Escrow At Risk (₹) */}
+          <div className="p-3.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs hover:shadow-md transition">
+            <div className="flex items-center justify-between">
+              <div className="space-y-0.5">
+                <span className="text-[11px] font-semibold text-amber-600 dark:text-amber-400 uppercase tracking-wider">Total Escrow At Risk</span>
+                <div className="text-2xl font-extrabold text-amber-600 dark:text-amber-400 font-mono tabular-nums">
+                  ₹{(activeAtRiskBudget / 100000).toFixed(2)} L
+                </div>
+                <div className="text-[11px] text-amber-600/80 font-medium">
+                  Clause 14 DLP exposure
+                </div>
+              </div>
+              <SvgGauge
+                percentage={escrowExposureRatio}
+                strokeColor="stroke-amber-600 dark:stroke-amber-400"
+                trackColor="stroke-amber-100 dark:stroke-amber-950/40"
+                size={52}
+                strokeWidth={4.5}
+              >
+                <span className="font-mono text-[10px] font-bold text-amber-600 dark:text-amber-400 tabular-nums">
+                  {Math.round(escrowExposureRatio)}%
+                </span>
+              </SvgGauge>
+            </div>
+            <div className="mt-2 pt-2 border-t border-slate-100 dark:border-slate-800/80 text-[10.5px] text-slate-500 dark:text-slate-400">
+              CAG / PFMS retention deposits at stake
+            </div>
+          </div>
+
+          {/* Card 4: 3-Pass Verified Repairs */}
+          <div className="p-3.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs hover:shadow-md transition">
+            <div className="flex items-center justify-between">
+              <div className="space-y-0.5">
+                <span className="text-[11px] font-semibold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider">3-Pass Verified Repairs</span>
+                <div className="text-2xl font-extrabold text-emerald-600 dark:text-emerald-400 font-mono tabular-nums">
+                  {verifiedCount}
+                </div>
+                <div className="text-[11px] text-emerald-600 font-medium">
+                  100% sensor consensus
+                </div>
+              </div>
+              <SvgGauge
+                percentage={verificationRatio}
+                strokeColor="stroke-emerald-600 dark:stroke-emerald-400"
+                trackColor="stroke-emerald-100 dark:stroke-emerald-950/40"
+                size={52}
+                strokeWidth={4.5}
+              >
+                <span className="font-mono text-[10px] font-bold text-emerald-600 dark:text-emerald-400 tabular-nums">
+                  {Math.round(verificationRatio)}%
+                </span>
+              </SvgGauge>
+            </div>
+            <div className="mt-2 pt-2 border-t border-slate-100 dark:border-slate-800/80 text-[10.5px] text-slate-500 dark:text-slate-400">
+              Multi-bus consensus &bull; Ready for escrow release
+            </div>
+          </div>
+        </div>
+
         {activeTab === 'sla' ? (
           <ContractorSlaLedger clusters={clusters} />
         ) : activeTab === 'kanban' ? (
-          /* KANBAN BOARD 4-SWIMLANE VIEW */
+          /* MODERNIZED HIGH-CONTRAST KANBAN BOARD (4 OPERATIONAL SWIMLANES) */
           <div className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
-              {/* Lane 1: Auto-Detected (Open) */}
-              <div className="flex flex-col bg-zinc-100/80 dark:bg-zinc-900/60 rounded-xl border border-zinc-200 dark:border-zinc-800 p-3.5 space-y-3">
-                <div className="flex items-center justify-between pb-2 border-b border-zinc-200 dark:border-zinc-800">
+              {/* Lane 1: Assigned */}
+              <div className="flex flex-col bg-slate-100/80 dark:bg-slate-900/60 rounded-xl border border-slate-200 dark:border-slate-800 p-3.5 space-y-3">
+                <div className="flex items-center justify-between pb-2 border-b border-slate-200 dark:border-slate-800">
                   <div className="flex items-center gap-2">
-                    <span className="w-2.5 h-2.5 rounded-full bg-rose-500" />
-                    <h4 className="font-bold text-xs uppercase tracking-wider text-zinc-800 dark:text-zinc-200">1. Auto-Detected (Open)</h4>
+                    <span className="w-2.5 h-2.5 rounded-full bg-indigo-500" />
+                    <h4 className="font-bold text-xs uppercase tracking-wider text-slate-800 dark:text-slate-200">1. Assigned</h4>
                   </div>
-                  <span className="text-[11px] font-mono font-bold px-2 py-0.5 rounded-full bg-rose-100 dark:bg-rose-950/60 text-rose-700 dark:text-rose-300">
-                    {clusters.filter(c => c.status === 'open').length}
+                  <span className="text-[11px] font-mono font-bold px-2 py-0.5 rounded-full bg-indigo-100 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 tabular-nums">
+                    {clusters.filter(c => c.status === 'assigned' || c.status === 'open').length}
                   </span>
                 </div>
 
                 <div className="space-y-2.5 flex-1 overflow-y-auto max-h-[68vh] custom-scrollbar pr-1">
-                  {clusters.filter(c => c.status === 'open').map(c => (
-                    <div key={c.id} className="p-3.5 rounded-lg bg-white dark:bg-zinc-900 border border-rose-200 dark:border-rose-900/40 shadow-xs space-y-2.5 hover:shadow-md transition">
-                      <div className="flex items-center justify-between">
-                        <span className="font-mono font-extrabold text-xs text-rose-600 dark:text-rose-400">{c.cluster_code || c.id}</span>
-                        <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded bg-rose-50 dark:bg-rose-900/30 text-rose-600 border border-rose-200 dark:border-rose-800">
-                          RPI {c.rpi_boosted ?? c.rpi_score}
-                        </span>
-                      </div>
-                      <div className="text-xs font-bold text-zinc-900 dark:text-white truncate">{c.road_name}</div>
-                      <div className="flex items-center justify-between text-[11px] text-zinc-500">
-                        <span>{c.defect_name}</span>
-                        <span className="text-rose-600 font-semibold font-mono">SLA: {c.sla_hours}h</span>
-                      </div>
-                      <button
-                        onClick={() => requestStatusUpdate(c.id, 'assigned')}
-                        className="w-full py-1.5 rounded-md bg-blue-50 dark:bg-blue-900/30 hover:bg-blue-600 hover:text-white text-blue-700 dark:text-blue-300 font-bold text-[11px] border border-blue-200 dark:border-blue-800 transition flex items-center justify-center gap-1 cursor-pointer"
-                      >
-                        <span>Assign to Contractor</span>
-                        <ChevronRight className="w-3 h-3" />
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              </div>
+                  {clusters.filter(c => c.status === 'assigned' || c.status === 'open').map(c => {
+                    const material = calculateMaterial(c);
+                    const remainingHours = c.sla_hours || 24;
+                    const isBreached = (c as any).is_breached || remainingHours <= 0;
+                    const slaPercent = Math.min(100, Math.max(10, (remainingHours / 24) * 100));
+                    const ringColor = isBreached || remainingHours < 6 ? 'stroke-rose-500' : remainingHours <= 12 ? 'stroke-amber-500' : 'stroke-emerald-500';
 
-              {/* Lane 2: Assigned to Contractor */}
-              <div className="flex flex-col bg-zinc-100/80 dark:bg-zinc-900/60 rounded-xl border border-zinc-200 dark:border-zinc-800 p-3.5 space-y-3">
-                <div className="flex items-center justify-between pb-2 border-b border-zinc-200 dark:border-zinc-800">
-                  <div className="flex items-center gap-2">
-                    <span className="w-2.5 h-2.5 rounded-full bg-amber-500" />
-                    <h4 className="font-bold text-xs uppercase tracking-wider text-zinc-800 dark:text-zinc-200">2. Contractor Assigned</h4>
-                  </div>
-                  <span className="text-[11px] font-mono font-bold px-2 py-0.5 rounded-full bg-amber-100 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300">
-                    {clusters.filter(c => c.status === 'assigned').length}
-                  </span>
-                </div>
+                    return (
+                      <div key={c.id} className="p-3 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs hover:shadow-md transition space-y-2.5">
+                        <div className="relative w-full h-24 rounded-lg overflow-hidden border border-slate-100 dark:border-slate-800 bg-slate-950 group">
+                          <img
+                            src={c.before_image_url || (c as any).evidence_img || "/evidence/bus_pass_1_detect.jpg"}
+                            alt={c.defect_name || "Defect"}
+                            className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                            onError={(e) => {
+                              (e.currentTarget as HTMLImageElement).src = "/evidence/bus_pass_1_detect.jpg";
+                            }}
+                          />
+                          <div className="absolute top-1.5 left-1.5 flex items-center gap-1">
+                            <span className="font-mono font-extrabold text-[10px] px-1.5 py-0.5 rounded bg-black/75 backdrop-blur-xs text-white border border-white/20 tabular-nums">
+                              {c.cluster_code || c.id}
+                            </span>
+                          </div>
+                          <div className="absolute top-1.5 right-1.5">
+                            <span className={`px-1.5 py-0.5 rounded text-[9.5px] font-bold font-mono border backdrop-blur-xs tabular-nums ${
+                              c.severity_level === 'critical'
+                                ? 'bg-rose-950/80 text-rose-300 border-rose-700'
+                                : c.severity_level === 'high'
+                                  ? 'bg-amber-950/80 text-amber-300 border-amber-700'
+                                  : 'bg-slate-900/80 text-slate-300 border-slate-700'
+                            }`}>
+                              RPI {c.rpi_boosted ?? c.rpi_score ?? 75}
+                            </span>
+                          </div>
+                        </div>
 
-                <div className="space-y-2.5 flex-1 overflow-y-auto max-h-[68vh] custom-scrollbar pr-1">
-                  {clusters.filter(c => c.status === 'assigned').map(c => (
-                    <div key={c.id} className="p-3.5 rounded-lg bg-white dark:bg-zinc-900 border border-amber-200 dark:border-amber-900/40 shadow-xs space-y-2.5 hover:shadow-md transition">
-                      <div className="flex items-center justify-between">
-                        <span className="font-mono font-extrabold text-xs text-amber-600 dark:text-amber-400">{c.cluster_code || c.id}</span>
-                        <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800">
-                          {c.assigned_agency}
-                        </span>
-                      </div>
-                      <div className="text-xs font-bold text-zinc-900 dark:text-white truncate">{c.road_name}</div>
-                      <div className="flex items-center justify-between text-[11px] text-zinc-500">
-                        <span>Est: ₹{calculateMaterial(c).costInr}</span>
-                        <span className="text-amber-600 font-mono font-semibold">24h Active</span>
-                      </div>
-                      <div className="flex items-center gap-1.5">
-                        <button
-                          onClick={() => requestStatusUpdate(c.id, 'open')}
-                          className="px-2 py-1.5 rounded-md bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-600 dark:text-zinc-300 font-semibold text-[10.5px] border border-zinc-200 dark:border-zinc-700 transition cursor-pointer"
-                          title="Return to Open pool"
-                        >
-                          ← Open
-                        </button>
+                        <div>
+                          <div className="text-xs font-bold text-slate-900 dark:text-white truncate">
+                            {c.road_name || "Chennai Metropolitan Corridor"}
+                          </div>
+                          <div className="flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
+                            <span className="truncate max-w-[150px]">{c.defect_name}</span>
+                            <span className="font-mono font-bold text-emerald-600 dark:text-emerald-400 tabular-nums">
+                              ₹{material.costInr.toLocaleString()}
+                            </span>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center justify-between gap-1.5 pt-1 border-t border-slate-100 dark:border-slate-800/80">
+                          <div className="flex items-center gap-1.5">
+                            <SvgGauge
+                              percentage={slaPercent}
+                              strokeColor={ringColor}
+                              trackColor="stroke-slate-200 dark:stroke-slate-800"
+                              size={28}
+                              strokeWidth={3}
+                            >
+                              <Clock className={`w-2.5 h-2.5 ${isBreached || remainingHours < 6 ? 'text-rose-500' : remainingHours <= 12 ? 'text-amber-500' : 'text-emerald-500'}`} />
+                            </SvgGauge>
+                            <div className="font-mono text-[10px] leading-tight">
+                              <div className={`font-bold tabular-nums ${isBreached || remainingHours < 6 ? 'text-rose-600 dark:text-rose-400' : remainingHours <= 12 ? 'text-amber-600 dark:text-amber-400' : 'text-emerald-600 dark:text-emerald-400'}`}>
+                                {remainingHours}h SLA
+                              </div>
+                              <div className="text-[9px] text-slate-400">
+                                {isBreached ? 'Breached' : `${remainingHours}h left`}
+                              </div>
+                            </div>
+                          </div>
+
+                          <span className="bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-mono text-[10px] px-2 py-0.5 rounded border border-slate-200 dark:border-slate-700 font-bold truncate max-w-[120px]" title={c.assigned_agency}>
+                            {c.assigned_agency || "L&T Highways"}
+                          </span>
+                        </div>
+
+                        <div className="flex items-center justify-between">
+                          <span className="px-2 py-0.5 rounded text-[10px] font-mono font-medium bg-amber-50 dark:bg-amber-950/50 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800 flex items-center gap-1">
+                            <Clock className="w-3 h-3 text-amber-500" />
+                            <span>Concurrence Pending</span>
+                          </span>
+
+                          <div className="flex items-center gap-1">
+                            <button
+                              onClick={() => openConsole(c, 'cad_audit')}
+                              className="p-1 rounded bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 transition cursor-pointer"
+                              title="Inspect CAD Audit"
+                            >
+                              <Eye className="w-3 h-3 text-blue-500" />
+                            </button>
+                            <button
+                              onClick={() => openConsole(c, 'contractor_sla')}
+                              disabled={!canDispatchWorkOrder}
+                              className={`p-1 rounded transition ${
+                                canDispatchWorkOrder
+                                  ? 'bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 cursor-pointer'
+                                  : 'opacity-40 cursor-not-allowed bg-slate-100 dark:bg-slate-800 text-slate-400'
+                              }`}
+                              title="Dispatch Notice"
+                            >
+                              <Send className="w-3 h-3 text-indigo-500" />
+                            </button>
+                            <button
+                              onClick={() => openConsole(c, 'concurrence_release')}
+                              className="p-1 rounded bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 transition cursor-pointer"
+                              title="Release Escrow Concurrence"
+                            >
+                              <ShieldCheck className="w-3 h-3 text-emerald-500" />
+                            </button>
+                          </div>
+                        </div>
+
                         <button
                           onClick={() => requestStatusUpdate(c.id, 'in_progress')}
-                          className="flex-1 py-1.5 rounded-md bg-amber-50 dark:bg-amber-900/30 hover:bg-amber-600 hover:text-white text-amber-800 dark:text-amber-300 font-bold text-[11px] border border-amber-200 dark:border-amber-800 transition flex items-center justify-center gap-1 cursor-pointer"
+                          className="w-full py-1.5 rounded-lg bg-amber-50 dark:bg-amber-950/50 hover:bg-amber-600 hover:text-white text-amber-800 dark:text-amber-300 font-bold text-[11px] border border-amber-200 dark:border-amber-800 transition flex items-center justify-center gap-1 cursor-pointer"
                         >
                           <span>Commence Repair</span>
-                          <ChevronRight className="w-3 h-3" />
+                          <ChevronRight className="w-3.5 h-3.5" />
                         </button>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
 
-              {/* Lane 3: Under Repair (SLA Active) */}
-              <div className="flex flex-col bg-zinc-100/80 dark:bg-zinc-900/60 rounded-xl border border-zinc-200 dark:border-zinc-800 p-3.5 space-y-3">
-                <div className="flex items-center justify-between pb-2 border-b border-zinc-200 dark:border-zinc-800">
+              {/* Lane 2: In Progress */}
+              <div className="flex flex-col bg-slate-100/80 dark:bg-slate-900/60 rounded-xl border border-slate-200 dark:border-slate-800 p-3.5 space-y-3">
+                <div className="flex items-center justify-between pb-2 border-b border-slate-200 dark:border-slate-800">
                   <div className="flex items-center gap-2">
-                    <span className="w-2.5 h-2.5 rounded-full bg-blue-500" />
-                    <h4 className="font-bold text-xs uppercase tracking-wider text-zinc-800 dark:text-zinc-200">3. Under Repair (In Progress)</h4>
+                    <span className="w-2.5 h-2.5 rounded-full bg-amber-500" />
+                    <h4 className="font-bold text-xs uppercase tracking-wider text-slate-800 dark:text-slate-200">2. In Progress</h4>
                   </div>
-                  <span className="text-[11px] font-mono font-bold px-2 py-0.5 rounded-full bg-blue-100 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300">
+                  <span className="text-[11px] font-mono font-bold px-2 py-0.5 rounded-full bg-amber-100 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 tabular-nums">
                     {clusters.filter(c => c.status === 'in_progress' || c.status === 'reinspection_pending').length}
                   </span>
                 </div>
 
                 <div className="space-y-2.5 flex-1 overflow-y-auto max-h-[68vh] custom-scrollbar pr-1">
-                  {clusters.filter(c => c.status === 'in_progress' || c.status === 'reinspection_pending').map(c => (
-                    <div key={c.id} className="p-3.5 rounded-lg bg-white dark:bg-zinc-900 border border-blue-200 dark:border-blue-900/40 shadow-xs space-y-2.5 hover:shadow-md transition">
-                      <div className="flex items-center justify-between">
-                        <span className="font-mono font-extrabold text-xs text-blue-600 dark:text-blue-400">{c.cluster_code || c.id}</span>
-                        <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-blue-50 dark:bg-blue-900/30 text-blue-600 border border-blue-200 dark:border-blue-800">
-                          {c.status === 'reinspection_pending' ? 'Reinspection' : 'VG-30 Hot Mix'}
-                        </span>
+                  {clusters.filter(c => c.status === 'in_progress' || c.status === 'reinspection_pending').map(c => {
+                    const material = calculateMaterial(c);
+                    const remainingHours = c.sla_hours || 24;
+                    const isBreached = (c as any).is_breached || remainingHours <= 0;
+                    const slaPercent = Math.min(100, Math.max(10, (remainingHours / 24) * 100));
+                    const ringColor = isBreached || remainingHours < 6 ? 'stroke-rose-500' : remainingHours <= 12 ? 'stroke-amber-500' : 'stroke-emerald-500';
+
+                    return (
+                      <div key={c.id} className="p-3 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs hover:shadow-md transition space-y-2.5">
+                        <div className="relative w-full h-24 rounded-lg overflow-hidden border border-slate-100 dark:border-slate-800 bg-slate-950 group">
+                          <img
+                            src={c.before_image_url || (c as any).evidence_img || "/evidence/bus_pass_1_detect.jpg"}
+                            alt={c.defect_name || "Defect"}
+                            className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                            onError={(e) => {
+                              (e.currentTarget as HTMLImageElement).src = "/evidence/bus_pass_1_detect.jpg";
+                            }}
+                          />
+                          <div className="absolute top-1.5 left-1.5 flex items-center gap-1">
+                            <span className="font-mono font-extrabold text-[10px] px-1.5 py-0.5 rounded bg-black/75 backdrop-blur-xs text-white border border-white/20 tabular-nums">
+                              {c.cluster_code || c.id}
+                            </span>
+                          </div>
+                          <div className="absolute top-1.5 right-1.5">
+                            <span className={`px-1.5 py-0.5 rounded text-[9.5px] font-bold font-mono border backdrop-blur-xs tabular-nums ${
+                              c.severity_level === 'critical'
+                                ? 'bg-rose-950/80 text-rose-300 border-rose-700'
+                                : c.severity_level === 'high'
+                                  ? 'bg-amber-950/80 text-amber-300 border-amber-700'
+                                  : 'bg-slate-900/80 text-slate-300 border-slate-700'
+                            }`}>
+                              RPI {c.rpi_boosted ?? c.rpi_score ?? 75}
+                            </span>
+                          </div>
+                        </div>
+
+                        <div>
+                          <div className="text-xs font-bold text-slate-900 dark:text-white truncate">
+                            {c.road_name || "Chennai Metropolitan Corridor"}
+                          </div>
+                          <div className="flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
+                            <span className="truncate max-w-[150px]">{c.defect_name}</span>
+                            <span className="font-mono font-bold text-emerald-600 dark:text-emerald-400 tabular-nums">
+                              ₹{material.costInr.toLocaleString()}
+                            </span>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center justify-between gap-1.5 pt-1 border-t border-slate-100 dark:border-slate-800/80">
+                          <div className="flex items-center gap-1.5">
+                            <SvgGauge
+                              percentage={slaPercent}
+                              strokeColor={ringColor}
+                              trackColor="stroke-slate-200 dark:stroke-slate-800"
+                              size={28}
+                              strokeWidth={3}
+                            >
+                              <Clock className={`w-2.5 h-2.5 ${isBreached || remainingHours < 6 ? 'text-rose-500' : remainingHours <= 12 ? 'text-amber-500' : 'text-emerald-500'}`} />
+                            </SvgGauge>
+                            <div className="font-mono text-[10px] leading-tight">
+                              <div className={`font-bold tabular-nums ${isBreached || remainingHours < 6 ? 'text-rose-600 dark:text-rose-400' : remainingHours <= 12 ? 'text-amber-600 dark:text-amber-400' : 'text-emerald-600 dark:text-emerald-400'}`}>
+                                {remainingHours}h SLA
+                              </div>
+                              <div className="text-[9px] text-slate-400">
+                                {isBreached ? 'Breached' : `${remainingHours}h left`}
+                              </div>
+                            </div>
+                          </div>
+
+                          <span className="bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-mono text-[10px] px-2 py-0.5 rounded border border-slate-200 dark:border-slate-700 font-bold truncate max-w-[120px]" title={c.assigned_agency}>
+                            {c.assigned_agency || "L&T Highways"}
+                          </span>
+                        </div>
+
+                        <div className="flex items-center justify-between">
+                          <span className="px-2 py-0.5 rounded text-[10px] font-mono font-medium bg-blue-50 dark:bg-blue-950/50 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800 flex items-center gap-1">
+                            <Wrench className="w-3 h-3 text-blue-500" />
+                            <span>Repair Active</span>
+                          </span>
+
+                          <div className="flex items-center gap-1">
+                            <button
+                              onClick={() => openConsole(c, 'cad_audit')}
+                              className="p-1 rounded bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 transition cursor-pointer"
+                              title="Inspect CAD Audit"
+                            >
+                              <Eye className="w-3 h-3 text-blue-500" />
+                            </button>
+                            <button
+                              onClick={() => openConsole(c, 'contractor_sla')}
+                              disabled={!canDispatchWorkOrder}
+                              className={`p-1 rounded transition ${
+                                canDispatchWorkOrder
+                                  ? 'bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 cursor-pointer'
+                                  : 'opacity-40 cursor-not-allowed bg-slate-100 dark:bg-slate-800 text-slate-400'
+                              }`}
+                              title="Dispatch Notice"
+                            >
+                              <Send className="w-3 h-3 text-indigo-500" />
+                            </button>
+                            <button
+                              onClick={() => openConsole(c, 'concurrence_release')}
+                              className="p-1 rounded bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 transition cursor-pointer"
+                              title="Release Escrow Concurrence"
+                            >
+                              <ShieldCheck className="w-3 h-3 text-emerald-500" />
+                            </button>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-1.5">
+                          <button
+                            onClick={() => requestStatusUpdate(c.id, 'assigned')}
+                            className="px-2 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 font-semibold text-[10.5px] border border-slate-200 dark:border-slate-700 transition cursor-pointer"
+                            title="Return to Assigned"
+                          >
+                            &larr; Assigned
+                          </button>
+                          <button
+                            onClick={() => requestStatusUpdate(c.id, 'resolved')}
+                            className="flex-1 py-1.5 rounded-lg bg-blue-50 dark:bg-blue-950/50 hover:bg-blue-600 hover:text-white text-blue-800 dark:text-blue-300 font-bold text-[11px] border border-blue-200 dark:border-blue-800 transition flex items-center justify-center gap-1 cursor-pointer"
+                          >
+                            <span>Mark Resolved</span>
+                            <ChevronRight className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
                       </div>
-                      <div className="text-xs font-bold text-zinc-900 dark:text-white truncate">{c.road_name}</div>
-                      <div className="flex items-center justify-between text-[11px] text-zinc-500">
-                        <span>{c.assigned_agency}</span>
-                        <span className="text-blue-600 font-mono font-semibold">Rolling In Progress</span>
-                      </div>
-                      <div className="flex items-center gap-1.5">
-                        <button
-                          onClick={() => requestStatusUpdate(c.id, 'assigned')}
-                          className="px-2 py-1.5 rounded-md bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-600 dark:text-zinc-300 font-semibold text-[10.5px] border border-zinc-200 dark:border-zinc-700 transition cursor-pointer"
-                          title="Return to Assigned"
-                        >
-                          ← Assigned
-                        </button>
-                        <button
-                          onClick={() => requestStatusUpdate(c.id, 'verified_closed', 'https://images.unsplash.com/photo-1541888946425-d0fbb186156f?w=800&auto=format&fit=crop&q=80', '[AUTONOMOUS_FLEET_CLOSURE] Verified closed by Fleet Node BUS-MTC-19B on re-pass patrol. Gz=0.98g normal.')}
-                          className="flex-1 py-1.5 rounded-md bg-emerald-50 dark:bg-emerald-900/30 hover:bg-emerald-600 hover:text-white text-emerald-800 dark:text-emerald-300 font-bold text-[11px] border border-emerald-200 dark:border-emerald-800 transition flex items-center justify-center gap-1 cursor-pointer"
-                        >
-                          <Sparkles className="w-3 h-3 text-emerald-500" />
-                          <span>Simulate Re-Pass Close</span>
-                        </button>
-                      </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
 
-              {/* Lane 4: Fleet Re-Pass Verified & Closed */}
-              <div className="flex flex-col bg-zinc-100/80 dark:bg-zinc-900/60 rounded-xl border border-zinc-200 dark:border-zinc-800 p-3.5 space-y-3">
-                <div className="flex items-center justify-between pb-2 border-b border-zinc-200 dark:border-zinc-800">
+              {/* Lane 3: Resolved */}
+              <div className="flex flex-col bg-slate-100/80 dark:bg-slate-900/60 rounded-xl border border-slate-200 dark:border-slate-800 p-3.5 space-y-3">
+                <div className="flex items-center justify-between pb-2 border-b border-slate-200 dark:border-slate-800">
                   <div className="flex items-center gap-2">
-                    <span className="w-2.5 h-2.5 rounded-full bg-emerald-500" />
-                    <h4 className="font-bold text-xs uppercase tracking-wider text-zinc-800 dark:text-zinc-200">4. Re-Pass Verified &amp; Closed</h4>
+                    <span className="w-2.5 h-2.5 rounded-full bg-blue-500" />
+                    <h4 className="font-bold text-xs uppercase tracking-wider text-slate-800 dark:text-slate-200">3. Resolved</h4>
                   </div>
-                  <span className="text-[11px] font-mono font-bold px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300">
-                    {clusters.filter(c => c.status === 'verified_closed' || c.status === 'resolved').length}
+                  <span className="text-[11px] font-mono font-bold px-2 py-0.5 rounded-full bg-blue-100 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 tabular-nums">
+                    {clusters.filter(c => c.status === 'resolved').length}
                   </span>
                 </div>
 
                 <div className="space-y-2.5 flex-1 overflow-y-auto max-h-[68vh] custom-scrollbar pr-1">
-                  {clusters.filter(c => c.status === 'verified_closed' || c.status === 'resolved').map(c => (
-                    <div key={c.id} className="p-3.5 rounded-lg bg-white dark:bg-zinc-900 border border-emerald-200 dark:border-emerald-900/40 shadow-xs space-y-2.5 hover:shadow-md transition">
-                      <div className="flex items-center justify-between">
-                        <span className="font-mono font-extrabold text-xs text-emerald-600 dark:text-emerald-400">{c.cluster_code || c.id}</span>
-                        <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
-                          Gz = 0.98g
-                        </span>
-                      </div>
-                      <div className="text-xs font-bold text-zinc-900 dark:text-white truncate">{c.road_name}</div>
-                      <div className="flex items-center justify-between text-[11px] text-zinc-500">
-                        <span className="text-emerald-600 font-semibold font-mono">MoHUA Hash Verified</span>
-                        <span>Passes: {c.pass_count}</span>
-                      </div>
-                      <div className="flex items-center justify-between gap-1.5">
-                        <div className="flex-1 py-1 rounded-md bg-emerald-100/60 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300 font-semibold text-[10.5px] text-center border border-emerald-200 dark:border-emerald-800 flex items-center justify-center gap-1">
-                          <ShieldCheck className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
-                          <span>SLA Verified</span>
+                  {clusters.filter(c => c.status === 'resolved').map(c => {
+                    const material = calculateMaterial(c);
+                    const remainingHours = c.sla_hours || 24;
+                    const isBreached = (c as any).is_breached || remainingHours <= 0;
+                    const slaPercent = Math.min(100, Math.max(10, (remainingHours / 24) * 100));
+                    const ringColor = isBreached || remainingHours < 6 ? 'stroke-rose-500' : remainingHours <= 12 ? 'stroke-amber-500' : 'stroke-emerald-500';
+
+                    return (
+                      <div key={c.id} className="p-3 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs hover:shadow-md transition space-y-2.5">
+                        <div className="relative w-full h-24 rounded-lg overflow-hidden border border-slate-100 dark:border-slate-800 bg-slate-950 group">
+                          <img
+                            src={c.before_image_url || (c as any).evidence_img || "/evidence/bus_pass_1_detect.jpg"}
+                            alt={c.defect_name || "Defect"}
+                            className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                            onError={(e) => {
+                              (e.currentTarget as HTMLImageElement).src = "/evidence/bus_pass_1_detect.jpg";
+                            }}
+                          />
+                          <div className="absolute top-1.5 left-1.5 flex items-center gap-1">
+                            <span className="font-mono font-extrabold text-[10px] px-1.5 py-0.5 rounded bg-black/75 backdrop-blur-xs text-white border border-white/20 tabular-nums">
+                              {c.cluster_code || c.id}
+                            </span>
+                          </div>
+                          <div className="absolute top-1.5 right-1.5">
+                            <span className={`px-1.5 py-0.5 rounded text-[9.5px] font-bold font-mono border backdrop-blur-xs tabular-nums ${
+                              c.severity_level === 'critical'
+                                ? 'bg-rose-950/80 text-rose-300 border-rose-700'
+                                : c.severity_level === 'high'
+                                  ? 'bg-amber-950/80 text-amber-300 border-amber-700'
+                                  : 'bg-slate-900/80 text-slate-300 border-slate-700'
+                            }`}>
+                              RPI {c.rpi_boosted ?? c.rpi_score ?? 75}
+                            </span>
+                          </div>
                         </div>
-                        <button
-                          onClick={() => requestStatusUpdate(c.id, 'in_progress')}
-                          className="px-2 py-1 rounded-md bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-600 dark:text-zinc-300 font-semibold text-[10px] border border-zinc-200 dark:border-zinc-700 transition cursor-pointer"
-                          title="Reopen for maintenance"
-                        >
-                          Reopen
-                        </button>
+
+                        <div>
+                          <div className="text-xs font-bold text-slate-900 dark:text-white truncate">
+                            {c.road_name || "Chennai Metropolitan Corridor"}
+                          </div>
+                          <div className="flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
+                            <span className="truncate max-w-[150px]">{c.defect_name}</span>
+                            <span className="font-mono font-bold text-emerald-600 dark:text-emerald-400 tabular-nums">
+                              ₹{material.costInr.toLocaleString()}
+                            </span>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center justify-between gap-1.5 pt-1 border-t border-slate-100 dark:border-slate-800/80">
+                          <div className="flex items-center gap-1.5">
+                            <SvgGauge
+                              percentage={slaPercent}
+                              strokeColor={ringColor}
+                              trackColor="stroke-slate-200 dark:stroke-slate-800"
+                              size={28}
+                              strokeWidth={3}
+                            >
+                              <Clock className={`w-2.5 h-2.5 ${isBreached || remainingHours < 6 ? 'text-rose-500' : remainingHours <= 12 ? 'text-amber-500' : 'text-emerald-500'}`} />
+                            </SvgGauge>
+                            <div className="font-mono text-[10px] leading-tight">
+                              <div className={`font-bold tabular-nums ${isBreached || remainingHours < 6 ? 'text-rose-600 dark:text-rose-400' : remainingHours <= 12 ? 'text-amber-600 dark:text-amber-400' : 'text-emerald-600 dark:text-emerald-400'}`}>
+                                {remainingHours}h SLA
+                              </div>
+                              <div className="text-[9px] text-slate-400">
+                                {isBreached ? 'Breached' : `${remainingHours}h left`}
+                              </div>
+                            </div>
+                          </div>
+
+                          <span className="bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-mono text-[10px] px-2 py-0.5 rounded border border-slate-200 dark:border-slate-700 font-bold truncate max-w-[120px]" title={c.assigned_agency}>
+                            {c.assigned_agency || "L&T Highways"}
+                          </span>
+                        </div>
+
+                        <div className="flex items-center justify-between">
+                          <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-blue-50 dark:bg-blue-950/50 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800 flex items-center gap-1">
+                            <Sparkles className="w-3 h-3 text-blue-500" />
+                            <span>Awaiting Re-Pass</span>
+                          </span>
+
+                          <div className="flex items-center gap-1">
+                            <button
+                              onClick={() => openConsole(c, 'cad_audit')}
+                              className="p-1 rounded bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 transition cursor-pointer"
+                              title="Inspect CAD Audit"
+                            >
+                              <Eye className="w-3 h-3 text-blue-500" />
+                            </button>
+                            <button
+                              onClick={() => openConsole(c, 'contractor_sla')}
+                              disabled={!canDispatchWorkOrder}
+                              className={`p-1 rounded transition ${
+                                canDispatchWorkOrder
+                                  ? 'bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 cursor-pointer'
+                                  : 'opacity-40 cursor-not-allowed bg-slate-100 dark:bg-slate-800 text-slate-400'
+                              }`}
+                              title="Dispatch Notice"
+                            >
+                              <Send className="w-3 h-3 text-indigo-500" />
+                            </button>
+                            <button
+                              onClick={() => openConsole(c, 'concurrence_release')}
+                              className="p-1 rounded bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 transition cursor-pointer"
+                              title="Release Escrow Concurrence"
+                            >
+                              <ShieldCheck className="w-3 h-3 text-emerald-500" />
+                            </button>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-1.5">
+                          <button
+                            onClick={() => requestStatusUpdate(c.id, 'in_progress')}
+                            className="px-2 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 font-semibold text-[10.5px] border border-slate-200 dark:border-slate-700 transition cursor-pointer"
+                            title="Return to In Progress"
+                          >
+                            &larr; Repair
+                          </button>
+                          <button
+                            onClick={() => requestStatusUpdate(c.id, 'verified_closed', 'https://images.unsplash.com/photo-1541888946425-d0fbb186156f?w=800&auto=format&fit=crop&q=80', '[AUTONOMOUS_FLEET_CLOSURE] Verified closed by Fleet Node BUS-MTC-19B on re-pass patrol. Gz=0.98g normal.')}
+                            className="flex-1 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-[11px] transition flex items-center justify-center gap-1 cursor-pointer shadow-xs"
+                          >
+                            <Sparkles className="w-3 h-3" />
+                            <span>Verify &amp; Close</span>
+                          </button>
+                        </div>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Lane 4: Verified Closed */}
+              <div className="flex flex-col bg-slate-100/80 dark:bg-slate-900/60 rounded-xl border border-slate-200 dark:border-slate-800 p-3.5 space-y-3">
+                <div className="flex items-center justify-between pb-2 border-b border-slate-200 dark:border-slate-800">
+                  <div className="flex items-center gap-2">
+                    <span className="w-2.5 h-2.5 rounded-full bg-emerald-500" />
+                    <h4 className="font-bold text-xs uppercase tracking-wider text-slate-800 dark:text-slate-200">4. Verified Closed</h4>
+                  </div>
+                  <span className="text-[11px] font-mono font-bold px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 tabular-nums">
+                    {clusters.filter(c => c.status === 'verified_closed').length}
+                  </span>
+                </div>
+
+                <div className="space-y-2.5 flex-1 overflow-y-auto max-h-[68vh] custom-scrollbar pr-1">
+                  {clusters.filter(c => c.status === 'verified_closed').map(c => {
+                    const material = calculateMaterial(c);
+
+                    return (
+                      <div key={c.id} className="p-3 rounded-xl bg-white dark:bg-slate-900 border border-emerald-200 dark:border-emerald-900/40 shadow-xs hover:shadow-md transition space-y-2.5">
+                        <div className="relative w-full h-24 rounded-lg overflow-hidden border border-slate-100 dark:border-slate-800 bg-slate-950 group">
+                          <img
+                            src={c.before_image_url || (c as any).evidence_img || "/evidence/bus_pass_1_detect.jpg"}
+                            alt={c.defect_name || "Defect"}
+                            className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                            onError={(e) => {
+                              (e.currentTarget as HTMLImageElement).src = "/evidence/bus_pass_1_detect.jpg";
+                            }}
+                          />
+                          <div className="absolute top-1.5 left-1.5 flex items-center gap-1">
+                            <span className="font-mono font-extrabold text-[10px] px-1.5 py-0.5 rounded bg-black/75 backdrop-blur-xs text-white border border-white/20 tabular-nums">
+                              {c.cluster_code || c.id}
+                            </span>
+                          </div>
+                          <div className="absolute top-1.5 right-1.5">
+                            <span className="px-1.5 py-0.5 rounded text-[9.5px] font-bold font-mono border backdrop-blur-xs tabular-nums bg-emerald-950/80 text-emerald-300 border-emerald-700">
+                              Gz = 0.98g
+                            </span>
+                          </div>
+                        </div>
+
+                        <div>
+                          <div className="text-xs font-bold text-slate-900 dark:text-white truncate">
+                            {c.road_name || "Chennai Metropolitan Corridor"}
+                          </div>
+                          <div className="flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
+                            <span className="truncate max-w-[150px]">{c.defect_name}</span>
+                            <span className="font-mono font-bold text-emerald-600 dark:text-emerald-400 tabular-nums">
+                              ₹{material.costInr.toLocaleString()}
+                            </span>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center justify-between gap-1.5 pt-1 border-t border-slate-100 dark:border-slate-800/80">
+                          <div className="flex items-center gap-1.5">
+                            <SvgGauge
+                              percentage={100}
+                              strokeColor="stroke-emerald-500"
+                              trackColor="stroke-emerald-100 dark:stroke-emerald-950"
+                              size={28}
+                              strokeWidth={3}
+                            >
+                              <ShieldCheck className="w-3 h-3 text-emerald-500" />
+                            </SvgGauge>
+                            <div className="font-mono text-[10px] leading-tight">
+                              <div className="font-bold text-emerald-600 dark:text-emerald-400">
+                                MoHUA Verified
+                              </div>
+                              <div className="text-[9px] text-slate-400">
+                                Passes: {c.pass_count || 3}
+                              </div>
+                            </div>
+                          </div>
+
+                          <span className="bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-mono text-[10px] px-2 py-0.5 rounded border border-slate-200 dark:border-slate-700 font-bold truncate max-w-[120px]" title={c.assigned_agency}>
+                            {c.assigned_agency || "L&T Highways"}
+                          </span>
+                        </div>
+
+                        <div className="flex items-center justify-between">
+                          <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 flex items-center gap-1">
+                            <ShieldCheck className="w-3 h-3 text-emerald-500" />
+                            <span>3-Pass Verified</span>
+                          </span>
+
+                          <div className="flex items-center gap-1">
+                            <button
+                              onClick={() => openConsole(c, 'cad_audit')}
+                              className="p-1 rounded bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 transition cursor-pointer"
+                              title="Inspect CAD Audit"
+                            >
+                              <Eye className="w-3 h-3 text-blue-500" />
+                            </button>
+                            <button
+                              onClick={() => openConsole(c, 'concurrence_release')}
+                              className="p-1 rounded bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 transition cursor-pointer"
+                              title="View Escrow Concurrence"
+                            >
+                              <ShieldCheck className="w-3 h-3 text-emerald-500" />
+                            </button>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center justify-between gap-1.5">
+                          <div className="flex-1 py-1 rounded-md bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300 font-semibold text-[10.5px] text-center border border-emerald-200 dark:border-emerald-800 flex items-center justify-center gap-1">
+                            <ShieldCheck className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                            <span>Escrow Cleared</span>
+                          </div>
+                          <button
+                            onClick={() => requestStatusUpdate(c.id, 'in_progress')}
+                            className="px-2 py-1 rounded-md bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 font-semibold text-[10px] border border-slate-200 dark:border-slate-700 transition cursor-pointer"
+                            title="Reopen for maintenance"
+                          >
+                            Reopen
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
             </div>
@@ -636,53 +1216,6 @@ export const WorkOrders: React.FC<WorkOrdersProps> = ({ clusters, onUpdateStatus
                 }`}>
                   <span className="w-5 h-5 rounded bg-emerald-700 text-white flex items-center justify-center font-bold text-xs shrink-0">4</span>
                   <span className="truncate">{t("lifecycle.step4", "4. Re-Pass Closure")}</span>
-                </div>
-              </div>
-            </div>
-
-            {/* 2. TOP 4 KPI SUMMARY CARDS */}
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-              <div className="p-3.5 rounded-xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-xs flex items-center justify-between">
-                <div>
-                  <span className="text-xs font-semibold text-zinc-600 dark:text-zinc-300">Total Work Orders</span>
-                  <div className="text-2xl font-bold text-zinc-900 dark:text-white font-mono tabular-nums mt-0.5">{totalCount}</div>
-                  <span className="text-xs text-blue-700 dark:text-blue-400 font-medium">Logged in CAD</span>
-                </div>
-                <div className="w-9 h-9 rounded-lg bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 flex items-center justify-center">
-                  <ClipboardList className="w-4 h-4" />
-                </div>
-              </div>
-
-              <div className="p-3.5 rounded-xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-xs flex items-center justify-between">
-                <div>
-                  <span className="text-xs font-semibold text-zinc-600 dark:text-zinc-300">Pending / Open</span>
-                  <div className="text-2xl font-bold text-amber-700 dark:text-amber-400 font-mono tabular-nums mt-0.5">{openCount}</div>
-                  <span className="text-xs text-zinc-600 dark:text-zinc-400 font-medium">Under SLA Countdown</span>
-                </div>
-                <div className="w-9 h-9 rounded-lg bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 flex items-center justify-center">
-                  <Clock className="w-4 h-4" />
-                </div>
-              </div>
-
-              <div className="p-3.5 rounded-xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-xs flex items-center justify-between">
-                <div>
-                  <span className="text-xs font-semibold text-zinc-600 dark:text-zinc-300">In Progress</span>
-                  <div className="text-2xl font-bold text-blue-700 dark:text-blue-400 font-mono tabular-nums mt-0.5">{inProgressCount}</div>
-                  <span className="text-xs text-zinc-600 dark:text-zinc-400 font-medium">Contractor on Site</span>
-                </div>
-                <div className="w-9 h-9 rounded-lg bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 flex items-center justify-center">
-                  <Wrench className="w-4 h-4" />
-                </div>
-              </div>
-
-              <div className="p-3.5 rounded-xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-xs flex items-center justify-between">
-                <div>
-                  <span className="text-xs font-semibold text-zinc-600 dark:text-zinc-300">Est. Repair Budget</span>
-                  <div className="text-2xl font-bold text-emerald-700 dark:text-emerald-400 font-mono tabular-nums mt-0.5">₹{totalBudget.toLocaleString()}</div>
-                  <span className="text-xs text-zinc-600 dark:text-zinc-400 font-medium">Standard SOR Rates</span>
-                </div>
-                <div className="w-9 h-9 rounded-lg bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 flex items-center justify-center">
-                  <ShieldCheck className="w-4 h-4" />
                 </div>
               </div>
             </div>
@@ -785,94 +1318,94 @@ export const WorkOrders: React.FC<WorkOrdersProps> = ({ clusters, onUpdateStatus
             </div>
 
             {/* 4. ACCESSIBLE DATA TABLE WITH STICKY HEADER & MULTI-COLUMN SORT */}
-            <div className="rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-xs overflow-hidden">
+            <div className="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-xs overflow-hidden">
               <div className="overflow-x-auto max-h-[580px] custom-scrollbar">
                 <table className="w-full text-left text-xs border-collapse">
-                  <thead className="sticky top-0 z-10 bg-slate-50 dark:bg-zinc-900 border-b border-zinc-200 dark:border-zinc-800 shadow-xs">
-                    <tr className="text-zinc-600 dark:text-zinc-400 font-semibold uppercase text-[11px]">
+                  <thead className="sticky top-0 z-10 bg-slate-50 dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 shadow-xs">
+                    <tr className="text-slate-600 dark:text-slate-400 font-semibold uppercase text-[11px]">
                       <th 
                         onClick={() => handleSort('code')}
-                        className="py-3 px-4 cursor-pointer hover:text-zinc-900 dark:hover:text-white transition"
+                        className="py-2.5 px-3 cursor-pointer hover:text-slate-900 dark:hover:text-white transition"
                       >
-                        <div className="flex items-center gap-1">
+                        <div className="flex items-center gap-1 font-mono">
                           <span>Ticket ID</span>
                           {sortField === 'code' ? (
                             sortDirection === 'asc' ? <ArrowUp className="w-3.5 h-3.5 text-blue-500" /> : <ArrowDown className="w-3.5 h-3.5 text-blue-500" />
                           ) : (
-                            <ArrowUpDown className="w-3 h-3 text-zinc-400 opacity-60" />
+                            <ArrowUpDown className="w-3 h-3 text-slate-400 opacity-60" />
                           )}
                         </div>
                       </th>
                       <th 
                         onClick={() => handleSort('rpi')}
-                        className="py-3 px-4 cursor-pointer hover:text-zinc-900 dark:hover:text-white transition"
+                        className="py-2.5 px-3 cursor-pointer hover:text-slate-900 dark:hover:text-white transition"
                       >
-                        <div className="flex items-center gap-1">
+                        <div className="flex items-center gap-1 font-mono">
                           <span>RPI Score</span>
                           {sortField === 'rpi' ? (
                             sortDirection === 'asc' ? <ArrowUp className="w-3.5 h-3.5 text-blue-500" /> : <ArrowDown className="w-3.5 h-3.5 text-blue-500" />
                           ) : (
-                            <ArrowUpDown className="w-3 h-3 text-zinc-400 opacity-60" />
+                            <ArrowUpDown className="w-3 h-3 text-slate-400 opacity-60" />
                           )}
                         </div>
                       </th>
                       <th 
                         onClick={() => handleSort('road')}
-                        className="py-3 px-4 cursor-pointer hover:text-zinc-900 dark:hover:text-white transition"
+                        className="py-2.5 px-3 cursor-pointer hover:text-slate-900 dark:hover:text-white transition"
                       >
                         <div className="flex items-center gap-1">
                           <span>Defect &amp; Corridor</span>
                           {sortField === 'road' ? (
                             sortDirection === 'asc' ? <ArrowUp className="w-3.5 h-3.5 text-blue-500" /> : <ArrowDown className="w-3.5 h-3.5 text-blue-500" />
                           ) : (
-                            <ArrowUpDown className="w-3 h-3 text-zinc-400 opacity-60" />
+                            <ArrowUpDown className="w-3 h-3 text-slate-400 opacity-60" />
                           )}
                         </div>
                       </th>
                       <th 
                         onClick={() => handleSort('cost')}
-                        className="py-3 px-4 cursor-pointer hover:text-zinc-900 dark:hover:text-white transition"
+                        className="py-2.5 px-3 cursor-pointer hover:text-slate-900 dark:hover:text-white transition"
                       >
-                        <div className="flex items-center gap-1">
+                        <div className="flex items-center gap-1 font-mono">
                           <span>Volumetric Cost</span>
                           {sortField === 'cost' ? (
                             sortDirection === 'asc' ? <ArrowUp className="w-3.5 h-3.5 text-blue-500" /> : <ArrowDown className="w-3.5 h-3.5 text-blue-500" />
                           ) : (
-                            <ArrowUpDown className="w-3 h-3 text-zinc-400 opacity-60" />
+                            <ArrowUpDown className="w-3 h-3 text-slate-400 opacity-60" />
                           )}
                         </div>
                       </th>
-                      <th className="py-3 px-4">Contractor Agency</th>
+                      <th className="py-2.5 px-3">Contractor Agency</th>
                       <th 
                         onClick={() => handleSort('sla')}
-                        className="py-3 px-4 cursor-pointer hover:text-zinc-900 dark:hover:text-white transition"
+                        className="py-2.5 px-3 cursor-pointer hover:text-slate-900 dark:hover:text-white transition"
                       >
-                        <div className="flex items-center gap-1">
+                        <div className="flex items-center gap-1 font-mono">
                           <span>SLA Countdown</span>
                           {sortField === 'sla' ? (
                             sortDirection === 'asc' ? <ArrowUp className="w-3.5 h-3.5 text-blue-500" /> : <ArrowDown className="w-3.5 h-3.5 text-blue-500" />
                           ) : (
-                            <ArrowUpDown className="w-3 h-3 text-zinc-400 opacity-60" />
+                            <ArrowUpDown className="w-3 h-3 text-slate-400 opacity-60" />
                           )}
                         </div>
                       </th>
                       <th 
                         onClick={() => handleSort('status')}
-                        className="py-3 px-4 cursor-pointer hover:text-zinc-900 dark:hover:text-white transition"
+                        className="py-2.5 px-3 cursor-pointer hover:text-slate-900 dark:hover:text-white transition"
                       >
                         <div className="flex items-center gap-1">
                           <span>Status</span>
                           {sortField === 'status' ? (
                             sortDirection === 'asc' ? <ArrowUp className="w-3.5 h-3.5 text-blue-500" /> : <ArrowDown className="w-3.5 h-3.5 text-blue-500" />
                           ) : (
-                            <ArrowUpDown className="w-3 h-3 text-zinc-400 opacity-60" />
+                            <ArrowUpDown className="w-3 h-3 text-slate-400 opacity-60" />
                           )}
                         </div>
                       </th>
-                      <th className="py-3 px-4 text-right">Actions</th>
+                      <th className="py-2.5 px-3 text-right">Actions</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800">
+                  <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
                     {paginatedClusters.length === 0 ? (
                       <tr>
                         <td colSpan={8} className="p-8 text-center">
@@ -891,29 +1424,29 @@ export const WorkOrders: React.FC<WorkOrdersProps> = ({ clusters, onUpdateStatus
                         return (
                           <tr
                             key={cluster.id}
-                            className="hover:bg-zinc-50/70 dark:hover:bg-zinc-800/40 transition"
+                            className="hover:bg-slate-50/70 dark:hover:bg-slate-800/40 transition"
                           >
-                            <td className="py-3 px-4 font-mono font-bold text-zinc-900 dark:text-white">
+                            <td className="py-2.5 px-3 font-mono font-bold text-xs tabular-nums text-slate-900 dark:text-white">
                               {cluster.cluster_code || cluster.id}
                             </td>
 
-                            <td className="py-3 px-4 font-mono">
-                              <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold border tabular-nums ${
+                            <td className="py-2.5 px-3 font-mono">
+                              <span className={`font-mono font-bold text-[10.5px] px-2 py-0.5 rounded-full border tabular-nums ${
                                 cluster.severity_level === "critical"
-                                  ? "bg-rose-50 text-rose-700 border-rose-200 dark:bg-rose-950/60 dark:text-rose-300 dark:border-rose-900"
+                                  ? "bg-rose-500/10 text-rose-700 dark:text-rose-300 border-rose-300 dark:border-rose-800"
                                   : cluster.severity_level === "high"
-                                    ? "bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/60 dark:text-amber-300 dark:border-amber-900"
-                                    : "bg-zinc-100 text-zinc-700 border-zinc-200 dark:bg-zinc-800 dark:text-zinc-300 dark:border-zinc-700"
+                                    ? "bg-amber-500/10 text-amber-700 dark:text-amber-300 border-amber-300 dark:border-amber-800"
+                                    : "bg-slate-200/60 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-300 dark:border-slate-700 font-medium"
                               }`}>
                                 RPI {cluster.rpi_boosted ?? cluster.rpi_score ?? 75}
                               </span>
                             </td>
 
-                            <td className="py-3 px-4">
-                              <div className="font-semibold text-zinc-900 dark:text-white">
+                            <td className="py-2.5 px-3">
+                              <div className="font-semibold text-slate-900 dark:text-white text-xs">
                                 {cluster.defect_name}
                               </div>
-                              <div className="text-[11px] text-zinc-500 dark:text-zinc-400 truncate max-w-xs mt-0.5">
+                              <div className="text-[11px] text-slate-500 dark:text-slate-400 truncate max-w-xs mt-0.5">
                                 {cluster.road_name || "Chennai Metropolitan Corridor"}
                               </div>
                               <div className="mt-1">
@@ -926,40 +1459,40 @@ export const WorkOrders: React.FC<WorkOrdersProps> = ({ clusters, onUpdateStatus
                               </div>
                             </td>
 
-                            <td className="py-3 px-4">
-                              <div className="font-mono font-bold text-emerald-600 dark:text-emerald-400 tabular-nums">
+                            <td className="py-2.5 px-3 font-mono tabular-nums">
+                              <div className="font-bold text-emerald-600 dark:text-emerald-400 text-xs">
                                 ₹{material.costInr.toLocaleString()}
                               </div>
-                              <div className="text-[10.5px] text-zinc-400 font-mono">
+                              <div className="text-[10px] text-slate-400 font-mono">
                                 {material.asphaltKg} kg Bitumen Mix
                               </div>
                             </td>
 
-                            <td className="py-3 px-4">
-                              <div className="font-medium text-zinc-800 dark:text-zinc-200">
+                            <td className="py-2.5 px-3">
+                              <div className="font-medium text-slate-800 dark:text-slate-200 text-xs">
                                 {cluster.assigned_agency || "Apex Urban Infra Ltd"}
                               </div>
-                              <div className="text-[10.5px] text-zinc-400 font-mono">
+                              <div className="text-[10px] text-slate-400 font-mono">
                                 {cluster.agency_phone || "+91 98401 22345"}
                               </div>
                             </td>
 
-                            <td className="py-3 px-4">
-                              <div className="flex items-center gap-1 text-zinc-700 dark:text-zinc-300 font-mono">
-                                <Clock className="w-3 h-3 text-zinc-400" />
+                            <td className="py-2.5 px-3 font-mono tabular-nums">
+                              <div className="flex items-center gap-1 text-slate-700 dark:text-slate-300 text-xs">
+                                <Clock className="w-3 h-3 text-slate-400" />
                                 <span>{cluster.sla_hours || 24}h SLA</span>
                               </div>
-                              <div className="text-[10.5px] text-zinc-400 font-mono">
+                              <div className="text-[10px] text-slate-400 font-mono">
                                 {(cluster as any).turnaround_hrs ? `${(cluster as any).turnaround_hrs}h spent` : "14h remaining"}
                               </div>
                             </td>
 
-                            <td className="py-3 px-4">
+                            <td className="py-2.5 px-3">
                               <select
                                 value={cluster.status}
                                 onChange={(e) => requestStatusUpdate(cluster.id, e.target.value as WorkOrderStatus)}
                                 title="Update work order status"
-                                className={`px-2.5 py-1 rounded-lg text-xs font-bold outline-none cursor-pointer border transition-colors ${
+                                className={`px-2 py-1 rounded-lg text-[11px] font-bold outline-none cursor-pointer border transition-colors ${
                                   isClosed
                                     ? "bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-400 border-emerald-300 dark:border-emerald-800"
                                     : cluster.status === "in_progress"
@@ -984,10 +1517,10 @@ export const WorkOrders: React.FC<WorkOrdersProps> = ({ clusters, onUpdateStatus
                             <td className="py-2.5 px-3 text-right">
                               <div className="flex items-center justify-end gap-1.5">
                                 {/* Inspect cluster: CAD audit drawer (+ 3D mesh for surface defects) */}
-                                <div className="inline-flex items-stretch rounded-lg border border-slate-200 dark:border-slate-700 overflow-hidden">
+                                <div className="inline-flex items-stretch rounded-lg border border-slate-200 dark:border-slate-700 overflow-hidden shadow-2xs">
                                   <button
                                     onClick={() => openConsole(cluster, 'cad_audit')}
-                                    className="px-2.5 py-1 bg-white dark:bg-zinc-900 hover:bg-slate-100 dark:hover:bg-zinc-800 text-slate-800 dark:text-slate-200 font-semibold text-[11px] flex items-center gap-1 transition cursor-pointer"
+                                    className="px-2.5 py-1 bg-white dark:bg-slate-900 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-800 dark:text-slate-200 font-semibold text-[11px] flex items-center gap-1 transition cursor-pointer"
                                     title="Inspect: open CAD audit drawer (before/after slider & volumetrics)"
                                   >
                                     <Eye className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
@@ -996,7 +1529,7 @@ export const WorkOrders: React.FC<WorkOrdersProps> = ({ clusters, onUpdateStatus
                                   {isRoadSurfaceDefect(cluster.defect_name || cluster.defect_type) && (
                                     <button
                                       onClick={() => setInspectingMeshCluster(cluster)}
-                                      className="px-1.5 py-1 border-l border-slate-200 dark:border-slate-700 bg-white dark:bg-zinc-900 hover:bg-slate-100 dark:hover:bg-zinc-800 text-slate-600 dark:text-slate-300 transition cursor-pointer"
+                                      className="px-1.5 py-1 border-l border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300 transition cursor-pointer"
                                       title="Inspect 3D Surface Depth Mesh for this road defect"
                                       aria-label="Open 3D surface mesh"
                                     >
@@ -1008,10 +1541,10 @@ export const WorkOrders: React.FC<WorkOrdersProps> = ({ clusters, onUpdateStatus
                                 {/* Release Escrow: 3-pass concurrence gate */}
                                 <button
                                   onClick={() => openConsole(cluster, 'concurrence_release')}
-                                  className="px-2.5 py-1 rounded-lg border border-emerald-200 dark:border-emerald-900 bg-emerald-50 dark:bg-emerald-950/50 hover:bg-emerald-100 dark:hover:bg-emerald-900/50 text-emerald-700 dark:text-emerald-300 font-semibold text-[11px] flex items-center gap-1 transition cursor-pointer"
+                                  className="px-2.5 py-1 rounded-lg border border-emerald-200 dark:border-emerald-900 bg-emerald-50 dark:bg-emerald-950/50 hover:bg-emerald-100 dark:hover:bg-emerald-900/50 text-emerald-700 dark:text-emerald-300 font-semibold text-[11px] flex items-center gap-1 transition cursor-pointer shadow-2xs"
                                   title="Release Escrow: open 3-pass concurrence gate"
                                 >
-                                  <ShieldCheck className="w-3.5 h-3.5" />
+                                  <ShieldCheck className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
                                   <span>Release Escrow</span>
                                 </button>
 
@@ -1019,10 +1552,10 @@ export const WorkOrders: React.FC<WorkOrdersProps> = ({ clusters, onUpdateStatus
                                 <button
                                   onClick={() => openConsole(cluster, 'contractor_sla')}
                                   disabled={!canDispatchWorkOrder}
-                                  className={`px-2.5 py-1 rounded-lg border font-semibold text-[11px] flex items-center gap-1 transition ${
+                                  className={`px-2.5 py-1 rounded-lg border font-semibold text-[11px] flex items-center gap-1 transition shadow-2xs ${
                                     canDispatchWorkOrder
                                       ? 'bg-blue-600 hover:bg-blue-700 text-white border-blue-600 cursor-pointer'
-                                      : 'opacity-40 cursor-not-allowed bg-slate-100 dark:bg-zinc-800 text-slate-400 border-slate-200 dark:border-slate-700'
+                                      : 'opacity-40 cursor-not-allowed bg-slate-100 dark:bg-slate-800 text-slate-400 border-slate-200 dark:border-slate-700'
                                   }`}
                                   title={canDispatchWorkOrder ? "Dispatch: instant WhatsApp / SMS & QR ward notice" : "Dispatch disabled: Read-Only Analyst role"}
                                 >

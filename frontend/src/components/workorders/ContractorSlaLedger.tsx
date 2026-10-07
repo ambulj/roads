@@ -178,10 +178,13 @@ export const ContractorSlaLedger: React.FC<ContractorSlaLedgerProps> = ({ cluste
     }).catch(() => {});
   }, []);
 
+  const totalGrossBonds = contractors.reduce((acc, c) => acc + c.securityDepositInr, 0);
   const totalSecurityDeposits = contractors.reduce((acc, c) => acc + (c.securityDepositInr - c.penaltiesDeductedInr), 0);
   const totalPenaltiesCollected = contractors.reduce((acc, c) => acc + c.penaltiesDeductedInr, 0);
   const totalBreaches = contractors.reduce((acc, c) => acc + c.breachedWorkOrders, 0);
   const totalAutoDebitsInr = autoDebits.reduce((acc, d) => acc + d.penaltyDebitInr, 0);
+  const criticalDebarmentCount = contractors.filter(c => c.debarmentRisk === 'Critical Debarment Warning').length;
+  const netEscrowRatio = totalGrossBonds > 0 ? (totalSecurityDeposits / totalGrossBonds) * 100 : 0;
 
   const handleOpenPenaltyNotice = (ctr: ContractorAgency) => {
     setSelectedContractor(ctr);
@@ -300,70 +303,110 @@ export const ContractorSlaLedger: React.FC<ContractorSlaLedgerProps> = ({ cluste
               <Zap className={`w-4 h-4 ${isSimulatingAutoDebit ? 'animate-spin' : ''}`} />
               <span>{isSimulatingAutoDebit ? 'Patrol Bus Re-Pass Detecting Gz=1.48g...' : '⚡ Trigger Clause 14 Auto-Debit Demo'}</span>
             </button>
-            <button
-              onClick={() => setActiveViewTab(activeViewTab === 'sla_table' ? 'auto_debit_ledger' : 'sla_table')}
-              className="px-3.5 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 font-semibold text-xs transition flex items-center justify-center gap-1.5 cursor-pointer"
-            >
-              <Receipt className="w-4 h-4 text-cyan-400" />
-              <span>{activeViewTab === 'sla_table' ? 'View Auto-Debit Ledger' : 'View Performance Table'}</span>
-            </button>
+            <div className="flex items-center gap-1.5 p-1 bg-slate-900/90 border border-slate-700/80 rounded-xl shadow-xs">
+              <button
+                onClick={() => setActiveViewTab('sla_table')}
+                className={`px-3.5 py-1.5 rounded-lg text-xs transition-all cursor-pointer ${
+                  activeViewTab === 'sla_table'
+                    ? 'font-semibold bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800 shadow-xs'
+                    : 'font-medium text-slate-400 hover:text-slate-100 hover:bg-slate-800/60 border border-transparent'
+                }`}
+              >
+                Performance SLA Table
+              </button>
+              <button
+                onClick={() => setActiveViewTab('auto_debit_ledger')}
+                className={`px-3.5 py-1.5 rounded-lg text-xs transition-all flex items-center gap-1.5 cursor-pointer ${
+                  activeViewTab === 'auto_debit_ledger'
+                    ? 'font-semibold bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800 shadow-xs'
+                    : 'font-medium text-slate-400 hover:text-slate-100 hover:bg-slate-800/60 border border-transparent'
+                }`}
+              >
+                <span>Auto-Debit Audit Docket</span>
+                <span className="w-1.5 h-1.5 rounded-full bg-rose-500" />
+              </button>
+            </div>
           </div>
         </div>
       </div>
 
-      {/* High-Contrast Summary Metric Cards */}
+      {/* High-Contrast Summary Metric Cards with Visual Health Bars */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="p-4 rounded-2xl bg-white dark:bg-[#0B101D] border border-slate-200 dark:border-slate-800 shadow-xs">
+        {/* Card 1: Gross Bank Guarantees */}
+        <div className="p-4 rounded-2xl bg-white dark:bg-[#0B101D] border border-slate-200 dark:border-slate-800 shadow-xs hover:shadow-md transition">
           <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 font-medium mb-1">
-            <span className="font-semibold uppercase tracking-wider text-[11px]">Tracked Security Deposits</span>
+            <span className="font-semibold uppercase tracking-wider text-[11px]">Tracked Bank Guarantees</span>
             <Scale className="w-4 h-4 text-blue-500" />
           </div>
           <div className="text-2xl font-extrabold text-slate-900 dark:text-white font-mono tabular-nums">
-            ₹{(totalSecurityDeposits / 10000000).toFixed(2)} Cr
+            ₹{(totalGrossBonds / 10000000).toFixed(2)} Cr
           </div>
-          <div className="text-[11px] text-emerald-600 dark:text-emerald-400 font-medium mt-1 flex items-center gap-1">
+          <div className="w-full h-1.5 bg-slate-100 dark:bg-slate-800 rounded-full mt-2 overflow-hidden">
+            <div className="h-full bg-blue-500 rounded-full w-full" />
+          </div>
+          <div className="text-[11px] text-emerald-600 dark:text-emerald-400 font-medium mt-1.5 flex items-center gap-1">
             <CheckCircle2 className="w-3 h-3" />
-            <span>5 Active Contractor Security Bonds</span>
+            <span>5 Active Contractor Bonds &bull; Clause 108.4</span>
           </div>
         </div>
 
-        <div className="p-4 rounded-2xl bg-white dark:bg-[#0B101D] border border-slate-200 dark:border-slate-800 shadow-xs">
+        {/* Card 2: Clause 14 Auto-Debits */}
+        <div className="p-4 rounded-2xl bg-white dark:bg-[#0B101D] border border-slate-200 dark:border-slate-800 shadow-xs hover:shadow-md transition">
           <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 font-medium mb-1">
-            <span className="font-semibold uppercase tracking-wider text-[11px]">Clause 14 &amp; SLA Debits Executed</span>
+            <span className="font-semibold uppercase tracking-wider text-[11px]">Clause 14 Auto-Debits Executed</span>
             <AlertOctagon className="w-4 h-4 text-rose-500" />
           </div>
           <div className="text-2xl font-extrabold text-rose-600 dark:text-rose-400 font-mono tabular-nums">
             ₹{(totalPenaltiesCollected / 100000).toFixed(2)} Lakhs
           </div>
-          <div className="text-[11px] text-amber-600 dark:text-amber-400 mt-1 flex items-center gap-1">
+          <div className="w-full h-1.5 bg-slate-100 dark:bg-slate-800 rounded-full mt-2 overflow-hidden">
+            <div 
+              className="h-full bg-rose-500 rounded-full" 
+              style={{ width: `${Math.min(100, Math.max(5, (totalPenaltiesCollected / totalGrossBonds) * 100 * 10))}%` }}
+            />
+          </div>
+          <div className="text-[11px] text-amber-600 dark:text-amber-400 mt-1.5 flex items-center gap-1">
             <Receipt className="w-3 h-3" />
-            <span>Auto-debited to Municipal Repair Fund</span>
+            <span>Recurrent sensor shock (Gz &ge; 1.30g)</span>
           </div>
         </div>
 
-        <div className="p-4 rounded-2xl bg-white dark:bg-[#0B101D] border border-slate-200 dark:border-slate-800 shadow-xs">
+        {/* Card 3: Net Available Escrow Balance */}
+        <div className="p-4 rounded-2xl bg-white dark:bg-[#0B101D] border border-slate-200 dark:border-slate-800 shadow-xs hover:shadow-md transition">
           <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 font-medium mb-1">
-            <span className="font-semibold uppercase tracking-wider text-[11px]">Active SLA Breaches</span>
-            <Clock className="w-4 h-4 text-amber-500" />
+            <span className="font-semibold uppercase tracking-wider text-[11px]">Net Available Escrow</span>
+            <Clock className="w-4 h-4 text-emerald-500" />
           </div>
-          <div className="text-2xl font-extrabold text-amber-600 dark:text-amber-400 font-mono tabular-nums">
-            {totalBreaches} Overdue
+          <div className="text-2xl font-extrabold text-slate-900 dark:text-white font-mono tabular-nums">
+            ₹{(totalSecurityDeposits / 10000000).toFixed(2)} Cr
           </div>
-          <div className="text-[11px] text-rose-500 font-medium mt-1">
-            Liquidated Damages Active (₹500/hr)
+          <div className="w-full h-1.5 bg-slate-100 dark:bg-slate-800 rounded-full mt-2 overflow-hidden">
+            <div 
+              className="h-full bg-emerald-500 rounded-full" 
+              style={{ width: `${netEscrowRatio}%` }}
+            />
+          </div>
+          <div className="text-[11px] text-emerald-600 dark:text-emerald-400 font-medium mt-1.5 flex items-center gap-1">
+            <ShieldCheck className="w-3 h-3" />
+            <span>Safety Margin: {netEscrowRatio.toFixed(1)}% Available</span>
           </div>
         </div>
 
-        <div className="p-4 rounded-2xl bg-white dark:bg-[#0B101D] border border-slate-200 dark:border-slate-800 shadow-xs">
+        {/* Card 4: Contractor Debarment Risk Meter */}
+        <div className="p-4 rounded-2xl bg-white dark:bg-[#0B101D] border border-slate-200 dark:border-slate-800 shadow-xs hover:shadow-md transition">
           <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 font-medium mb-1">
-            <span className="font-semibold uppercase tracking-wider text-[11px]">Defect Liability Warranty Audit</span>
-            <Award className="w-4 h-4 text-indigo-500" />
+            <span className="font-semibold uppercase tracking-wider text-[11px]">Debarment Risk Meter</span>
+            <AlertOctagon className="w-4 h-4 text-rose-500 animate-pulse" />
           </div>
-          <div className="text-2xl font-extrabold text-indigo-600 dark:text-indigo-400 font-mono tabular-nums">
-            100%
+          <div className="text-2xl font-extrabold text-rose-600 dark:text-rose-400 font-mono tabular-nums">
+            {criticalDebarmentCount} Critical Warning
           </div>
-          <div className="text-[11px] text-emerald-600 font-medium mt-1">
-            Autonomous Sensor Verification Active
+          <div className="w-full h-1.5 bg-slate-100 dark:bg-slate-800 rounded-full mt-2 overflow-hidden">
+            <div className="h-full bg-rose-500 rounded-full w-4/5 animate-pulse" />
+          </div>
+          <div className="text-[11px] text-rose-500 font-medium mt-1.5 flex items-center gap-1">
+            <span className="w-2 h-2 rounded-full bg-rose-500 animate-ping inline-block" />
+            <span>HCC at statutory limit &bull; Notice drafted</span>
           </div>
         </div>
       </div>
@@ -402,6 +445,7 @@ export const ContractorSlaLedger: React.FC<ContractorSlaLedgerProps> = ({ cluste
                   <th className="py-3 px-4 text-center">On-Time SLA</th>
                   <th className="py-3 px-4 text-center">Quality Index</th>
                   <th className="py-3 px-4 text-center">Breaches</th>
+                  <th className="py-3 px-4 text-center">Debarment Risk Meter</th>
                   <th className="py-3 px-4 text-right">Actions</th>
                 </tr>
               </thead>
@@ -465,6 +509,25 @@ export const ContractorSlaLedger: React.FC<ContractorSlaLedgerProps> = ({ cluste
                         ) : (
                           <span className="px-2 py-0.5 rounded-md font-medium text-[10.5px] bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-300 dark:border-emerald-800 text-emerald-700 dark:text-emerald-300">
                             All On-Time
+                          </span>
+                        )}
+                      </td>
+
+                      <td className="py-3.5 px-4 text-center">
+                        {ctr.debarmentRisk === 'Critical Debarment Warning' ? (
+                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full font-bold font-mono text-[10.5px] bg-rose-50 dark:bg-rose-950/60 border border-rose-300 dark:border-rose-800 text-rose-700 dark:text-rose-300 animate-pulse">
+                            <AlertOctagon className="w-3 h-3 text-rose-600 dark:text-rose-400" />
+                            <span>Critical Warning</span>
+                          </span>
+                        ) : ctr.debarmentRisk === 'Medium' ? (
+                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full font-bold font-mono text-[10.5px] bg-amber-50 dark:bg-amber-950/60 border border-amber-300 dark:border-amber-800 text-amber-700 dark:text-amber-300">
+                            <Clock className="w-3 h-3 text-amber-500" />
+                            <span>Medium Risk</span>
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full font-medium font-mono text-[10.5px] bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-300 dark:border-emerald-800 text-emerald-700 dark:text-emerald-300">
+                            <CheckCircle2 className="w-3 h-3 text-emerald-500" />
+                            <span>Low Risk</span>
                           </span>
                         )}
                       </td>
