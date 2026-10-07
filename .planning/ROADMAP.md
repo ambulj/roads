@@ -17,10 +17,10 @@ RoadSaathi v3.2 streamlines the entire civic cockpit into a sleek, decluttered, 
 - [x] **Phase 6: WebGIS Map HUD & Interactive Inspection Overlays** - Polished map control floating dock, clean cluster inspect popup cards, streamlined layer selector, and responsive sidebar split view.
 - [x] **Phase 7: Municipal Dashboard, Work Orders & SLA Action Console Polish** - Clean high-contrast KPI metric cards, modern data tables, contractor escrow status pills, and intuitive multi-pass concurrence payment clearance workflow.
 
-### Milestone v3.2: Sleek Minimalist Civic Cockpit & UI De-cluttering (Active)
+### Milestone v3.2: Sleek Minimalist Civic Cockpit & UI De-cluttering (Complete)
 - [x] **Phase 8: Sidebar Workspace Consolidation & Global Navigation** - Consolidate 16+ menu items into 5 core workspaces (Command Map, Work Orders, Analytics, Fleet Edge, Governance) with sub-navigation pills and clean breadcrumbs.
 - [x] **Phase 9: Map HUD & Command Center Viewport Optimization** - Streamline top dock into a sleek floating micro-bar, collapse secondary HUDs into discreet bottom trays, and expand map canvas to 100% viewport.
-- [ ] **Phase 10: Tabbed Executive Analytics & Clean Backlog Table Redesign** - Group analytics into a 4-tab segmented switcher, clean up work order backlog with progressive disclosure slide-overs, and enforce unified minimal hierarchy.
+- [x] **Phase 10: Tabbed Executive Analytics & Clean Backlog Table Redesign** - Group analytics into a 5-tab segmented switcher, clean up work order backlog with progressive disclosure slide-overs, and enforce unified minimal hierarchy.
 
 ---
 
@@ -64,12 +64,13 @@ RoadSaathi v3.2 streamlines the entire civic cockpit into a sleek, decluttered, 
 **Depends on**: Phase 9
 **Requirements**: DECLUTTER-03
 **Success Criteria** (what must be TRUE):
-  1. `Analytics.tsx` adopts a 4-tab segmented switcher (*Overview*, *Corridors & Traffic*, *Pedestrian & Lighting*, *Vision ANPR & Incidents*) preventing chart overload.
+  1. `Analytics.tsx` adopts a 5-tab segmented switcher (*Overview*, *Corridors*, *Traffic & OD Flow*, *Safety & Lighting*, *Edge ANPR*) preventing chart overload.
   2. `WorkOrders.tsx` data tables redesigned with compact padding, subtle borders, and slide-over inspector drawer for deep audits.
   3. Complete frontend build passes with 0 diagnostics and 100% test integrity.
 
 **Plans**: 1 plan
-- [ ] 10-01: Tabbed analytics redesign, clean backlog table styling, and drawer progressive disclosure.
+**Wave 1**
+- [x] 10-01: Tabbed analytics redesign, clean backlog table styling, and drawer progressive disclosure.
 
 ---
 
@@ -89,7 +90,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 | 7. Municipal Dashboard, Work Orders & SLA Action Console Polish | 1/1 | Complete | 2026-10-07 |
 | 8. Sidebar Workspace Consolidation & Global Navigation | 1/1 | Complete | 2026-10-07 |
 | 9. Map HUD & Command Center Viewport Optimization | 1/1 | Complete | 2026-10-07 |
-| 10. Tabbed Executive Analytics & Clean Backlog Table Redesign | 0/1 | Ready to start | - |
+| 10. Tabbed Executive Analytics & Clean Backlog Table Redesign | 1/1 | Complete | 2026-10-07 |
 
 ---
 *Roadmap defined: 2026-10-07 for Milestone v3.2*

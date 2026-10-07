@@ -43,8 +43,8 @@
   - Simplify triage search and filter bars into a compact single-line filter strip with quick toggle chips.
 
 ### 10. Tabbed Executive Analytics & Clean Backlog Table Redesign (DASH-CLEAN)
-- [ ] **DECLUTTER-03**: Reorganize executive analytics and backlog tables:
-  - In `Analytics.tsx`: Replace the long 10+ chart scrolling page with a 4-tab segmented switcher (*Overview KPI*, *Corridor Health & Traffic*, *Pedestrian & Lighting Safety*, *Vision ANPR & Incidents*).
+- [x] **DECLUTTER-03**: Reorganize executive analytics and backlog tables:
+  - In `Analytics.tsx`: Replace the long 10+ chart scrolling page with a 5-tab segmented switcher (*Overview KPI*, *Corridor Health*, *Traffic & OD Flow*, *Safety & Lighting*, *Edge ANPR*).
   - In `WorkOrders.tsx`: Streamline table rows with clean typography, compact cell padding, and slide-over inspector drawers instead of overwhelming data density.
 
 ---
@@ -62,12 +62,12 @@
 | UI-03 | v3.1 | Phase 7 | Complete |
 | DECLUTTER-01 | v3.2 | Phase 8 | Complete |
 | DECLUTTER-02 | v3.2 | Phase 9 | Complete |
-| DECLUTTER-03 | v3.2 | Phase 10 | Pending |
+| DECLUTTER-03 | v3.2 | Phase 10 | Complete |
 
 **Coverage:**
 - Total Requirements: 18
-- Completed: 17 / 18 (94.4%)
-- Active in Milestone v3.2: 1
+- Completed: 18 / 18 (100.0%)
+- Active in Milestone v3.2: 0
 
 ---
 *Requirements updated: 2026-10-07 for Milestone v3.2*
