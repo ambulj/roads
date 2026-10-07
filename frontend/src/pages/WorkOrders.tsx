@@ -24,6 +24,10 @@ import {
   Box,
   ChevronLeft,
   ChevronRight,
+  ChevronDown,
+  ChevronUp,
+  RotateCcw,
+  SlidersHorizontal,
   ArrowUpDown,
   ArrowUp,
   ArrowDown,
@@ -160,6 +164,18 @@ export const WorkOrders: React.FC<WorkOrdersProps> = ({ clusters, onUpdateStatus
   const [contractorFilter, setContractorFilter] = useState<string>('all');
   const [sortField, setSortField] = useState<SortField>('rpi');
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
+  const [isDrillExpanded, setIsDrillExpanded] = useState<boolean>(false);
+
+  const hasActiveFilters = Boolean(
+    search.trim() || statusFilter !== 'all' || severityFilter !== 'all' || contractorFilter !== 'all'
+  );
+
+  const handleResetFilters = () => {
+    setSearch('');
+    setStatusFilter('all');
+    setSeverityFilter('all');
+    setContractorFilter('all');
+  };
 
   const [inspectingMeshCluster, setInspectingMeshCluster] = useState<HazardCluster | null>(null);
 
@@ -401,75 +417,97 @@ export const WorkOrders: React.FC<WorkOrdersProps> = ({ clusters, onUpdateStatus
     <div className="flex-1 flex flex-col min-h-0 overflow-y-auto custom-scrollbar bg-zinc-100 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 select-none transition-colors">
       <div className="p-4 sm:p-5 md:p-6 space-y-4 max-w-[1700px] mx-auto w-full">
         
-        {/* 1. TOP TITLE & ACTIONS BAR */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        {/* 1. SLEEK INTEGRATED COMMAND NAVBAR */}
+        <div className="p-3 sm:p-3.5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs flex flex-col xl:flex-row xl:items-center justify-between gap-3.5">
+          {/* Left: Branding & Overview Badge */}
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-blue-600/15 text-blue-600 dark:text-blue-400 border border-blue-500/20 flex items-center justify-center shrink-0">
+            <div className="w-10 h-10 rounded-xl bg-indigo-600/10 dark:bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 border border-indigo-500/20 flex items-center justify-center shrink-0">
               <ClipboardList className="w-5 h-5" />
             </div>
             <div>
-              <h2 className="font-extrabold text-lg sm:text-xl text-zinc-900 dark:text-white tracking-tight">
-                Municipal Work Orders &amp; SLA Compliance
-              </h2>
-              <p className="text-xs text-zinc-500 dark:text-zinc-400 leading-tight mt-0.5">
-                Autonomous contract routing, SLA compliance &amp; penalty ledger, and proof-of-repair verification.
+              <div className="flex items-center gap-2">
+                <h1 className="font-extrabold text-base sm:text-lg text-slate-900 dark:text-white tracking-tight leading-none">
+                  Municipal Work Orders &amp; SLA Cockpit
+                </h1>
+                <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 tabular-nums">
+                  {totalCount} Total · {activeCount} Active
+                </span>
+              </div>
+              <p className="text-[11.5px] text-slate-500 dark:text-slate-400 mt-1 leading-none">
+                Autonomous IRC:SP:20 dispatch, statutory SLA compliance &amp; multi-pass concurrence verification.
               </p>
             </div>
           </div>
 
-          <div className="flex items-center gap-2 shrink-0 self-start sm:self-auto flex-wrap">
-            <div className="flex items-center gap-1.5 p-1 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl shadow-xs">
+          {/* Center & Right: Workspace Switcher & Primary Action Controls */}
+          <div className="flex items-center gap-2.5 flex-wrap sm:flex-nowrap justify-between xl:justify-end">
+            {/* 3-Workspace Segmented Switcher */}
+            <div className="flex items-center gap-1 p-1 bg-slate-50 dark:bg-slate-950/80 border border-slate-200 dark:border-slate-800 rounded-xl">
               <button
                 onClick={() => handleTabChange('cad')}
-                className={`px-3.5 py-1.5 rounded-lg text-xs transition-all cursor-pointer ${
+                className={`px-3 py-1.5 rounded-lg text-xs transition-all cursor-pointer flex items-center gap-1.5 ${
                   activeTab === 'cad'
-                    ? 'font-semibold bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800/80 shadow-xs'
-                    : 'font-medium text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800/60 border border-transparent'
+                    ? 'font-bold bg-white dark:bg-slate-800 text-indigo-700 dark:text-indigo-300 shadow-xs border border-slate-200/80 dark:border-slate-700'
+                    : 'font-medium text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-900/60'
                 }`}
               >
-                CAD Work Orders Backlog
+                <span>CAD Backlog</span>
+                <span className={`px-1.5 py-0.2 rounded-full text-[9.5px] font-mono ${
+                  activeTab === 'cad' 
+                    ? 'bg-indigo-100 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300 font-bold' 
+                    : 'bg-slate-200/70 dark:bg-slate-800 text-slate-600 dark:text-slate-400'
+                }`}>
+                  {filteredAndSortedClusters.length}
+                </span>
               </button>
+
               <button
                 onClick={() => handleTabChange('kanban')}
-                className={`px-3.5 py-1.5 rounded-lg text-xs transition-all flex items-center gap-1.5 cursor-pointer ${
+                className={`px-3 py-1.5 rounded-lg text-xs transition-all flex items-center gap-1.5 cursor-pointer ${
                   activeTab === 'kanban'
-                    ? 'font-semibold bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800/80 shadow-xs'
-                    : 'font-medium text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800/60 border border-transparent'
+                    ? 'font-bold bg-white dark:bg-slate-800 text-indigo-700 dark:text-indigo-300 shadow-xs border border-slate-200/80 dark:border-slate-700'
+                    : 'font-medium text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-900/60'
                 }`}
               >
                 <span>Kanban Board</span>
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
               </button>
+
               <button
                 onClick={() => handleTabChange('sla')}
-                className={`px-3.5 py-1.5 rounded-lg text-xs transition-all flex items-center gap-1.5 cursor-pointer ${
+                className={`px-3 py-1.5 rounded-lg text-xs transition-all flex items-center gap-1.5 cursor-pointer ${
                   activeTab === 'sla'
-                    ? 'font-semibold bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800/80 shadow-xs'
-                    : 'font-medium text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800/60 border border-transparent'
+                    ? 'font-bold bg-white dark:bg-slate-800 text-indigo-700 dark:text-indigo-300 shadow-xs border border-slate-200/80 dark:border-slate-700'
+                    : 'font-medium text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-900/60'
                 }`}
               >
-                <span>Contractor Financial SLA Ledger</span>
+                <span>Contractor SLA Ledger</span>
                 <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
               </button>
             </div>
 
-            <SyntheticGeneratorControl />
+            {/* Quick Actions */}
+            <div className="flex items-center gap-1.5">
+              <SyntheticGeneratorControl />
 
-            <button
-              onClick={() => openConsole(clusters[0] || null, 'concurrence_release')}
-              className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 hover:bg-zinc-100 dark:hover:bg-zinc-800 text-xs font-semibold text-zinc-700 dark:text-zinc-200 transition cursor-pointer"
-            >
-              <Sparkles className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
-              <span>Concurrence Gate</span>
-            </button>
+              <button
+                onClick={() => openConsole(clusters[0] || null, 'concurrence_release')}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/80 hover:bg-emerald-100 dark:hover:bg-emerald-900/40 text-xs font-semibold text-emerald-800 dark:text-emerald-200 transition cursor-pointer"
+                title="Verify Multi-Pass Sensor Concurrence for Payment Clearance"
+              >
+                <Sparkles className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                <span>Concurrence Gate</span>
+              </button>
 
-            <button
-              onClick={handleExportCSV}
-              className="flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-blue-700 hover:bg-blue-800 text-white font-bold text-xs transition active:scale-95 cursor-pointer shadow-xs"
-            >
-              <Download className="w-3.5 h-3.5" />
-              <span>Export CSV</span>
-            </button>
+              <button
+                onClick={handleExportCSV}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs transition active:scale-95 cursor-pointer shadow-xs"
+                title="Export complete Work Orders register to RFC 4180 CSV"
+              >
+                <Download className="w-3.5 h-3.5" />
+                <span>Export CSV</span>
+              </button>
+            </div>
           </div>
         </div>
 
@@ -1147,30 +1185,136 @@ export const WorkOrders: React.FC<WorkOrdersProps> = ({ clusters, onUpdateStatus
           </div>
         ) : (
           <>
-            {/* AUTONOMOUS DEFECT-TO-CLOSURE LIFECYCLE BANNER */}
-            <div className="p-4 rounded-xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-xs">
-              <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
-                <div className="space-y-1">
-                  <div className="flex items-center gap-2">
-                    <h3 className="font-bold text-sm sm:text-base text-zinc-900 dark:text-white">
-                      {t("lifecycle.title", "Automated Defect-to-Closure Lifecycle")}
-                    </h3>
-                    <span className="px-2 py-0.5 rounded bg-zinc-100 dark:bg-zinc-800 text-zinc-800 dark:text-zinc-200 font-mono text-xs font-bold border border-zinc-200 dark:border-zinc-700">
-                      Standard Operating Procedure
-                    </span>
-                  </div>
-                  <p className="text-xs text-zinc-600 dark:text-zinc-300">
-                    {t("lifecycle.subtitle", "Optical Detection -> Service Order Registered -> Contractor SLA Repair -> Re-Inspection Verification")}
-                  </p>
+            {/* 3. COMPACT COCKPIT FILTER BAR */}
+            <div className="flex items-center gap-2 flex-wrap lg:flex-nowrap justify-between p-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs">
+              {/* Left: Search input + Dropdown Filters */}
+              <div className="flex items-center gap-2 flex-1 flex-wrap sm:flex-nowrap">
+                {/* Search Input */}
+                <div className="relative min-w-[180px] sm:w-64 max-w-sm flex-1 sm:flex-none">
+                  <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
+                  <input
+                    type="text"
+                    placeholder="Search Order ID, Road, Defect, Agency..."
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                    className="w-full h-8 pl-8 pr-7 rounded-lg bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-xs text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-hidden focus:border-indigo-500 transition"
+                  />
+                  {search && (
+                    <button
+                      onClick={() => setSearch('')}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-0.5 cursor-pointer"
+                      title="Clear search"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  )}
                 </div>
 
-                <div className="flex items-center gap-3 w-full lg:w-auto">
+                {/* Severity Dropdown */}
+                <div className="relative">
+                  <select
+                    value={severityFilter}
+                    onChange={(e) => setSeverityFilter(e.target.value)}
+                    className="h-8 pl-2.5 pr-7 rounded-lg bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-xs text-slate-700 dark:text-slate-300 font-medium focus:outline-hidden focus:border-indigo-500 appearance-none cursor-pointer"
+                  >
+                    <option value="all">Severity: All</option>
+                    <option value="critical">P0 Critical</option>
+                    <option value="high">P1 High</option>
+                    <option value="medium">P2 Medium</option>
+                  </select>
+                  <ChevronDown className="w-3 h-3 text-slate-400 absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none" />
+                </div>
+
+                {/* Agency Dropdown */}
+                <div className="relative">
+                  <select
+                    value={contractorFilter}
+                    onChange={(e) => setContractorFilter(e.target.value)}
+                    className="h-8 pl-2.5 pr-7 rounded-lg bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-xs text-slate-700 dark:text-slate-300 font-medium focus:outline-hidden focus:border-indigo-500 appearance-none cursor-pointer"
+                  >
+                    {contractorsList.map((item) => (
+                      <option key={item.value} value={item.value}>
+                        {item.value === 'all' ? 'Agency: All' : item.label}
+                      </option>
+                    ))}
+                  </select>
+                  <ChevronDown className="w-3 h-3 text-slate-400 absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none" />
+                </div>
+
+                {/* SLA State Dropdown */}
+                <div className="relative">
+                  <select
+                    value={statusFilter}
+                    onChange={(e) => setStatusFilter(e.target.value)}
+                    className="h-8 pl-2.5 pr-7 rounded-lg bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-xs text-slate-700 dark:text-slate-300 font-medium focus:outline-hidden focus:border-indigo-500 appearance-none cursor-pointer"
+                  >
+                    <option value="all">SLA: All States</option>
+                    <option value="active">Active SLA</option>
+                    <option value="breached">Breached SLA</option>
+                    <option value="verified_closed">Verified Closed</option>
+                  </select>
+                  <ChevronDown className="w-3 h-3 text-slate-400 absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none" />
+                </div>
+
+                {/* Reset Filters Button */}
+                {hasActiveFilters && (
+                  <button
+                    onClick={handleResetFilters}
+                    className="h-8 px-2.5 rounded-lg bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 text-xs font-medium flex items-center gap-1.5 transition cursor-pointer"
+                    title="Reset all active filters"
+                  >
+                    <RotateCcw className="w-3 h-3" />
+                    <span>Reset</span>
+                  </button>
+                )}
+              </div>
+
+              {/* Right: Lifecycle Simulation Accordion Toggle */}
+              <div className="flex items-center gap-2 shrink-0">
+                <button
+                  onClick={() => setIsDrillExpanded((prev) => !prev)}
+                  className={`h-8 px-3 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition cursor-pointer border ${
+                    isDrillExpanded || isDrillRunning
+                      ? 'bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 border-indigo-200 dark:border-indigo-800 shadow-2xs'
+                      : 'bg-slate-50 hover:bg-slate-100 dark:bg-slate-950 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-800'
+                  }`}
+                  title="Toggle Autonomous Lifecycle SOP Drill"
+                >
+                  <Sparkles className={`w-3.5 h-3.5 ${isDrillRunning ? 'animate-spin text-indigo-600' : 'text-amber-500'}`} />
+                  <span>Lifecycle SOP Drill</span>
+                  {isDrillExpanded ? (
+                    <ChevronUp className="w-3.5 h-3.5 text-slate-400" />
+                  ) : (
+                    <ChevronDown className="w-3.5 h-3.5 text-slate-400" />
+                  )}
+                </button>
+              </div>
+            </div>
+
+            {/* COLLAPSIBLE ON-DEMAND LIFECYCLE SIMULATION ACCORDION */}
+            {isDrillExpanded && (
+              <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-950/70 border border-slate-200 dark:border-slate-800 shadow-xs space-y-3 transition-all animate-fadeIn">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <h4 className="font-bold text-xs sm:text-sm text-slate-900 dark:text-white">
+                        {t("lifecycle.title", "Automated Defect-to-Closure Lifecycle Simulation")}
+                      </h4>
+                      <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-indigo-100 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800">
+                        MoHUA SOP
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
+                      {t("lifecycle.subtitle", "Optical Detection -> Service Order Registered -> Contractor SLA Repair -> Re-Inspection Verification")}
+                    </p>
+                  </div>
+
                   <button
                     onClick={handleRunLifecycleDrill}
                     disabled={isDrillRunning}
-                    className="flex-1 lg:flex-none flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-xs transition disabled:opacity-60 cursor-pointer shadow-xs"
+                    className="flex items-center gap-2 px-3.5 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-xs transition disabled:opacity-60 cursor-pointer shadow-xs shrink-0"
                   >
-                    <Sparkles className={`w-4 h-4 ${isDrillRunning ? 'animate-spin' : ''}`} />
+                    <Sparkles className={`w-3.5 h-3.5 ${isDrillRunning ? 'animate-spin' : ''}`} />
                     <span>
                       {isDrillRunning 
                         ? t("lifecycle.runningDrill", "Simulating Lifecycle Workflow...") 
@@ -1178,150 +1322,53 @@ export const WorkOrders: React.FC<WorkOrdersProps> = ({ clusters, onUpdateStatus
                     </span>
                   </button>
                 </div>
-              </div>
 
-              {/* 4 Pipeline Stages Progress Visualization */}
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-2.5 mt-4 pt-3 border-t border-zinc-200 dark:border-zinc-800 text-xs font-mono">
-                <div className={`p-2 rounded-lg border flex items-center gap-2 transition ${
-                  drillStep === 1 
-                    ? 'bg-blue-50 dark:bg-blue-950/60 border-blue-400 text-blue-900 dark:text-blue-200 font-bold' 
-                    : 'bg-zinc-50 dark:bg-zinc-950 border-zinc-200 dark:border-zinc-800 text-zinc-700 dark:text-zinc-300'
-                }`}>
-                  <span className="w-5 h-5 rounded bg-blue-700 text-white flex items-center justify-center font-bold text-xs shrink-0">1</span>
-                  <span className="truncate">{t("lifecycle.step1", "1. Impact & Camera Detection")}</span>
-                </div>
+                {/* 4 Pipeline Stages Progress Visualization */}
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-xs font-mono">
+                  <div className={`p-2 rounded-lg border flex items-center gap-2 transition ${
+                    drillStep === 1 
+                      ? 'bg-blue-50 dark:bg-blue-950/60 border-blue-400 text-blue-900 dark:text-blue-200 font-bold' 
+                      : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300'
+                  }`}>
+                    <span className="w-4 h-4 rounded bg-blue-700 text-white flex items-center justify-center font-bold text-[10px] shrink-0">1</span>
+                    <span className="truncate text-[11px]">{t("lifecycle.step1", "1. Impact & Camera Detection")}</span>
+                  </div>
 
-                <div className={`p-2 rounded-lg border flex items-center gap-2 transition ${
-                  drillStep === 2 
-                    ? 'bg-amber-50 dark:bg-amber-950/60 border-amber-400 text-amber-900 dark:text-amber-200 font-bold' 
-                    : 'bg-zinc-50 dark:bg-zinc-950 border-zinc-200 dark:border-zinc-800 text-zinc-700 dark:text-zinc-300'
-                }`}>
-                  <span className="w-5 h-5 rounded bg-amber-700 text-white flex items-center justify-center font-bold text-xs shrink-0">2</span>
-                  <span className="truncate">{t("lifecycle.step2", "2. Order Open (SLA Active)")}</span>
-                </div>
+                  <div className={`p-2 rounded-lg border flex items-center gap-2 transition ${
+                    drillStep === 2 
+                      ? 'bg-amber-50 dark:bg-amber-950/60 border-amber-400 text-amber-900 dark:text-amber-200 font-bold' 
+                      : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300'
+                  }`}>
+                    <span className="w-4 h-4 rounded bg-amber-700 text-white flex items-center justify-center font-bold text-[10px] shrink-0">2</span>
+                    <span className="truncate text-[11px]">{t("lifecycle.step2", "2. Order Open (SLA Active)")}</span>
+                  </div>
 
-                <div className={`p-2 rounded-lg border flex items-center gap-2 transition ${
-                  drillStep === 3 
-                    ? 'bg-blue-50 dark:bg-blue-950/60 border-blue-400 text-blue-900 dark:text-blue-200 font-bold' 
-                    : 'bg-zinc-50 dark:bg-zinc-950 border-zinc-200 dark:border-zinc-800 text-zinc-700 dark:text-zinc-300'
-                }`}>
-                  <span className="w-5 h-5 rounded bg-blue-700 text-white flex items-center justify-center font-bold text-xs shrink-0">3</span>
-                  <span className="truncate">{t("lifecycle.step3", "3. Contractor Patch")}</span>
-                </div>
+                  <div className={`p-2 rounded-lg border flex items-center gap-2 transition ${
+                    drillStep === 3 
+                      ? 'bg-blue-50 dark:bg-blue-950/60 border-blue-400 text-blue-900 dark:text-blue-200 font-bold' 
+                      : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300'
+                  }`}>
+                    <span className="w-4 h-4 rounded bg-blue-700 text-white flex items-center justify-center font-bold text-[10px] shrink-0">3</span>
+                    <span className="truncate text-[11px]">{t("lifecycle.step3", "3. Contractor Patch")}</span>
+                  </div>
 
-                <div className={`p-2 rounded-lg border flex items-center gap-2 transition ${
-                  drillStep === 4 
-                    ? 'bg-emerald-50 dark:bg-emerald-950/60 border-emerald-400 text-emerald-900 dark:text-emerald-200 font-bold' 
-                    : 'bg-zinc-50 dark:bg-zinc-950 border-zinc-200 dark:border-zinc-800 text-zinc-700 dark:text-zinc-300'
-                }`}>
-                  <span className="w-5 h-5 rounded bg-emerald-700 text-white flex items-center justify-center font-bold text-xs shrink-0">4</span>
-                  <span className="truncate">{t("lifecycle.step4", "4. Re-Pass Closure")}</span>
-                </div>
-              </div>
-            </div>
-
-            {/* 3. MULTI-CRITERIA QUICK FILTER CHIPS & SEARCH BAR */}
-            <div className="p-3.5 rounded-xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-xs space-y-3">
-              <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
-                <div className="relative flex-1 max-w-md">
-                  <Search className="w-4 h-4 text-zinc-400 absolute left-3 top-1/2 -translate-y-1/2" />
-                  <input
-                    type="text"
-                    placeholder="Search Order ID, Corridor, Defect, Agency..."
-                    value={search}
-                    onChange={(e) => setSearch(e.target.value)}
-                    className="w-full h-8 pl-9 pr-3 rounded-lg bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 text-xs text-zinc-900 dark:text-zinc-100 placeholder-zinc-500 focus:outline-hidden focus:border-blue-600 transition"
-                  />
-                </div>
-
-                <div className="flex items-center gap-2 flex-wrap text-xs">
-                  <button
-                    onClick={() => {
-                      setSearch('');
-                      setStatusFilter('all');
-                      setSeverityFilter('all');
-                      setContractorFilter('all');
-                    }}
-                    className="px-2.5 py-1 rounded-md bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-600 dark:text-zinc-300 font-medium text-[11px] transition cursor-pointer"
-                  >
-                    Reset Filters
-                  </button>
+                  <div className={`p-2 rounded-lg border flex items-center gap-2 transition ${
+                    drillStep === 4 
+                      ? 'bg-emerald-50 dark:bg-emerald-950/60 border-emerald-400 text-emerald-900 dark:text-emerald-200 font-bold' 
+                      : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300'
+                  }`}>
+                    <span className="w-4 h-4 rounded bg-emerald-700 text-white flex items-center justify-center font-bold text-[10px] shrink-0">4</span>
+                    <span className="truncate text-[11px]">{t("lifecycle.step4", "4. Re-Pass Closure")}</span>
+                  </div>
                 </div>
               </div>
-
-              {/* Quick Filter Chips Row */}
-              <div className="flex items-center gap-4 flex-wrap pt-2 border-t border-zinc-100 dark:border-zinc-800 text-xs font-mono">
-                {/* Severity Filter Chips */}
-                <div className="flex items-center gap-1.5">
-                  <span className="text-[11px] text-zinc-400 font-sans">Severity:</span>
-                  {[
-                    { label: 'All', value: 'all' },
-                    { label: 'P0 Critical', value: 'critical' },
-                    { label: 'P1 High', value: 'high' },
-                    { label: 'P2 Medium', value: 'medium' },
-                  ].map((chip) => (
-                    <button
-                      key={chip.value}
-                      onClick={() => setSeverityFilter(chip.value)}
-                      className={`px-2 py-0.5 rounded-full text-[10.5px] transition cursor-pointer border ${
-                        severityFilter === chip.value
-                          ? 'bg-blue-600 text-white border-blue-600 font-bold'
-                          : 'bg-zinc-50 dark:bg-zinc-950 text-zinc-600 dark:text-zinc-400 border-zinc-200 dark:border-zinc-800 hover:border-zinc-400'
-                      }`}
-                    >
-                      {chip.label}
-                    </button>
-                  ))}
-                </div>
-
-                {/* Contractor Filter Chips */}
-                <div className="flex items-center gap-1.5">
-                  <span className="text-[11px] text-zinc-400 font-sans">Agency:</span>
-                  {contractorsList.map((chip) => (
-                    <button
-                      key={chip.value}
-                      onClick={() => setContractorFilter(chip.value)}
-                      className={`px-2 py-0.5 rounded-full text-[10.5px] transition cursor-pointer border ${
-                        contractorFilter === chip.value
-                          ? 'bg-blue-600 text-white border-blue-600 font-bold'
-                          : 'bg-zinc-50 dark:bg-zinc-950 text-zinc-600 dark:text-zinc-400 border-zinc-200 dark:border-zinc-800 hover:border-zinc-400'
-                      }`}
-                    >
-                      {chip.label}
-                    </button>
-                  ))}
-                </div>
-
-                {/* SLA State Chips */}
-                <div className="flex items-center gap-1.5">
-                  <span className="text-[11px] text-zinc-400 font-sans">SLA:</span>
-                  {[
-                    { label: 'All States', value: 'all' },
-                    { label: 'Active', value: 'active' },
-                    { label: 'Breached', value: 'breached' },
-                    { label: 'Verified Closed', value: 'verified_closed' },
-                  ].map((chip) => (
-                    <button
-                      key={chip.value}
-                      onClick={() => setStatusFilter(chip.value)}
-                      className={`px-2 py-0.5 rounded-full text-[10.5px] transition cursor-pointer border ${
-                        statusFilter === chip.value
-                          ? 'bg-blue-600 text-white border-blue-600 font-bold'
-                          : 'bg-zinc-50 dark:bg-zinc-950 text-zinc-600 dark:text-zinc-400 border-zinc-200 dark:border-zinc-800 hover:border-zinc-400'
-                      }`}
-                    >
-                      {chip.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            </div>
+            )}
 
             {/* 4. ACCESSIBLE DATA TABLE WITH STICKY HEADER & MULTI-COLUMN SORT */}
             <div className="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-xs overflow-hidden">
               <div className="overflow-x-auto max-h-[580px] custom-scrollbar">
                 <table className="w-full text-left text-xs border-collapse">
-                  <thead className="sticky top-0 z-10 bg-slate-50 dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 shadow-xs">
+                  <thead className="sticky top-0 z-10 backdrop-blur-md bg-slate-50/95 dark:bg-slate-900/95 border-b border-slate-200 dark:border-slate-800 shadow-xs">
                     <tr className="text-slate-600 dark:text-slate-400 font-semibold uppercase text-[11px]">
                       <th 
                         onClick={() => handleSort('code')}
