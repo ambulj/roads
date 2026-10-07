@@ -94,11 +94,17 @@ def _parse_datetime(dt_input: Union[str, datetime.datetime, datetime.date]) -> d
     raise ValueError(f"Unable to parse date string: {dt_input}")
 
 
-def evaluate_recurrence_window(resolved_at_str: Union[str, datetime.datetime], detected_at_str: Union[str, datetime.datetime]) -> bool:
+def evaluate_recurrence_window(
+    resolved_at_str: Union[str, datetime.datetime], 
+    detected_at_str: Union[str, datetime.datetime],
+    dlp_months: int = 36
+) -> bool:
     """
-    Evaluates whether a detected defect falls within the mandatory
-    36-month (1,095 days) Defect Liability Period (DLP) under IRC:SP:20 Clause 14.
-    Returns True if delta_days <= 1095, False otherwise.
+    Evaluates whether a detected defect falls within the Defect Liability Period (DLP).
+    Supports dynamic statutory tiers:
+      - 12 months (Bituminous Overlay): 365 days
+      - 36 months (Flexible Arterial - default): 1,095 days
+      - 60 months (Rigid Concrete / PQC): 1,825 days
     """
     t_resolved = _parse_datetime(resolved_at_str)
     t_detected = _parse_datetime(detected_at_str)
@@ -110,8 +116,12 @@ def evaluate_recurrence_window(resolved_at_str: Union[str, datetime.datetime], d
         t_resolved = t_resolved.replace(tzinfo=t_detected.tzinfo)
 
     delta = t_detected - t_resolved
-    # Exact day arithmetic: 1095 days boundary
-    return delta.total_seconds() <= (1095 * 86400)
+    total_seconds = delta.total_seconds()
+    
+    days_map = {12: 365, 36: 1095, 60: 1825}
+    allowed_days = days_map.get(dlp_months, int(round(dlp_months * 30.4375)))
+    
+    return 0 <= total_seconds <= (allowed_days * 86400)
 
 
 # Alias for plan compatibility
@@ -131,12 +141,51 @@ def generate_pfms_voucher_ref(dt: Optional[datetime.datetime] = None) -> str:
     return f"PFMS/DLP-ESCROW/{yyyy}/{mmdd}-{hex6}"
 
 
+def generate_form14_docket_no(cluster_code: str, dt: Optional[datetime.datetime] = None) -> str:
+    """
+    Generates statutory Form 14 notice docket number:
+    FORM-14/DLP/{YYYY}/{CLUSTER_CODE}
+    """
+    if dt is None:
+        dt = datetime.datetime.now(datetime.timezone.utc)
+    return f"FORM-14/DLP/{dt.year}/{cluster_code}"
+
+
+def generate_section_65b_certificate_id(evidence_hash: Optional[str] = None, dt: Optional[datetime.datetime] = None) -> str:
+    """
+    Generates Section 63/65B BSA 2023 certificate ID:
+    CERT-BSA63-{evidence_hash[:12]} or CERT-BSA63/{YYYYMMDD}-{HEX6}
+    """
+    if evidence_hash:
+        return f"CERT-BSA63-{evidence_hash[:12].upper()}"
+    if dt is None:
+        dt = datetime.datetime.now(datetime.timezone.utc)
+    hex6 = uuid.uuid4().hex[:6].upper()
+    return f"CERT-BSA63/{dt.strftime('%Y%m%d')}-{hex6}"
+
+
 def compute_evidence_hash(cin: str, cluster_code: str, amount: float, timestamp: str) -> str:
     """
     Generates immutable SHA-256 evidence hash linking contractor CIN,
     cluster code, statutory penalty amount, and detection timestamp.
     """
     raw_payload = f"{cin}:{cluster_code}:{amount:.2f}:{timestamp}".encode("utf-8")
+    return hashlib.sha256(raw_payload).hexdigest()
+
+
+def compute_statutory_evidence_hash(
+    cin: str,
+    cluster_code: str,
+    amount: float,
+    timestamp: str,
+    bus_id: str = "BUS-04",
+    gz: float = 1.48
+) -> str:
+    """
+    Generates 64-character SHA-256 statutory evidence digest linking contractor CIN,
+    cluster code, penalty amount, timestamp, patrol vehicle ID, and measured vertical acceleration.
+    """
+    raw_payload = f"{cin}:{cluster_code}:{amount:.2f}:{timestamp}:{bus_id}:{gz:.2f}".encode("utf-8")
     return hashlib.sha256(raw_payload).hexdigest()
 
 
@@ -207,22 +256,25 @@ def find_recurrent_distress_cluster(
     return best_candidate
 
 
-def execute_contractor_auto_debit(
+def issue_form14_show_cause_notice(
     db: Session,
     cluster: Union[DBDistressCluster, str],
     measured_gz: float = 1.48,
     bus_id: str = "BUS-04",
+    ee_signoff_by: Optional[str] = None,
     notes: Optional[str] = None
 ) -> DBContractorPenalty:
     """
-    Executes an autonomous statutory penalty debit against a contractor's security deposit:
+    Autonomous Section 63/65B BSA 2023 Statutory Form 14 Show-Cause Notice Pack generation:
       1. Resolves contractor along the corridor package.
-      2. Computes tiered Clause 14 penalty escalation based on cumulative recurrence count.
-      3. Clamps remaining security deposit escrow balance at 0 (never negative).
-      4. Flags Critical Debarment Warning if balance < 20% or recurrence >= 3.
-      5. Generates CAG-compliant PFMS transaction voucher & SHA-256 evidence hash.
-      6. Creates DBContractorPenalty, updates DBDistressCluster, logs DBAuditLog & DBRepairAudit.
-      7. Registers statutory debarment notice in DBContractorDebarment if recurrence >= 3.
+      2. Computes tiered Clause 14 liquidated damages assessment.
+      3. Calculates 7-day cure window deadline.
+      4. Computes SHA-256 cryptographic evidence hash and generates Section 65B Certificate ID.
+      5. Registers escrow holdback in DBContractorPenalty with status = UNDER_NOTICE_CURE_PERIOD
+         (or NOTICE_SERVED if EE sign-off provided at creation).
+      6. Does NOT immediately liquidate contractor deposit balance.
+      7. Flags debarment risk if recurrence >= 3.
+      8. Logs audit trail and updates cluster status.
     """
     if isinstance(cluster, str):
         target_cluster = db.query(DBDistressCluster).filter(
@@ -247,7 +299,6 @@ def execute_contractor_auto_debit(
         contractor = db.query(DBContractor).first()
 
     if not contractor:
-        # Create default fallback contractor if none exist in DB
         contractor = DBContractor(
             id="CTR-01",
             name=target_cluster.assigned_agency or "L&T Highways Infra Ltd",
@@ -264,6 +315,10 @@ def execute_contractor_auto_debit(
             quality_score_pct=92.0,
             compaction_density_gcm3=2.36,
             debarment_risk="Low",
+            dlp_months=36,
+            dlp_tier_months=36,
+            contract_type="Flexible Arterial (DBM+BC)",
+            contract_package_type="Flexible Arterial (DBM+BC)",
             created_at=datetime.datetime.now(datetime.timezone.utc).isoformat(),
             updated_at=datetime.datetime.now(datetime.timezone.utc).isoformat()
         )
@@ -280,32 +335,27 @@ def execute_contractor_auto_debit(
     # Penalty formula computation
     penalty_amount, debarment_triggered = calculate_clause14_penalty(re_pothole_count)
 
-    # Escrow deduction with non-negative clamping
-    initial_deposit = float(contractor.security_deposit_inr or 5000000.0)
-    current_deductions = float(contractor.penalties_deducted_inr or 0.0)
-    new_deductions = current_deductions + penalty_amount
-    contractor.penalties_deducted_inr = new_deductions
-    remaining_balance = max(0.0, initial_deposit - new_deductions)
-
-    # Performance metric adjustments
-    contractor.breached_work_orders = (contractor.breached_work_orders or 0) + 1
-    contractor.quality_score_pct = max(0.0, round(100.0 - (contractor.breached_work_orders * 12.5), 1))
-
-    # Debarment risk calculation
-    if debarment_triggered or re_pothole_count >= 3 or remaining_balance < (0.20 * initial_deposit):
-        contractor.debarment_risk = "Critical Debarment Warning"
-    elif re_pothole_count == 2 or (contractor.on_time_sla_pct or 100.0) < 80.0:
-        contractor.debarment_risk = "Medium"
-    else:
-        contractor.debarment_risk = "Low"
-
     now_dt = datetime.datetime.now(datetime.timezone.utc)
     now_iso = now_dt.isoformat()
-    contractor.updated_at = now_iso
+    cure_deadline_iso = (now_dt + datetime.timedelta(days=7)).isoformat()
 
-    # Generate PFMS voucher and evidence SHA-256 hash
+    # Cryptographic evidence digest and Section 65B certificate ID
+    evidence_hash = compute_statutory_evidence_hash(
+        cin=contractor.cin,
+        cluster_code=target_cluster.cluster_code,
+        amount=penalty_amount,
+        timestamp=now_iso,
+        bus_id=bus_id,
+        gz=measured_gz
+    )
+    cert_id = generate_section_65b_certificate_id(evidence_hash=evidence_hash, dt=now_dt)
+    docket_no = generate_form14_docket_no(target_cluster.cluster_code, now_dt)
     pfms_ref = generate_pfms_voucher_ref(now_dt)
-    evidence_hash = compute_evidence_hash(contractor.cin, target_cluster.cluster_code, penalty_amount, now_iso)
+
+    status = "NOTICE_SERVED" if ee_signoff_by else "UNDER_NOTICE_CURE_PERIOD"
+    ee_signoff_at = now_iso if ee_signoff_by else None
+
+    dlp_tier = getattr(contractor, "dlp_tier_months", None) or getattr(contractor, "dlp_months", 36) or 36
 
     penalty = DBContractorPenalty(
         id=f"pen-{uuid.uuid4().hex[:8]}",
@@ -315,19 +365,47 @@ def execute_contractor_auto_debit(
         corridor_name=target_cluster.road_name or contractor.assigned_corridor,
         re_pothole_count=re_pothole_count,
         penalty_amount_inr=penalty_amount,
-        statutory_clause="MoHUA IRC:SP:20 Clause 14.2 (Defect Recurrence Penalty)",
-        status="DEBIT_ISSUED",
+        statutory_clause="MoHUA IRC:SP:20 Clause 14.2 & Section 63 BSA 2023",
+        status=status,
+        notice_status=status,
         provenance="DERIVED_FROM_RECURRENT_DISTRESS",
         pfms_txn_ref=pfms_ref,
         evidence_sha256=evidence_hash,
+        evidence_hash=evidence_hash,
         patrol_bus_id=bus_id,
         measured_gz=measured_gz,
         threshold_gz=1.35,
+        notice_docket_no=docket_no,
+        cure_deadline=cure_deadline_iso,
+        dlp_months=dlp_tier,
+        dlp_tier_months=dlp_tier,
+        section_65b_cert_id=cert_id,
+        certificate_id=cert_id,
+        ee_signoff_by=ee_signoff_by,
+        ee_signoff_at=ee_signoff_at,
         issued_at=now_iso
     )
     db.add(penalty)
 
-    # Register statutory GeM debarment if recurrence >= 3
+    # Performance metric adjustments
+    contractor.breached_work_orders = (contractor.breached_work_orders or 0) + 1
+    contractor.quality_score_pct = max(0.0, round(100.0 - (contractor.breached_work_orders * 12.5), 1))
+
+    # Debarment risk calculation
+    initial_deposit = float(contractor.security_deposit_inr or 5000000.0)
+    current_deductions = float(contractor.penalties_deducted_inr or 0.0)
+    projected_balance = max(0.0, initial_deposit - (current_deductions + penalty_amount))
+
+    if debarment_triggered or re_pothole_count >= 3 or projected_balance < (0.20 * initial_deposit):
+        contractor.debarment_risk = "Critical Debarment Warning"
+    elif re_pothole_count == 2 or (contractor.on_time_sla_pct or 100.0) < 80.0:
+        contractor.debarment_risk = "Medium"
+    else:
+        contractor.debarment_risk = "Low"
+
+    contractor.updated_at = now_iso
+
+    # Register statutory GeM debarment warning if recurrence >= 3
     if debarment_triggered or re_pothole_count >= 3:
         existing_deb = db.query(DBContractorDebarment).filter(
             DBContractorDebarment.contractor_name == contractor.name
@@ -338,7 +416,7 @@ def execute_contractor_auto_debit(
                 contractor_name=contractor.name,
                 demerit_score=min(100.0, 75.0 + re_pothole_count * 10.0),
                 debarment_status="STATUTORY_DEBARMENT_NOTICE",
-                reason=f"Defect recurrence threshold exceeded (N={re_pothole_count} within 36-month DLP) under IRC:SP:20 Clause 14.2.",
+                reason=f"Defect recurrence threshold exceeded (N={re_pothole_count} within {dlp_tier}-month DLP) under IRC:SP:20 Clause 14.2.",
                 gem_portal_reference=f"GeM/{now_dt.year}/DEB-{random.randint(1000, 9999)}",
                 effective_date=now_iso
             )
@@ -358,9 +436,9 @@ def execute_contractor_auto_debit(
         id=f"audit-{uuid.uuid4().hex[:8]}",
         bus_id=bus_id,
         corridor=target_cluster.road_name,
-        message=f"Clause 14 Penalty ₹{penalty_amount:,.0f} debited from {contractor.name} ({contractor.cin}) for {target_cluster.cluster_code}. Ref: {pfms_ref}",
-        latency_ms=45,
-        type="ESCROW_DEBIT_AUDIT",
+        message=f"Form 14 Show-Cause Notice {docket_no} drafted for {contractor.name} ({contractor.cin}). Penalty: ₹{penalty_amount:,.0f}, Cert: {cert_id}",
+        latency_ms=42,
+        type="STATUTORY_NOTICE_AUDIT",
         timestamp="Just now",
         created_at=now_iso
     ))
@@ -376,10 +454,181 @@ def execute_contractor_auto_debit(
         optical_status="RECURRENT_CAVITY_DETECTED",
         audit_verdict="REPAIR_FAILED_RECURRENCE",
         penalty_debit_inr=penalty_amount,
-        statutory_clause="MoHUA IRC:SP:20 Clause 14.2",
-        notes=notes or "Automated sensor-triggered recurrence penalty debit.",
+        statutory_clause="MoHUA IRC:SP:20 Clause 14.2 & Section 63 BSA 2023",
+        notes=notes or f"Form 14 Show-Cause Notice issued: {docket_no}",
         verified_at=now_iso
     ))
+
+    db.commit()
+    db.refresh(penalty)
+    return penalty
+
+
+generate_form14_show_cause_notice = issue_form14_show_cause_notice
+
+
+def sign_form14_show_cause_notice(
+    db: Session,
+    penalty_id: str,
+    ee_name: str,
+    ee_designation: str = "Executive Engineer"
+) -> DBContractorPenalty:
+    """
+    Stage 2: Municipal Executive Engineer digital sign-off.
+    Transitions penalty status from UNDER_NOTICE_CURE_PERIOD to NOTICE_SERVED.
+    """
+    penalty = db.query(DBContractorPenalty).filter(DBContractorPenalty.id == penalty_id).first()
+    if not penalty:
+        raise ValueError(f"Penalty record not found: {penalty_id}")
+
+    signoff_str = f"{ee_name} ({ee_designation})" if ee_designation else ee_name
+    now_iso = datetime.datetime.now(datetime.timezone.utc).isoformat()
+
+    penalty.ee_signoff_by = signoff_str
+    penalty.ee_signoff_at = now_iso
+    penalty.status = "NOTICE_SERVED"
+    penalty.notice_status = "NOTICE_SERVED"
+
+    db.add(DBAuditLog(
+        id=f"audit-{uuid.uuid4().hex[:8]}",
+        bus_id="EE_CONSOLE",
+        corridor=penalty.corridor_name,
+        message=f"Form 14 Notice {penalty.notice_docket_no or penalty.id} signed by {signoff_str}. Notice served to {penalty.contractor_name}.",
+        latency_ms=25,
+        type="EE_SIGNOFF_AUDIT",
+        timestamp="Just now",
+        created_at=now_iso
+    ))
+
+    db.commit()
+    db.refresh(penalty)
+    return penalty
+
+
+sign_form14_notice = sign_form14_show_cause_notice
+
+
+def enforce_liquidated_damages(db: Session, penalty_id: str) -> DBContractorPenalty:
+    """
+    Executes post-notice liquidated damages upon expiry of the 7-day cure window.
+    Deducts penalty amount from contractor security deposit escrow, with non-negative clamping.
+    Transitions status to LIQUIDATED_DAMAGES_ENFORCED.
+    """
+    penalty = db.query(DBContractorPenalty).filter(DBContractorPenalty.id == penalty_id).first()
+    if not penalty:
+        raise ValueError(f"Penalty record not found: {penalty_id}")
+
+    contractor = db.query(DBContractor).filter(
+        (DBContractor.id == penalty.contractor_id) | (DBContractor.name == penalty.contractor_name)
+    ).first()
+
+    now_iso = datetime.datetime.now(datetime.timezone.utc).isoformat()
+
+    if contractor:
+        initial_deposit = float(contractor.security_deposit_inr or 5000000.0)
+        current_deductions = float(contractor.penalties_deducted_inr or 0.0)
+        new_deductions = current_deductions + penalty.penalty_amount_inr
+        contractor.penalties_deducted_inr = new_deductions
+        remaining_balance = max(0.0, initial_deposit - new_deductions)
+
+        if penalty.re_pothole_count >= 3 or remaining_balance < (0.20 * initial_deposit):
+            contractor.debarment_risk = "Critical Debarment Warning"
+        contractor.updated_at = now_iso
+
+    if not penalty.pfms_txn_ref:
+        penalty.pfms_txn_ref = generate_pfms_voucher_ref()
+
+    penalty.status = "LIQUIDATED_DAMAGES_ENFORCED"
+    penalty.notice_status = "LIQUIDATED_DAMAGES_ENFORCED"
+
+    db.add(DBAuditLog(
+        id=f"audit-{uuid.uuid4().hex[:8]}",
+        bus_id="TREASURY_ESCROW",
+        corridor=penalty.corridor_name,
+        message=f"Liquidated damages of ₹{penalty.penalty_amount_inr:,.0f} enforced for {penalty.contractor_name} under {penalty.notice_docket_no or penalty.id}. Ref: {penalty.pfms_txn_ref}",
+        latency_ms=30,
+        type="ESCROW_LIQUIDATION_AUDIT",
+        timestamp="Just now",
+        created_at=now_iso
+    ))
+
+    db.commit()
+    db.refresh(penalty)
+    return penalty
+
+
+def dismiss_penalty_on_cure(db: Session, penalty_id: str) -> DBContractorPenalty:
+    """
+    Contractor rectified defect within 7-day cure window with multi-pass concurrence.
+    Transitions status to CURED_BY_CONTRACTOR and releases escrow holdback without deduction.
+    """
+    penalty = db.query(DBContractorPenalty).filter(DBContractorPenalty.id == penalty_id).first()
+    if not penalty:
+        raise ValueError(f"Penalty record not found: {penalty_id}")
+
+    now_iso = datetime.datetime.now(datetime.timezone.utc).isoformat()
+    penalty.status = "CURED_BY_CONTRACTOR"
+    penalty.notice_status = "CURED_BY_CONTRACTOR"
+
+    db.add(DBAuditLog(
+        id=f"audit-{uuid.uuid4().hex[:8]}",
+        bus_id="CONCURRENCE_GATING",
+        corridor=penalty.corridor_name,
+        message=f"Form 14 Notice {penalty.notice_docket_no or penalty.id} dismissed upon successful contractor cure. Escrow holdback released.",
+        latency_ms=20,
+        type="PENALTY_CURED_AUDIT",
+        timestamp="Just now",
+        created_at=now_iso
+    ))
+
+    db.commit()
+    db.refresh(penalty)
+    return penalty
+
+
+def execute_contractor_auto_debit(
+    db: Session,
+    cluster: Union[DBDistressCluster, str],
+    measured_gz: float = 1.48,
+    bus_id: str = "BUS-04",
+    notes: Optional[str] = None
+) -> DBContractorPenalty:
+    """
+    Executes an autonomous statutory penalty debit against a contractor's security deposit:
+      1. Issues Form 14 statutory notice pack.
+      2. Immediately applies escrow deduction and PFMS settlement for backwards compatibility.
+      3. Clamps remaining security deposit escrow balance at 0 (never negative).
+      4. Flags Critical Debarment Warning if balance < 20% or recurrence >= 3.
+      5. Commits and returns penalty with status = DEBIT_ISSUED.
+    """
+    penalty = issue_form14_show_cause_notice(
+        db=db,
+        cluster=cluster,
+        measured_gz=measured_gz,
+        bus_id=bus_id,
+        notes=notes
+    )
+
+    contractor = db.query(DBContractor).filter(
+        (DBContractor.id == penalty.contractor_id) | (DBContractor.name == penalty.contractor_name)
+    ).first()
+
+    if contractor:
+        initial_deposit = float(contractor.security_deposit_inr or 5000000.0)
+        current_deductions = float(contractor.penalties_deducted_inr or 0.0)
+        new_deductions = current_deductions + penalty.penalty_amount_inr
+        contractor.penalties_deducted_inr = new_deductions
+        remaining_balance = max(0.0, initial_deposit - new_deductions)
+
+        if penalty.re_pothole_count >= 3 or remaining_balance < (0.20 * initial_deposit):
+            contractor.debarment_risk = "Critical Debarment Warning"
+        elif penalty.re_pothole_count == 2 or (contractor.on_time_sla_pct or 100.0) < 80.0:
+            contractor.debarment_risk = "Medium"
+        else:
+            contractor.debarment_risk = "Low"
+
+    penalty.status = "DEBIT_ISSUED"
+    penalty.notice_status = "DEBIT_ISSUED"
 
     db.commit()
     db.refresh(penalty)

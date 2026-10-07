@@ -571,16 +571,16 @@ export const WorkOrders: React.FC<WorkOrdersProps> = ({ clusters, onUpdateStatus
             </div>
           </div>
 
-          {/* Card 3: Total Escrow At Risk (₹) */}
+          {/* Card 3: Total Escrow Under Statutory Notice */}
           <div className="p-3.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs hover:shadow-md transition">
             <div className="flex items-center justify-between">
               <div className="space-y-0.5">
-                <span className="text-[11px] font-semibold text-amber-600 dark:text-amber-400 uppercase tracking-wider">Total Escrow At Risk</span>
+                <span className="text-[11px] font-semibold text-amber-600 dark:text-amber-400 uppercase tracking-wider">Total Escrow Under Statutory Notice</span>
                 <div className="text-2xl font-extrabold text-amber-600 dark:text-amber-400 font-mono tabular-nums">
                   ₹{(activeAtRiskBudget / 100000).toFixed(2)} L
                 </div>
                 <div className="text-[11px] text-amber-600/80 font-medium">
-                  Clause 14 DLP exposure
+                  Clause 14 7-Day Cure Window Exposure
                 </div>
               </div>
               <SvgGauge
@@ -596,7 +596,7 @@ export const WorkOrders: React.FC<WorkOrdersProps> = ({ clusters, onUpdateStatus
               </SvgGauge>
             </div>
             <div className="mt-2 pt-2 border-t border-slate-100 dark:border-slate-800/80 text-[10.5px] text-slate-500 dark:text-slate-400">
-              CAG / PFMS retention deposits at stake
+              Form 14 show-cause &bull; 7-day cure window active
             </div>
           </div>
 

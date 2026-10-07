@@ -27,11 +27,15 @@ export interface ContractorAgency {
   warrantyExpiry: string;
   debarmentRisk: 'Low' | 'Medium' | 'Critical Debarment Warning';
   remainingDepositInr?: number;
+  dlpMonths?: number;
+  dlpTierMonths?: number;
+  contractType?: string;
+  contractPackageType?: string;
 }
 
 export type ContractorLedgerItem = ContractorAgency;
 
-export interface AutoDebitRecord {
+export interface Form14NoticeRecord {
   id: string;
   timestamp: string;
   contractorId: string;
@@ -43,13 +47,21 @@ export interface AutoDebitRecord {
   thresholdGz: number;
   penaltyDebitInr: number;
   remainingDepositInr: number;
-  pfmsTxnRef: string;
+  pfmsTxnRef?: string;
   clause: string;
-  status: 'EXECUTED_VIA_PFMS' | 'PENDING_RE_INSPECTION';
+  status: 'UNDER_NOTICE_CURE_PERIOD' | 'NOTICE_SERVED' | 'LIQUIDATED_DAMAGES_ENFORCED' | 'CURED_BY_CONTRACTOR' | 'EXECUTED_VIA_PFMS' | 'PENDING_RE_INSPECTION' | string;
   evidenceSha256?: string;
+  noticeDocketNo?: string;
+  cureDeadline?: string;
+  dlpTierMonths?: number;
+  section65bCertId?: string;
+  eeSignoffBy?: string;
+  eeSignoffAt?: string;
 }
 
-export type PenaltyDocketItem = AutoDebitRecord;
+export type AutoDebitRecord = Form14NoticeRecord;
+
+export type PenaltyDocketItem = Form14NoticeRecord;
 
 export interface ConcurrencePassItem {
   bus_id: string;
@@ -2347,7 +2359,7 @@ class ApiService {
     return INITIAL_CONTRACTORS_DATA;
   }
 
-  async getContractorPenalties(): Promise<AutoDebitRecord[]> {
+  async getContractorPenalties(): Promise<Form14NoticeRecord[]> {
     try {
       const res = await fetch(`${API_BASE}/contractors/penalties`, {
         headers: this.getAuthHeaders(),
@@ -2369,9 +2381,15 @@ class ApiService {
             penaltyDebitInr: p.penalty_amount_inr ?? p.penaltyDebitInr ?? 25000,
             remainingDepositInr: p.remaining_deposit_inr ?? 4975000,
             pfmsTxnRef: p.pfms_txn_ref || p.pfmsTxnRef || `PFMS/DLP-DEBIT/2026/${p.id}`,
-            clause: p.statutory_clause || p.clause || 'MoHUA IRC:SP:20 Clause 14.2',
-            status: (p.status === 'DEBIT_ISSUED' ? 'EXECUTED_VIA_PFMS' : p.status) || 'EXECUTED_VIA_PFMS',
-            evidenceSha256: p.evidence_sha256
+            clause: p.statutory_clause || p.clause || 'MoHUA IRC:SP:20 Clause 14.2 & Section 63 BSA 2023',
+            status: p.status || 'UNDER_NOTICE_CURE_PERIOD',
+            evidenceSha256: p.evidence_sha256 || p.evidence_hash,
+            noticeDocketNo: p.notice_docket_no || p.noticeDocketNo,
+            cureDeadline: p.cure_deadline || p.cureDeadline,
+            dlpTierMonths: p.dlp_tier_months ?? p.dlp_months ?? 36,
+            section65bCertId: p.section_65b_cert_id || p.certificate_id,
+            eeSignoffBy: p.ee_signoff_by,
+            eeSignoffAt: p.ee_signoff_at
           }));
         }
       }
@@ -2379,6 +2397,70 @@ class ApiService {
       console.warn("Failed to fetch contractor penalties, using fallback:", e);
     }
     return INITIAL_AUTO_DEBITS_DATA;
+  }
+
+  async issueForm14Notice(payload: { cluster_code: string; measured_gz?: number; patrol_bus_id?: string; ee_signoff_by?: string; notes?: string }): Promise<any> {
+    try {
+      const res = await fetch(`${API_BASE}/contractors/penalties/issue-form-14`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...this.getAuthHeaders()
+        },
+        body: JSON.stringify(payload)
+      });
+      if (res.ok) return await res.json();
+    } catch (e) {
+      console.warn("Failed to issue Form 14 notice:", e);
+    }
+    return null;
+  }
+
+  async signForm14Notice(penaltyId: string, payload: { ee_name?: string; ee_designation?: string; signoff_by?: string; remarks?: string }): Promise<any> {
+    try {
+      const normalized = {
+        ee_name: payload.ee_name || payload.signoff_by || 'Er. S. Meenakshi Sundaram',
+        ee_designation: payload.ee_designation || 'Executive Engineer (Highways)',
+        remarks: payload.remarks
+      };
+      const res = await fetch(`${API_BASE}/contractors/penalties/${encodeURIComponent(penaltyId)}/sign-notice`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...this.getAuthHeaders()
+        },
+        body: JSON.stringify(normalized)
+      });
+      if (res.ok) return await res.json();
+    } catch (e) {
+      console.warn("Failed to sign Form 14 notice:", e);
+    }
+    return null;
+  }
+
+  async enforceLiquidation(penaltyId: string): Promise<any> {
+    try {
+      const res = await fetch(`${API_BASE}/contractors/penalties/${encodeURIComponent(penaltyId)}/enforce-liquidation`, {
+        method: 'POST',
+        headers: this.getAuthHeaders()
+      });
+      if (res.ok) return await res.json();
+    } catch (e) {
+      console.warn("Failed to enforce liquidation:", e);
+    }
+    return null;
+  }
+
+  async getForm14NoticePack(penaltyId: string): Promise<any> {
+    try {
+      const res = await fetch(`${API_BASE}/contractors/penalties/${encodeURIComponent(penaltyId)}/notice-pack`, {
+        headers: this.getAuthHeaders()
+      });
+      if (res.ok) return await res.json();
+    } catch (e) {
+      console.warn("Failed to fetch Form 14 notice pack:", e);
+    }
+    return null;
   }
 
   async getContractorEscrow(id: string): Promise<any> {
@@ -2398,20 +2480,7 @@ class ApiService {
   }
 
   async triggerAutoDebitDemo(payload: { cluster_code: string; measured_gz?: number; patrol_bus_id?: string }): Promise<any> {
-    try {
-      const res = await fetch(`${API_BASE}/contractors/penalties/auto-debit`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...this.getAuthHeaders()
-        },
-        body: JSON.stringify(payload)
-      });
-      if (res.ok) return await res.json();
-    } catch (e) {
-      console.warn("Failed to trigger auto debit demo:", e);
-    }
-    return null;
+    return this.issueForm14Notice(payload);
   }
 
   async getDebarments(): Promise<any[]> {

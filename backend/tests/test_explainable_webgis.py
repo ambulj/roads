@@ -151,7 +151,7 @@ def test_pothole_volume_formula():
     assert 27.0 <= vol_litres <= 29.0
 
 def test_traffic_od_matrix_endpoint():
-    """Verify GET /api/traffic/od-matrix returns valid PS 26124 transit desire lines and GeoJSON."""
+    """Verify GET /api/traffic/od-matrix returns valid   transit desire lines and GeoJSON."""
     response = client.get("/api/traffic/od-matrix")
     assert response.status_code == 200
     data = response.json()

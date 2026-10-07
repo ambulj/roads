@@ -180,6 +180,10 @@ class DBContractor(Base):
     compaction_density_gcm3 = Column(Float, default=2.35)
     warranty_expiry = Column(String(64), nullable=True)
     debarment_risk = Column(String(32), default="Low")  # Low, Medium, Critical Debarment Warning
+    dlp_months = Column(Integer, default=36)
+    dlp_tier_months = Column(Integer, default=36)
+    contract_type = Column(String(64), default="Flexible Arterial (DBM+BC)")
+    contract_package_type = Column(String(64), default="Flexible Arterial (DBM+BC)")
     created_at = Column(String(64))
     updated_at = Column(String(64))
 
@@ -193,14 +197,24 @@ class DBContractorPenalty(Base):
     corridor_name = Column(String(255), nullable=False)
     re_pothole_count = Column(Integer, default=1)
     penalty_amount_inr = Column(Float, nullable=False)
-    statutory_clause = Column(String(128), default="MoHUA IRC:SP:20 Clause 14.2")
-    status = Column(String(32), default="DEBIT_ISSUED") # DEBIT_ISSUED, CONTESTED, RECOVERED
+    statutory_clause = Column(String(128), default="MoHUA IRC:SP:20 Clause 14.2 & Section 63 BSA 2023")
+    status = Column(String(32), default="UNDER_NOTICE_CURE_PERIOD") # UNDER_NOTICE_CURE_PERIOD, NOTICE_SERVED, LIQUIDATED_DAMAGES_ENFORCED, CURED_BY_CONTRACTOR, DEBIT_ISSUED
+    notice_status = Column(String(32), default="UNDER_NOTICE_CURE_PERIOD")
     provenance = Column(String(64), default="DERIVED_FROM_RECURRENT_DISTRESS")
     pfms_txn_ref = Column(String(64), unique=True, index=True, nullable=True)
     evidence_sha256 = Column(String(64), nullable=True)
+    evidence_hash = Column(String(64), nullable=True)
     patrol_bus_id = Column(String(64), nullable=True)
     measured_gz = Column(Float, default=1.0)
     threshold_gz = Column(Float, default=1.35)
+    notice_docket_no = Column(String(64), nullable=True, index=True)
+    cure_deadline = Column(String(64), nullable=True)
+    dlp_months = Column(Integer, default=36)
+    dlp_tier_months = Column(Integer, default=36)
+    section_65b_cert_id = Column(String(64), nullable=True)
+    certificate_id = Column(String(64), nullable=True)
+    ee_signoff_by = Column(String(128), nullable=True)
+    ee_signoff_at = Column(String(64), nullable=True)
     issued_at = Column(String(64))
 
 class DBOpenManholeAlert(Base):

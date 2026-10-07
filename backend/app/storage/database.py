@@ -251,11 +251,23 @@ def init_db():
         if "verification_status" not in existing_cols and existing_cols:
             cursor.execute("ALTER TABLE distress_clusters ADD COLUMN verification_status TEXT DEFAULT 'UNVERIFIED'")
 
+        cursor.execute("PRAGMA table_info(contractors)")
+        existing_contractor_cols = {row[1] for row in cursor.fetchall()}
+        for col in ("dlp_months", "dlp_tier_months"):
+            if col not in existing_contractor_cols and existing_contractor_cols:
+                cursor.execute(f"ALTER TABLE contractors ADD COLUMN {col} INTEGER DEFAULT 36")
+        for col in ("contract_type", "contract_package_type"):
+            if col not in existing_contractor_cols and existing_contractor_cols:
+                cursor.execute(f"ALTER TABLE contractors ADD COLUMN {col} TEXT DEFAULT 'Flexible Arterial (DBM+BC)'")
+
         cursor.execute("PRAGMA table_info(contractor_penalties)")
         existing_pen_cols = {row[1] for row in cursor.fetchall()}
-        for col in ("contractor_id", "pfms_txn_ref", "evidence_sha256", "patrol_bus_id"):
+        for col in ("contractor_id", "pfms_txn_ref", "evidence_sha256", "evidence_hash", "patrol_bus_id", "notice_docket_no", "cure_deadline", "section_65b_cert_id", "certificate_id", "ee_signoff_by", "ee_signoff_at", "notice_status"):
             if col not in existing_pen_cols and existing_pen_cols:
                 cursor.execute(f"ALTER TABLE contractor_penalties ADD COLUMN {col} TEXT")
+        for col in ("dlp_months", "dlp_tier_months"):
+            if col not in existing_pen_cols and existing_pen_cols:
+                cursor.execute(f"ALTER TABLE contractor_penalties ADD COLUMN {col} INTEGER DEFAULT 36")
         if "measured_gz" not in existing_pen_cols and existing_pen_cols:
             cursor.execute("ALTER TABLE contractor_penalties ADD COLUMN measured_gz REAL DEFAULT 1.0")
         if "threshold_gz" not in existing_pen_cols and existing_pen_cols:

@@ -817,7 +817,7 @@ export interface PrivacyConfigPayload {
   blur_intensity?: number;
 }
 
-// ── Traffic & OD Matrix Types (PS 26124) ──────────────────────────────────
+// ── Traffic & OD Matrix Types ( ) ──────────────────────────────────
 export interface ODCorridor {
   id: string;
   corridor_name: string;

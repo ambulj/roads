@@ -739,7 +739,7 @@ export const WebGISMap: React.FC<WebGISMapProps> = ({
     }
   }, [clusters, showHeatmap, showTrafficCongestion, isMapReady]);
 
-  // 3. Origin-Destination Transit Desire Lines (PS 26124)
+  // 3. Origin-Destination Transit Desire Lines ( )
   useEffect(() => {
     const map = mapRef.current;
     if (!map || !isMapReady) return;
@@ -1658,7 +1658,7 @@ export const WebGISMap: React.FC<WebGISMapProps> = ({
                   {showHeatmap && <Check className="w-4 h-4 text-orange-500" />}
                 </button>
 
-                {/* 5. PS 26124 OD Transit Desire Lines */}
+                {/* 5.   OD Transit Desire Lines */}
                 <button
                   type="button"
                   onClick={() => setShowODDesireLines(!showODDesireLines)}
@@ -1668,7 +1668,7 @@ export const WebGISMap: React.FC<WebGISMapProps> = ({
                 >
                   <div className="flex items-center gap-2">
                     <TrendingUp className="w-4 h-4 text-cyan-500" />
-                    <span>PS 26124 OD Transit Desire Lines</span>
+                    <span>  OD Transit Desire Lines</span>
                   </div>
                   {showODDesireLines && <Check className="w-4 h-4 text-cyan-500" />}
                 </button>
@@ -1830,13 +1830,13 @@ export const WebGISMap: React.FC<WebGISMapProps> = ({
         {/* SLIDE-UP BOTTOM ANALYTICAL TRAYS (DOCKED ABOVE LEGEND) */}
         <div className="absolute bottom-12 left-3 sm:left-4 z-20 max-w-md lg:max-w-lg w-full pointer-events-auto flex flex-col gap-2">
           
-          {/* TRAY 1: O-D TRANSIT DESIRE LINES SHEET (PS 26124) */}
+          {/* TRAY 1: O-D TRANSIT DESIRE LINES SHEET ( ) */}
           {showODDesireLines && (
             <div className="w-full bg-slate-950/95 backdrop-blur-md border border-cyan-500/40 rounded-xl shadow-2xl text-xs text-slate-200 font-sans animate-fadeIn overflow-hidden">
               <div className="bg-slate-900/90 px-3 py-2 border-b border-slate-800/80 flex items-center justify-between">
                 <div className="flex items-center gap-1.5 font-bold text-cyan-400 text-xs">
                   <TrendingUp className="w-4 h-4 text-cyan-400 shrink-0" />
-                  <span>O-D Transit Desire Lines (PS 26124)</span>
+                  <span>O-D Transit Desire Lines ( )</span>
                 </div>
                 <div className="flex items-center gap-1 text-slate-400">
                   <button

@@ -42,13 +42,14 @@ def client():
 
 def test_distinct_bus_diversity_rule():
     """
-    Asserts vehicle ID deduplication: 3 passes originating from the same bus (BUS-01)
-    yield distinct_buses_count = 1, remain AWAITING_CONCURRENCE, and reject invoice clearance.
+    Asserts intra-trip vehicle deduplication: 3 passes originating from the same bus (BUS-01)
+    within < 2 hours (08:00, 08:30, 09:15) deduplicate to 1 qualifying trip,
+    remain AWAITING_CONCURRENCE, and reject invoice clearance.
     """
     passes = [
         {"bus_id": "BUS-01", "vertical_gz": 0.98, "optical_status": "SMOOTH_SURFACE", "timestamp": "2026-10-06T08:00:00Z"},
-        {"bus_id": "BUS-01", "vertical_gz": 1.01, "optical_status": "SMOOTH_SURFACE", "timestamp": "2026-10-06T10:00:00Z"},
-        {"bus_id": "BUS-01", "vertical_gz": 0.99, "optical_status": "SMOOTH_SURFACE", "timestamp": "2026-10-06T12:00:00Z"},
+        {"bus_id": "BUS-01", "vertical_gz": 1.01, "optical_status": "SMOOTH_SURFACE", "timestamp": "2026-10-06T08:30:00Z"},
+        {"bus_id": "BUS-01", "vertical_gz": 0.99, "optical_status": "SMOOTH_SURFACE", "timestamp": "2026-10-06T09:15:00Z"},
     ]
     result = evaluate_concurrence_passes(passes, order_id="WO-DIVERSITY-01")
 
@@ -57,6 +58,82 @@ def test_distinct_bus_diversity_rule():
     assert result.invoice_clearance_authorized is False
     assert result.escrow_holdback_released is False
     assert len(result.passes) == 3
+
+
+def test_same_bus_trip_window_qualified():
+    """
+    Asserts that 3 passes from the SAME bus (BUS-01) separated by >= 2 hours (delta_t >= 7200s)
+    qualify as distinct trips, achieve REPAIR_VERIFIED, and authorize payment clearance.
+    (Resolves single-bus corridor starvation e.g. MTC Route 570 or 19B).
+    """
+    passes = [
+        {"bus_id": "BUS-01", "vertical_gz": 0.98, "optical_status": "SMOOTH_SURFACE", "timestamp": "2026-10-06T08:00:00Z"},
+        {"bus_id": "BUS-01", "vertical_gz": 1.01, "optical_status": "SMOOTH_SURFACE", "timestamp": "2026-10-06T10:15:00Z"},
+        {"bus_id": "BUS-01", "vertical_gz": 0.99, "optical_status": "SMOOTH_SURFACE", "timestamp": "2026-10-06T13:00:00Z"},
+    ]
+    result = evaluate_concurrence_passes(passes, order_id="WO-SAMEBUS-TRIP")
+
+    assert result.distinct_buses_count == 3
+    assert result.status == "REPAIR_VERIFIED"
+    assert result.invoice_clearance_authorized is True
+    assert result.escrow_holdback_released is True
+    assert result.failure_reason is None
+
+
+def test_hybrid_fleet_trip_window():
+    """
+    Asserts hybrid fleet passes: BUS-01 at 08:00, BUS-02 at 09:00, and BUS-01 at 10:30 (>= 2h from 08:00)
+    yield 3 qualified passes and transition to REPAIR_VERIFIED.
+    """
+    passes = [
+        {"bus_id": "BUS-01", "vertical_gz": 0.98, "optical_status": "SMOOTH_SURFACE", "timestamp": "2026-10-06T08:00:00Z"},
+        {"bus_id": "BUS-02", "vertical_gz": 1.02, "optical_status": "SMOOTH_SURFACE", "timestamp": "2026-10-06T09:00:00Z"},
+        {"bus_id": "BUS-01", "vertical_gz": 1.00, "optical_status": "SMOOTH_SURFACE", "timestamp": "2026-10-06T10:30:00Z"},
+    ]
+    result = evaluate_concurrence_passes(passes, order_id="WO-HYBRID-01")
+
+    assert result.distinct_buses_count == 3
+    assert result.status == "REPAIR_VERIFIED"
+    assert result.invoice_clearance_authorized is True
+
+
+def test_optical_clearance_dominance():
+    """
+    Asserts Optical Clearance Dominance:
+    Pass with optical_status == 'SMOOTH_SURFACE' and nominal IMU (|gz - 1.0| < 0.15)
+    is credited as verified without requiring mechanical wheel impact shock.
+    """
+    passes = [
+        {"bus_id": "BUS-01", "vertical_gz": 1.00, "optical_status": "SMOOTH_SURFACE", "timestamp": "2026-10-06T08:00:00Z"},
+        {"bus_id": "BUS-02", "vertical_gz": 1.01, "optical_status": "SMOOTH_SURFACE", "timestamp": "2026-10-06T10:30:00Z"},
+        {"bus_id": "BUS-03", "vertical_gz": 0.99, "optical_status": "SMOOTH_SURFACE", "timestamp": "2026-10-06T13:45:00Z"},
+    ]
+    result = evaluate_concurrence_passes(passes, order_id="WO-OPTICAL-DOM")
+
+    assert result.distinct_buses_count == 3
+    assert result.status == "REPAIR_VERIFIED"
+    assert result.invoice_clearance_authorized is True
+    for p in result.passes:
+        assert p.passed_optical is True
+        assert p.passed_imu is True
+
+
+def test_severe_shock_overrides_optical():
+    """
+    Asserts Mechanical Shock Override:
+    Pass with optical_status == 'SMOOTH_SURFACE' but severe normalized shock (G_norm = 0.42 >= 0.35)
+    immediately overrides optical smoothness and trips REPAIR_FAILED_RECURRENCE.
+    """
+    passes = [
+        {"bus_id": "BUS-01", "vertical_gz": 0.98, "speed_kmh": 30.0, "optical_status": "SMOOTH_SURFACE"},
+        {"bus_id": "BUS-02", "vertical_gz": 1.42, "speed_kmh": 30.0, "optical_status": "SMOOTH_SURFACE"},
+    ]
+    result = evaluate_concurrence_passes(passes, order_id="WO-SHOCK-OVERRIDE")
+
+    assert result.status == "REPAIR_FAILED_RECURRENCE"
+    assert result.invoice_clearance_authorized is False
+    assert result.escrow_holdback_released is False
+    assert "Severe shock" in (result.failure_reason or "")
 
 
 def test_three_pass_concurrence_pass():

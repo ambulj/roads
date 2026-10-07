@@ -15,6 +15,7 @@ from app.services.sensor_fusion_engine import compute_normalized_shock, compute_
 # ── Canonical Verification Constants ─────────────────────────────────────────
 REQUIRED_DISTINCT_BUSES: int = 3
 MONITORING_WINDOW_HOURS: int = 48
+MIN_TRIP_SEPARATION_SECONDS: int = 7200  # 2 hours
 VERTICAL_GZ_TOLERANCE: float = 0.15      # |gz - 1.0| < 0.15g -> 0.85g <= gz <= 1.15g (at 30 km/h)
 SHOCK_FAILURE_THRESHOLD: float = 0.35    # |gz - 1.0| >= 0.35g -> gz >= 1.35g or gz <= 0.65g (at 30 km/h)
 CORRIDOR_MATCH_METERS: float = 15.0
@@ -50,6 +51,60 @@ class ConcurrenceEvaluationResult(BaseModel):
         return getattr(self, item)
 
 
+def select_qualifying_trip_passes(
+    passes: List[Any], 
+    min_separation_seconds: int = MIN_TRIP_SEPARATION_SECONDS
+) -> List[Any]:
+    """
+    Groups passes by vehicle and applies the 2-hour separation window.
+    Sorts passes chronologically, then filters so each vehicle can contribute
+    multiple passes only if separated by >= min_separation_seconds (7,200s).
+    Passes from the same vehicle within < 2 hours are suppressed as intra-trip duplicates.
+    """
+    if not passes:
+        return []
+
+    def get_ts(p):
+        if isinstance(p, dict):
+            raw = p.get("timestamp") or p.get("captured_at") or p.get("verified_at") or ""
+        else:
+            raw = getattr(p, "timestamp", "")
+        if isinstance(raw, datetime.datetime):
+            return raw
+        try:
+            return datetime.datetime.fromisoformat(str(raw).replace("Z", "+00:00"))
+        except Exception:
+            return datetime.datetime.now(datetime.timezone.utc)
+
+    def get_bus(p):
+        if isinstance(p, dict):
+            return str(p.get("bus_id") or p.get("verifying_bus_id") or "BUS-UNKNOWN")
+        return str(getattr(p, "bus_id", "BUS-UNKNOWN"))
+
+    try:
+        sorted_passes = sorted(passes, key=get_ts)
+    except Exception:
+        sorted_passes = list(passes)
+
+    qualifying: List[Any] = []
+    last_pass_time_by_bus: Dict[str, datetime.datetime] = {}
+
+    for p in sorted_passes:
+        bus = get_bus(p)
+        t = get_ts(p)
+
+        if bus not in last_pass_time_by_bus:
+            last_pass_time_by_bus[bus] = t
+            qualifying.append(p)
+        else:
+            delta_sec = (t - last_pass_time_by_bus[bus]).total_seconds()
+            if delta_sec >= min_separation_seconds:
+                last_pass_time_by_bus[bus] = t
+                qualifying.append(p)
+
+    return qualifying
+
+
 # ── Concurrence Logic Engine ─────────────────────────────────────────────────
 def evaluate_concurrence_passes(
     passes: List[Dict[str, Any]], 
@@ -57,15 +112,19 @@ def evaluate_concurrence_passes(
 ) -> ConcurrenceEvaluationResult:
     """
     Evaluates multi-pass transit telematics against physical concurrence gates:
-      1. Cross-Bus Diversity: Requires passes from at least 3 distinct transit fleet vehicles (bus_ids).
-      2. Dual-Sensor Criteria:
-         - Optical: SMOOTH_SURFACE (or cavity confidence < 0.10)
-         - IMU: g_norm < 0.15 (at 30 km/h baseline, |gz - 1.0| < 0.15g)
-      3. Recurrence Shock:
+      1. Trip-Windowed Multi-Pass Diversity:
+         Requires at least 3 qualifying patrol passes within 48 hours. A pass qualifies
+         from a distinct vehicle ID OR from the same vehicle on distinct trips
+         separated by at least 2 hours (delta_t >= 7,200 seconds).
+      2. Dual-Sensor Criteria & Optical Clearance Dominance:
+         - Optical: SMOOTH_SURFACE (or cavity confidence < 0.10 and not cavity).
+           Confirms repaired road surface without requiring vehicle wheel collision.
+         - IMU: g_norm < 0.15 (at 30 km/h baseline, |gz - 1.0| < 0.15g).
+      3. Recurrence Shock Override:
          - If any pass exhibits severe shock (g_norm >= 0.35g) or open cavity,
            immediately marks status = REPAIR_FAILED_RECURRENCE.
       4. Clearance:
-         - If at least 3 distinct buses satisfy dual sensor criteria:
+         - If at least 3 qualified trip passes satisfy sensor criteria:
            status = REPAIR_VERIFIED, invoice_clearance_authorized = True, escrow_holdback_released = True.
          - Otherwise:
            status = AWAITING_CONCURRENCE, invoice_clearance_authorized = False.
@@ -109,11 +168,11 @@ def evaluate_concurrence_passes(
             failure_reasons.append(f"{bus_id}: {reason}")
 
     if severe_failure:
-        unique_buses = len(set(p.bus_id for p in processed_passes))
+        qualified_trips = select_qualifying_trip_passes(processed_passes, min_separation_seconds=MIN_TRIP_SEPARATION_SECONDS)
         return ConcurrenceEvaluationResult(
             order_id=order_id,
             status="REPAIR_FAILED_RECURRENCE",
-            distinct_buses_count=unique_buses,
+            distinct_buses_count=len(qualified_trips),
             required_buses_count=REQUIRED_DISTINCT_BUSES,
             window_hours=MONITORING_WINDOW_HOURS,
             passes=processed_passes,
@@ -124,8 +183,8 @@ def evaluate_concurrence_passes(
 
     # Filter for passes that satisfy BOTH optical and IMU criteria
     qualifying_passes = [p for p in processed_passes if p.passed_optical and p.passed_imu]
-    distinct_qualifying_buses = set(p.bus_id for p in qualifying_passes)
-    distinct_count = len(distinct_qualifying_buses)
+    qualified_trips = select_qualifying_trip_passes(qualifying_passes, min_separation_seconds=MIN_TRIP_SEPARATION_SECONDS)
+    distinct_count = len(qualified_trips)
 
     if distinct_count >= REQUIRED_DISTINCT_BUSES:
         return ConcurrenceEvaluationResult(

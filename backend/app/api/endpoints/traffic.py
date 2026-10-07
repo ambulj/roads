@@ -449,7 +449,7 @@ def get_origin_destination_matrix():
     Origin-Destination (O-D) Transit & Traffic Pattern Analysis Engine.
     Computes passenger car unit (PCU) volume matrices, desire line corridor flows,
     travel-time reliability ratios (TTR = Actual / Scheduled), and road distress delay attribution.
-    Fulfills SIH PS 26124 mandatory Origin-Destination Traffic Pattern requirement.
+    Fulfills SIH   mandatory Origin-Destination Traffic Pattern requirement.
     """
     from app.services.gtfs_analytics_engine import gtfs_analytics_engine
     from app.storage.mock_database import store

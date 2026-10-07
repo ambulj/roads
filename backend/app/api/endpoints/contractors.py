@@ -9,7 +9,13 @@ from app.models.db_models import (
     DBContractor, DBDistressCluster, DBContractorPenalty, 
     DBContractorDebarment
 )
-from app.services.contractor_service import execute_contractor_auto_debit
+from app.services.contractor_service import (
+    execute_contractor_auto_debit,
+    issue_form14_show_cause_notice,
+    sign_form14_show_cause_notice,
+    enforce_liquidated_damages,
+    dismiss_penalty_on_cure
+)
 from app.api.websockets import manager
 
 router = APIRouter()
@@ -35,6 +41,10 @@ class ContractorLedgerItem(BaseModel):
     compaction_density_gcm3: float
     warranty_expiry: Optional[str] = None
     debarment_risk: str
+    dlp_months: Optional[int] = 36
+    dlp_tier_months: Optional[int] = 36
+    contract_type: Optional[str] = "Flexible Arterial (DBM+BC)"
+    contract_package_type: Optional[str] = "Flexible Arterial (DBM+BC)"
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -49,10 +59,21 @@ class PenaltyDocketItem(BaseModel):
     penalty_amount_inr: float
     statutory_clause: str
     status: str
+    notice_status: Optional[str] = None
     pfms_txn_ref: Optional[str] = None
     evidence_sha256: Optional[str] = None
+    evidence_hash: Optional[str] = None
     patrol_bus_id: Optional[str] = None
     measured_gz: Optional[float] = 1.0
+    threshold_gz: Optional[float] = 1.35
+    notice_docket_no: Optional[str] = None
+    cure_deadline: Optional[str] = None
+    dlp_months: Optional[int] = 36
+    dlp_tier_months: Optional[int] = 36
+    section_65b_cert_id: Optional[str] = None
+    certificate_id: Optional[str] = None
+    ee_signoff_by: Optional[str] = None
+    ee_signoff_at: Optional[str] = None
     issued_at: Optional[str] = None
 
     model_config = ConfigDict(from_attributes=True)
@@ -88,6 +109,46 @@ class AutoDebitResponse(BaseModel):
     pfms_txn_ref: str
     evidence_sha256: str
     debarment_triggered: bool
+    notice_docket_no: Optional[str] = None
+    section_65b_cert_id: Optional[str] = None
+    cure_deadline: Optional[str] = None
+    status: Optional[str] = "DEBIT_ISSUED"
+    message: str
+
+
+class Form14IssueRequest(BaseModel):
+    cluster_code: str
+    measured_gz: float = 1.48
+    patrol_bus_id: str = "BUS-04"
+    ee_signoff_by: Optional[str] = None
+    notes: Optional[str] = None
+
+
+class Form14SignRequest(BaseModel):
+    ee_name: str
+    ee_designation: str = "Executive Engineer"
+
+
+class Form14NoticeResponse(BaseModel):
+    success: bool
+    penalty_id: str
+    notice_docket_no: str
+    contractor_id: Optional[str] = None
+    contractor_name: str
+    cluster_code: str
+    corridor_name: str
+    re_pothole_count: int
+    penalty_amount_inr: float
+    status: str
+    notice_status: str
+    cure_deadline: str
+    evidence_sha256: str
+    section_65b_cert_id: str
+    dlp_tier_months: int
+    patrol_bus_id: str
+    measured_gz: float
+    ee_signoff_by: Optional[str] = None
+    ee_signoff_at: Optional[str] = None
     message: str
 
 
@@ -195,7 +256,11 @@ def get_contractor_ledger(db: Session = Depends(get_db)):
             quality_score_pct=float(r.quality_score_pct or 100.0),
             compaction_density_gcm3=float(r.compaction_density_gcm3 or 2.35),
             warranty_expiry=r.warranty_expiry,
-            debarment_risk=r.debarment_risk or "Low"
+            debarment_risk=r.debarment_risk or "Low",
+            dlp_months=getattr(r, "dlp_months", 36) or 36,
+            dlp_tier_months=getattr(r, "dlp_tier_months", 36) or 36,
+            contract_type=getattr(r, "contract_type", "Flexible Arterial (DBM+BC)") or "Flexible Arterial (DBM+BC)",
+            contract_package_type=getattr(r, "contract_package_type", "Flexible Arterial (DBM+BC)") or "Flexible Arterial (DBM+BC)"
         ))
     return items
 
@@ -241,12 +306,23 @@ def get_contractor_penalties(
             corridor_name=r.corridor_name,
             re_pothole_count=r.re_pothole_count or 1,
             penalty_amount_inr=float(r.penalty_amount_inr),
-            statutory_clause=r.statutory_clause or "MoHUA IRC:SP:20 Clause 14.2",
-            status=r.status or "DEBIT_ISSUED",
+            statutory_clause=r.statutory_clause or "MoHUA IRC:SP:20 Clause 14.2 & Section 63 BSA 2023",
+            status=r.status or "UNDER_NOTICE_CURE_PERIOD",
+            notice_status=r.notice_status or r.status or "UNDER_NOTICE_CURE_PERIOD",
             pfms_txn_ref=r.pfms_txn_ref,
             evidence_sha256=r.evidence_sha256,
+            evidence_hash=r.evidence_hash or r.evidence_sha256,
             patrol_bus_id=r.patrol_bus_id,
             measured_gz=r.measured_gz,
+            threshold_gz=r.threshold_gz,
+            notice_docket_no=r.notice_docket_no,
+            cure_deadline=r.cure_deadline,
+            dlp_months=r.dlp_months or 36,
+            dlp_tier_months=r.dlp_tier_months or 36,
+            section_65b_cert_id=r.section_65b_cert_id,
+            certificate_id=r.certificate_id or r.section_65b_cert_id,
+            ee_signoff_by=r.ee_signoff_by,
+            ee_signoff_at=r.ee_signoff_at,
             issued_at=r.issued_at
         )
         for r in rows
@@ -382,8 +458,236 @@ async def post_auto_debit(payload: AutoDebitRequest, db: Session = Depends(get_d
         pfms_txn_ref=penalty.pfms_txn_ref or "",
         evidence_sha256=penalty.evidence_sha256 or "",
         debarment_triggered=debarment_triggered,
+        notice_docket_no=penalty.notice_docket_no,
+        section_65b_cert_id=penalty.section_65b_cert_id,
+        cure_deadline=penalty.cure_deadline,
+        status=penalty.status,
         message=f"Autonomous Clause 14 penalty of ₹{penalty.penalty_amount_inr:,.0f} executed under PFMS voucher {penalty.pfms_txn_ref}."
     )
+
+
+@router.post("/simulate-clause14-debit", response_model=AutoDebitResponse)
+async def post_simulate_clause14_debit(payload: AutoDebitRequest, db: Session = Depends(get_db)):
+    """Backwards-compatible wrapper for simulate-clause14-debit endpoint."""
+    return await post_auto_debit(payload, db)
+
+
+@router.post("/penalties/issue-form-14", response_model=Form14NoticeResponse)
+@router.post("/show-cause-notice", response_model=Form14NoticeResponse)
+async def post_issue_form14_notice(payload: Form14IssueRequest, db: Session = Depends(get_db)):
+    """
+    Issues a Section 63/65B BSA 2023 Statutory Form 14 Show-Cause Notice Pack.
+    Places penalty in UNDER_NOTICE_CURE_PERIOD escrow holdback (not liquidated)
+    with a mandatory 7-day statutory cure window.
+    """
+    cluster = db.query(DBDistressCluster).filter(
+        (DBDistressCluster.cluster_code == payload.cluster_code) |
+        (DBDistressCluster.id == payload.cluster_code)
+    ).first()
+
+    if not cluster:
+        raise HTTPException(
+            status_code=404,
+            detail=f"Work order / distress cluster '{payload.cluster_code}' not found."
+        )
+
+    try:
+        penalty = issue_form14_show_cause_notice(
+            db=db,
+            cluster=cluster,
+            measured_gz=payload.measured_gz,
+            bus_id=payload.patrol_bus_id,
+            ee_signoff_by=payload.ee_signoff_by,
+            notes=payload.notes
+        )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Form 14 notice generation failed: {str(e)}")
+
+    try:
+        await manager.broadcast({
+            "type": "STATUTORY_NOTICE_ISSUED",
+            "cluster_code": penalty.cluster_code,
+            "penalty_id": penalty.id,
+            "notice_docket_no": penalty.notice_docket_no,
+            "contractor_name": penalty.contractor_name,
+            "penalty_amount_inr": penalty.penalty_amount_inr,
+            "status": penalty.status,
+            "cure_deadline": penalty.cure_deadline
+        })
+    except Exception:
+        pass
+
+    return Form14NoticeResponse(
+        success=True,
+        penalty_id=penalty.id,
+        notice_docket_no=penalty.notice_docket_no or f"FORM-14/DLP/2026/{penalty.cluster_code}",
+        contractor_id=penalty.contractor_id,
+        contractor_name=penalty.contractor_name,
+        cluster_code=penalty.cluster_code,
+        corridor_name=penalty.corridor_name,
+        re_pothole_count=penalty.re_pothole_count,
+        penalty_amount_inr=penalty.penalty_amount_inr,
+        status=penalty.status,
+        notice_status=penalty.notice_status or penalty.status,
+        cure_deadline=penalty.cure_deadline or "",
+        evidence_sha256=penalty.evidence_sha256 or "",
+        section_65b_cert_id=penalty.section_65b_cert_id or "",
+        dlp_tier_months=penalty.dlp_tier_months or 36,
+        patrol_bus_id=penalty.patrol_bus_id or "BUS-04",
+        measured_gz=penalty.measured_gz or 1.48,
+        ee_signoff_by=penalty.ee_signoff_by,
+        ee_signoff_at=penalty.ee_signoff_at,
+        message=f"Form 14 Show-Cause Notice {penalty.notice_docket_no} issued under Section 63 BSA 2023 with 7-day cure window."
+    )
+
+
+@router.post("/penalties/{penalty_id}/sign-notice", response_model=Form14NoticeResponse)
+@router.post("/sign-notice/{penalty_id}", response_model=Form14NoticeResponse)
+async def post_sign_form14_notice(penalty_id: str, payload: Form14SignRequest, db: Session = Depends(get_db)):
+    """
+    Stage 2: Municipal Executive Engineer digital sign-off.
+    Transitions Form 14 notice from UNDER_NOTICE_CURE_PERIOD to NOTICE_SERVED.
+    """
+    try:
+        penalty = sign_form14_show_cause_notice(
+            db=db,
+            penalty_id=penalty_id,
+            ee_name=payload.ee_name,
+            ee_designation=payload.ee_designation
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"EE sign-off failed: {str(e)}")
+
+    try:
+        await manager.broadcast({
+            "type": "STATUTORY_NOTICE_SERVED",
+            "penalty_id": penalty.id,
+            "notice_docket_no": penalty.notice_docket_no,
+            "ee_signoff_by": penalty.ee_signoff_by,
+            "status": penalty.status
+        })
+    except Exception:
+        pass
+
+    return Form14NoticeResponse(
+        success=True,
+        penalty_id=penalty.id,
+        notice_docket_no=penalty.notice_docket_no or f"FORM-14/DLP/2026/{penalty.cluster_code}",
+        contractor_id=penalty.contractor_id,
+        contractor_name=penalty.contractor_name,
+        cluster_code=penalty.cluster_code,
+        corridor_name=penalty.corridor_name,
+        re_pothole_count=penalty.re_pothole_count,
+        penalty_amount_inr=penalty.penalty_amount_inr,
+        status=penalty.status,
+        notice_status=penalty.notice_status or penalty.status,
+        cure_deadline=penalty.cure_deadline or "",
+        evidence_sha256=penalty.evidence_sha256 or "",
+        section_65b_cert_id=penalty.section_65b_cert_id or "",
+        dlp_tier_months=penalty.dlp_tier_months or 36,
+        patrol_bus_id=penalty.patrol_bus_id or "BUS-04",
+        measured_gz=penalty.measured_gz or 1.48,
+        ee_signoff_by=penalty.ee_signoff_by,
+        ee_signoff_at=penalty.ee_signoff_at,
+        message=f"Form 14 Notice digitally signed by {penalty.ee_signoff_by}. Status updated to NOTICE_SERVED."
+    )
+
+
+@router.post("/penalties/{penalty_id}/enforce-liquidation", response_model=Dict[str, Any])
+@router.post("/enforce-liquidated-damages/{penalty_id}", response_model=Dict[str, Any])
+async def post_enforce_liquidation(penalty_id: str, db: Session = Depends(get_db)):
+    """
+    Executes liquidated damages upon expiry of 7-day cure window.
+    Deducts assessed damages from contractor security deposit escrow.
+    """
+    try:
+        penalty = enforce_liquidated_damages(db=db, penalty_id=penalty_id)
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Liquidation enforcement failed: {str(e)}")
+
+    contractor = db.query(DBContractor).filter(DBContractor.id == penalty.contractor_id).first()
+    remaining = max(0.0, float(contractor.security_deposit_inr or 5000000.0) - float(contractor.penalties_deducted_inr or 0.0)) if contractor else 0.0
+
+    return {
+        "success": True,
+        "penalty_id": penalty.id,
+        "notice_docket_no": penalty.notice_docket_no,
+        "contractor_name": penalty.contractor_name,
+        "penalty_amount_inr": penalty.penalty_amount_inr,
+        "remaining_deposit_inr": remaining,
+        "pfms_txn_ref": penalty.pfms_txn_ref,
+        "status": penalty.status,
+        "message": f"Liquidated damages of ₹{penalty.penalty_amount_inr:,.0f} debited from contractor escrow under PFMS ref {penalty.pfms_txn_ref}."
+    }
+
+
+@router.get("/penalties/{penalty_id}/notice-pack", response_model=Dict[str, Any])
+@router.get("/show-cause-notice/{penalty_id}", response_model=Dict[str, Any])
+def get_form14_notice_pack(penalty_id: str, db: Session = Depends(get_db)):
+    """
+    Returns the complete Section 63/65B BSA 2023 Statutory Form 14 Evidentiary Pack JSON
+    for rendering official legal notices, prints, and court filings.
+    """
+    penalty = db.query(DBContractorPenalty).filter(
+        (DBContractorPenalty.id == penalty_id) | (DBContractorPenalty.notice_docket_no == penalty_id)
+    ).first()
+
+    if not penalty:
+        raise HTTPException(status_code=404, detail=f"Penalty notice record not found: {penalty_id}")
+
+    contractor = db.query(DBContractor).filter(
+        (DBContractor.id == penalty.contractor_id) | (DBContractor.name == penalty.contractor_name)
+    ).first()
+
+    cluster = db.query(DBDistressCluster).filter(
+        (DBDistressCluster.cluster_code == penalty.cluster_code) | (DBDistressCluster.id == penalty.cluster_code)
+    ).first()
+
+    return {
+        "notice_docket_no": penalty.notice_docket_no or f"FORM-14/DLP/2026/{penalty.cluster_code}",
+        "penalty_id": penalty.id,
+        "statutory_act": "Bharatiya Sakshya Adhiniyam 2023 (Section 63 / 65B) & IRC:SP:20 Clause 14.2",
+        "issued_at": penalty.issued_at,
+        "cure_deadline": penalty.cure_deadline,
+        "status": penalty.status,
+        "notice_status": penalty.notice_status or penalty.status,
+        "contractor": {
+            "id": contractor.id if contractor else penalty.contractor_id,
+            "name": contractor.name if contractor else penalty.contractor_name,
+            "cin": contractor.cin if contractor else "U45203TN2001PLC047123",
+            "director": contractor.director if contractor else "Executive Director",
+            "assigned_corridor": penalty.corridor_name,
+            "dlp_tier_months": penalty.dlp_tier_months or (contractor.dlp_tier_months if contractor else 36),
+            "contract_type": getattr(contractor, "contract_type", "Flexible Arterial (DBM+BC)") if contractor else "Flexible Arterial (DBM+BC)"
+        },
+        "telemetry_provenance": {
+            "cluster_code": penalty.cluster_code,
+            "corridor_name": penalty.corridor_name,
+            "patrol_bus_id": penalty.patrol_bus_id or "BUS-04",
+            "measured_gz": penalty.measured_gz or 1.48,
+            "threshold_gz": penalty.threshold_gz or 1.35,
+            "re_pothole_count": penalty.re_pothole_count,
+            "penalty_amount_inr": penalty.penalty_amount_inr,
+            "lat": cluster.lat if cluster else 12.9516,
+            "lng": cluster.lng if cluster else 80.1462
+        },
+        "section_65b_certificate": {
+            "certificate_id": penalty.section_65b_cert_id or penalty.certificate_id,
+            "hash_algorithm": "SHA-256",
+            "evidence_digest": penalty.evidence_sha256 or penalty.evidence_hash,
+            "custodian_statement": "Records generated automatically by calibrated vehicle sensor edge NPU during scheduled municipal transit operations.",
+            "ee_signoff_by": penalty.ee_signoff_by,
+            "ee_signoff_at": penalty.ee_signoff_at
+        },
+        "pfms_settlement": {
+            "voucher_ref": penalty.pfms_txn_ref,
+            "clause": penalty.statutory_clause
+        }
+    }
 
 
 @router.get("/debarments", response_model=List[Dict[str, Any]])

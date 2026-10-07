@@ -788,7 +788,7 @@ export const Analytics: React.FC<AnalyticsProps> = ({ metrics, corridors, fleet 
                     Origin-Destination (O-D) Transit Corridor &amp; Desire Lines Matrix
                   </h2>
                   <Badge variant="purple" size="sm" className="font-mono font-bold">
-                    SIH PS 26124 Mandate
+                    SIH   Mandate
                   </Badge>
                   <span className="text-[10px] font-mono text-emerald-600 dark:text-emerald-400 font-bold bg-emerald-50 dark:bg-emerald-950/60 px-2 py-0.5 rounded border border-emerald-200 dark:border-emerald-800">
                     TTR: {odData.network_avg_travel_time_ratio}x
