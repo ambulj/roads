@@ -10,7 +10,7 @@ RoadSaathi v4.0 grounds the entire municipal intelligence platform in rigorous r
 - [x] **Phase 1: Enterprise Scalability & Spatial Engine** - Dual SQLite/PostgreSQL engine, PostGIS spatial clustering, and connection pooling for 500+ buses.
 - [x] **Phase 2: Edge NPU & Hardware Telematics Suite** - C++ RKNN2 zero-copy inference on Rockchip RK3588, INT8 OCR, and cellular reconnect watchdog.
 - [x] **Phase 3: Contractor Financial Accountability & SLA Ledger** - IRC:SP:20 Clause 14 auto-debit penalty ledger, 36-month defect liability tracking, and multi-pass concurrence gates.
-- [x] **Phase 4: Explainable WebGIS & Live Presentation Visualizer** - Interactive RPI click-to-explain modal, live dashcam 30 FPS visualizer, and Origin-Destination desire lines (PS 26124).
+- [x] **Phase 4: Explainable WebGIS & Live Presentation Visualizer** - Interactive RPI click-to-explain modal, live dashcam 30 FPS visualizer, and Origin-Destination desire lines ( ).
 
 ### Milestone v3.1: Modern Civic Portal & UI/UX Polish (Complete)
 - [x] **Phase 5: Design Tokens & Minimalist Government Portal Theme** - Modern white/indigo civic theme with crisp contrast, unified design tokens, typography, and polished dark/light mode toggle.
@@ -28,7 +28,7 @@ RoadSaathi v4.0 grounds the entire municipal intelligence platform in rigorous r
 ---
 
 ### Milestone v4.0: Production Physics, Statutory Alignment & Codebase Simplification (Active)
-- [ ] **Phase 12: Telematics Physics & Spatial Calibration** - Speed-normalized vertical shock ($G_z$), camera-to-axle physical delay offset, and heading-constrained road centerline snapping.
+- [x] **Phase 12: Telematics Physics & Spatial Calibration** - Speed-normalized vertical shock ($G_z$), camera-to-axle physical delay offset, and heading-constrained road centerline snapping.
 - [ ] **Phase 13: Municipal Statutory Show-Cause & Relaxed Multi-Pass Gating** - Indian Evidence Act / Section 65B BSA statutory notice pack generator with EE sign-off, and relaxed 3-trip multi-pass concurrence.
 - [ ] **Phase 14: Ponytail Codebase Pruning & Dead Engine Deletion** - Remove dead theoretical engines (`federated_edge_engine.py`, `markov_deterioration.py`) and simplify internal abstractions.
 
@@ -90,7 +90,7 @@ Phases execute in numeric order: 12 → 13 → 14
 | 9. Map HUD & Command Center Viewport Optimization | 1/1 | Complete | 2026-10-07 |
 | 10. Tabbed Executive Analytics & Clean Backlog Table Redesign | 1/1 | Complete | 2026-10-07 |
 | 11. Work Orders Cockpit & Contractor Operations Overhaul | 1/1 | Complete | 2026-10-07 |
-| 12. Telematics Physics & Spatial Calibration | 0/1 | Active | - |
+| 12. Telematics Physics & Spatial Calibration | 1/1 | Complete | 2026-10-07 |
 | 13. Municipal Statutory Show-Cause & Relaxed Multi-Pass Gating | 0/1 | Pending | - |
 | 14. Ponytail Codebase Pruning & Dead Engine Deletion | 0/1 | Pending | - |
 
