@@ -18,10 +18,51 @@ interface AnalyticsProps {
   fleet: FleetNode[];
 }
 
+export type AnalyticsSubTab = 'overview' | 'corridors' | 'traffic' | 'safety' | 'anpr';
+
+const ANALYTICS_TABS: { id: AnalyticsSubTab; label: string; Icon: React.ComponentType<{ className?: string }> }[] = [
+  { id: 'overview', label: 'Overview KPI', Icon: ChartColumn },
+  { id: 'corridors', label: 'Corridor Health', Icon: MapPin },
+  { id: 'traffic', label: 'Traffic & OD Flow', Icon: BusFront },
+  { id: 'safety', label: 'Safety & Lighting', Icon: ShieldCheck },
+  { id: 'anpr', label: 'Edge ANPR & Vision AI', Icon: Scan },
+];
+
+const isAnalyticsSubTab = (value: string | null): value is AnalyticsSubTab =>
+  !!value && ANALYTICS_TABS.some((tab) => tab.id === value);
+
+// Reads `?tab=` from the hash route (e.g. `#/analytics?tab=safety`); defaults to overview
+const getTabFromHash = (): AnalyticsSubTab => {
+  const [, queryPart] = window.location.hash.replace(/^#\/?/, '').split('?');
+  const tab = new URLSearchParams(queryPart || '').get('tab');
+  return isAnalyticsSubTab(tab) ? tab : 'overview';
+};
+
 export const Analytics: React.FC<AnalyticsProps> = ({ metrics, corridors, fleet }) => {
   const { t, language } = useLanguage();
   const { theme } = useTheme();
   const isDark = theme === 'dark';
+
+  const [activeTab, setActiveTab] = useState<AnalyticsSubTab>(getTabFromHash);
+
+  // Browser back/forward and external deep links keep the active tab in sync
+  useEffect(() => {
+    const onHashChange = () => {
+      const [routePart] = window.location.hash.replace(/^#\/?/, '').split('?');
+      if (routePart === 'analytics') setActiveTab(getTabFromHash());
+    };
+    window.addEventListener('hashchange', onHashChange);
+    return () => window.removeEventListener('hashchange', onHashChange);
+  }, []);
+
+  const handleTabChange = (tab: AnalyticsSubTab) => {
+    setActiveTab(tab);
+    const [, queryPart] = window.location.hash.replace(/^#\/?/, '').split('?');
+    const params = new URLSearchParams(queryPart || '');
+    params.set('tab', tab);
+    const nextHash = `#/analytics?${params.toString()}`;
+    if (window.location.hash !== nextHash) window.location.hash = nextHash;
+  };
 
   const [safeCorridors, setSafeCorridors] = useState<SafeCorridor[]>(INITIAL_SAFE_CORRIDORS);
   const [darkSpots, setDarkSpots] = useState<DarkSpotSegment[]>(INITIAL_DARK_SPOTS);
@@ -169,6 +210,36 @@ export const Analytics: React.FC<AnalyticsProps> = ({ metrics, corridors, fleet 
         </div>
       </div>
 
+      {/* 5-Tab Segmented Analytics Switcher */}
+      <div
+        role="tablist"
+        aria-label="Analytics sub-workspaces"
+        className="flex items-center gap-1.5 p-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl overflow-x-auto custom-scrollbar shadow-xs mb-6"
+      >
+        {ANALYTICS_TABS.map(({ id, label, Icon }) => {
+          const isActive = activeTab === id;
+          return (
+            <button
+              key={id}
+              type="button"
+              role="tab"
+              aria-selected={isActive}
+              onClick={() => handleTabChange(id)}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs whitespace-nowrap shrink-0 transition-colors cursor-pointer ${
+                isActive
+                  ? 'bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 font-semibold border border-indigo-200 dark:border-indigo-800/80 shadow-xs'
+                  : 'bg-transparent text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800/60 border border-transparent'
+              }`}
+            >
+              <Icon className="w-3.5 h-3.5" />
+              {label}
+            </button>
+          );
+        })}
+      </div>
+
+      {activeTab === 'overview' && (
+        <div className="space-y-5">
       {/* Executive Scorecards with Animated SVG Gauges */}
       <MetricCards
         metrics={metrics}
@@ -245,7 +316,6 @@ export const Analytics: React.FC<AnalyticsProps> = ({ metrics, corridors, fleet 
       </div>
 
       {/* Transit Dynamics & Corridors Analysis */}
-        <div className="space-y-5">
           {/* 2-Column Chart Row */}
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
             {/* Left: Dual Spline Time Series */}
@@ -383,7 +453,11 @@ export const Analytics: React.FC<AnalyticsProps> = ({ metrics, corridors, fleet 
               </div>
             </Card>
           </div>
+        </div>
+      )}
 
+      {activeTab === 'corridors' && (
+        <div className="space-y-5">
       {/* Arterial Road Corridor Risk Matrix Table */}
       <Card className="p-4 lg:p-6 flex flex-col gap-4 shadow-xs">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-slate-100 dark:border-slate-800">
@@ -470,6 +544,53 @@ export const Analytics: React.FC<AnalyticsProps> = ({ metrics, corridors, fleet 
         </div>
       </Card>
 
+      {/* Defect Severity Breakdown per Corridor (P0 / P1 / P2) */}
+      <Card className="p-4 lg:p-6 flex flex-col gap-4 shadow-xs">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-slate-100 dark:border-slate-800">
+          <div className="flex items-center gap-2">
+            <AlertTriangle className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+            <h2 className="text-sm font-bold uppercase tracking-tight text-slate-900 dark:text-slate-100">
+              Defect Severity Breakdown by Corridor
+            </h2>
+          </div>
+          <span className="text-[11px] text-slate-500 dark:text-slate-400">P0 = critical D40 potholes · P1/P2 split of remaining clusters</span>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+          {corridors.map((c) => {
+            const total = Math.max(c.clusters_count || 0, c.critical_d40_count || 0);
+            const p0 = c.critical_d40_count || 0;
+            const remaining = Math.max(total - p0, 0);
+            const p1 = Math.round(remaining * 0.6);
+            const p2 = remaining - p1;
+            const pct = (n: number) => (total > 0 ? (n / total) * 100 : 0);
+            const rows = [
+              { label: 'P0 Critical', value: p0, bar: 'bg-rose-500', text: 'text-rose-700 dark:text-rose-300' },
+              { label: 'P1 High', value: p1, bar: 'bg-amber-500', text: 'text-amber-700 dark:text-amber-300' },
+              { label: 'P2 Routine', value: p2, bar: 'bg-slate-400 dark:bg-slate-500', text: 'text-slate-700 dark:text-slate-300' },
+            ];
+            return (
+              <div key={c.corridor_name} className="rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-[#0E1424] p-3 space-y-2">
+                <div className="flex items-center justify-between text-xs">
+                  <span className="font-semibold text-slate-800 dark:text-slate-200 truncate">{c.corridor_name}</span>
+                  <span className="font-mono tabular-nums text-slate-500">{total} clusters</span>
+                </div>
+                {rows.map((r) => (
+                  <div key={r.label} className="space-y-0.5">
+                    <div className="flex items-center justify-between text-[11px]">
+                      <span className={r.text}>{r.label}</span>
+                      <span className="font-mono tabular-nums text-slate-700 dark:text-slate-300">{r.value}</span>
+                    </div>
+                    <div className="w-full bg-slate-200 dark:bg-slate-800 h-1.5 rounded-full overflow-hidden">
+                      <div className={`h-full rounded-full ${r.bar}`} style={{ width: `${pct(r.value)}%` }} />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            );
+          })}
+        </div>
+      </Card>
+
       {/* Edge Fleet Observation Diagnostics */}
       <Card className="p-4 lg:p-6 flex flex-col gap-4 shadow-xs">
         <div className="flex items-center gap-2 pb-3 border-b border-slate-100 dark:border-slate-800">
@@ -493,6 +614,18 @@ export const Analytics: React.FC<AnalyticsProps> = ({ metrics, corridors, fleet 
           ))}
         </div>
       </Card>
+        </div>
+      )}
+
+      {activeTab === 'traffic' && (
+        <div className="space-y-5">
+      {transitDelays.length === 0 && bottlenecks.length === 0 && !(odData?.corridors?.length > 0) && (
+        <Card className="p-6 flex flex-col items-center justify-center gap-2 text-center shadow-xs">
+          <BusFront className="w-6 h-6 text-slate-400" />
+          <span className="text-sm font-semibold text-slate-700 dark:text-slate-300">Awaiting traffic &amp; OD telemetry</span>
+          <span className="text-xs text-slate-500 dark:text-slate-400">GTFS delay attribution, IRC:106 bottlenecks and OD desire lines will appear once the feeds respond.</span>
+        </Card>
+      )}
 
       {/* ── GTFS PUBLIC TRANSIT DELAY & ROAD DISTRESS ATTRIBUTION ────────── */}
       {transitDelays.length > 0 && (
@@ -740,7 +873,11 @@ export const Analytics: React.FC<AnalyticsProps> = ({ metrics, corridors, fleet 
           </div>
         </Card>
       )}
+        </div>
+      )}
 
+      {activeTab === 'anpr' && (
+        <div className="space-y-5">
       {/* ── ARTERIAL VEHICLE DENSITY & ANPR OCR ENGINE ─────────────────────── */}
       <Card className="p-4 lg:p-6 flex flex-col gap-4 shadow-none">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-slate-200 dark:border-slate-800">
@@ -825,7 +962,11 @@ export const Analytics: React.FC<AnalyticsProps> = ({ metrics, corridors, fleet 
           </div>
         )}
       </Card>
+        </div>
+      )}
 
+      {activeTab === 'safety' && (
+        <div className="space-y-5">
       {/* ── 1. VISION ZERO SAFE SCHOOL & HOSPITAL CORRIDORS ────────────────── */}
       <Card className="p-4 lg:p-6 flex flex-col gap-4 shadow-xs">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-slate-100 dark:border-slate-800">
@@ -972,7 +1113,8 @@ export const Analytics: React.FC<AnalyticsProps> = ({ metrics, corridors, fleet 
           </table>
         </div>
       </Card>
-      </div>
+        </div>
+      )}
     </div>
   );
 };

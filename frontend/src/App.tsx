@@ -76,16 +76,37 @@ const PageSkeletonLoader: React.FC = () => (
   </div>
 );
 
+// Legacy standalone analytics routes → consolidated Analytics sub-tabs (Phase 10, D-03)
+const LEGACY_ANALYTICS_ALIASES: Record<string, string> = {
+  traffic: "traffic",
+  pedestrian: "safety",
+  darkspots: "safety",
+  incidents: "traffic",
+};
+
+// Merge (or override) the `tab` param into an existing query string
+const withTabQuery = (queryPart: string | undefined, tab: string): string => {
+  const params = new URLSearchParams(queryPart || "");
+  params.set("tab", tab);
+  return params.toString();
+};
+
+// Own-property lookup so prototype keys (e.g. "constructor") never match
+const getLegacyAnalyticsTab = (route: string | null | undefined): string | undefined =>
+  route && Object.prototype.hasOwnProperty.call(LEGACY_ANALYTICS_ALIASES, route)
+    ? LEGACY_ANALYTICS_ALIASES[route]
+    : undefined;
+
 const getInitialRoute = (): AppRoute => {
   const hash = window.location.hash.replace(/^#\/?/, "").trim();
   const [baseRoute] = hash.split('?');
-  if (baseRoute === "incidents") return "analytics";
+  if (getLegacyAnalyticsTab(baseRoute)) return "analytics";
   if (baseRoute === "capture") return "fleet";
   if (VALID_ROUTES.includes(baseRoute as AppRoute)) return baseRoute as AppRoute;
   try {
     const saved = localStorage.getItem("SeherSaathi_active_route");
     if (saved) {
-      if (saved === "incidents") return "analytics";
+      if (getLegacyAnalyticsTab(saved)) return "analytics";
       if (saved === "capture") return "fleet";
       if (VALID_ROUTES.includes(saved as AppRoute)) return saved as AppRoute;
     }
@@ -158,9 +179,10 @@ export const App: React.FC = () => {
     // Resolve legacy route aliases to consolidated workspaces with sub-tab deep links
     let target = routePart as AppRoute;
     let effectiveQuery = queryPart;
-    if (target === "incidents") {
+    const legacyAnalyticsTab = getLegacyAnalyticsTab(routePart);
+    if (legacyAnalyticsTab) {
       target = "analytics";
-      effectiveQuery = effectiveQuery ? `${effectiveQuery}&tab=incidents` : "tab=incidents";
+      effectiveQuery = withTabQuery(effectiveQuery, legacyAnalyticsTab);
     } else if (target === "capture") {
       target = "fleet";
       effectiveQuery = effectiveQuery ? `${effectiveQuery}&tab=capture` : "tab=capture";
@@ -272,9 +294,10 @@ export const App: React.FC = () => {
       let targetRoute = routePart as AppRoute;
 
       // Canonical redirect for legacy bookmarks
-      if (targetRoute === "incidents") {
+      const legacyAnalyticsTab = getLegacyAnalyticsTab(routePart);
+      if (legacyAnalyticsTab) {
         targetRoute = "analytics";
-        window.location.hash = queryPart ? `#/analytics?${queryPart}&tab=incidents` : "#/analytics?tab=incidents";
+        window.location.hash = `#/analytics?${withTabQuery(queryPart, legacyAnalyticsTab)}`;
         return;
       }
       if (targetRoute === "capture") {
