@@ -2,7 +2,7 @@
 
 ## Overview
 
-RoadSaathi v3.2 streamlines the entire civic cockpit into a sleek, decluttered, high-whitespace municipal intelligence suite. Building upon the robust v3.0 core and v3.1 design system tokens, Milestone v3.2 eliminates visual noise by consolidating the 16+ sidebar links into 5 core intuitive workspaces, condensing the WebGIS top control dock, auto-collapsing floating HUDs into subtle trays, and segmenting heavyweight analytics pages into clean tabbed views.
+RoadSaathi v4.0 grounds the entire municipal intelligence platform in rigorous real-world physical and statutory realities. It aligns onboard telematics with true vehicle dynamics (speed normalization, axle lag offset), fixes GPS multipath errors with heading-constrained corridor snapping, replaces legally indefensible unilateral escrow debits with Bharatiya Sakshya Adhiniyam (BSA 2023) Section 65B statutory evidentiary notice packs, relaxes multi-pass rules to prevent single-route starvation, and aggressively eliminates over-engineered theoretical mock engines under the Ponytail principle.
 
 ## Phases
 
@@ -18,89 +18,64 @@ RoadSaathi v3.2 streamlines the entire civic cockpit into a sleek, decluttered, 
 - [x] **Phase 7: Municipal Dashboard, Work Orders & SLA Action Console Polish** - Clean high-contrast KPI metric cards, modern data tables, contractor escrow status pills, and intuitive multi-pass concurrence payment clearance workflow.
 
 ### Milestone v3.2: Sleek Minimalist Civic Cockpit & UI De-cluttering (Complete)
-- [x] **Phase 8: Sidebar Workspace Consolidation & Global Navigation** - Consolidate 16+ menu items into 5 core workspaces (Command Map, Work Orders, Analytics, Fleet Edge, Governance) with sub-navigation pills and clean breadcrumbs.
+- [x] **Phase 8: Sidebar Workspace Consolidation & Global Navigation** - Consolidate 16+ menu items into 5 core workspaces with sub-navigation pills and clean breadcrumbs.
 - [x] **Phase 9: Map HUD & Command Center Viewport Optimization** - Streamline top dock into a sleek floating micro-bar, collapse secondary HUDs into discreet bottom trays, and expand map canvas to 100% viewport.
 - [x] **Phase 10: Tabbed Executive Analytics & Clean Backlog Table Redesign** - Group analytics into a 5-tab segmented switcher, clean up work order backlog with progressive disclosure slide-overs, and enforce unified minimal hierarchy.
-
----
-
-## Phase Details
-
-### Phase 8: Sidebar Workspace Consolidation & Global Navigation
-
-**Goal**: Consolidate 16+ navigation links into 5 intuitive workspaces with sub-tab switchers and responsive layout.
-**Depends on**: Phase 7
-**Requirements**: DECLUTTER-01
-**Success Criteria** (what must be TRUE):
-  1. Sidebar collapses from 16+ items to 5 primary workspaces: *Command Map*, *Work Orders & SLA*, *Safety & Analytics*, *Fleet Perception*, and *Governance & Audit*.
-  2. Nested routes (e.g., Contractors under Work Orders, Pedestrian/Darkspots under Analytics) are accessible via sleek top sub-tab switchers.
-  3. Responsive sidebar collapse functions cleanly with intuitive tooltips and active indicator pills.
-
-**Plans**: 1 plan
-**Wave 1**
-- [x] 08-01: Sidebar workspace consolidation, sub-tab navigation, and breadcrumb layout polish.
-
----
-
-### Phase 9: Map HUD & Command Center Viewport Optimization
-
-**Goal**: Maximize map viewport real estate and eliminate clutter from intrusive floating cards.
-**Depends on**: Phase 8
-**Requirements**: DECLUTTER-02
-**Success Criteria** (what must be TRUE):
-  1. Top floating dock condensed into a sleek glassy micro-dock with minimal visual footprint.
-  2. Intrusive floating cards (OD desire lines list, coverage blind spots banner, profile drawer) collapsed into subtle slide-up bottom trays.
-  3. CommandCenter triage search and filter bars simplified into a single-line compact filter strip.
-
-**Plans**: 1 plan
-**Wave 1**
-- [x] 09-01: WebGIS top micro-dock, collapsible bottom HUD trays, and single-line triage filter strip.
-
----
-
-### Phase 10: Tabbed Executive Analytics & Clean Backlog Table Redesign
-
-**Goal**: Transform long scrolling analytics and heavy tables into clean tabbed views with progressive disclosure.
-**Depends on**: Phase 9
-**Requirements**: DECLUTTER-03
-**Success Criteria** (what must be TRUE):
-  1. `Analytics.tsx` adopts a 5-tab segmented switcher (*Overview*, *Corridors*, *Traffic & OD Flow*, *Safety & Lighting*, *Edge ANPR*) preventing chart overload.
-  2. `WorkOrders.tsx` data tables redesigned with compact padding, subtle borders, and slide-over inspector drawer for deep audits.
-  3. Complete frontend build passes with 0 diagnostics and 100% test integrity.
-
-**Plans**: 1 plan
-**Wave 1**
-- [x] 10-01: Tabbed analytics redesign, clean backlog table styling, and drawer progressive disclosure.
-
----
 
 ### Milestone v3.3: Work Orders Cockpit & Contractor Operations Overhaul (Complete)
 - [x] **Phase 11: Work Orders Cockpit & Contractor Operations Overhaul** - Complete visual overhaul of CAD backlog table, interactive Kanban board with live SLA timers, contractor SLA financial ledger, and slide-over action console.
 
 ---
 
-### Phase 11: Work Orders Cockpit & Contractor Operations Overhaul
+### Milestone v4.0: Production Physics, Statutory Alignment & Codebase Simplification (Active)
+- [ ] **Phase 12: Telematics Physics & Spatial Calibration** - Speed-normalized vertical shock ($G_z$), camera-to-axle physical delay offset, and heading-constrained road centerline snapping.
+- [ ] **Phase 13: Municipal Statutory Show-Cause & Relaxed Multi-Pass Gating** - Indian Evidence Act / Section 65B BSA statutory notice pack generator with EE sign-off, and relaxed 3-trip multi-pass concurrence.
+- [ ] **Phase 14: Ponytail Codebase Pruning & Dead Engine Deletion** - Remove dead theoretical engines (`federated_edge_engine.py`, `markov_deterioration.py`) and simplify internal abstractions.
 
-**Goal**: Transform the Work Orders workspace into a modern minimalist municipal command cockpit across all 3 sub-workspaces (`CAD Backlog`, `Kanban Board`, `Contractor SLA Ledger`).
-**Depends on**: Phase 10
-**Requirements**: WO-01, WO-02, WO-03
+---
+
+## Phase Details
+
+### Phase 12: Telematics Physics & Spatial Calibration
+
+**Goal**: Calibrate edge & backend distress calculations against real vehicle physics and urban GPS multipath dynamics.
+**Depends on**: Phase 11
+**Requirements**: PHYSICS-01, PHYSICS-02
 **Success Criteria** (what must be TRUE):
-  1. High-density executive metrics strip displaying Active Work Orders, Critical P0 SLA Countdowns, Total Escrow At Risk, and 3-Pass Verified Repairs with animated SVG circular gauges.
-  2. Redesigned CAD Backlog Table with compact cell padding (`py-2.5 px-3`), monospace tabular numerals, crisp borders, high-contrast severity pills, and clustered action buttons.
-  3. Modernized Kanban Board with defect image thumbnails, live SLA countdown timer rings, contractor agency badges, and statutory concurrence status chips with smooth status transitions.
-  4. Contractor Financial SLA Ledger & Action Console deep polish with elevated escrow security deposits, Clause 14 auto-debit triggers, and slide-over progressive disclosure drawer.
-  5. 100% frontend build and backend regression test integrity preserved.
+  1. $G_z$ vertical acceleration triggers are normalized by vehicle speed ($G_{norm} = \frac{\Delta G_z}{v / 30}$), eliminating stop-and-go false negatives and high-speed expansion joint false positives.
+  2. Front camera optical detections fuse with IMU vertical shocks using a velocity-dependent axle delay offset ($\Delta t = \frac{d_{axle}}{v}$), resolving the 400–600ms physical lag.
+  3. Spatial corridor snapping enforces a heading-vector filter ($\pm 30^\circ$) to prevent GPS multipath jumps into opposite carriageways or elevated ramps.
 
-**Plans**: 1 plan
-**Wave 1**
-- [x] 11-01: Work orders executive metrics strip, sleek backlog table, modern Kanban board, and contractor SLA ledger overhaul.
+---
+
+### Phase 13: Municipal Statutory Show-Cause & Relaxed Multi-Pass Gating
+
+**Goal**: Align contractor penalty enforcement with Indian contract/arbitration laws and prevent single-route corridor starvation.
+**Depends on**: Phase 12
+**Requirements**: STATUTE-01, STATUTE-02
+**Success Criteria** (what must be TRUE):
+  1. Replace unilateral "Auto-Debit" with statutory **Section 65B BSA 2023 Evidentiary Show-Cause Notice Pack** with Executive Engineer digital sign-off and contract-specific DLP periods.
+  2. Multi-pass concurrence engine accepts **3 distinct patrol passes** (allowing the same transit bus on separate schedule trips over 48h) to eliminate single-route corridor starvation.
+  3. `WorkOrders.tsx`, `ContractorSlaLedger.tsx`, and `WorkOrderActionConsole.tsx` UI updated with legally defensible statutory terminology and workflows.
+
+---
+
+### Phase 14: Ponytail Codebase Pruning & Dead Engine Deletion
+
+**Goal**: Strip away speculative, unused theoretical abstractions under the Ponytail principle while preserving 100% test pass rate.
+**Depends on**: Phase 13
+**Requirements**: SIMPLIFY-01
+**Success Criteria** (what must be TRUE):
+  1. Remove dead/mock engines: `federated_edge_engine.py` and `markov_deterioration.py`.
+  2. Simplify `city_brain_engine.py` to route queries directly through clean Postgres/SQLite repository functions.
+  3. 100% backend test pass rate and 0 frontend build diagnostics.
 
 ---
 
 ## Progress
 
 **Execution Order:**
-Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 → 9 → 10 → 11
+Phases execute in numeric order: 12 → 13 → 14
 
 | Phase | Plans Complete | Status | Completed |
 |---|---|---|---|
@@ -115,6 +90,9 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 | 9. Map HUD & Command Center Viewport Optimization | 1/1 | Complete | 2026-10-07 |
 | 10. Tabbed Executive Analytics & Clean Backlog Table Redesign | 1/1 | Complete | 2026-10-07 |
 | 11. Work Orders Cockpit & Contractor Operations Overhaul | 1/1 | Complete | 2026-10-07 |
+| 12. Telematics Physics & Spatial Calibration | 0/1 | Active | - |
+| 13. Municipal Statutory Show-Cause & Relaxed Multi-Pass Gating | 0/1 | Pending | - |
+| 14. Ponytail Codebase Pruning & Dead Engine Deletion | 0/1 | Pending | - |
 
 ---
-*Roadmap defined: 2026-10-07 for Milestone v3.3*
+*Roadmap defined: 2026-10-07 for Milestone v4.0*
