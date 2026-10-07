@@ -18,6 +18,7 @@ from sqlalchemy import insert
 
 from app.storage.database import AsyncSessionLocal
 from app.models.db_models import DBRawIngest, DBAuditLog
+from app.services.sensor_fusion_engine import compute_gnorm
 
 
 class TelemetryBatchBuffer:
@@ -48,7 +49,10 @@ class TelemetryBatchBuffer:
         """Determines if a telemetry record is high priority and must not be shed."""
         defect_type = item.get("defect_type")
         has_defect = defect_type not in (None, "NONE", "none", "")
-        high_g_force = float(item.get("vertical_g_force", 1.0)) >= 1.3
+        gz = float(item.get("vertical_g_force", 1.0))
+        speed = float(item.get("speed_kmh", 30.0))
+        g_norm = compute_gnorm(gz, speed)
+        high_g_force = g_norm >= 0.30
         high_confidence = float(item.get("confidence", 0.0)) > 0.8 and has_defect
         return has_defect or high_g_force or high_confidence
 

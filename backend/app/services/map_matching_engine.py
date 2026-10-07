@@ -117,8 +117,9 @@ class MapMatchingEngine:
             # Perpendicular distance approximation in meters
             dist_m = self._distance_point_to_line_segment(lat, lng, p1[0], p1[1], p2[0], p2[1])
 
-            # Heading difference
+            # Heading difference and opposite-carriageway rejection (PHYSICS-02)
             h_diff = abs((heading - seg["nominal_heading"] + 180) % 360 - 180)
+            heading_penalty = 300.0 if h_diff > 30.0 else 0.0
 
             # Altitude heuristic for flyovers vs surface road
             alt_penalty = 0.0
@@ -130,7 +131,7 @@ class MapMatchingEngine:
                     alt_penalty = 40.0
 
             # Composite matching cost
-            cost = dist_m + (h_diff * 0.25) + alt_penalty
+            cost = dist_m + (h_diff * 0.25) + alt_penalty + heading_penalty
 
             if cost < min_error:
                 min_error = cost

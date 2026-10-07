@@ -239,3 +239,34 @@ def test_dbscan_clustering_consistency():
     assert snap is not None
     assert "road_name" in snap
 
+
+def test_heading_aware_corridor_snapping():
+    """
+    Verifies that snap_to_road_corridor respects vehicle heading parameter
+    and correctly populates effective_heading and road_azimuth (PHYSICS-02).
+    """
+    from app.services.clustering_service import clustering_service
+
+    # GST Road Service Road (start: 12.9515, 80.1465) has heading 45.0
+    snap_matching = clustering_service.snap_to_road_corridor(
+        lat=12.9516,
+        lng=80.1466,
+        corridor_buffer_m=15.0,
+        heading=45.0,
+        speed_kmh=40.0
+    )
+    assert snap_matching["snapped"] is True
+    assert snap_matching["effective_heading"] == 45.0
+    assert snap_matching["road_azimuth"] == 45.0
+
+    # Opposite heading (225.0°) should be disqualified
+    snap_opposite = clustering_service.snap_to_road_corridor(
+        lat=12.9516,
+        lng=80.1466,
+        corridor_buffer_m=15.0,
+        heading=225.0,
+        speed_kmh=40.0
+    )
+    assert snap_opposite["snapped"] is False
+
+

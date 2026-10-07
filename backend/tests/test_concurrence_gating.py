@@ -217,3 +217,30 @@ def test_payment_clearance_lock(client):
     res = client.patch("/api/work-orders/WO-0002/status", json=patch_payload, headers=headers)
     assert res.status_code == 400
     assert "Multi-pass concurrence validation requires minimum 3 independent bus passes" in res.json()["detail"]
+
+
+def test_speed_normalized_concurrence_passes():
+    """
+    Verifies that evaluate_concurrence_passes accurately applies speed-normalization:
+    - 3 passes with crawl-speed smooth passes (gz=1.04 at 10 km/h -> g_norm=0.12 < 0.15)
+      achieve REPAIR_VERIFIED.
+    - 1 crawl-speed severe crater (gz=1.15 at 10 km/h -> g_norm=0.45 >= 0.35)
+      trips REPAIR_FAILED_RECURRENCE.
+    """
+    smooth_crawl_passes = [
+        {"bus_id": "BUS-01", "vertical_gz": 1.04, "speed_kmh": 10.0, "optical_status": "SMOOTH_SURFACE"},
+        {"bus_id": "BUS-02", "vertical_gz": 1.03, "speed_kmh": 12.0, "optical_status": "SMOOTH_SURFACE"},
+        {"bus_id": "BUS-03", "vertical_gz": 0.96, "speed_kmh": 15.0, "optical_status": "SMOOTH_SURFACE"},
+    ]
+    res_smooth = evaluate_concurrence_passes(smooth_crawl_passes, order_id="WO-SMOOTH-CRAWL")
+    assert res_smooth.status == "REPAIR_VERIFIED"
+    assert res_smooth.invoice_clearance_authorized is True
+
+    failing_crawl_passes = [
+        {"bus_id": "BUS-01", "vertical_gz": 1.04, "speed_kmh": 10.0, "optical_status": "SMOOTH_SURFACE"},
+        {"bus_id": "BUS-02", "vertical_gz": 1.15, "speed_kmh": 10.0, "optical_status": "SMOOTH_SURFACE"},
+    ]
+    res_fail = evaluate_concurrence_passes(failing_crawl_passes, order_id="WO-FAIL-CRAWL")
+    assert res_fail.status == "REPAIR_FAILED_RECURRENCE"
+    assert res_fail.invoice_clearance_authorized is False
+

@@ -8,15 +8,31 @@ import cv2
 import numpy as np
 
 # Integration with Phase 2 INT8 ONNX perception pipeline
-from edge.anpr_onnx import (
-    INDIAN_STATE_CODES,
-    NATIONAL_RTO_CODES,
-    CHENNAI_RTO_CODES,
-    INT8ONNXPlateRecognizer,
-    MoRTHSyntaxEngine,
-    DPDPCryptographicVault,
-    PlateTrackCache,
-)
+try:
+    from edge.anpr_onnx import (
+        INDIAN_STATE_CODES,
+        NATIONAL_RTO_CODES,
+        CHENNAI_RTO_CODES,
+        INT8ONNXPlateRecognizer,
+        MoRTHSyntaxEngine,
+        DPDPCryptographicVault,
+        PlateTrackCache,
+    )
+except ImportError:
+    import sys
+    from pathlib import Path
+    _proj_root = str(Path(__file__).resolve().parent.parent.parent.parent)
+    if _proj_root not in sys.path:
+        sys.path.insert(0, _proj_root)
+    from edge.anpr_onnx import (
+        INDIAN_STATE_CODES,
+        NATIONAL_RTO_CODES,
+        CHENNAI_RTO_CODES,
+        INT8ONNXPlateRecognizer,
+        MoRTHSyntaxEngine,
+        DPDPCryptographicVault,
+        PlateTrackCache,
+    )
 
 # Backwards compatibility alias for traffic endpoint
 STATE_CODES = INDIAN_STATE_CODES

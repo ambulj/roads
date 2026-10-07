@@ -9,6 +9,8 @@ Dual-Mode Architecture:
    - PostgreSQL: ST_DWithin(road.geom::geography, defect.geom::geography, 15.0)
    - SQLite / Local: Geodesic perpendicular distance projection via MapMatchingEngine
 """
+import time
+import math
 import uuid
 from typing import List, Dict, Any, Optional, Tuple
 from sqlalchemy.orm import Session
@@ -17,59 +19,135 @@ from app.spatial.poi_database import haversine_distance_m, find_nearest_poi
 from app.services.map_matching_engine import map_matching_engine
 
 
+def circular_heading_delta(h1: float, h2: float) -> float:
+    """Computes minimum circular angular difference [0, 180] between two compass headings."""
+    diff = abs(h1 - h2) % 360.0
+    return 360.0 - diff if diff > 180.0 else diff
+
+_circular_angular_diff = circular_heading_delta
+
+
+def calculate_geodesic_azimuth(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
+    """Computes initial forward geodesic azimuth in degrees [0, 360) from Point 1 to Point 2."""
+    phi1, phi2 = math.radians(lat1), math.radians(lat2)
+    dlam = math.radians(lon2 - lon1)
+    y = math.sin(dlam) * math.cos(phi2)
+    x = math.cos(phi1) * math.sin(phi2) - math.sin(phi1) * math.cos(phi2) * math.cos(dlam)
+    bearing = math.degrees(math.atan2(y, x))
+    return (bearing + 360.0) % 360.0
+
+
+def _calculate_segment_azimuth(p1: Tuple[float, float], p2: Tuple[float, float]) -> float:
+    """Computes forward azimuth between two coordinate tuples (lat, lng)."""
+    return calculate_geodesic_azimuth(p1[0], p1[1], p2[0], p2[1])
+
+
 class ClusteringService:
     def __init__(self, eps_meters: float = 15.0, min_points: int = 2):
         self.eps_meters = eps_meters
         self.min_points = min_points
+        self.bearing_cache: Dict[str, Tuple[float, float]] = {}
+        self._bus_bearing_cache = self.bearing_cache
+        self.bearing_ttl_sec: float = 60.0
 
     def snap_to_road_corridor(
         self,
         lat: float,
         lng: float,
         db: Optional[Session] = None,
-        corridor_buffer_m: float = 15.0
+        corridor_buffer_m: float = 15.0,
+        heading: Optional[float] = None,
+        speed_kmh: Optional[float] = None,
+        bus_id: Optional[str] = None
     ) -> Dict[str, Any]:
         """
         Snaps spatial coordinates to the nearest road network centerline within
-        corridor_buffer_m (default 15.0m).
-        Uses PostGIS ST_DWithin on PostgreSQL, falls back to Haversine projection on SQLite.
+        corridor_buffer_m (default 15.0m), enforcing heading-aware direction matching
+        and low-speed bearing persistence (PHYSICS-02).
+        Uses PostGIS ST_DWithin and ST_Azimuth on PostgreSQL, falls back to geodesic azimuth
+        and circular angle filtering on SQLite.
         """
+        now_ts = time.time()
+        effective_heading = heading
+        bearing_persisted = False
+
+        if heading is not None and 0.0 <= heading <= 360.0 and (speed_kmh is None or speed_kmh >= 5.0):
+            if bus_id:
+                self.bearing_cache[bus_id] = (heading, now_ts)
+            effective_heading = heading
+        elif bus_id and (speed_kmh is not None and speed_kmh < 3.0 or heading is None or heading < 0.0):
+            if bus_id in self.bearing_cache and (now_ts - self.bearing_cache[bus_id][1]) <= self.bearing_ttl_sec:
+                effective_heading = self.bearing_cache[bus_id][0]
+                bearing_persisted = True
+            else:
+                effective_heading = heading if (heading is not None and 0.0 <= heading <= 360.0) else None
+        elif heading is not None and not (0.0 <= heading <= 360.0):
+            effective_heading = None
+
         if db is not None:
             try:
                 dialect = db.bind.dialect.name
                 if dialect == "postgresql":
                     stmt = text("""
                         SELECT segment_id, name, classification,
-                               ST_Distance(geom::geography, ST_SetSRID(ST_Point(:lng, :lat), 4326)::geography) AS distance_meters
+                               ST_Distance(geom::geography, ST_SetSRID(ST_Point(:lng, :lat), 4326)::geography) AS distance_meters,
+                               degrees(ST_Azimuth(ST_StartPoint(geom), ST_EndPoint(geom))) AS road_azimuth
                         FROM road_segments
                         WHERE ST_DWithin(geom::geography, ST_SetSRID(ST_Point(:lng, :lat), 4326)::geography, :buffer_m)
+                          AND (
+                              :heading IS NULL OR
+                              LEAST(
+                                  abs(degrees(ST_Azimuth(ST_StartPoint(geom), ST_EndPoint(geom))) - :heading),
+                                  360.0 - abs(degrees(ST_Azimuth(ST_StartPoint(geom), ST_EndPoint(geom))) - :heading)
+                              ) <= 30.0
+                          )
                         ORDER BY distance_meters ASC
                         LIMIT 1
                     """)
-                    row = db.execute(stmt, {"lat": lat, "lng": lng, "buffer_m": corridor_buffer_m}).mappings().first()
+                    row = db.execute(stmt, {
+                        "lat": lat,
+                        "lng": lng,
+                        "buffer_m": corridor_buffer_m,
+                        "heading": effective_heading
+                    }).mappings().first()
                     if row:
                         return {
                             "segment_id": row["segment_id"],
                             "road_name": row["name"],
                             "classification": row["classification"],
                             "distance_meters": round(float(row["distance_meters"]), 2),
-                            "snapped": True
+                            "snapped": True,
+                            "effective_heading": effective_heading,
+                            "road_azimuth": round(float(row["road_azimuth"]), 2) if row.get("road_azimuth") is not None else None,
+                            "bearing_persisted": bearing_persisted
                         }
             except Exception:
                 # If table does not exist or dialect is not PostgreSQL, proceed to fallback
                 pass
 
-        # Python Haversine fallback using MapMatchingEngine ROAD_NETWORK
+        # Python Haversine & Geodesic Azimuth fallback using MapMatchingEngine ROAD_NETWORK
         best_seg = None
         min_dist = float("inf")
+        best_azimuth = None
 
         for seg in map_matching_engine.ROAD_NETWORK:
             p1 = seg["start_coords"]
             p2 = seg["end_coords"]
+            seg_azimuth = seg.get("nominal_heading")
+            if seg_azimuth is None:
+                seg_azimuth = calculate_geodesic_azimuth(p1[0], p1[1], p2[0], p2[1])
+
+            if effective_heading is not None:
+                h_diff = circular_heading_delta(effective_heading, seg_azimuth)
+                if h_diff > 30.0:
+                    # Disqualify candidate segment: opposite carriageway or crossing street
+                    continue
+
             dist_m = map_matching_engine._distance_point_to_line_segment(lat, lng, p1[0], p1[1], p2[0], p2[1])
             if dist_m < min_dist:
                 min_dist = dist_m
                 best_seg = seg
+                best_azimuth = seg_azimuth
 
         if best_seg and min_dist <= corridor_buffer_m:
             return {
@@ -77,7 +155,10 @@ class ClusteringService:
                 "road_name": best_seg["name"],
                 "classification": best_seg["classification"],
                 "distance_meters": round(min_dist, 2),
-                "snapped": True
+                "snapped": True,
+                "effective_heading": effective_heading,
+                "road_azimuth": round(best_azimuth, 2) if best_azimuth is not None else None,
+                "bearing_persisted": bearing_persisted
             }
 
         return {
@@ -85,7 +166,10 @@ class ClusteringService:
             "road_name": best_seg["name"] if best_seg else "Urban Arterial Corridor",
             "classification": best_seg["classification"] if best_seg else "Municipal Road",
             "distance_meters": round(min_dist, 2) if best_seg else None,
-            "snapped": False
+            "snapped": False,
+            "effective_heading": effective_heading,
+            "road_azimuth": round(best_azimuth, 2) if best_azimuth is not None else None,
+            "bearing_persisted": bearing_persisted
         }
 
     def cluster_points(
@@ -174,7 +258,13 @@ class ClusteringService:
                 avg_conf = sum(p.get("confidence", 0.9) for p in group) / len(group)
                 max_g = max((p.get("vertical_g_force", 1.0) for p in group), default=1.0)
 
-                snap = self.snap_to_road_corridor(centroid_lat, centroid_lng, db=db, corridor_buffer_m=eps)
+                rep_heading = next((p.get("heading") for p in group if p.get("heading") is not None), None)
+                rep_speed = next((p.get("speed_kmh") for p in group if p.get("speed_kmh") is not None), None)
+                rep_bus = next((p.get("bus_id") for p in group if p.get("bus_id")), None)
+                snap = self.snap_to_road_corridor(
+                    centroid_lat, centroid_lng, db=db, corridor_buffer_m=eps,
+                    heading=rep_heading, speed_kmh=rep_speed, bus_id=rep_bus
+                )
                 poi_name, poi_dist = find_nearest_poi(centroid_lat, centroid_lng)
 
                 results.append({
@@ -203,7 +293,10 @@ class ClusteringService:
 
             # Unclustered points each form an isolated single-pass cluster
             for single_pt in unclustered:
-                snap = self.snap_to_road_corridor(single_pt["lat"], single_pt["lng"], db=db, corridor_buffer_m=eps)
+                snap = self.snap_to_road_corridor(
+                    single_pt["lat"], single_pt["lng"], db=db, corridor_buffer_m=eps,
+                    heading=single_pt.get("heading"), speed_kmh=single_pt.get("speed_kmh"), bus_id=single_pt.get("bus_id")
+                )
                 poi_name, poi_dist = find_nearest_poi(single_pt["lat"], single_pt["lng"])
 
                 results.append({

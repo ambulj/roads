@@ -9,13 +9,14 @@ from app.models.db_models import (
     DBDistressCluster, DBRepairAudit, DBRawIngest, DBAuditLog
 )
 from app.spatial.poi_database import haversine_distance_m
+from app.services.sensor_fusion_engine import compute_normalized_shock, compute_gnorm
 
 
 # ── Canonical Verification Constants ─────────────────────────────────────────
 REQUIRED_DISTINCT_BUSES: int = 3
 MONITORING_WINDOW_HOURS: int = 48
-VERTICAL_GZ_TOLERANCE: float = 0.15      # |gz - 1.0| < 0.15g -> 0.85g <= gz <= 1.15g
-SHOCK_FAILURE_THRESHOLD: float = 0.35    # |gz - 1.0| >= 0.35g -> gz >= 1.35g or gz <= 0.65g
+VERTICAL_GZ_TOLERANCE: float = 0.15      # |gz - 1.0| < 0.15g -> 0.85g <= gz <= 1.15g (at 30 km/h)
+SHOCK_FAILURE_THRESHOLD: float = 0.35    # |gz - 1.0| >= 0.35g -> gz >= 1.35g or gz <= 0.65g (at 30 km/h)
 CORRIDOR_MATCH_METERS: float = 15.0
 
 
@@ -23,6 +24,8 @@ CORRIDOR_MATCH_METERS: float = 15.0
 class ConcurrencePassItem(BaseModel):
     bus_id: str
     vertical_gz: float
+    speed_kmh: float = 30.0
+    g_norm: float = 0.0
     optical_status: str
     passed_optical: bool
     passed_imu: bool
@@ -57,9 +60,9 @@ def evaluate_concurrence_passes(
       1. Cross-Bus Diversity: Requires passes from at least 3 distinct transit fleet vehicles (bus_ids).
       2. Dual-Sensor Criteria:
          - Optical: SMOOTH_SURFACE (or cavity confidence < 0.10)
-         - IMU: |gz - 1.0| < 0.15g (0.85g <= gz <= 1.15g)
+         - IMU: g_norm < 0.15 (at 30 km/h baseline, |gz - 1.0| < 0.15g)
       3. Recurrence Shock:
-         - If any pass exhibits severe shock (|gz - 1.0| >= 0.35g) or open cavity,
+         - If any pass exhibits severe shock (g_norm >= 0.35g) or open cavity,
            immediately marks status = REPAIR_FAILED_RECURRENCE.
       4. Clearance:
          - If at least 3 distinct buses satisfy dual sensor criteria:
@@ -74,22 +77,25 @@ def evaluate_concurrence_passes(
     for p in passes:
         bus_id = str(p.get("bus_id") or p.get("verifying_bus_id") or "BUS-UNKNOWN")
         gz = float(p.get("vertical_gz") if "vertical_gz" in p else p.get("vertical_g_force", 1.0))
+        speed_kmh = float(p.get("speed_kmh", 30.0))
         optical_status = str(p.get("optical_status") or "SMOOTH_SURFACE")
         timestamp = str(p.get("timestamp") or p.get("captured_at") or p.get("verified_at") or datetime.datetime.now(datetime.timezone.utc).isoformat())
         confidence = float(p.get("confidence", 0.0))
 
-        delta_gz = round(abs(gz - 1.0), 4)
+        g_norm = compute_normalized_shock(gz, speed_kmh)
         is_cavity = optical_status.upper() in (
             "CAVITY_DETECTED", "RECURRENT_CAVITY_DETECTED", "D40", "OPEN_CAVITY", "CAVITY"
         ) or ("CAVITY" in optical_status.upper())
-        is_severe_shock = delta_gz >= SHOCK_FAILURE_THRESHOLD
+        is_severe_shock = g_norm >= SHOCK_FAILURE_THRESHOLD
 
         passed_optical = (optical_status.upper() == "SMOOTH_SURFACE" or confidence < 0.10) and not is_cavity
-        passed_imu = delta_gz < VERTICAL_GZ_TOLERANCE
+        passed_imu = g_norm < VERTICAL_GZ_TOLERANCE
 
         pass_item = ConcurrencePassItem(
             bus_id=bus_id,
             vertical_gz=gz,
+            speed_kmh=speed_kmh,
+            g_norm=g_norm,
             optical_status=optical_status,
             passed_optical=passed_optical,
             passed_imu=passed_imu,
@@ -99,7 +105,7 @@ def evaluate_concurrence_passes(
 
         if is_severe_shock or is_cavity:
             severe_failure = True
-            reason = f"Severe shock ({gz:.2f}g)" if is_severe_shock else f"Cavity detected ({optical_status})"
+            reason = f"Severe shock ({gz:.2f}g, g_norm={g_norm:.2f})" if is_severe_shock else f"Cavity detected ({optical_status})"
             failure_reasons.append(f"{bus_id}: {reason}")
 
     if severe_failure:
@@ -194,7 +200,7 @@ def evaluate_work_order_concurrence(
 
         if is_postgres:
             stmt = text("""
-                SELECT bus_id, vertical_g_force, defect_type, confidence, captured_at
+                SELECT bus_id, vertical_g_force, defect_type, confidence, speed_kmh, captured_at
                 FROM raw_ingests
                 WHERE geom IS NOT NULL
                   AND ST_DWithin(geom::geography, ST_SetSRID(ST_Point(:lng, :lat), 4326)::geography, :buffer_m)
@@ -210,6 +216,7 @@ def evaluate_work_order_concurrence(
                 collected_passes.append({
                     "bus_id": r["bus_id"],
                     "vertical_gz": r["vertical_g_force"],
+                    "speed_kmh": float(r["speed_kmh"]) if r.get("speed_kmh") is not None else 30.0,
                     "optical_status": optical,
                     "confidence": r["confidence"],
                     "timestamp": r["captured_at"]
@@ -227,6 +234,7 @@ def evaluate_work_order_concurrence(
                     collected_passes.append({
                         "bus_id": r.bus_id,
                         "vertical_gz": r.vertical_g_force,
+                        "speed_kmh": float(r.speed_kmh) if r.speed_kmh is not None else 30.0,
                         "optical_status": optical,
                         "confidence": r.confidence,
                         "timestamp": r.captured_at

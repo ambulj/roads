@@ -49,6 +49,8 @@ def get_audit_logs(db: Session = Depends(get_db)):
         ]
     return store.audit_logs
 
+from app.services.sensor_fusion_engine import compute_normalized_shock
+
 @router.post("/ingest")
 async def ingest_telemetry(payload: TelemetryIngest):
     """
@@ -58,6 +60,10 @@ async def ingest_telemetry(payload: TelemetryIngest):
     - Returns instant response (<15ms latency)
     """
     data = payload.model_dump()
+    speed_kmh = float(data.get("speed_kmh") if data.get("speed_kmh") is not None else 30.0)
+    vertical_gz = float(data.get("vertical_g_force") if data.get("vertical_g_force") is not None else 1.0)
+    g_norm = compute_normalized_shock(vertical_gz, speed_kmh)
+    data["g_norm"] = g_norm
 
     # 1. Immediate broadcast to active WebSockets
     if manager.active_connections:
@@ -67,11 +73,12 @@ async def ingest_telemetry(payload: TelemetryIngest):
                 "bus_id": data.get("bus_id"),
                 "lat": data.get("lat"),
                 "lng": data.get("lng"),
-                "speed_kmh": data.get("speed_kmh"),
+                "speed_kmh": speed_kmh,
                 "heading": data.get("heading", 0.0),
                 "defect_type": data.get("defect_type"),
                 "confidence": data.get("confidence"),
-                "vertical_g_force": data.get("vertical_g_force", 1.0)
+                "vertical_g_force": vertical_gz,
+                "g_norm": g_norm
             })
         except Exception:
             pass
@@ -81,6 +88,8 @@ async def ingest_telemetry(payload: TelemetryIngest):
 
     # 3. Synchronize in-memory store for instant UI state reflection
     result = store.add_ingest(data)
+    if isinstance(result, dict):
+        result["g_norm"] = g_norm
     return result
 
 

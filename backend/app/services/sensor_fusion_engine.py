@@ -23,6 +23,76 @@ def haversine_distance_meters(lat1: float, lon1: float, lat2: float, lon2: float
     a = math.sin(dphi / 2.0) ** 2 + math.cos(phi1) * math.cos(phi2) * math.sin(dlam / 2.0) ** 2
     return 2.0 * r_earth * math.asin(math.sqrt(max(0.0, min(1.0, a))))
 
+def compute_normalized_shock(vertical_gz: float, speed_kmh: float) -> float:
+    """
+    Computes velocity-normalized vertical acceleration deviation G_norm (D-12-01).
+    - If speed_kmh < 5.0: returns 0.0 (idle suppression).
+    - Else: returns round(abs(vertical_gz - 1.0) / max(0.2, speed_kmh / 30.0), 4).
+    """
+    if speed_kmh < 5.0:
+        return 0.0
+    denom = max(0.2, speed_kmh / 30.0)
+    return round(abs(vertical_gz - 1.0) / denom, 4)
+
+compute_gnorm = compute_normalized_shock
+
+def calculate_axle_lag(speed_kmh: float, cam_to_axle_m: float = 5.2) -> float:
+    """
+    Calculates physical time delay in seconds between front windshield camera detection
+    and wheel axle impact (D-12-02): Δt = d_axle / v_mps.
+    """
+    v_mps = max(0.5, speed_kmh / 3.6)
+    return round(cam_to_axle_m / v_mps, 3)
+
+def compute_axle_lag_window(speed_kmh: float, distance_cam_to_axle_m: float = 5.2) -> Tuple[float, float, float]:
+    """
+    Computes axle lag and asymmetric detection matching window:
+    (delta_t_sec, window_start_sec, window_end_sec).
+    """
+    delta_t_sec = distance_cam_to_axle_m / max(0.5, speed_kmh / 3.6)
+    window_start = delta_t_sec - 0.15
+    window_end = delta_t_sec + 0.25
+    return (round(delta_t_sec, 3), round(window_start, 3), round(window_end, 3))
+
+def match_optical_and_imu(
+    cam_timestamp: float,
+    imu_timestamp: float,
+    speed_kmh: float,
+    cam_to_axle_m: float = 5.2
+) -> Tuple[bool, float]:
+    """
+    Evaluates kinematic synchronization between optical detection and IMU shock.
+    Window: [t_cam + Δt - 0.150s, t_cam + Δt + 0.250s].
+    Returns (is_matched, delay_offset_seconds).
+    """
+    delta_t = calculate_axle_lag(speed_kmh, cam_to_axle_m)
+    expected_imu_t = cam_timestamp + delta_t
+    offset = round(imu_timestamp - expected_imu_t, 3)
+    is_matched = (-0.150 <= offset <= 0.250)
+    return is_matched, offset
+
+def classify_dual_confidence_distress(
+    optical_confidence: float,
+    g_norm: float,
+    is_axle_matched: bool = True
+) -> str:
+    """
+    Dual-Confidence Distress Classification (D-12-02):
+    - CONFIRMED_IMPACT (P0/P1): High visual confidence and verified normalized shock within axle window.
+    - VISUAL_DISTRESS_UNSTRADDLED (P2 Routine): High visual confidence but no wheel strike (swerve/straddle).
+    - SHOCK_ONLY_ANOMALY: High normalized shock without optical confirmation.
+    - NOMINAL: Neither optical nor IMU distress detected.
+    """
+    if optical_confidence >= 0.80 and g_norm >= 0.25 and is_axle_matched:
+        return "CONFIRMED_IMPACT"
+    elif optical_confidence >= 0.85 and g_norm < 0.20:
+        return "VISUAL_DISTRESS_UNSTRADDLED"
+    elif g_norm >= 0.35 and optical_confidence < 0.50:
+        return "SHOCK_ONLY_ANOMALY"
+    return "NOMINAL"
+
+classify_distress_mode = classify_dual_confidence_distress
+
 class SensorFusionEngine:
     """
     Production Sensor-Fusion & Multi-Bus Cooperative Perception Engine.
@@ -197,7 +267,8 @@ class SensorFusionEngine:
             self.spatial_cells[cell_id] = []
         self.spatial_cells[cell_id].append(observation)
 
-        is_shock_anomaly = vertical_gz > 1.25
+        g_norm = compute_normalized_shock(vertical_gz, speed_kmh)
+        is_shock_anomaly = g_norm >= 0.25
 
         # 2D Gaussian GPS uncertainty covariance ellipse (Point 62)
         gps_ellipse = self.compute_gps_uncertainty_ellipse(
@@ -234,6 +305,8 @@ class SensorFusionEngine:
                 "is_shock_anomaly": False,
                 "is_smooth_repass": is_smooth_repass,
                 "vertical_gz": vertical_gz,
+                "g_norm": g_norm,
+                "speed_kmh": speed_kmh,
                 "latency_ms": total_elapsed_ms,
                 "is_live_measured": True,
                 "repair_audit_events": audit_events,
@@ -309,14 +382,18 @@ class SensorFusionEngine:
         self.total_triggers += 1
 
         # 4. Filter Legal Speed Breakers (IRC:35/IRC:99 Profile Check)
-        is_legal_speed_bump = (vertical_gz < 1.35 and speed_kmh < 25.0)
+        g_norm = compute_normalized_shock(vertical_gz, speed_kmh)
+        is_legal_speed_bump = (vertical_gz < 1.35 and g_norm < 0.30 and speed_kmh < 25.0)
         if is_legal_speed_bump:
             self.false_alarms_filtered += 1
             return {
                 "status": "FALSE_ALARM_FILTERED",
                 "cell_id": cell_id,
+                "is_shock_anomaly": False,
                 "classification": "LEGAL_SPEED_BREAKER_IRC35",
                 "vertical_gz": vertical_gz,
+                "g_norm": g_norm,
+                "speed_kmh": speed_kmh,
                 "visual_confidence": 0.94,
                 "action": "FILTERED (No Case Created - Standard Speed Breaker)",
                 "is_live_measured": True,
@@ -330,9 +407,13 @@ class SensorFusionEngine:
                 }
             }
 
-        # 5. Defect Classification
-        defect_type = "D40" if vertical_gz >= 1.45 else ("D10" if vertical_gz >= 1.30 else "D20")
-        defect_name = "Pothole Cavity" if defect_type == "D40" else ("Alligator Crack Fatigue" if defect_type == "D10" else "Transverse Crack")
+        # 5. Defect Classification based on G_norm (D-12-01)
+        if g_norm >= 0.45:
+            defect_type, defect_name = "D40", "Pothole Cavity"
+        elif g_norm >= 0.30:
+            defect_type, defect_name = "D10", "Alligator Crack Fatigue"
+        else:
+            defect_type, defect_name = "D20", "Transverse Crack"
 
         # 6. Rigorous Multi-Bus Cooperative Perception Consensus
         # Evaluates physical distance across 9-cell Moore neighborhood (handles cell boundary quantization)
@@ -376,11 +457,12 @@ class SensorFusionEngine:
             # Criteria for valid cooperative confirmation:
             # - Distinct bus ID
             # - Physical distance within effective matching radius (accounting for GPS dilution)
-            # - Confirmatory shock reading (gz >= 1.15)
+            # - Confirmatory shock reading (normalized shock >= 0.15)
+            obs_gnorm = compute_normalized_shock(float(obs.get("gz", 1.0)), float(obs.get("speed_kmh", 30.0)))
             if (
                 obs["bus_id"] != bus_id
                 and dist_m <= effective_matching_radius_m
-                and obs.get("gz", 1.0) >= 1.15
+                and obs_gnorm >= 0.15
             ):
                 confirming_buses.add(obs["bus_id"])
 
@@ -412,6 +494,15 @@ class SensorFusionEngine:
         joint_confidence = round(min(0.999, max(0.85, joint_p)), 3)
         calibrated_conf = self.calibrate_confidence(joint_confidence, temperature=1.20)
 
+        # Calculate axle lag and distress mode classification (D-12-02)
+        axle_lag_s = calculate_axle_lag(speed_kmh)
+        axle_lag_ms = round(axle_lag_s * 1000.0, 1)
+        distress_mode = classify_dual_confidence_distress(
+            optical_confidence=joint_confidence,
+            g_norm=g_norm,
+            is_axle_matched=True
+        )
+
         # Update reputation for confirmed detection
         if is_multi_bus_consensus:
             self.record_bus_feedback(bus_id, was_verified=True)
@@ -426,6 +517,7 @@ class SensorFusionEngine:
         return {
             "status": "DEFECT_CONFIRMED",
             "cell_id": cell_id,
+            "is_shock_anomaly": True,
             "bus_id": bus_id,
             "lat": lat,
             "lng": lng,
@@ -433,6 +525,10 @@ class SensorFusionEngine:
             "defect_type": defect_type,
             "defect_name": defect_name,
             "vertical_gz": vertical_gz,
+            "g_norm": g_norm,
+            "speed_kmh": speed_kmh,
+            "axle_lag_ms": axle_lag_ms,
+            "distress_mode": distress_mode,
             "optical_confidence": joint_confidence,
             "calibrated_confidence": calibrated_conf,
             "temperature_scaling_factor": 1.20,
