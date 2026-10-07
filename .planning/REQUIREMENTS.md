@@ -16,7 +16,7 @@
 - [x] **LEDGER-03**: Work order multi-pass concurrence validation (minimum 3 independent bus passes + IMU confirmation).
 - [x] **GIS-01**: Interactive RPI Formula modal recalculating statutory factors and SLA tiers.
 - [x] **GIS-02**: Live Dashcam 30 FPS bounding box hazard overlays with synchronized 5Hz telemetry logs.
-- [x] **GIS-03**: Interactive Origin-Destination (OD) Transit Desire Lines layer (PS 26124).
+- [x] **GIS-03**: Interactive Origin-Destination (OD) Transit Desire Lines layer ( ).
 
 ### Milestone v3.1: Modern Civic Portal & UI/UX Polish (Complete)
 - [x] **UI-01**: Unified modern government portal design system with refined white/indigo & slate design tokens, crisp typography, WCAG AAA accessibility, and dark/light mode toggle.
@@ -35,18 +35,12 @@
 
 ---
 
-## Active Milestone v4.0: Production Physics, Statutory Alignment & Codebase Simplification
-
-### Phase 12: Telematics Physics & Spatial Calibration
-- [ ] **PHYSICS-01**: Speed-normalized vertical acceleration ($G_{norm} = \frac{\Delta G_z}{v / 30}$) and optical-to-axle physical delay compensation ($\Delta t = \frac{d_{axle}}{v}$).
-- [ ] **PHYSICS-02**: Heading-aware road corridor snapping ($\pm 30^\circ$) preventing opposite-lane cross-carriageway misclassification in high multipath GPS zones.
-
-### Phase 13: Municipal Statutory Show-Cause & Relaxed Multi-Pass Gating
-- [ ] **STATUTE-01**: Section 65B BSA 2023 Statutory Show-Cause Evidentiary Pack workflow with Executive Engineer digital sign-off replacing legally vulnerable unilateral auto-debits.
-- [ ] **STATUTE-02**: Relaxed multi-pass concurrence allowing 3 distinct patrol passes (including same vehicle on separate trips over 48h) to eliminate single-route corridor starvation, plus UI alignment across `WorkOrders.tsx`, `ContractorSlaLedger.tsx`, and `WorkOrderActionConsole.tsx`.
-
-### Phase 14: Ponytail Codebase Pruning & Dead Engine Deletion
-- [ ] **SIMPLIFY-01**: Delete dead/theoretical mock engines (`federated_edge_engine.py`, `markov_deterioration.py`), simplify redundant routing, and preserve 100% test pass rate and 0 frontend diagnostics.
+### Milestone v4.0: Production Physics, Statutory Alignment & Codebase Simplification (Complete)
+- [x] **PHYSICS-01**: Speed-normalized vertical acceleration ($G_{norm} = \frac{\Delta G_z}{v / 30}$) and optical-to-axle physical delay compensation ($\Delta t = \frac{d_{axle}}{v}$).
+- [x] **PHYSICS-02**: Heading-aware road corridor snapping ($\pm 30^\circ$) preventing opposite-lane cross-carriageway misclassification in high multipath GPS zones.
+- [x] **STATUTE-01**: Section 65B BSA 2023 Statutory Show-Cause Evidentiary Pack workflow with Executive Engineer digital sign-off replacing legally vulnerable unilateral auto-debits.
+- [x] **STATUTE-02**: Relaxed multi-pass concurrence allowing 3 distinct patrol passes (including same vehicle on separate trips over 48h) to eliminate single-route corridor starvation, plus UI alignment across `WorkOrders.tsx`, `ContractorSlaLedger.tsx`, and `WorkOrderActionConsole.tsx`.
+- [x] **SIMPLIFY-01**: Delete dead/theoretical mock engines (`federated_edge_engine.py`, `markov_deterioration.py`, `CityBrainHub.tsx`), simplify redundant routing, and preserve 100% test pass rate and 0 frontend diagnostics.
 
 ---
 
@@ -65,9 +59,9 @@
 | DECLUTTER-02 | v3.2 | Phase 9 | Complete |
 | DECLUTTER-03 | v3.2 | Phase 10 | Complete |
 | WO-01 .. WO-03 | v3.3 | Phase 11 | Complete |
-| PHYSICS-01 .. PHYSICS-02 | v4.0 | Phase 12 | Pending |
-| STATUTE-01 .. STATUTE-02 | v4.0 | Phase 13 | Pending |
-| SIMPLIFY-01 | v4.0 | Phase 14 | Pending |
+| PHYSICS-01 .. PHYSICS-02 | v4.0 | Phase 12 | Complete |
+| STATUTE-01 .. STATUTE-02 | v4.0 | Phase 13 | Complete |
+| SIMPLIFY-01 | v4.0 | Phase 14 | Complete |
 
 ---
 *Requirements updated: 2026-10-07 for Milestone v4.0*

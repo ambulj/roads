@@ -27,10 +27,10 @@ RoadSaathi v4.0 grounds the entire municipal intelligence platform in rigorous r
 
 ---
 
-### Milestone v4.0: Production Physics, Statutory Alignment & Codebase Simplification (Active)
+### Milestone v4.0: Production Physics, Statutory Alignment & Codebase Simplification (Complete)
 - [x] **Phase 12: Telematics Physics & Spatial Calibration** - Speed-normalized vertical shock ($G_z$), camera-to-axle physical delay offset, and heading-constrained road centerline snapping.
 - [x] **Phase 13: Municipal Statutory Show-Cause & Relaxed Multi-Pass Gating** - Indian Evidence Act / Section 65B BSA statutory notice pack generator with EE sign-off, and relaxed 3-trip multi-pass concurrence.
-- [ ] **Phase 14: Ponytail Codebase Pruning & Dead Engine Deletion** - Remove dead theoretical engines (`federated_edge_engine.py`, `markov_deterioration.py`) and simplify internal abstractions.
+- [x] **Phase 14: Ponytail Codebase Pruning & Dead Engine Deletion** - Remove dead theoretical engines (`federated_edge_engine.py`, `markov_deterioration.py`) and simplify internal abstractions.
 
 ---
 
@@ -92,7 +92,7 @@ Phases execute in numeric order: 12 → 13 → 14
 | 11. Work Orders Cockpit & Contractor Operations Overhaul | 1/1 | Complete | 2026-10-07 |
 | 12. Telematics Physics & Spatial Calibration | 1/1 | Complete | 2026-10-07 |
 | 13. Municipal Statutory Show-Cause & Relaxed Multi-Pass Gating | 1/1 | Complete | 2026-10-08 |
-| 14. Ponytail Codebase Pruning & Dead Engine Deletion | 0/1 | Pending | - |
+| 14. Ponytail Codebase Pruning & Dead Engine Deletion | 1/1 | Complete | 2026-10-08 |
 
 ---
 *Roadmap defined: 2026-10-07 for Milestone v4.0*
