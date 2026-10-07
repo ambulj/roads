@@ -9,8 +9,6 @@ Exposes Points 51-90:
 - 0/1 Knapsack economic budget optimizer and Pareto trade-off curve
 - Defensible XAI reasoning trace generator (MoRTH Section 198A)
 - Command centre shift triage and alert-fatigue suppression (Top 20 Interventions)
-- Federated learning (FedAvg) simulation and 3-tier bandwidth scheduler
-- Edge NPU hardware diagnostics, SSD circular ring-buffer, and canary rollback
 """
 
 from typing import Dict, Any, List, Optional
@@ -19,7 +17,6 @@ from pydantic import BaseModel, Field
 
 from app.services.city_brain_engine import city_brain_engine
 from app.services.road_memory_engine import road_memory_engine
-from app.services.federated_edge_engine import federated_edge_engine
 from app.services.map_matching_engine import map_matching_engine
 from app.services.domain_adaptation_engine import domain_adaptation_engine
 from app.services.sensor_fusion_engine import sensor_fusion_engine
@@ -59,26 +56,6 @@ class DomainAdaptationRequest(BaseModel):
     mean_luminance: float = Field(42.0, description="Mean image luminance 0-255")
     wet_road_flag: bool = Field(False)
     puddle_glare_candidate: bool = Field(False)
-
-class FederatedRoundRequest(BaseModel):
-    round_id: Optional[int] = Field(None, description="Round number (auto-increments if None)")
-    participating_buses: Optional[List[str]] = Field(None, description="Subset of bus IDs")
-
-class BandwidthScheduleRequest(BaseModel):
-    event_type: str = Field("CRITICAL_POTHOLE")
-    urgency: str = Field("HIGH")
-    payload_bytes: int = Field(2048)
-    cellular_available: bool = Field(True)
-    depot_wifi_available: bool = Field(False)
-
-class ModelRolloutRequest(BaseModel):
-    model_version: str = Field("v2.4.1-in-morth")
-    sha256_hash: str = Field("e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855")
-    target_stage: str = Field("STAGE_2_CANARY_50_PCT")
-
-class RollbackRequest(BaseModel):
-    failed_version: str = Field("v2.4.1-in-morth")
-    reason: str = Field("CANARY_INFERENCE_LATENCY_SPIKE_EXCEEDED_45MS")
 
 
 # --- Endpoints ---
@@ -210,59 +187,3 @@ def classify_domain(req: DomainAdaptationRequest):
         "irc_sp_55_construction_mode": domain_adaptation_engine.is_construction_mode_active()
     }
 
-@router.get("/edge-diagnostics", summary="Fleet Edge NPU Diagnostics & SSD Ring-Buffer")
-def get_edge_diagnostics():
-    """
-    Returns edge hardware telemetry across all transit buses: Rockchip RK3588 NPU temperatures,
-    thermal throttling state, inference FPS, and 128GB SSD ring-buffer capacity.
-    """
-    return federated_edge_engine.get_fleet_edge_diagnostics()
-
-@router.post("/federated-round", summary="Federated Learning (FedAvg) Training Round")
-def run_federated_round(req: FederatedRoundRequest):
-    """
-    Executes a simulated federated learning aggregation round across fleet edge nodes,
-    aggregating local parameter gradient deltas while preserving 99.9% bandwidth.
-    """
-    return federated_edge_engine.execute_federated_training_round(
-        round_id=req.round_id,
-        participating_buses=req.participating_buses
-    )
-
-@router.post("/bandwidth-schedule", summary="3-Tier Hierarchical Bandwidth Telemetry Scheduler")
-def schedule_bandwidth(req: BandwidthScheduleRequest):
-    """
-    Intelligently routes telemetry packets to Tier 1 (4G/5G real-time),
-    Tier 2 (Batch cellular), or Tier 3 (Depot Wi-Fi bulk offload).
-    """
-    return federated_edge_engine.schedule_telemetry_bandwidth(
-        event_type=req.event_type,
-        urgency=req.urgency,
-        payload_bytes=req.payload_bytes,
-        cellular_available=req.cellular_available,
-        depot_wifi_available=req.depot_wifi_available
-    )
-
-@router.post("/model-rollout", summary="Cryptographic Model Verification & Canary Rollout")
-def rollout_model(req: ModelRolloutRequest):
-    """
-    Verifies SHA-256 cryptographic digest of model weights and activates canary rollout.
-    """
-    result = federated_edge_engine.verify_and_rollout_model(
-        model_version=req.model_version,
-        sha256_hash=req.sha256_hash,
-        target_stage=req.target_stage
-    )
-    if not result.get("success"):
-        raise HTTPException(status_code=400, detail=result.get("error"))
-    return result
-
-@router.post("/model-rollback", summary="Automated Canary Rollback")
-def rollback_model(req: RollbackRequest):
-    """
-    Instantly rolls back fleet to the last known stable model checkpoint.
-    """
-    return federated_edge_engine.trigger_canary_rollback(
-        failed_version=req.failed_version,
-        reason=req.reason
-    )

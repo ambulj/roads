@@ -746,57 +746,6 @@ export interface ChronicFailuresResult {
   governing_statute: string;
 }
 
-export interface SSDRingBufferMetrics {
-  capacity_gb: number;
-  used_gb: number;
-  used_pct: number;
-  retention_buffer_hours: number;
-  locked_incident_clips: number;
-  eviction_policy: string;
-}
-
-export interface EdgeNPUDiagnostic {
-  bus_id: string;
-  route_name: string;
-  is_online: boolean;
-  npu_hardware: string;
-  edge_fps: number;
-  npu_temperature_c: number;
-  thermal_throttling: boolean;
-  ssd_ring_buffer: SSDRingBufferMetrics;
-  camera_sync_status: string;
-  firmware_version: string;
-  health_verdict: "NOMINAL_HEALTH" | "THERMAL_WARNING" | "STORAGE_WARNING";
-}
-
-export interface FleetEdgeDiagnosticsResult {
-  total_monitored_buses: number;
-  healthy_buses_count: number;
-  avg_npu_temperature_c: number;
-  canary_rollout_stage: string;
-  active_model_version: string;
-  bus_diagnostics: EdgeNPUDiagnostic[];
-}
-
-export interface FederatedRoundResult {
-  round_number: number;
-  aggregation_algorithm: string;
-  global_model_version: string;
-  participating_clients_count: number;
-  total_edge_samples_aggregated: number;
-  global_aggregated_loss: number;
-  model_mAP50_score: number;
-  bandwidth_efficiency: {
-    gradient_payload_transmitted_kb: number;
-    raw_video_avoided_mb: number;
-    bandwidth_saved_pct: number;
-    passenger_privacy_preserved: boolean;
-  };
-  convergence_status: string;
-  client_updates: any[];
-  server_aggregation_time_ms: number;
-}
-
 export interface PrivacyStatus {
   privacy_engine_active: boolean;
   statutory_mandate: string;

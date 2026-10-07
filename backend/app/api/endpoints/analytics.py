@@ -287,28 +287,6 @@ def get_road_memory_corridors(db: Session = Depends(get_db)):
                 rec["last_updated"] = r.updated_at
     return records
 
-@router.get("/deterioration-matrix")
-def get_deterioration_matrix():
-    """
-    Returns Markov Chain 5-State Transition Probability Matrices (IRC:37-2018 / MoRTH Section 500).
-    Provides baseline (dry) and monsoon-accelerated (2.2x decay) stochastic transition specifications.
-    """
-    from app.services.markov_deterioration import markov_engine
-    return markov_engine.get_matrix_spec()
-
-@router.post("/simulate-deterioration")
-def simulate_pavement_deterioration(payload: Dict[str, Any] = None):
-    """
-    Simulates stochastic pavement decay using Markov Chain matrix exponentiation (P^t).
-    Calculates expected cavity depth, crack width, IRI roughness, RPI score, and taxpayer savings.
-    """
-    from app.services.markov_deterioration import markov_engine
-    params = payload or {}
-    days = int(params.get("days", 90))
-    monsoon = bool(params.get("monsoon", True))
-    initial_state_id = int(params.get("initial_state_id", 1))
-    return markov_engine.simulate(days=days, monsoon=monsoon, initial_state_id=initial_state_id)
-
 @router.get("/pois")
 def get_critical_pois():
     """Returns canonical Chennai critical infrastructure and POI landmarks from spatial database."""

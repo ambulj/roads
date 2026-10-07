@@ -495,27 +495,30 @@ class TestAPIEndpoints(unittest.TestCase):
         self.assertIn("distance_3d_m", data_lift)
         self.assertGreater(data_lift["distance_3d_m"], 0.0)
 
-    def test_26_federated_learning_and_bandwidth_scheduler(self):
-        """Verify federated learning FedAvg round and 3-tier bandwidth scheduler."""
-        # 1. Federated Round
+    def test_26_pruned_endpoints_return_404(self):
+        """Verify pruned speculative mock endpoints return HTTP 404 (SIMPLIFY-01)."""
+        # 1. Pruned Federated Edge Routes
         res_fed = self.client.post("/api/city-brain/federated-round", json={})
-        self.assertEqual(res_fed.status_code, 200)
-        data_fed = res_fed.json()
-        self.assertIn("global_aggregated_loss", data_fed)
-        self.assertGreater(data_fed["bandwidth_efficiency"]["bandwidth_saved_pct"], 95.0)
+        self.assertEqual(res_fed.status_code, 404)
 
-        # 2. Bandwidth Telemetry Scheduler
-        res_bw = self.client.post("/api/city-brain/bandwidth-schedule", json={
-            "event_type": "HIGH_SHOCK_ALERT",
-            "urgency": "CRITICAL"
-        })
-        self.assertEqual(res_bw.status_code, 200)
-        self.assertEqual(res_bw.json()["assigned_tier"], "TIER_1_REALTIME_CELLULAR")
+        res_bw = self.client.post("/api/city-brain/bandwidth-schedule", json={})
+        self.assertEqual(res_bw.status_code, 404)
 
-        # 3. Edge NPU Diagnostics
         res_edge = self.client.get("/api/city-brain/edge-diagnostics")
-        self.assertEqual(res_edge.status_code, 200)
-        self.assertGreater(res_edge.json()["total_monitored_buses"], 0)
+        self.assertEqual(res_edge.status_code, 404)
+
+        res_rollout = self.client.post("/api/city-brain/model-rollout", json={})
+        self.assertEqual(res_rollout.status_code, 404)
+
+        res_rollback = self.client.post("/api/city-brain/model-rollback", json={})
+        self.assertEqual(res_rollback.status_code, 404)
+
+        # 2. Pruned Markov Deterioration Routes
+        res_matrix = self.client.get("/api/analytics/deterioration-matrix")
+        self.assertEqual(res_matrix.status_code, 404)
+
+        res_decay = self.client.post("/api/analytics/simulate-deterioration", json={})
+        self.assertEqual(res_decay.status_code, 404)
 
     def test_27_pedestrian_fusion_and_school_zone_safety(self):
         """Verify spatial zone-overlap fusion for school children and pedestrian crossings."""

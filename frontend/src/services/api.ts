@@ -5,7 +5,7 @@ import {
   OpenManholeAlert, SubmergedPotholeAlert, ObscuredSignAudit, ContractorDebarmentDossier, AsphaltQualityAudit,
   RoadMemoryCorridor, LearningStatusResponse, LearningQueueItem, RoadMemorySummaryResponse,
   BudgetOptimizationResult, ShiftTriageResult, XAIReasoningTrace, ChronicFailuresResult,
-  FleetEdgeDiagnosticsResult, FederatedRoundResult, PrivacyStatus, PrivacyConfigPayload,
+  PrivacyStatus, PrivacyConfigPayload,
   ODMatrixResponse, TrafficDensityRecord, BottleneckAlert
 } from '../types';
 
@@ -2204,60 +2204,6 @@ class ApiService {
       chronic_corridors: [],
       monitored_corridors: [],
       governing_statute: "Indian Roads Congress IRC:37-2018 (Guidelines for Design of Flexible Pavements)"
-    };
-  }
-
-  async getFleetEdgeDiagnostics(): Promise<FleetEdgeDiagnosticsResult> {
-    try {
-      const res = await fetch(`${API_BASE}/city-brain/edge-diagnostics`, {
-        headers: this.getAuthHeaders(),
-        signal: AbortSignal.timeout(3000)
-      });
-      if (res.ok) return await res.json();
-    } catch (err) {
-      console.error('Failed to fetch edge diagnostics:', err);
-    }
-    return {
-      total_monitored_buses: 4,
-      healthy_buses_count: 4,
-      avg_npu_temperature_c: 58.5,
-      canary_rollout_stage: "STAGE_2_CANARY_50_PCT",
-      active_model_version: "v2.4.1-in-morth",
-      bus_diagnostics: []
-    };
-  }
-
-  async triggerFederatedRound(roundId?: number): Promise<FederatedRoundResult> {
-    try {
-      const res = await fetch(`${API_BASE}/city-brain/federated-round`, {
-        method: 'POST',
-        headers: {
-          ...this.getAuthHeaders(),
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ round_id: roundId })
-      });
-      if (res.ok) return await res.json();
-    } catch (err) {
-      console.error('Failed to trigger federated round:', err);
-    }
-    return {
-      round_number: roundId || 15,
-      aggregation_algorithm: "Federated_Averaging_FedAvg",
-      global_model_version: "v2.4.1-in-morth",
-      participating_clients_count: 4,
-      total_edge_samples_aggregated: 420,
-      global_aggregated_loss: 0.362,
-      model_mAP50_score: 0.932,
-      bandwidth_efficiency: {
-        gradient_payload_transmitted_kb: 780.0,
-        raw_video_avoided_mb: 756.0,
-        bandwidth_saved_pct: 99.9,
-        passenger_privacy_preserved: true
-      },
-      convergence_status: "CONVERGING_NOMINAL",
-      client_updates: [],
-      server_aggregation_time_ms: 18.5
     };
   }
 
