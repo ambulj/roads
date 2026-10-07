@@ -35,12 +35,17 @@ Empower municipal authorities with automated, unassailable, multi-pass verified 
 - ✓ Modern white/indigo civic design tokens, typography, and theme toggle — Phase 5
 - ✓ WebGIS map floating dock, cluster inspection popups, and layer visibility controls — Phase 6
 - ✓ Executive KPI scorecards, SLA action console, and backlog table styling — Phase 7
+- ✓ Sidebar workspace consolidation into 5 core workspaces with sub-tab switchers — Phase 8
+- ✓ Map HUD micro-dock, bottom analytical trays, and single-line triage strip — Phase 9
+- ✓ 5-tab segmented analytics workspace and compact backlog table — Phase 10
 
-### Active (Milestone v3.2: Sleek Minimalist Civic Cockpit & UI De-cluttering)
+### Active (Milestone v3.3: Work Orders Cockpit & Contractor Operations Overhaul)
 
-- [ ] **Sidebar Workspace Consolidation & Global Layout Simplification**: Consolidate 16+ sidebar links into 5 core intuitive workspaces (Map Command, Work Orders, Analytics, Fleet, Settings) with clean sub-navigation.
-- [ ] **Map HUD & Command Center Viewport Optimization**: Streamline top dock, collapse floating HUD cards into discrete bottom trays, maximize map viewport, and refine operator triage drawer.
-- [ ] **Tabbed Executive Analytics & Clean Backlog Table Redesign**: Segment analytics into 4 focused tabs and streamline work orders table with progressive disclosure slide-overs.
+- [ ] **Phase 11: Work Orders Cockpit & Contractor Operations Overhaul**: Complete visual and functional overhaul of all 3 Work Orders sub-workspaces:
+  - Sleek top metrics strip (Active Orders, Critical P0 SLA Countdowns, Escrow At Risk, 3-Pass Verified Repairs).
+  - High-density CAD Backlog Table with crisp border tokens, compact cell padding, tabular numerals, and status pills.
+  - Redesigned Modern Kanban Board with defect image thumbnails, live SLA countdown timer rings, and quick card actions.
+  - Deep polish of Contractor Financial SLA Ledger and slide-over `WorkOrderActionConsole`.
 
 ### Out of Scope
 

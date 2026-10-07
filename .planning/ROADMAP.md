@@ -74,10 +74,32 @@ RoadSaathi v3.2 streamlines the entire civic cockpit into a sleek, decluttered, 
 
 ---
 
+### Milestone v3.3: Work Orders Cockpit & Contractor Operations Overhaul (Active)
+- [ ] **Phase 11: Work Orders Cockpit & Contractor Operations Overhaul** - Complete visual overhaul of CAD backlog table, interactive Kanban board with live SLA timers, contractor SLA financial ledger, and slide-over action console.
+
+---
+
+### Phase 11: Work Orders Cockpit & Contractor Operations Overhaul
+
+**Goal**: Transform the Work Orders workspace into a modern minimalist municipal command cockpit across all 3 sub-workspaces (`CAD Backlog`, `Kanban Board`, `Contractor SLA Ledger`).
+**Depends on**: Phase 10
+**Requirements**: WO-01, WO-02, WO-03
+**Success Criteria** (what must be TRUE):
+  1. High-density executive metrics strip displaying Active Work Orders, Critical P0 SLA Countdowns, Total Escrow At Risk, and 3-Pass Verified Repairs with animated SVG circular gauges.
+  2. Redesigned CAD Backlog Table with compact cell padding (`py-2.5 px-3`), monospace tabular numerals, crisp borders, high-contrast severity pills, and clustered action buttons.
+  3. Modernized Kanban Board with defect image thumbnails, live SLA countdown timer rings, contractor agency badges, and statutory concurrence status chips with smooth status transitions.
+  4. Contractor Financial SLA Ledger & Action Console deep polish with elevated escrow security deposits, Clause 14 auto-debit triggers, and slide-over progressive disclosure drawer.
+  5. 100% frontend build and backend regression test integrity preserved.
+
+**Plans**: 1 plan
+- [ ] 11-01: Work orders executive metrics strip, sleek backlog table, modern Kanban board, and contractor SLA ledger overhaul.
+
+---
+
 ## Progress
 
 **Execution Order:**
-Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 → 9 → 10
+Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 → 9 → 10 → 11
 
 | Phase | Plans Complete | Status | Completed |
 |---|---|---|---|
@@ -91,6 +113,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 | 8. Sidebar Workspace Consolidation & Global Navigation | 1/1 | Complete | 2026-10-07 |
 | 9. Map HUD & Command Center Viewport Optimization | 1/1 | Complete | 2026-10-07 |
 | 10. Tabbed Executive Analytics & Clean Backlog Table Redesign | 1/1 | Complete | 2026-10-07 |
+| 11. Work Orders Cockpit & Contractor Operations Overhaul | 0/1 | Ready to start | - |
 
 ---
-*Roadmap defined: 2026-10-07 for Milestone v3.2*
+*Roadmap defined: 2026-10-07 for Milestone v3.3*

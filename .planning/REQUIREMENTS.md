@@ -25,27 +25,25 @@
 
 ---
 
-## Active Milestone v3.2: Sleek Minimalist Civic Cockpit & UI De-cluttering
+### Milestone v3.2: Sleek Minimalist Civic Cockpit & UI De-cluttering (Complete)
+- [x] **DECLUTTER-01**: Consolidate the 16+ menu items into 5 core intuitive workspaces with sleek sub-tab switchers.
+- [x] **DECLUTTER-02**: Maximize map viewport real estate in `CommandCenter.tsx` and `WebGISMap.tsx` with micro-dock and bottom trays.
+- [x] **DECLUTTER-03**: Reorganize executive analytics into a 5-tab segmented switcher and streamline backlog tables.
 
-### 8. Sidebar Workspace Consolidation & Global Navigation (NAV-UI)
-- [x] **DECLUTTER-01**: Consolidate the 16+ menu items into 5 core intuitive workspaces:
-  1. 🗺️ **Command Center & Map** (`command`)
-  2. 📋 **Work Orders & SLA** (`work-orders`, integrating Contractors)
-  3. 📊 **Safety & Traffic Analytics** (`analytics`, integrating Incidents, Pedestrian, Darkspots, Simulation)
-  4. 🚌 **Fleet Perception & Edge** (`fleet`, integrating Capture, Learning)
-  5. ⚙️ **Governance & Evidence** (`evidence`, integrating Audit, Settings)
-  with sleek sub-tab switchers, breadcrumb navigation, and responsive collapse.
+---
 
-### 9. Map HUD & Command Center Viewport Optimization (MAP-CLEAN)
-- [x] **DECLUTTER-02**: Maximize map viewport real estate in `CommandCenter.tsx` and `WebGISMap.tsx`:
-  - Condense the top dock into a sleek floating micro-bar.
-  - Convert intrusive floating HUD cards (OD flow list, blind spots banner, profile pop-up) into subtle collapsible bottom/side trays.
-  - Simplify triage search and filter bars into a compact single-line filter strip with quick toggle chips.
+## Active Milestone v3.3: Work Orders Cockpit & Contractor Operations Overhaul
 
-### 10. Tabbed Executive Analytics & Clean Backlog Table Redesign (DASH-CLEAN)
-- [x] **DECLUTTER-03**: Reorganize executive analytics and backlog tables:
-  - In `Analytics.tsx`: Replace the long 10+ chart scrolling page with a 5-tab segmented switcher (*Overview KPI*, *Corridor Health*, *Traffic & OD Flow*, *Safety & Lighting*, *Edge ANPR*).
-  - In `WorkOrders.tsx`: Streamline table rows with clean typography, compact cell padding, and slide-over inspector drawers instead of overwhelming data density.
+### 11. Work Orders Cockpit & Contractor Operations Overhaul (WO-OVERHAUL)
+- [ ] **WO-01**: Executive Metrics Strip & Sleek Backlog Table Cockpit Redesign:
+  - High-density top metrics strip (Active Orders, Critical P0 SLA Countdowns, Escrow At Risk, 3-Pass Verified Repairs).
+  - Clean CAD Backlog Table with compact cell padding (`py-2.5 px-3`), monospace tabular numerals, high-contrast severity pills, and multi-column sorting.
+- [ ] **WO-02**: Modernized High-Contrast Kanban Board:
+  - Defect image thumbnails, live SLA countdown timer rings, contractor agency badges, and statutory concurrence status chips.
+  - Smooth column transitions (Assigned -> In Progress -> Resolved -> Verified Closed) with quick actions (`Inspect`, `Dispatch`, `Release Escrow`).
+- [ ] **WO-03**: Contractor Financial SLA Ledger & Action Console Deep Polish:
+  - Elevated escrow balances, debarment risk meters, Clause 14 auto-debit triggers, and PFMS voucher modal.
+  - Slide-over `WorkOrderActionConsole` drawer with before/after comparison slider, volumetric asphalt calculator, and 3-pass concurrence payment clearance.
 
 ---
 
@@ -63,11 +61,14 @@
 | DECLUTTER-01 | v3.2 | Phase 8 | Complete |
 | DECLUTTER-02 | v3.2 | Phase 9 | Complete |
 | DECLUTTER-03 | v3.2 | Phase 10 | Complete |
+| WO-01 | v3.3 | Phase 11 | Pending |
+| WO-02 | v3.3 | Phase 11 | Pending |
+| WO-03 | v3.3 | Phase 11 | Pending |
 
 **Coverage:**
-- Total Requirements: 18
-- Completed: 18 / 18 (100.0%)
-- Active in Milestone v3.2: 0
+- Total Requirements: 21
+- Completed: 18 / 21 (85.7%)
+- Active in Milestone v3.3: 3
 
 ---
-*Requirements updated: 2026-10-07 for Milestone v3.2*
+*Requirements updated: 2026-10-07 for Milestone v3.3*
