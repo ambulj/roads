@@ -137,6 +137,19 @@ RoadSaathi v4.0 grounds the entire municipal intelligence platform in rigorous r
 
 ---
 
+### Phase 19: Physical Concurrence & Officer-Certified Gating
+**Goal**: Ground work-order concurrence in time-windowed post-repair verification (strictly `captured_at >= repair_completed_at` within 48h), replace wide 15m radius with 3–5m lane-aligned corridor tolerance, replace raw G_z shock with speed-normalized jerk G_norm, enforce fail-closed handling on missing sensor data, eliminate fabricated fallback penalties, and replace automated debits/clearances with AE/EE officer recommendation workflows.
+**Depends on**: Phase 18
+**Requirements**: GATE-01, GATE-02, OFFICER-01
+**Success Criteria** (what must be TRUE):
+  1. Concurrence query filters strictly post-repair (`captured_at >= repair_completed_at AND captured_at <= repair_completed_at + 48h`), preventing pre-repair distress passes from triggering false recurrence penalties.
+  2. Spatial tolerance narrowed from 15m (30m circle) to 3–5m lane-aligned buffer with heading constraint, preventing neighboring speed breakers/manholes from failing repairs.
+  3. Vertical shock thresholds evaluate speed-normalized jerk $G_{norm} = \frac{|G_z - 1.0|}{v / 30}$; passes with missing $G_z$ or optical status fail-closed as `NO_DATA` rather than defaulting to clean passes.
+  4. Fallback fabricated penalty values (`failing_gz = 1.48`, `failing_bus = "BUS-04"`) are completely removed from concurrence models and database storage.
+  5. Automatic debits and unilateral clearance authorizations are replaced with officer recommendation workflows (`proposed_deduction` and `recommend_release`) requiring AE/EE digital sign-off, alongside structured defect triage rejection reasons (`FALSE_POSITIVE`, `DUPLICATE_CLUSTER`, `JURISDICTION_NON_PWD`, `UNDER_ACTIVE_REPAIR`).
+
+---
+
 ## Progress
 
 **Execution Order:**
