@@ -150,6 +150,18 @@ RoadSaathi v4.0 grounds the entire municipal intelligence platform in rigorous r
 
 ---
 
+### Phase 20: Statutory & Financial Standards Rectification
+**Goal**: Align statutory citations with authentic municipal contract law, transition escrow terminology to Security Deposit (SD) / Retention Money, calibrate civil engineering patch repair volumes with IRC:82 rectangular saw-cut trim (+15%) and compaction allowances (+10%), and attribute public model weights datasets.
+**Depends on**: Phase 19
+**Requirements**: STATUTE-03, FINANCE-01, CIVIL-01, ATTRIB-01
+**Success Criteria** (what must be TRUE):
+  1. Rural road manual citations ("IRC:SP:20 Clause 14") are replaced across backend services, notices, and UI ledgers with contractual Defect Liability Period (DLP) clauses and BSA 2023 Section 63/65B statutory evidence references.
+  2. "Escrow" and `PFMS/DLP-ESCROW` tokens are replaced with municipal standard Security Deposit (SD) / Retention Money (`PFMS/DLP-RETENTION` / `PFMS/SD-DLP`).
+  3. Pothole cavity volume and PWD SOR repair cost formulas incorporate +15% rectangular saw-cut box trim margin and +10% asphalt compaction settlement factor per IRC:82.
+  4. Public dataset attributions (Roboflow CC BY 4.0) are documented in the UI/docs, and Origin-Destination desire lines are explicitly designated as illustrative aggregate transit corridor traces.
+
+---
+
 ## Progress
 
 **Execution Order:**
