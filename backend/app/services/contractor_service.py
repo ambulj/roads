@@ -178,8 +178,8 @@ def compute_statutory_evidence_hash(
     cluster_code: str,
     amount: float,
     timestamp: str,
-    bus_id: str = "BUS-04",
-    gz: float = 1.48
+    bus_id: str = "PATROL-BUS",
+    gz: float = 1.0
 ) -> str:
     """
     Generates 64-character SHA-256 statutory evidence digest linking contractor CIN,
@@ -259,8 +259,8 @@ def find_recurrent_distress_cluster(
 def issue_form14_show_cause_notice(
     db: Session,
     cluster: Union[DBDistressCluster, str],
-    measured_gz: float = 1.48,
-    bus_id: str = "BUS-04",
+    measured_gz: Optional[float] = None,
+    bus_id: Optional[str] = None,
     ee_signoff_by: Optional[str] = None,
     notes: Optional[str] = None
 ) -> DBContractorPenalty:
@@ -276,6 +276,8 @@ def issue_form14_show_cause_notice(
       7. Flags debarment risk if recurrence >= 3.
       8. Logs audit trail and updates cluster status.
     """
+    measured_gz_val = float(measured_gz) if measured_gz is not None else 1.0
+    bus_id_val = str(bus_id) if bus_id is not None else "PATROL-UNKNOWN"
     if isinstance(cluster, str):
         target_cluster = db.query(DBDistressCluster).filter(
             (DBDistressCluster.id == cluster) | (DBDistressCluster.cluster_code == cluster)
@@ -345,8 +347,8 @@ def issue_form14_show_cause_notice(
         cluster_code=target_cluster.cluster_code,
         amount=penalty_amount,
         timestamp=now_iso,
-        bus_id=bus_id,
-        gz=measured_gz
+        bus_id=bus_id_val,
+        gz=measured_gz_val
     )
     cert_id = generate_section_65b_certificate_id(evidence_hash=evidence_hash, dt=now_dt)
     docket_no = generate_form14_docket_no(target_cluster.cluster_code, now_dt)
@@ -372,8 +374,8 @@ def issue_form14_show_cause_notice(
         pfms_txn_ref=pfms_ref,
         evidence_sha256=evidence_hash,
         evidence_hash=evidence_hash,
-        patrol_bus_id=bus_id,
-        measured_gz=measured_gz,
+        patrol_bus_id=bus_id_val,
+        measured_gz=measured_gz_val,
         threshold_gz=1.35,
         notice_docket_no=docket_no,
         cure_deadline=cure_deadline_iso,
@@ -434,7 +436,7 @@ def issue_form14_show_cause_notice(
     # Append audit trail
     db.add(DBAuditLog(
         id=f"audit-{uuid.uuid4().hex[:8]}",
-        bus_id=bus_id,
+        bus_id=bus_id_val,
         corridor=target_cluster.road_name,
         message=f"Form 14 Show-Cause Notice {docket_no} drafted for {contractor.name} ({contractor.cin}). Penalty: ₹{penalty_amount:,.0f}, Cert: {cert_id}",
         latency_ms=42,
@@ -449,8 +451,8 @@ def issue_form14_show_cause_notice(
         cluster_code=target_cluster.cluster_code,
         contractor_name=contractor.name,
         road_name=target_cluster.road_name,
-        verifying_bus_id=bus_id,
-        vertical_gz=measured_gz,
+        verifying_bus_id=bus_id_val,
+        vertical_gz=measured_gz_val,
         optical_status="RECURRENT_CAVITY_DETECTED",
         audit_verdict="REPAIR_FAILED_RECURRENCE",
         penalty_debit_inr=penalty_amount,
@@ -589,8 +591,8 @@ def dismiss_penalty_on_cure(db: Session, penalty_id: str) -> DBContractorPenalty
 def execute_contractor_auto_debit(
     db: Session,
     cluster: Union[DBDistressCluster, str],
-    measured_gz: float = 1.48,
-    bus_id: str = "BUS-04",
+    measured_gz: Optional[float] = None,
+    bus_id: Optional[str] = None,
     notes: Optional[str] = None
 ) -> DBContractorPenalty:
     """

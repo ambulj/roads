@@ -44,6 +44,11 @@ class DBDistressCluster(Base):
     surface_area_m2 = Column(Float, nullable=True, default=0.0)
     drainage_failure_index = Column(Float, nullable=True, default=0.0)
     irc_standard = Column(String(64), nullable=True, default="")
+    repair_completed_at = Column(String(64), nullable=True)
+    acknowledged_at = Column(String(64), nullable=True)
+    assigned_officer_id = Column(String(64), nullable=True)
+    rejection_reason = Column(String(64), nullable=True)
+    triage_status = Column(String(32), default="NEW")
     created_at = Column(String(64))
     updated_at = Column(String(64))
 

@@ -18,18 +18,19 @@ MONITORING_WINDOW_HOURS: int = 48
 MIN_TRIP_SEPARATION_SECONDS: int = 7200  # 2 hours
 VERTICAL_GZ_TOLERANCE: float = 0.15      # |gz - 1.0| < 0.15g -> 0.85g <= gz <= 1.15g (at 30 km/h)
 SHOCK_FAILURE_THRESHOLD: float = 0.35    # |gz - 1.0| >= 0.35g -> gz >= 1.35g or gz <= 0.65g (at 30 km/h)
-CORRIDOR_MATCH_METERS: float = 15.0
+CORRIDOR_MATCH_METERS: float = 5.0       # Narrowed from 15.0m to lane-aligned buffer
 
 
 # ── Concurrence Data Schemas ─────────────────────────────────────────────────
 class ConcurrencePassItem(BaseModel):
     bus_id: str
-    vertical_gz: float
+    vertical_gz: Optional[float] = None
     speed_kmh: float = 30.0
     g_norm: float = 0.0
     optical_status: str
     passed_optical: bool
     passed_imu: bool
+    is_no_data: bool = False
     timestamp: str
 
     def __getitem__(self, item):
@@ -43,12 +44,62 @@ class ConcurrenceEvaluationResult(BaseModel):
     required_buses_count: int = REQUIRED_DISTINCT_BUSES
     window_hours: int = MONITORING_WINDOW_HOURS
     passes: List[ConcurrencePassItem] = Field(default_factory=list)
+    recommend_release: bool = False
+    proposed_deduction: float = 0.0
+    approval_status: str = "PENDING_AE_REVIEW"
+    officer_notes: Optional[str] = None
     invoice_clearance_authorized: bool = False
     escrow_holdback_released: bool = False
     failure_reason: Optional[str] = None
 
     def __getitem__(self, item):
         return getattr(self, item)
+
+
+def parse_datetime_to_utc(dt_input: Union[str, datetime.datetime, None]) -> datetime.datetime:
+    """Helper to parse varied date representations into timezone-aware UTC datetime."""
+    if dt_input is None:
+        return datetime.datetime.now(datetime.timezone.utc)
+    if isinstance(dt_input, datetime.datetime):
+        if dt_input.tzinfo is None:
+            return dt_input.replace(tzinfo=datetime.timezone.utc)
+        return dt_input.astimezone(datetime.timezone.utc)
+    s = str(dt_input).strip()
+    if s.endswith("Z"):
+        s = s[:-1] + "+00:00"
+    try:
+        dt = datetime.datetime.fromisoformat(s)
+        if dt.tzinfo is None:
+            return dt.replace(tzinfo=datetime.timezone.utc)
+        return dt.astimezone(datetime.timezone.utc)
+    except Exception:
+        pass
+    for fmt in (
+        "%Y-%m-%d %H:%M:%S",
+        "%Y-%m-%d",
+        "%d %b, %I:%M %p",
+        "%d %b %Y",
+        "%d %B %Y",
+        "%Y/%m/%d",
+    ):
+        try:
+            parsed = datetime.datetime.strptime(s, fmt)
+            if "%Y" not in fmt:
+                now_year = datetime.datetime.now(datetime.timezone.utc).year
+                parsed = parsed.replace(year=now_year)
+            return parsed.replace(tzinfo=datetime.timezone.utc)
+        except Exception:
+            continue
+    return datetime.datetime.now(datetime.timezone.utc)
+
+
+def get_repair_baseline_datetime(cluster: DBDistressCluster) -> datetime.datetime:
+    """
+    Extracts timezone-aware UTC datetime for repair completion.
+    Hierarchical resolution: cluster.repair_completed_at -> cluster.updated_at -> cluster.created_at.
+    """
+    raw = getattr(cluster, "repair_completed_at", None) or cluster.updated_at or cluster.created_at
+    return parse_datetime_to_utc(raw)
 
 
 def select_qualifying_trip_passes(
@@ -120,14 +171,17 @@ def evaluate_concurrence_passes(
          - Optical: SMOOTH_SURFACE (or cavity confidence < 0.10 and not cavity).
            Confirms repaired road surface without requiring vehicle wheel collision.
          - IMU: g_norm < 0.15 (at 30 km/h baseline, |gz - 1.0| < 0.15g).
-      3. Recurrence Shock Override:
-         - If any pass exhibits severe shock (g_norm >= 0.35g) or open cavity,
+      3. Fail-Closed Missing Sensor Handling & Crawl Speeds:
+         - Any pass with missing vertical acceleration, missing optical status,
+           or vehicle speed < 15 km/h fails closed as NO_DATA. It never counts toward
+           clean pass quorum, nor does it falsely fail a repair.
+      4. Recurrence Shock Override & Empirical Penalty:
+         - If any valid pass exhibits severe shock (g_norm >= 0.35g) or open cavity,
            immediately marks status = REPAIR_FAILED_RECURRENCE.
-      4. Clearance:
-         - If at least 3 qualified trip passes satisfy sensor criteria:
-           status = REPAIR_VERIFIED, invoice_clearance_authorized = True, escrow_holdback_released = True.
-         - Otherwise:
-           status = AWAITING_CONCURRENCE, invoice_clearance_authorized = False.
+         - Proposes Clause 14 deduction only citing empirical tripping pass; zero deduction if none.
+      5. Structured Officer Recommendations:
+         - Replaces unilateral autonomous payment releases with recommend_release,
+           proposed_deduction, and PENDING_AE_REVIEW / RECOMMENDED_BY_AE approval statuses.
     """
     processed_passes: List[ConcurrencePassItem] = []
     severe_failure = False
@@ -135,13 +189,38 @@ def evaluate_concurrence_passes(
 
     for p in passes:
         bus_id = str(p.get("bus_id") or p.get("verifying_bus_id") or "BUS-UNKNOWN")
-        gz = float(p.get("vertical_gz") if "vertical_gz" in p else p.get("vertical_g_force", 1.0))
-        speed_kmh = float(p.get("speed_kmh", 30.0))
-        optical_status = str(p.get("optical_status") or "SMOOTH_SURFACE")
+        gz_val = p.get("vertical_gz") if "vertical_gz" in p else p.get("vertical_g_force")
+        has_gz = gz_val is not None
+        optical_val = p.get("optical_status")
+        has_optical = optical_val is not None
+        speed_raw = p.get("speed_kmh")
+        speed_kmh = float(speed_raw) if speed_raw is not None else 30.0
         timestamp = str(p.get("timestamp") or p.get("captured_at") or p.get("verified_at") or datetime.datetime.now(datetime.timezone.utc).isoformat())
         confidence = float(p.get("confidence", 0.0))
 
-        g_norm = compute_normalized_shock(gz, speed_kmh)
+        # Fail-closed NO_DATA criteria: missing sensors or crawl speed < 15 km/h
+        if not has_gz or not has_optical or speed_kmh < 15.0:
+            pass_item = ConcurrencePassItem(
+                bus_id=bus_id,
+                vertical_gz=float(gz_val) if has_gz else None,
+                speed_kmh=speed_kmh,
+                g_norm=0.0,
+                optical_status="NO_DATA",
+                passed_optical=False,
+                passed_imu=False,
+                is_no_data=True,
+                timestamp=timestamp
+            )
+            processed_passes.append(pass_item)
+            continue
+
+        gz = float(gz_val)
+        optical_status = str(optical_val)
+
+        # Speed-normalized shock jerk G_norm = |Gz - 1.0| / (v / 30.0)
+        speed_factor = max(0.5, speed_kmh / 30.0)
+        g_norm = abs(gz - 1.0) / speed_factor
+
         is_cavity = optical_status.upper() in (
             "CAVITY_DETECTED", "RECURRENT_CAVITY_DETECTED", "D40", "OPEN_CAVITY", "CAVITY"
         ) or ("CAVITY" in optical_status.upper())
@@ -154,10 +233,11 @@ def evaluate_concurrence_passes(
             bus_id=bus_id,
             vertical_gz=gz,
             speed_kmh=speed_kmh,
-            g_norm=g_norm,
+            g_norm=round(g_norm, 4),
             optical_status=optical_status,
             passed_optical=passed_optical,
             passed_imu=passed_imu,
+            is_no_data=False,
             timestamp=timestamp
         )
         processed_passes.append(pass_item)
@@ -168,7 +248,19 @@ def evaluate_concurrence_passes(
             failure_reasons.append(f"{bus_id}: {reason}")
 
     if severe_failure:
-        qualified_trips = select_qualifying_trip_passes(processed_passes, min_separation_seconds=MIN_TRIP_SEPARATION_SECONDS)
+        qualified_trips = select_qualifying_trip_passes(
+            [p for p in processed_passes if not p.is_no_data], 
+            min_separation_seconds=MIN_TRIP_SEPARATION_SECONDS
+        )
+        empirical_tripping_pass = next(
+            (p for p in processed_passes if not p.is_no_data and (p.g_norm >= SHOCK_FAILURE_THRESHOLD or not p.passed_optical)),
+            None
+        )
+        proposed_deduction = 0.0
+        if empirical_tripping_pass:
+            from app.services.contractor_service import calculate_clause14_penalty
+            proposed_deduction = calculate_clause14_penalty(1).amount
+
         return ConcurrenceEvaluationResult(
             order_id=order_id,
             status="REPAIR_FAILED_RECURRENCE",
@@ -176,13 +268,17 @@ def evaluate_concurrence_passes(
             required_buses_count=REQUIRED_DISTINCT_BUSES,
             window_hours=MONITORING_WINDOW_HOURS,
             passes=processed_passes,
+            recommend_release=False,
+            proposed_deduction=proposed_deduction,
+            approval_status="PENDING_AE_REVIEW",
+            officer_notes="Defect recurrence detected by patrol telematics. Form 14 statutory notice proposed under 7-day cure window.",
             invoice_clearance_authorized=False,
             escrow_holdback_released=False,
             failure_reason="; ".join(failure_reasons)
         )
 
-    # Filter for passes that satisfy BOTH optical and IMU criteria
-    qualifying_passes = [p for p in processed_passes if p.passed_optical and p.passed_imu]
+    # Filter for passes that satisfy BOTH optical and IMU criteria and NOT NO_DATA
+    qualifying_passes = [p for p in processed_passes if not p.is_no_data and p.passed_optical and p.passed_imu]
     qualified_trips = select_qualifying_trip_passes(qualifying_passes, min_separation_seconds=MIN_TRIP_SEPARATION_SECONDS)
     distinct_count = len(qualified_trips)
 
@@ -194,8 +290,12 @@ def evaluate_concurrence_passes(
             required_buses_count=REQUIRED_DISTINCT_BUSES,
             window_hours=MONITORING_WINDOW_HOURS,
             passes=processed_passes,
+            recommend_release=True,
+            proposed_deduction=0.0,
+            approval_status="RECOMMENDED_BY_AE",
+            officer_notes="Physical concurrence verified across distinct trips. Payment release recommended for AE/EE sign-off.",
             invoice_clearance_authorized=True,
-            escrow_holdback_released=True,
+            escrow_holdback_released=False,
             failure_reason=None
         )
     else:
@@ -206,6 +306,10 @@ def evaluate_concurrence_passes(
             required_buses_count=REQUIRED_DISTINCT_BUSES,
             window_hours=MONITORING_WINDOW_HOURS,
             passes=processed_passes,
+            recommend_release=False,
+            proposed_deduction=0.0,
+            approval_status="PENDING_AE_REVIEW",
+            officer_notes=f"Awaiting remaining patrol passes ({distinct_count}/{REQUIRED_DISTINCT_BUSES} verified).",
             invoice_clearance_authorized=False,
             escrow_holdback_released=False,
             failure_reason=f"Insufficient distinct fleet passes: {distinct_count}/{REQUIRED_DISTINCT_BUSES} verified."
@@ -219,9 +323,11 @@ def evaluate_work_order_concurrence(
 ) -> ConcurrenceEvaluationResult:
     """
     Evaluates physical concurrence for a cluster in the database.
-    Queries DBRepairAudit and DBRawIngest within 15m radius of the cluster.
+    Queries DBRepairAudit and DBRawIngest within 5m lane corridor of the cluster,
+    strictly windowed to [t_repair, t_repair + 48h].
     If passes satisfy criteria: updates cluster to 'resolved' and 'REPAIR_VERIFIED'.
-    If shock or cavity detected: updates cluster to 'REPAIR_FAILED_RECURRENCE' and invokes execute_contractor_auto_debit.
+    If shock or cavity detected: updates cluster to 'REPAIR_FAILED_RECURRENCE', proposes Clause 14 penalty,
+    and drafts Form 14 notice without unilateral automated escrow debit.
     """
     cluster = db.query(DBDistressCluster).filter(
         (DBDistressCluster.id == order_id) | (DBDistressCluster.cluster_code == order_id)
@@ -232,24 +338,33 @@ def evaluate_work_order_concurrence(
         effective_passes = passes or []
         return evaluate_concurrence_passes(effective_passes, order_id=order_id)
 
+    # Establish post-repair time window: [t_repair, t_repair + 48h]
+    t_repair = get_repair_baseline_datetime(cluster)
+    window_start = t_repair
+    window_end = t_repair + datetime.timedelta(hours=MONITORING_WINDOW_HOURS)
+    window_start_iso = window_start.isoformat()
+    window_end_iso = window_end.isoformat()
+
     collected_passes: List[Dict[str, Any]] = []
 
     if passes is not None:
         collected_passes = list(passes)
     else:
-        # 1. Query existing DBRepairAudit records for this cluster
+        # 1. Query existing DBRepairAudit records for this cluster within post-repair window
         audits = db.query(DBRepairAudit).filter(
             (DBRepairAudit.cluster_id == cluster.id) | (DBRepairAudit.cluster_code == cluster.cluster_code)
         ).all()
         for a in audits:
-            collected_passes.append({
-                "bus_id": a.verifying_bus_id,
-                "vertical_gz": a.vertical_gz,
-                "optical_status": a.optical_status,
-                "timestamp": a.verified_at or cluster.updated_at
-            })
+            audit_dt = parse_datetime_to_utc(a.verified_at or cluster.updated_at)
+            if window_start <= audit_dt <= window_end:
+                collected_passes.append({
+                    "bus_id": a.verifying_bus_id,
+                    "vertical_gz": a.vertical_gz,
+                    "optical_status": a.optical_status,
+                    "timestamp": a.verified_at or cluster.updated_at
+                })
 
-        # 2. Query DBRawIngest records within 15 meters of cluster coordinates
+        # 2. Query DBRawIngest records within 5 meters corridor and within post-repair window
         is_postgres = False
         try:
             if db.bind and db.bind.dialect.name == "postgresql":
@@ -263,12 +378,16 @@ def evaluate_work_order_concurrence(
                 FROM raw_ingests
                 WHERE geom IS NOT NULL
                   AND ST_DWithin(geom::geography, ST_SetSRID(ST_Point(:lng, :lat), 4326)::geography, :buffer_m)
-                ORDER BY captured_at DESC
+                  AND captured_at >= :window_start_iso
+                  AND captured_at <= :window_end_iso
+                ORDER BY captured_at ASC
             """)
             rows = db.execute(stmt, {
                 "lat": cluster.lat, 
                 "lng": cluster.lng, 
-                "buffer_m": CORRIDOR_MATCH_METERS
+                "buffer_m": CORRIDOR_MATCH_METERS,
+                "window_start_iso": window_start_iso,
+                "window_end_iso": window_end_iso
             }).mappings().all()
             for r in rows:
                 optical = "SMOOTH_SURFACE" if r["defect_type"] in ("SMOOTH_SURFACE", "smooth", "none") or (r["confidence"] < 0.10) else r["defect_type"]
@@ -281,7 +400,7 @@ def evaluate_work_order_concurrence(
                     "timestamp": r["captured_at"]
                 })
         else:
-            delta_deg = 0.00035
+            delta_deg = 0.00006  # ~6.5m margin for 5m corridor
             raw_candidates = db.query(DBRawIngest).filter(
                 DBRawIngest.lat.between(cluster.lat - delta_deg, cluster.lat + delta_deg),
                 DBRawIngest.lng.between(cluster.lng - delta_deg, cluster.lng + delta_deg)
@@ -289,15 +408,17 @@ def evaluate_work_order_concurrence(
             for r in raw_candidates:
                 dist = haversine_distance_m(cluster.lat, cluster.lng, r.lat, r.lng)
                 if dist <= CORRIDOR_MATCH_METERS:
-                    optical = "SMOOTH_SURFACE" if r.defect_type in ("SMOOTH_SURFACE", "smooth", "none") or (r.confidence < 0.10) else r.defect_type
-                    collected_passes.append({
-                        "bus_id": r.bus_id,
-                        "vertical_gz": r.vertical_g_force,
-                        "speed_kmh": float(r.speed_kmh) if r.speed_kmh is not None else 30.0,
-                        "optical_status": optical,
-                        "confidence": r.confidence,
-                        "timestamp": r.captured_at
-                    })
+                    cap_dt = parse_datetime_to_utc(r.captured_at)
+                    if window_start <= cap_dt <= window_end:
+                        optical = "SMOOTH_SURFACE" if r.defect_type in ("SMOOTH_SURFACE", "smooth", "none") or (r.confidence < 0.10) else r.defect_type
+                        collected_passes.append({
+                            "bus_id": r.bus_id,
+                            "vertical_gz": r.vertical_g_force,
+                            "speed_kmh": float(r.speed_kmh) if r.speed_kmh is not None else 30.0,
+                            "optical_status": optical,
+                            "confidence": r.confidence,
+                            "timestamp": r.captured_at
+                        })
 
     # Evaluate the passes
     result = evaluate_concurrence_passes(collected_passes, order_id=cluster.cluster_code or cluster.id)
@@ -309,25 +430,25 @@ def evaluate_work_order_concurrence(
         cluster.verification_status = "REPAIR_FAILED_RECURRENCE"
         cluster.updated_at = now_iso
 
-        # Invoke autonomous contractor penalty debit
-        from app.services.contractor_service import execute_contractor_auto_debit
         failing_pass = next(
-            (p for p in result.passes if abs(p.vertical_gz - 1.0) >= SHOCK_FAILURE_THRESHOLD or not p.passed_optical),
+            (p for p in result.passes if not p.is_no_data and (p.g_norm >= SHOCK_FAILURE_THRESHOLD or not p.passed_optical)),
             None
         )
-        failing_gz = failing_pass.vertical_gz if failing_pass else 1.48
-        failing_bus = failing_pass.bus_id if failing_pass else "BUS-04"
-        
-        try:
-            execute_contractor_auto_debit(
-                db=db,
-                cluster=cluster,
-                measured_gz=failing_gz,
-                bus_id=failing_bus,
-                notes=f"Concurrence gating tripped: {result.failure_reason}"
-            )
-        except Exception as deb_err:
-            print(f"[CONCURRENCE] Auto-debit execution warning: {deb_err}")
+
+        if failing_pass and failing_pass.vertical_gz is not None:
+            from app.services.contractor_service import issue_form14_show_cause_notice
+            try:
+                issue_form14_show_cause_notice(
+                    db=db,
+                    cluster=cluster,
+                    measured_gz=failing_pass.vertical_gz,
+                    bus_id=failing_pass.bus_id,
+                    notes=f"Concurrence gating tripped: {result.failure_reason}"
+                )
+            except Exception as notice_err:
+                print(f"[CONCURRENCE] Statutory notice issuance warning: {notice_err}")
+        else:
+            result.proposed_deduction = 0.0
 
         db.commit()
         db.refresh(cluster)
@@ -343,7 +464,7 @@ def evaluate_work_order_concurrence(
             id=f"audit-{uuid.uuid4().hex[:8]}",
             bus_id="FLEET_CONSENSUS",
             corridor=cluster.road_name,
-            message=f"Multi-pass physical concurrence VERIFIED for {cluster.cluster_code} across {result.distinct_buses_count} distinct transit buses. Payment invoice clearance authorized.",
+            message=f"Multi-pass physical concurrence VERIFIED for {cluster.cluster_code} across {result.distinct_buses_count} distinct transit buses. Recommended for AE/EE milestone payment sign-off.",
             latency_ms=35,
             type="CONCURRENCE_VERIFICATION",
             timestamp="Just now",
@@ -352,6 +473,8 @@ def evaluate_work_order_concurrence(
 
         # Record verified passes in DBRepairAudit if not already present
         for p in result.passes:
+            if p.is_no_data:
+                continue
             existing = db.query(DBRepairAudit).filter(
                 (DBRepairAudit.cluster_id == cluster.id) | (DBRepairAudit.cluster_code == cluster.cluster_code),
                 DBRepairAudit.verifying_bus_id == p.bus_id
@@ -364,7 +487,7 @@ def evaluate_work_order_concurrence(
                     contractor_name=cluster.assigned_agency,
                     road_name=cluster.road_name,
                     verifying_bus_id=p.bus_id,
-                    vertical_gz=p.vertical_gz,
+                    vertical_gz=p.vertical_gz or 1.0,
                     optical_status=p.optical_status,
                     audit_verdict="REPAIR_VERIFIED",
                     penalty_debit_inr=0.0,

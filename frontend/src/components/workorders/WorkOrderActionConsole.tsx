@@ -149,12 +149,14 @@ export interface ConcurrencePassRecord {
   timestamp: string;
   timeRelative: string;
   gzValue: number;
-  opticalVerdict: "SMOOTH_SURFACE" | "DEFECT_PRESENT";
-  imuVerdict: "VERIFIED_PASS" | "SHOCK_DETECTED";
+  opticalVerdict: "SMOOTH_SURFACE" | "DEFECT_PRESENT" | "NO_DATA";
+  imuVerdict: "VERIFIED_PASS" | "SHOCK_DETECTED" | "NO_DATA";
   isQualified: boolean;
   tripSeparationHours?: number;
   gnormValue?: number;
   tripWindowQualified?: boolean;
+  is_no_data?: boolean;
+  speedKmh?: number;
 }
 
 const INITIAL_CONCURRENCE_PASSES: ConcurrencePassRecord[] = [
@@ -378,7 +380,8 @@ export const WorkOrderActionConsole: React.FC<WorkOrderActionConsoleProps> = ({
 
   // Concurrence Gate calculations: Trip-Windowed and Optical Clearance Dominance
   const qualifyingPasses = concurrencePasses.filter(
-    (p) => p.isQualified && (p.tripWindowQualified ?? true) && (
+    (p) => !p.is_no_data && p.opticalVerdict !== "NO_DATA" && p.imuVerdict !== "NO_DATA" &&
+      p.isQualified && (p.tripWindowQualified ?? true) && (
       // Optical Clearance Dominance: if opticalVerdict is SMOOTH_SURFACE and gnorm < 0.35, qualifies even with slight sensor variance
       (p.opticalVerdict === "SMOOTH_SURFACE" && (p.gnormValue ?? 0) < 0.35) ||
       Math.abs(p.gzValue - 1.0) < 0.15
@@ -394,9 +397,9 @@ export const WorkOrderActionConsole: React.FC<WorkOrderActionConsoleProps> = ({
     setTimeout(() => {
       setIsAuthorizing(false);
       setIsPaymentReleased(true);
-      const auditNotes = `[AUTONOMOUS_PAYMENT_RELEASE] Concurrence verified by ${qualifyingCount}/3 fleet passes (Trip-windowed Δt ≥ 2h & Optical Dominance). Milestone payment authorized under IRC:SP:20 Clause 14. Escrow released.`;
+      const auditNotes = `[OFFICER_CERTIFICATION_RECOMMENDED] Physical concurrence verified by ${qualifyingCount}/3 fleet passes (Trip-windowed Δt ≥ 2h & Optical Dominance). Milestone payment release recommended for AE/EE digital certification under Section 65B BSA 2023.`;
       
-      onUpdateStatus?.(cluster.id, "verified_closed", VERIFIED_ASPHALT_IMG, auditNotes);
+      onUpdateStatus?.(cluster.id, "resolved", VERIFIED_ASPHALT_IMG, auditNotes);
       onAutoClose?.(cluster.id, VERIFIED_ASPHALT_IMG, auditNotes);
     }, 900);
   };
@@ -885,9 +888,36 @@ export const WorkOrderActionConsole: React.FC<WorkOrderActionConsoleProps> = ({
                 </div>
               </div>
 
+              {/* Statutory Compliance Notice Banner (D-19-04, OFFICER-01) */}
+              <div className="p-3 rounded-lg bg-indigo-950/40 border border-indigo-800/60 text-xs font-mono text-indigo-200 flex items-start gap-2.5">
+                <Scale className="w-4 h-4 text-indigo-400 shrink-0 mt-0.5" />
+                <div className="space-y-0.5">
+                  <div className="font-bold text-[11px] text-indigo-300">
+                    Statutory Governance &amp; Section 65B BSA 2023 Compliance Notice
+                  </div>
+                  <p className="text-[10.5px] text-indigo-200/90 leading-relaxed">
+                    Per BSA 2023 Section 65B &amp; MoHUA guidelines, multi-pass concurrence provides technical verification. Escrow release authorization and contractor deductions require digital certification from Assistant Engineer (AE) / Executive Engineer (EE).
+                  </p>
+                </div>
+              </div>
+
+              {/* Proposed Contractor Deduction Notice if recurrence detected */}
+              {(cluster.status === "REPAIR_FAILED_RECURRENCE" || cluster.verification_status === "REPAIR_FAILED_RECURRENCE") && (
+                <div className="p-3 rounded-lg bg-rose-950/50 border border-rose-800 text-xs font-mono text-rose-300 flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <AlertTriangle className="w-4 h-4 text-rose-400" />
+                    <span>Proposed Clause 14 Liquidated Damages Deduction: <strong>₹25,000 INR</strong></span>
+                  </div>
+                  <span className="px-2 py-0.5 rounded bg-rose-900/60 border border-rose-700 text-[10px] font-bold">
+                    7-Day Cure Window Notice Active
+                  </span>
+                </div>
+              )}
+
               {/* Trip-Windowed 3-Pass Verification Cards */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                 {concurrencePasses.map((pass, idx) => {
+                  const isNoData = pass.is_no_data || pass.opticalVerdict === "NO_DATA" || pass.imuVerdict === "NO_DATA";
                   const isSmooth = Math.abs(pass.gzValue - 1.0) < 0.15;
                   return (
                     <div
@@ -908,31 +938,50 @@ export const WorkOrderActionConsole: React.FC<WorkOrderActionConsoleProps> = ({
                           Route: {pass.route}
                         </div>
 
-                        <div className="p-2 rounded-lg bg-slate-900/90 border border-slate-800 space-y-1 font-mono text-xs">
-                          <div className="flex items-center justify-between">
-                            <span className="text-slate-400 text-[11px]">Trip Separation:</span>
-                            <span className="text-cyan-400 font-bold text-[10.5px]">
-                              {idx === 0 ? "Initial Pass (T+0)" : `Δt = ${(pass.tripSeparationHours || 2.2).toFixed(1)}h (≥2h ✓)`}
+                        {isNoData ? (
+                          <div className="p-2.5 rounded-lg bg-slate-900/90 border border-amber-800/60 text-center space-y-1">
+                            <span className="inline-block px-2 py-0.5 rounded font-mono text-[10.5px] font-bold bg-amber-950/80 border border-amber-700 text-amber-300">
+                              NO_DATA (Insufficient Speed or Sensor Reading)
                             </span>
+                            <p className="text-[10px] font-mono text-slate-400">
+                              Crawl speed &lt; 15 km/h or missing sensor. Excluded from clean quorum.
+                            </p>
                           </div>
-                          <div className="flex items-center justify-between">
-                            <span className="text-slate-400 text-[11px]">Vertical Shock (Gz):</span>
-                            <strong className={`tabular-nums font-bold ${isSmooth ? "text-emerald-400" : "text-amber-400"}`}>
-                              {pass.gzValue.toFixed(2)}g
-                            </strong>
+                        ) : (
+                          <div className="p-2 rounded-lg bg-slate-900/90 border border-slate-800 space-y-1 font-mono text-xs">
+                            <div className="flex items-center justify-between">
+                              <span className="text-slate-400 text-[11px]">Trip Separation:</span>
+                              <span className="text-cyan-400 font-bold text-[10.5px]">
+                                {idx === 0 ? "Initial Pass (T+0)" : `Δt = ${(pass.tripSeparationHours || 2.2).toFixed(1)}h (≥2h ✓)`}
+                              </span>
+                            </div>
+                            <div className="flex items-center justify-between">
+                              <span className="text-slate-400 text-[11px]">Vertical Shock (Gz):</span>
+                              <strong className={`tabular-nums font-bold ${isSmooth ? "text-emerald-400" : "text-amber-400"}`}>
+                                {pass.gzValue.toFixed(2)}g
+                              </strong>
+                            </div>
+                            <div className="flex items-center justify-between">
+                              <span className="text-slate-400 text-[11px]">Optical Dominance:</span>
+                              <span className="text-emerald-400 font-bold text-[10.5px]">SMOOTH_SURFACE ✓</span>
+                            </div>
                           </div>
-                          <div className="flex items-center justify-between">
-                            <span className="text-slate-400 text-[11px]">Optical Dominance:</span>
-                            <span className="text-emerald-400 font-bold text-[10.5px]">SMOOTH_SURFACE ✓</span>
-                          </div>
-                        </div>
+                        )}
                       </div>
 
                       <div className="pt-2 border-t border-slate-800 flex items-center justify-between text-[10px] font-mono">
-                        <span className="px-1.5 py-0.5 rounded bg-emerald-950/60 text-emerald-400 border border-emerald-800/60 font-semibold">
-                          Gnorm={(pass.gnormValue ?? 0.04).toFixed(2)} &lt; 0.35 ✓
+                        {isNoData ? (
+                          <span className="px-1.5 py-0.5 rounded bg-slate-800 text-slate-400 border border-slate-700 font-semibold">
+                            Fail-Closed Quarantine
+                          </span>
+                        ) : (
+                          <span className="px-1.5 py-0.5 rounded bg-emerald-950/60 text-emerald-400 border border-emerald-800/60 font-semibold">
+                            Gnorm={(pass.gnormValue ?? 0.04).toFixed(2)} &lt; 0.35 ✓
+                          </span>
+                        )}
+                        <span className="text-slate-500">
+                          {isNoData ? "Quarantined" : `Trip #${idx + 1} Cleared`}
                         </span>
-                        <span className="text-slate-500">Trip #{idx + 1} Cleared</span>
                       </div>
                     </div>
                   );
@@ -944,12 +993,12 @@ export const WorkOrderActionConsole: React.FC<WorkOrderActionConsoleProps> = ({
                 <div className="space-y-1">
                   <h4 className="font-bold text-xs uppercase tracking-wider text-slate-200 flex items-center gap-1.5">
                     <DollarSign className="w-3.5 h-3.5 text-emerald-400" />
-                    <span>Statutory Escrow Payment Authorization</span>
+                    <span>Statutory Escrow Payment Recommendation Gate</span>
                   </h4>
                   <p className="text-[11px] text-slate-400">
                     {isConcurrenceMet
-                      ? "All 3 trip-separated transit passes confirmed road smoothness and optical clearance. Escrow release ready."
-                      : `Requires at least 3 qualifying transit passes with ≥ 2h separation to authorize payment (Currently: ${qualifyingCount} / 3).`}
+                      ? "All 3 trip-separated transit passes confirmed road smoothness and optical clearance. Ready for AE/EE digital recommendation."
+                      : `Requires at least 3 qualifying transit passes with ≥ 2h separation to recommend payment release (Currently: ${qualifyingCount} / 3).`}
                   </p>
                 </div>
 
@@ -978,12 +1027,12 @@ export const WorkOrderActionConsole: React.FC<WorkOrderActionConsoleProps> = ({
                       {isPaymentReleased ? (
                         <>
                           <CheckCircle2 className="w-4 h-4 text-emerald-300" />
-                          <span>Payment Released &bull; Closed</span>
+                          <span>Milestone Release Recommended (Requires AE/EE Certification)</span>
                         </>
                       ) : (
                         <>
                           <ShieldCheck className="w-4 h-4" />
-                          <span>{isAuthorizing ? "Authorizing Escrow..." : "Authorize Payment & Release Escrow"}</span>
+                          <span>{isAuthorizing ? "Submitting Recommendation..." : "Recommend Milestone Payment Release (Requires AE/EE Certification)"}</span>
                         </>
                       )}
                     </button>
@@ -1001,7 +1050,7 @@ export const WorkOrderActionConsole: React.FC<WorkOrderActionConsoleProps> = ({
                 <div className="p-3.5 rounded-lg bg-emerald-950/40 border border-emerald-800/80 text-xs font-mono text-emerald-300 flex items-center gap-2">
                   <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
                   <span>
-                    Work Order #{orderId} successfully verified &amp; closed. Milestone payment of ₹{costInr.toLocaleString("en-IN")} authorized and PFMS audit trail recorded.
+                    Work Order #{orderId} successfully verified. Milestone payment release of ₹{costInr.toLocaleString("en-IN")} recommended for AE/EE digital sign-off under Section 65B BSA 2023.
                   </span>
                 </div>
               )}

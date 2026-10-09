@@ -15,7 +15,8 @@ export type DefectCode =
 export type Severity   = "critical" | "high" | "medium" | "low";
 export type WorkOrderStatus =
   | "open" | "assigned" | "in_progress"
-  | "reinspection_pending" | "verified_closed" | "resolved" | "disputed";
+  | "reinspection_pending" | "verified_closed" | "resolved" | "disputed"
+  | "REPAIR_FAILED_RECURRENCE" | "repaired" | "recurrence_penalty" | "rejected";
 
 // ── POI Types ────────────────────────────────────────────────────────────────
 export type POICategory =
@@ -184,6 +185,20 @@ export interface HazardCluster {
   surface_area_m2?: number;
   drainage_failure_index?: number;
   irc_standard?: string;
+  repair_completed_at?: string;
+  acknowledged_at?: string;
+  assigned_officer_id?: string;
+  rejection_reason?: "FALSE_POSITIVE" | "DUPLICATE_CLUSTER" | "JURISDICTION_NON_PWD" | "UNDER_ACTIVE_REPAIR" | string;
+  triage_status?: "NEW" | "ACKNOWLEDGED" | "ASSIGNED" | "REJECTED" | string;
+  verification_status?: string;
+}
+
+export interface ClusterTriageRequest {
+  officer_id: string;
+  action: "ACKNOWLEDGE" | "ASSIGN" | "REJECT" | string;
+  assigned_officer_id?: string;
+  rejection_reason?: "FALSE_POSITIVE" | "DUPLICATE_CLUSTER" | "JURISDICTION_NON_PWD" | "UNDER_ACTIVE_REPAIR" | string;
+  notes?: string;
 }
 
 export interface InfrastructureDeficiency {

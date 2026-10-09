@@ -126,8 +126,51 @@ class HazardCluster(BaseModel):
     surface_area_m2: Optional[float] = 0.0
     drainage_failure_index: Optional[float] = 0.0
     irc_standard: Optional[str] = ""
+    repair_completed_at: Optional[str] = None
+    acknowledged_at: Optional[str] = None
+    assigned_officer_id: Optional[str] = None
+    rejection_reason: Optional[str] = None
+    triage_status: Optional[str] = "NEW"
     created_at: Optional[str] = None
     updated_at: Optional[str] = None
+
+class ClusterTriageRequest(BaseModel):
+    officer_id: str
+    action: str  # "ACKNOWLEDGE" | "ASSIGN" | "REJECT"
+    assigned_officer_id: Optional[str] = None
+    rejection_reason: Optional[str] = None
+    notes: Optional[str] = None
+
+class ClusterTriageResponse(BaseModel):
+    success: bool
+    cluster: HazardCluster
+    message: str
+
+class ConcurrencePassItemSchema(BaseModel):
+    bus_id: str
+    vertical_gz: Optional[float] = None
+    speed_kmh: float = 30.0
+    g_norm: float = 0.0
+    optical_status: str
+    passed_optical: bool
+    passed_imu: bool
+    is_no_data: bool = False
+    timestamp: str
+
+class ConcurrenceEvaluationResultSchema(BaseModel):
+    order_id: str
+    status: str
+    distinct_buses_count: int
+    required_buses_count: int = 3
+    window_hours: int = 48
+    passes: List[ConcurrencePassItemSchema] = Field(default_factory=list)
+    recommend_release: bool = False
+    proposed_deduction: float = 0.0
+    approval_status: str = "PENDING_AE_REVIEW"
+    officer_notes: Optional[str] = None
+    invoice_clearance_authorized: bool = False
+    escrow_holdback_released: bool = False
+    failure_reason: Optional[str] = None
 
 class InfrastructureDeficiencyIngest(BaseModel):
     defect_type: Union[DefectType, str]

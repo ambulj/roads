@@ -375,6 +375,12 @@ def init_db():
             if col not in existing_cols and existing_cols:
                 cursor.execute(f"ALTER TABLE distress_clusters ADD COLUMN {col} {col_type}")
 
+        for col in ("repair_completed_at", "acknowledged_at", "assigned_officer_id", "rejection_reason"):
+            if col not in existing_cols and existing_cols:
+                cursor.execute(f"ALTER TABLE distress_clusters ADD COLUMN {col} TEXT")
+        if "triage_status" not in existing_cols and existing_cols:
+            cursor.execute("ALTER TABLE distress_clusters ADD COLUMN triage_status TEXT DEFAULT 'NEW'")
+
         cursor.execute("PRAGMA table_info(contractors)")
         existing_contractor_cols = {row[1] for row in cursor.fetchall()}
         for col in ("dlp_months", "dlp_tier_months"):

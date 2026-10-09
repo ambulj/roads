@@ -7,9 +7,10 @@ from sqlalchemy.orm import Session
 
 from app.storage.database import get_db
 from app.storage.mock_database import store
-from app.models.schemas import HazardCluster, WorkOrderUpdate
-from app.models.db_models import DBDistressCluster
+from app.models.schemas import HazardCluster, WorkOrderUpdate, ClusterTriageRequest
+from app.models.db_models import DBDistressCluster, DBAuditLog
 from app.core.auth import require_roles
+from app.api.endpoints.clusters import triage_cluster
 
 router = APIRouter()
 
@@ -76,6 +77,15 @@ def list_work_orders(
             field_notes=r.field_notes,
             detecting_camera_position=r.detecting_camera_position or "FRONT_WINDSHIELD",
             detecting_channel=r.detecting_channel or 1,
+            water_depth_cm=getattr(r, "water_depth_cm", 0.0) or 0.0,
+            surface_area_m2=getattr(r, "surface_area_m2", 0.0) or 0.0,
+            drainage_failure_index=getattr(r, "drainage_failure_index", 0.0) or 0.0,
+            irc_standard=getattr(r, "irc_standard", "") or "",
+            repair_completed_at=getattr(r, "repair_completed_at", None),
+            acknowledged_at=getattr(r, "acknowledged_at", None),
+            assigned_officer_id=getattr(r, "assigned_officer_id", None),
+            rejection_reason=getattr(r, "rejection_reason", None),
+            triage_status=getattr(r, "triage_status", "NEW") or "NEW",
             created_at=r.created_at,
             updated_at=r.updated_at
         )
@@ -97,6 +107,16 @@ def verify_work_order_concurrence(
     custom_passes = payload.get("passes") if payload else None
     result = evaluate_work_order_concurrence(order_id=order_id, db=db, passes=custom_passes)
     return result
+
+
+@router.post("/{order_id}/triage", response_model=HazardCluster)
+def triage_work_order(
+    order_id: str,
+    req: ClusterTriageRequest,
+    db: Session = Depends(get_db)
+):
+    """Alias for POST /api/clusters/{cluster_id}/triage allowing triage via work order endpoint."""
+    return triage_cluster(cluster_id=order_id, req=req, db=db)
 
 
 @router.patch("/{order_id}/status")

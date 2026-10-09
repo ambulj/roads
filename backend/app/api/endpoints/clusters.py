@@ -12,11 +12,15 @@ from app.storage.mock_database import store
 from app.models.schemas import (
     HazardCluster,
     InfrastructureDeficiencyIngest,
-    InfrastructureDeficiencyResponse
+    InfrastructureDeficiencyResponse,
+    ClusterTriageRequest
 )
-from app.models.db_models import DBDistressCluster
+from app.models.db_models import DBDistressCluster, DBAuditLog
 
 router = APIRouter()
+
+VALID_TRIAGE_ACTIONS = {"ACKNOWLEDGE", "ASSIGN", "REJECT"}
+VALID_REJECTION_REASONS = {"FALSE_POSITIVE", "DUPLICATE_CLUSTER", "JURISDICTION_NON_PWD", "UNDER_ACTIVE_REPAIR"}
 
 
 def _row_to_cluster(r: DBDistressCluster) -> HazardCluster:
@@ -47,6 +51,11 @@ def _row_to_cluster(r: DBDistressCluster) -> HazardCluster:
         surface_area_m2=getattr(r, "surface_area_m2", 0.0) or 0.0,
         drainage_failure_index=getattr(r, "drainage_failure_index", 0.0) or 0.0,
         irc_standard=getattr(r, "irc_standard", "") or "",
+        repair_completed_at=getattr(r, "repair_completed_at", None),
+        acknowledged_at=getattr(r, "acknowledged_at", None),
+        assigned_officer_id=getattr(r, "assigned_officer_id", None),
+        rejection_reason=getattr(r, "rejection_reason", None),
+        triage_status=getattr(r, "triage_status", "NEW") or "NEW",
         created_at=r.created_at,
         updated_at=r.updated_at
     )
@@ -346,4 +355,76 @@ def create_cluster(cluster_data: dict, db: Session = Depends(get_db)):
     """Creates a new hazard cluster from user upload or live edge stream."""
     created = store.add_cluster(cluster_data)
     return created
+
+
+@router.post("/{cluster_id}/triage", response_model=HazardCluster)
+def triage_cluster(
+    cluster_id: str,
+    req: ClusterTriageRequest,
+    db: Session = Depends(get_db)
+):
+    """
+    Officer-Certified Defect Triage endpoint:
+    Supports ACKNOWLEDGE, ASSIGN, and REJECT actions.
+    Strictly validates rejection reasons against allowed statutory taxonomy:
+    FALSE_POSITIVE, DUPLICATE_CLUSTER, JURISDICTION_NON_PWD, UNDER_ACTIVE_REPAIR.
+    """
+    cluster = db.query(DBDistressCluster).filter(
+        (DBDistressCluster.id == cluster_id) | (DBDistressCluster.cluster_code == cluster_id)
+    ).first()
+
+    if not cluster:
+        raise HTTPException(status_code=404, detail="Hazard cluster not found")
+
+    action = req.action.strip().upper()
+    if action not in VALID_TRIAGE_ACTIONS:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Invalid action: {req.action}. Must be one of: {', '.join(sorted(VALID_TRIAGE_ACTIONS))}"
+        )
+
+    now_iso = datetime.now(timezone.utc).isoformat()
+
+    if action == "REJECT":
+        if not req.rejection_reason or req.rejection_reason.strip() not in VALID_REJECTION_REASONS:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Invalid rejection reason: {req.rejection_reason}. Must be one of: {', '.join(sorted(VALID_REJECTION_REASONS))}"
+            )
+        cluster.status = "rejected"
+        cluster.triage_status = "REJECTED"
+        cluster.rejection_reason = req.rejection_reason.strip()
+
+    elif action == "ACKNOWLEDGE":
+        cluster.triage_status = "ACKNOWLEDGED"
+        cluster.acknowledged_at = now_iso
+
+    elif action == "ASSIGN":
+        assignee = req.assigned_officer_id or req.officer_id
+        cluster.triage_status = "ASSIGNED"
+        cluster.status = "assigned"
+        cluster.assigned_officer_id = assignee
+
+    if req.notes:
+        if cluster.field_notes:
+            cluster.field_notes = f"{cluster.field_notes}\n[TRIAGE {req.officer_id}]: {req.notes}"
+        else:
+            cluster.field_notes = f"[TRIAGE {req.officer_id}]: {req.notes}"
+
+    cluster.updated_at = now_iso
+
+    db.add(DBAuditLog(
+        id=f"audit-{uuid.uuid4().hex[:8]}",
+        bus_id=req.officer_id,
+        corridor=cluster.road_name,
+        message=f"Defect {cluster.cluster_code} triaged: {action} by officer {req.officer_id}",
+        latency_ms=18,
+        type="TRIAGE_ACTION",
+        timestamp="Just now",
+        created_at=now_iso
+    ))
+
+    db.commit()
+    db.refresh(cluster)
+    return _row_to_cluster(cluster)
 

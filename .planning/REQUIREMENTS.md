@@ -58,9 +58,9 @@
 - [x] **ANPR-01**: Complete removal of all synthetic plate generation from vehicle bbox coordinates and hardcoded confidence floors; true character detection using trained `backend/app/weights/anpr.pt` model with mean character confidence.
 - [x] **ANPR-02**: Indian vehicle registration validation regex (`^[A-Z]{2}[0-9]{1,2}[A-Z]{1,3}[0-9]{4}$`) with fail-closed behavior routing unrecognized crops or confidence $< 0.90$ to `REQUIRES_HUMAN_REVIEW` instead of `AUTO_ADMISSIBLE`.
 - [x] **BRAND-01**: Unified product branding as **RoadSaathi** across all 17+ codebases, configuration files, and UI displays, eliminating obsolete SeherSaathi references.
-- [ ] **GATE-01**: Time-windowed post-repair concurrence (`WHERE captured_at >= repair_completed_at AND captured_at <= repair_completed_at + 48h`) with 3–5m lane-aligned corridor tolerance and speed-normalized shock jerk ($G_{norm} = \frac{|G_z - 1.0|}{v / 30}$).
-- [ ] **GATE-02**: Fail-closed telemetry handling (missing `vertical_gz` or `optical_status` marked as `NO_DATA`, never clean passes) and complete elimination of fallback fabricated penalty values (`failing_gz = 1.48`, `BUS-04`).
-- [ ] **OFFICER-01**: Officer-certified recommendation workflows replacing unilateral auto-debits with AE/EE sign-off (`proposed_deduction` and `recommend_release`), plus structured defect triage fields (`acknowledged_at`, `assigned_officer_id`, structured rejection reasons).
+- [x] **GATE-01**: Time-windowed post-repair concurrence (`WHERE captured_at >= repair_completed_at AND captured_at <= repair_completed_at + 48h`) with 3–5m lane-aligned corridor tolerance and speed-normalized shock jerk ($G_{norm} = \frac{|G_z - 1.0|}{v / 30}$).
+- [x] **GATE-02**: Fail-closed telemetry handling (missing `vertical_gz` or `optical_status` marked as `NO_DATA`, never clean passes) and complete elimination of fallback fabricated penalty values (`failing_gz = 1.48`, `BUS-04`).
+- [x] **OFFICER-01**: Officer-certified recommendation workflows replacing unilateral auto-debits with AE/EE sign-off (`proposed_deduction` and `recommend_release`), plus structured defect triage fields (`acknowledged_at`, `assigned_officer_id`, structured rejection reasons).
 
 ---
 
@@ -86,7 +86,7 @@
 | TWIN-01 .. TWIN-02 | v5.0 | Phase 16 | Complete |
 | SENSE-01 .. SENSE-02 | v5.0 | Phase 17 | Complete |
 | ANPR-01 .. ANPR-02, BRAND-01 | v6.0 | Phase 18 | Complete |
-| GATE-01 .. GATE-02, OFFICER-01 | v6.0 | Phase 19 | Pending |
+| GATE-01 .. GATE-02, OFFICER-01 | v6.0 | Phase 19 | Complete |
 
 ---
 *Requirements updated: 2026-10-10 for Milestone v6.0 initiation*

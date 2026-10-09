@@ -7,7 +7,8 @@ import {
   BudgetOptimizationResult, ShiftTriageResult, XAIReasoningTrace, ChronicFailuresResult,
   PrivacyStatus, PrivacyConfigPayload,
   ODMatrixResponse, TrafficDensityRecord, BottleneckAlert,
-  CopilotActionCard, CopilotQueryRequest, CopilotQueryResponse
+  CopilotActionCard, CopilotQueryRequest, CopilotQueryResponse,
+  ClusterTriageRequest
 } from '../types';
 
 export interface ContractorAgency {
@@ -66,10 +67,13 @@ export type PenaltyDocketItem = Form14NoticeRecord;
 
 export interface ConcurrencePassItem {
   bus_id: string;
-  vertical_gz: number;
+  vertical_gz?: number | null;
+  speed_kmh?: number;
+  g_norm?: number;
   optical_status: string;
   passed_optical: boolean;
   passed_imu: boolean;
+  is_no_data?: boolean;
   timestamp: string;
 }
 
@@ -80,6 +84,10 @@ export interface ConcurrenceVerificationResponse {
   required_buses_count: number;
   window_hours: number;
   passes: ConcurrencePassItem[];
+  recommend_release: boolean;
+  proposed_deduction: number;
+  approval_status: string;
+  officer_notes?: string | null;
   invoice_clearance_authorized: boolean;
   escrow_holdback_released: boolean;
   failure_reason?: string | null;
@@ -2555,10 +2563,37 @@ class ApiService {
       required_buses_count: 3,
       window_hours: 48,
       passes: [],
+      recommend_release: false,
+      proposed_deduction: 0.0,
+      approval_status: "PENDING_AE_REVIEW",
+      officer_notes: null,
       invoice_clearance_authorized: false,
       escrow_holdback_released: false,
       failure_reason: "Network error during concurrence verification"
     };
+  }
+
+  async triageDefectCluster(clusterId: string, payload: ClusterTriageRequest): Promise<HazardCluster> {
+    try {
+      const res = await fetch(`${API_BASE}/clusters/${encodeURIComponent(clusterId)}/triage`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...this.getAuthHeaders()
+        },
+        body: JSON.stringify(payload)
+      });
+      if (res.ok) return await res.json();
+      const err = await res.json().catch(() => ({ detail: 'Failed to triage defect cluster' }));
+      throw new Error(err.detail || 'Failed to triage defect cluster');
+    } catch (e: any) {
+      console.warn("Failed to triage cluster via API, applying local update:", e);
+      throw e;
+    }
+  }
+
+  async triageHazardCluster(clusterId: string, payload: ClusterTriageRequest): Promise<HazardCluster> {
+    return this.triageDefectCluster(clusterId, payload);
   }
 
   async queryCopilot(request: CopilotQueryRequest | string): Promise<CopilotQueryResponse> {
