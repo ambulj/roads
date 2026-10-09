@@ -23,7 +23,8 @@ import {
   TrendingUp,
   X,
   Radio,
-  Clock
+  Clock,
+  ShieldAlert
 } from 'lucide-react';
 import { HazardCluster, FleetNode, TrafficIncident } from '../../types';
 import { Button } from '../ui/Button';
@@ -444,6 +445,8 @@ export const WebGISMap: React.FC<WebGISMapProps> = ({
   const [showODDesireLines, setShowODDesireLines] = useState(false);
   const [showPOIs, setShowPOIs] = useState(true);
   const [showCoverageGaps, setShowCoverageGaps] = useState(false);
+  const [showMissingInfrastructure, setShowMissingInfrastructure] = useState(true);
+  const [showSchoolSafetyZones, setShowSchoolSafetyZones] = useState(true);
   const [activeCorridor, setActiveCorridor] = useState<string | null>(null);
   const [isGisMenuOpen, setIsGisMenuOpen] = useState(false);
   const [isInfoMenuOpen, setIsInfoMenuOpen] = useState(false);
@@ -481,7 +484,9 @@ export const WebGISMap: React.FC<WebGISMapProps> = ({
     (showTrafficCongestion ? 1 : 0) +
     (showHeatmap ? 1 : 0) +
     (showBreadcrumbs ? 1 : 0) +
-    (showCoverageGaps ? 1 : 0);
+    (showCoverageGaps ? 1 : 0) +
+    (showMissingInfrastructure ? 1 : 0) +
+    (showSchoolSafetyZones ? 1 : 0);
 
   const handleCorridorJump = (corridor: typeof CHENNAI_QUICK_CORRIDORS[number]) => {
     const map = mapRef.current;
@@ -1014,6 +1019,76 @@ export const WebGISMap: React.FC<WebGISMapProps> = ({
     }
   }, [showCoverageGaps, isMapReady]);
 
+  // 7b. Vision Zero School Safety Zones (150m Buffer Layer 12)
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !isMapReady) return;
+
+    const schoolPOIs = [
+      { name: "D.A.V. Senior Secondary School", coords: [80.2380, 13.0450] as [number, number] },
+      { name: "Kendriya Vidyalaya Anna Nagar", coords: [80.2120, 13.0890] as [number, number] },
+      { name: "SRM Public School Potheri", coords: [80.0450, 12.8236] as [number, number] },
+      { name: "St. Thomas Higher Secondary School", coords: [80.1980, 13.0035] as [number, number] }
+    ];
+
+    const schoolZonesGeoJSON = {
+      type: 'FeatureCollection',
+      features: schoolPOIs.map(school => ({
+        type: 'Feature',
+        geometry: {
+          type: 'Polygon',
+          coordinates: [createGeoJSONCircle(school.coords, 150)]
+        },
+        properties: {
+          name: school.name,
+          speedLimit: '20 km/h (IRC:35)',
+          buffer: '150m Safety Buffer'
+        }
+      }))
+    };
+
+    if (!map.getSource('school-safety-zones-src')) {
+      map.addSource('school-safety-zones-src', {
+        type: 'geojson',
+        data: schoolZonesGeoJSON as any
+      });
+
+      map.addLayer({
+        id: 'school-safety-zones-fill',
+        type: 'fill',
+        source: 'school-safety-zones-src',
+        layout: {
+          'visibility': showSchoolSafetyZones ? 'visible' : 'none'
+        },
+        paint: {
+          'fill-color': '#f43f5e',
+          'fill-opacity': 0.18
+        }
+      });
+
+      map.addLayer({
+        id: 'school-safety-zones-line',
+        type: 'line',
+        source: 'school-safety-zones-src',
+        layout: {
+          'visibility': showSchoolSafetyZones ? 'visible' : 'none'
+        },
+        paint: {
+          'line-color': '#f43f5e',
+          'line-width': 2.0,
+          'line-dasharray': [2, 2]
+        }
+      });
+    } else {
+      if (map.getLayer('school-safety-zones-fill')) {
+        map.setLayoutProperty('school-safety-zones-fill', 'visibility', showSchoolSafetyZones ? 'visible' : 'none');
+      }
+      if (map.getLayer('school-safety-zones-line')) {
+        map.setLayoutProperty('school-safety-zones-line', 'visibility', showSchoolSafetyZones ? 'visible' : 'none');
+      }
+    }
+  }, [showSchoolSafetyZones, isMapReady]);
+
   // 7. 24h Bus Patrol Trajectory Breadcrumbs Layer
   useEffect(() => {
     const map = mapRef.current;
@@ -1168,17 +1243,40 @@ export const WebGISMap: React.FC<WebGISMapProps> = ({
       const priorityBadge = isCritical ? 'P0 CRITICAL' : isHigh ? 'P1 HIGH' : 'P2 ROUTINE';
       const badgeBg = isCritical ? '#ffe4e6' : isHigh ? '#fef3c7' : '#dbeafe';
 
+      const isInfraDefect = [
+        'MISSING_ROAD_DIVIDER', 'MISSING_DIVIDER',
+        'MISSING_ZEBRA_CROSSING', 'ZEBRA_CROSSING', 'FADED_CROSSING',
+        'DAMAGED_TRAFFIC_SIGN', 'MISSING_SIGN',
+        'WATERLOGGING_HAZARD', 'WATERLOGGING'
+      ].includes(cluster.defect_type);
+
+      let isClusterVisible = isVisible;
+      if (isInfraDefect && !showMissingInfrastructure) {
+        isClusterVisible = false;
+      }
+
+      let markerTag = `${cluster.defect_type} (${cluster.rpi_score})`;
+      if (cluster.defect_type === 'MISSING_ROAD_DIVIDER' || cluster.defect_type === 'MISSING_DIVIDER') {
+        markerTag = `🚧 Divider • ${cluster.irc_standard || 'IRC:SP:84'}`;
+      } else if (cluster.defect_type === 'MISSING_ZEBRA_CROSSING' || cluster.defect_type === 'ZEBRA_CROSSING' || cluster.defect_type === 'FADED_CROSSING') {
+        markerTag = `🚸 Crosswalk • ${cluster.irc_standard || 'IRC:35:2015'}`;
+      } else if (cluster.defect_type === 'DAMAGED_TRAFFIC_SIGN' || cluster.defect_type === 'MISSING_SIGN') {
+        markerTag = `⚠️ Sign • ${cluster.irc_standard || 'IRC:67:2022'}`;
+      } else if (cluster.defect_type === 'WATERLOGGING_HAZARD' || cluster.defect_type === 'WATERLOGGING') {
+        markerTag = `💧 Water ${cluster.water_depth_cm || 16.5}cm • DFI ${cluster.drainage_failure_index || 7.9}`;
+      }
+
       if (!markersRef.current[cluster.id]) {
         const el = document.createElement('div');
         el.className = 'cursor-pointer transition-transform hover:scale-125';
-        el.style.display = isVisible ? 'block' : 'none';
+        el.style.display = isClusterVisible ? 'block' : 'none';
         el.innerHTML = `
           <div style="position: relative; display: flex; align-items: center; justify-content: center;">
             <div style="width: 24px; height: 24px; border-radius: 50%; background: #ffffff; border: 2.5px solid ${color}; box-shadow: 0 2px 8px rgba(0,0,0,0.25); display: flex; align-items: center; justify-content: center;">
               <div style="width: 8px; height: 8px; border-radius: 50%; background: ${color};"></div>
             </div>
             <div style="position: absolute; top: -18px; font-family: system-ui, -apple-system, sans-serif; font-size: 9px; font-weight: 700; background: #ffffff; color: ${color}; padding: 1px 5px; border-radius: 4px; border: 1.5px solid ${color}; box-shadow: 0 1px 4px rgba(0,0,0,0.2); white-space: nowrap;">
-              ${cluster.defect_type} (${cluster.rpi_score})
+              ${markerTag}
             </div>
           </div>
         `;
@@ -1188,7 +1286,7 @@ export const WebGISMap: React.FC<WebGISMapProps> = ({
             <!-- Header: Defect Badge & RPI Priority Pill -->
             <div style="display: flex; align-items: center; justify-content: space-between; gap: 4px; margin-bottom: 6px;">
               <span style="font-family: monospace; font-size: 9.5px; font-weight: 800; background: ${badgeBg}; color: ${color}; padding: 2px 5px; border-radius: 5px; border: 1px solid ${color}40;">
-                ${cluster.defect_type || 'D40'} ${cluster.defect_name || 'Pothole'}
+                ${cluster.defect_type || 'D40'} ${cluster.defect_name || 'Defect'}
               </span>
               <span style="font-family: monospace; font-size: 9.5px; font-weight: 800; background: ${color}; color: #ffffff; padding: 2px 5px; border-radius: 5px; box-shadow: 0 1px 4px ${color}60;">
                 ${priorityBadge} ${cluster.rpi_score}/100
@@ -1219,8 +1317,9 @@ export const WebGISMap: React.FC<WebGISMapProps> = ({
             <!-- Forensic Metadata Block -->
             <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 4px 6px; font-size: 9.5px; color: #475569; margin-bottom: 6px; line-height: 1.45;">
               <div>Pass Consensus: <strong style="color: #0f172a;">${cluster.pass_count} Fleet Passes confirmed</strong></div>
-              <div>Vertical IMU Impact: <strong style="color: #0f172a;">gz: ${(cluster as any).max_gz_impact || '1.58g'}</strong></div>
-              <div>Nearest POI: <strong style="color: #0284c7;">${cluster.nearest_poi || 'MIOT Hospital'}</strong> (${cluster.poi_distance_m || 240}m)</div>
+              ${cluster.irc_standard ? `<div>IRC Standard: <strong style="color: #b91c1c;">${cluster.irc_standard}</strong></div>` : ''}
+              ${cluster.water_depth_cm ? `<div>Water Ponding: <strong style="color: #0284c7;">${cluster.water_depth_cm}cm</strong> (Area: ${cluster.surface_area_m2 || 48}m², DFI: ${cluster.drainage_failure_index || 7.92})</div>` : ''}
+              <div>Nearest POI: <strong style="color: #0284c7;">${cluster.nearest_poi || 'Corridor Landmark'}</strong> (${cluster.poi_distance_m || 100}m)</div>
               <div>Contractor: <strong style="color: #0f172a;">${cluster.assigned_agency || 'Tamil Nadu PWD'}</strong></div>
             </div>
 
@@ -1258,11 +1357,11 @@ export const WebGISMap: React.FC<WebGISMapProps> = ({
 
         markersRef.current[cluster.id] = marker;
       } else {
-        markersRef.current[cluster.id].getElement().style.display = isVisible ? 'block' : 'none';
+        markersRef.current[cluster.id].getElement().style.display = isClusterVisible ? 'block' : 'none';
         markersRef.current[cluster.id].setLngLat([cluster.lng, cluster.lat]);
       }
     });
-  }, [clusters, showDefects, layerFilter, isMapReady, onSelectCluster]);
+  }, [clusters, showDefects, showMissingInfrastructure, layerFilter, isMapReady, onSelectCluster]);
 
   // Render Fleet Bus Markers
   useEffect(() => {
@@ -1757,6 +1856,36 @@ export const WebGISMap: React.FC<WebGISMapProps> = ({
                   {showCoverageGaps && <Check className="w-4 h-4 text-amber-500" />}
                 </button>
 
+                {/* 11. Missing Road Infrastructure (IRC:35/IRC:67) */}
+                <button
+                  type="button"
+                  onClick={() => setShowMissingInfrastructure(!showMissingInfrastructure)}
+                  className={`flex items-center justify-between p-2 rounded-xl text-left transition cursor-pointer ${
+                    showMissingInfrastructure ? 'bg-amber-50 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 font-bold' : 'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
+                  }`}
+                >
+                  <div className="flex items-center gap-2">
+                    <ShieldAlert className="w-4 h-4 text-amber-500" />
+                    <span>Missing Road Infrastructure (IRC:35/IRC:67)</span>
+                  </div>
+                  {showMissingInfrastructure && <Check className="w-4 h-4 text-amber-500" />}
+                </button>
+
+                {/* 12. Vision Zero School Safety Zones */}
+                <button
+                  type="button"
+                  onClick={() => setShowSchoolSafetyZones(!showSchoolSafetyZones)}
+                  className={`flex items-center justify-between p-2 rounded-xl text-left transition cursor-pointer ${
+                    showSchoolSafetyZones ? 'bg-rose-50 dark:bg-rose-950/60 text-rose-700 dark:text-rose-300 font-bold' : 'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
+                  }`}
+                >
+                  <div className="flex items-center gap-2">
+                    <GraduationCap className="w-4 h-4 text-rose-500" />
+                    <span>Vision Zero School Safety Zones (150m)</span>
+                  </div>
+                  {showSchoolSafetyZones && <Check className="w-4 h-4 text-rose-500" />}
+                </button>
+
                 {/* Quick Utility Actions Footer */}
                 <div className="pt-2 mt-1 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between gap-1 text-[10px]">
                   <button
@@ -1772,6 +1901,8 @@ export const WebGISMap: React.FC<WebGISMapProps> = ({
                       setShowHeatmap(true);
                       setShowBreadcrumbs(true);
                       setShowCoverageGaps(true);
+                      setShowMissingInfrastructure(true);
+                      setShowSchoolSafetyZones(true);
                     }}
                     className="px-2 py-1 rounded bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-medium transition cursor-pointer"
                   >
@@ -1790,6 +1921,8 @@ export const WebGISMap: React.FC<WebGISMapProps> = ({
                       setShowHeatmap(false);
                       setShowBreadcrumbs(false);
                       setShowCoverageGaps(false);
+                      setShowMissingInfrastructure(true);
+                      setShowSchoolSafetyZones(true);
                     }}
                     className="px-2 py-1 rounded bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-medium transition cursor-pointer"
                   >

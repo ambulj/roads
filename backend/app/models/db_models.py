@@ -40,6 +40,10 @@ class DBDistressCluster(Base):
     escrow_deposit_inr = Column(Float, default=5000000.0)
     concurrence_passes_count = Column(Integer, default=0)
     verification_status = Column(String(32), default="UNVERIFIED")
+    water_depth_cm = Column(Float, nullable=True, default=0.0)
+    surface_area_m2 = Column(Float, nullable=True, default=0.0)
+    drainage_failure_index = Column(Float, nullable=True, default=0.0)
+    irc_standard = Column(String(64), nullable=True, default="")
     created_at = Column(String(64))
     updated_at = Column(String(64))
 

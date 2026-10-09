@@ -1,5 +1,7 @@
 import csv
 import io
+import uuid
+from datetime import datetime, timezone
 from fastapi import APIRouter, HTTPException, Depends, Response
 from typing import List, Optional, Tuple
 from sqlalchemy.orm import Session
@@ -7,10 +9,47 @@ from sqlalchemy import text
 
 from app.storage.database import get_db
 from app.storage.mock_database import store
-from app.models.schemas import HazardCluster
+from app.models.schemas import (
+    HazardCluster,
+    InfrastructureDeficiencyIngest,
+    InfrastructureDeficiencyResponse
+)
 from app.models.db_models import DBDistressCluster
 
 router = APIRouter()
+
+
+def _row_to_cluster(r: DBDistressCluster) -> HazardCluster:
+    return HazardCluster(
+        id=r.id,
+        cluster_code=r.cluster_code,
+        defect_type=r.defect_type,
+        defect_name=r.defect_name,
+        severity_level=r.severity_level,
+        rpi_score=r.rpi_score,
+        pass_count=r.pass_count,
+        road_name=r.road_name,
+        classification=r.classification,
+        nearest_poi=r.nearest_poi,
+        poi_distance_m=r.poi_distance_m,
+        assigned_agency=r.assigned_agency,
+        agency_phone=r.agency_phone,
+        sla_hours=r.sla_hours,
+        status=r.status,
+        lat=r.lat,
+        lng=r.lng,
+        before_image_url=r.before_image_url,
+        after_image_url=r.after_image_url,
+        field_notes=r.field_notes,
+        detecting_camera_position=r.detecting_camera_position or "FRONT_WINDSHIELD",
+        detecting_channel=r.detecting_channel or 1,
+        water_depth_cm=getattr(r, "water_depth_cm", 0.0) or 0.0,
+        surface_area_m2=getattr(r, "surface_area_m2", 0.0) or 0.0,
+        drainage_failure_index=getattr(r, "drainage_failure_index", 0.0) or 0.0,
+        irc_standard=getattr(r, "irc_standard", "") or "",
+        created_at=r.created_at,
+        updated_at=r.updated_at
+    )
 
 
 def _parse_and_validate_bbox(bbox_str: str) -> Tuple[float, float, float, float]:
@@ -93,35 +132,7 @@ def list_clusters(
             if min_lat <= c.get("lat", 0.0) <= max_lat and min_lon <= c.get("lng", 0.0) <= max_lon
         ]
     
-    return [
-        HazardCluster(
-            id=r.id,
-            cluster_code=r.cluster_code,
-            defect_type=r.defect_type,
-            defect_name=r.defect_name,
-            severity_level=r.severity_level,
-            rpi_score=r.rpi_score,
-            pass_count=r.pass_count,
-            road_name=r.road_name,
-            classification=r.classification,
-            nearest_poi=r.nearest_poi,
-            poi_distance_m=r.poi_distance_m,
-            assigned_agency=r.assigned_agency,
-            agency_phone=r.agency_phone,
-            sla_hours=r.sla_hours,
-            status=r.status,
-            lat=r.lat,
-            lng=r.lng,
-            before_image_url=r.before_image_url,
-            after_image_url=r.after_image_url,
-            field_notes=r.field_notes,
-            detecting_camera_position=r.detecting_camera_position or "FRONT_WINDSHIELD",
-            detecting_channel=r.detecting_channel or 1,
-            created_at=r.created_at,
-            updated_at=r.updated_at
-        )
-        for r in rows
-    ]
+    return [_row_to_cluster(r) for r in rows]
 
 @router.get("/export/csv")
 def export_clusters_csv(db: Session = Depends(get_db)):
@@ -166,6 +177,155 @@ def export_clusters_csv(db: Session = Depends(get_db)):
         headers={"Content-Disposition": "attachment; filename=pwd_road_hazard_clusters.csv"}
     )
 
+@router.get("/infrastructure", response_model=List[HazardCluster])
+def get_infrastructure_deficiencies(
+    category: Optional[str] = "ALL",
+    db: Session = Depends(get_db)
+):
+    """
+    Returns list of road infrastructure deficiencies and waterlogging hazards.
+    Supports filtering by category: DIVIDERS, ZEBRA_CROSSINGS, SIGNS, WATERLOGGING, ALL.
+    """
+    category_upper = (category or "ALL").upper()
+    
+    cat_map = {
+        "DIVIDERS": ["MISSING_ROAD_DIVIDER", "MISSING_DIVIDER"],
+        "ZEBRA_CROSSINGS": ["MISSING_ZEBRA_CROSSING", "ZEBRA_CROSSING", "FADED_CROSSING"],
+        "SIGNS": ["DAMAGED_TRAFFIC_SIGN", "MISSING_SIGN", "FOLIAGE_OBSCURED_SIGN", "BANNER_OBSCURED_SIGN"],
+        "WATERLOGGING": ["WATERLOGGING_HAZARD", "WATERLOGGING", "SUBMERGED_POTHOLE"]
+    }
+
+    all_infra_types = (
+        cat_map["DIVIDERS"] + cat_map["ZEBRA_CROSSINGS"] + 
+        cat_map["SIGNS"] + cat_map["WATERLOGGING"]
+    )
+
+    if category_upper in cat_map:
+        target_types = cat_map[category_upper]
+    else:
+        target_types = all_infra_types
+
+    rows = db.query(DBDistressCluster).filter(
+        DBDistressCluster.defect_type.in_(target_types)
+    ).order_by(DBDistressCluster.rpi_score.desc()).all()
+
+    return [_row_to_cluster(r) for r in rows]
+
+@router.post("/infrastructure/ingest", response_model=HazardCluster)
+def ingest_infrastructure_deficiency(
+    payload: InfrastructureDeficiencyIngest,
+    db: Session = Depends(get_db)
+):
+    """
+    Ingests missing road infrastructure deficiency or waterlogging hazard.
+    Calculates Drainage Failure Index (DFI), assigns IRC code standards,
+    evaluates statutory severity, and stores into persistent DBDistressCluster.
+    """
+    defect_type_str = str(payload.defect_type.value if hasattr(payload.defect_type, "value") else payload.defect_type)
+    
+    # Compute waterlogging metrics
+    water_depth = payload.water_depth_cm or 0.0
+    surface_area = payload.surface_area_m2 or 0.0
+    dfi = 0.0
+    if defect_type_str in ("WATERLOGGING_HAZARD", "WATERLOGGING") or (water_depth > 0 and surface_area > 0):
+        dfi = round((water_depth * surface_area) / 100.0, 2)
+
+    # Assign IRC statutory standard
+    irc_code = payload.irc_standard
+    if not irc_code:
+        if defect_type_str in ("MISSING_ROAD_DIVIDER", "MISSING_DIVIDER"):
+            irc_code = "IRC:SP:84"
+        elif defect_type_str in ("MISSING_ZEBRA_CROSSING", "ZEBRA_CROSSING", "FADED_CROSSING"):
+            irc_code = "IRC:35:2015"
+        elif defect_type_str in ("DAMAGED_TRAFFIC_SIGN", "MISSING_SIGN"):
+            irc_code = "IRC:67:2022"
+        elif defect_type_str in ("WATERLOGGING_HAZARD", "WATERLOGGING"):
+            irc_code = "IRC:SP:42"
+        else:
+            irc_code = "IRC:SP:20"
+
+    # Human-readable defect names
+    defect_names = {
+        "MISSING_ROAD_DIVIDER": "Missing Median Road Divider",
+        "MISSING_DIVIDER": "Missing Road Divider Discontinuity",
+        "MISSING_ZEBRA_CROSSING": "Missing / Faded Pedestrian Crosswalk",
+        "ZEBRA_CROSSING": "Substandard Zebra Crossing",
+        "FADED_CROSSING": "Faded Pedestrian Crossing",
+        "DAMAGED_TRAFFIC_SIGN": "Damaged Road Traffic Sign",
+        "MISSING_SIGN": "Missing Regulatory Traffic Sign",
+        "WATERLOGGING_HAZARD": "Critical Pavement Waterlogging & Aquaplaning Risk",
+        "WATERLOGGING": "Standing Water Pavement Accumulation",
+    }
+    name = defect_names.get(defect_type_str, defect_type_str.replace("_", " ").title())
+
+    # Severity resolution
+    if payload.severity_level:
+        sev = payload.severity_level.value if hasattr(payload.severity_level, "value") else str(payload.severity_level)
+    else:
+        if defect_type_str in ("WATERLOGGING_HAZARD", "WATERLOGGING"):
+            if water_depth > 15.0:
+                sev = "critical"
+            elif water_depth > 8.0:
+                sev = "high"
+            else:
+                sev = "medium"
+        elif defect_type_str in ("MISSING_ROAD_DIVIDER", "MISSING_DIVIDER"):
+            sev = "critical"
+        elif defect_type_str in ("MISSING_ZEBRA_CROSSING", "FADED_CROSSING"):
+            sev = "critical"
+        else:
+            sev = "high"
+
+    # RPI calculation
+    if sev == "critical":
+        rpi = round(90.0 + min(9.5, dfi * 0.5), 1)
+        sla = 24 if defect_type_str != "WATERLOGGING_HAZARD" else 4
+    elif sev == "high":
+        rpi = round(75.0 + min(10.0, dfi * 0.5), 1)
+        sla = 48
+    else:
+        rpi = 60.0
+        sla = 72
+
+    uid = f"cl-infra-{uuid.uuid4().hex[:8]}"
+    code = f"WO-INF-{uuid.uuid4().hex[:6].upper()}"
+    now_str = datetime.now(timezone.utc).strftime("%d %b, %I:%M %p")
+
+    new_cluster = DBDistressCluster(
+        id=uid,
+        cluster_code=code,
+        defect_type=defect_type_str,
+        defect_name=name,
+        severity_level=sev,
+        rpi_score=rpi,
+        pass_count=1,
+        road_name=payload.road_name,
+        classification="Municipal Arterial" if "GST" not in payload.road_name else "National Highway (NH)",
+        nearest_poi="Urban Transit Corridor",
+        poi_distance_m=100.0,
+        assigned_agency="Greater Chennai Corporation (GCC)" if "WATER" not in defect_type_str else "CMWSSB / GCC Stormwater Wing",
+        agency_phone="+91-44-25384520",
+        sla_hours=sla,
+        status="open",
+        lat=payload.lat,
+        lng=payload.lng,
+        water_depth_cm=water_depth,
+        surface_area_m2=surface_area,
+        drainage_failure_index=dfi,
+        irc_standard=irc_code,
+        field_notes=payload.field_notes or f"Infrastructure deficiency logged under {irc_code}.",
+        detecting_camera_position=payload.camera_position or "FRONT_WINDSHIELD",
+        detecting_channel=payload.channel or 1,
+        created_at=now_str,
+        updated_at=now_str
+    )
+
+    db.add(new_cluster)
+    db.commit()
+    db.refresh(new_cluster)
+
+    return _row_to_cluster(new_cluster)
+
 @router.get("/{cluster_id}", response_model=HazardCluster)
 def get_cluster(cluster_id: str, db: Session = Depends(get_db)):
     row = db.query(DBDistressCluster).filter(
@@ -173,32 +333,7 @@ def get_cluster(cluster_id: str, db: Session = Depends(get_db)):
     ).first()
     
     if row:
-        return HazardCluster(
-            id=row.id,
-            cluster_code=row.cluster_code,
-            defect_type=row.defect_type,
-            defect_name=row.defect_name,
-            severity_level=row.severity_level,
-            rpi_score=row.rpi_score,
-            pass_count=row.pass_count,
-            road_name=row.road_name,
-            classification=row.classification,
-            nearest_poi=row.nearest_poi,
-            poi_distance_m=row.poi_distance_m,
-            assigned_agency=row.assigned_agency,
-            agency_phone=row.agency_phone,
-            sla_hours=row.sla_hours,
-            status=row.status,
-            lat=row.lat,
-            lng=row.lng,
-            before_image_url=row.before_image_url,
-            after_image_url=row.after_image_url,
-            field_notes=row.field_notes,
-            detecting_camera_position=row.detecting_camera_position or "FRONT_WINDSHIELD",
-            detecting_channel=row.detecting_channel or 1,
-            created_at=row.created_at,
-            updated_at=row.updated_at
-        )
+        return _row_to_cluster(row)
         
     clusters = store.get_clusters()
     for c in clusters:

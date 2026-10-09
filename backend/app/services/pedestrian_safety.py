@@ -423,3 +423,81 @@ class PedestrianCrossingFusionEngine:
 pedestrian_engine = PedestrianCrossingFusionEngine()
 pedestrian_safety_engine = pedestrian_engine
 
+
+def evaluate_school_zone_safety(
+    lat: float,
+    lng: float,
+    speed_kmh: float,
+    pedestrians_count: int = 0,
+    children_detected: bool = False,
+    has_zebra_crossing: bool = True,
+    bus_id: str = "BUS-TN01-1042"
+) -> Dict[str, Any]:
+    """
+    Evaluates Vision Zero school zone safety rules:
+    - Identifies educational POIs within 150m buffer.
+    - Evaluates statutory 20 km/h speed compliance (IRC:35 / MoRTH).
+    - Checks for vulnerable children crossings and crosswalk marking presence.
+    - Generates SCHOOL_CHILDREN_CROSSING_RISK alert if speed > 20 km/h or children crossing.
+    - Strictly enforces 0.0 INR pedestrian fine under Vision Zero.
+    """
+    from app.spatial.poi_database import haversine_distance_m, CRITICAL_POIS
+
+    min_dist = float("inf")
+    nearest_school_name = "Designated School Safety Zone"
+
+    for sc in CHENNAI_SAFE_CORRIDORS:
+        if sc.category == "school":
+            d = haversine_distance_m(lat, lng, sc.lat, sc.lng)
+            if d < min_dist:
+                min_dist = d
+                nearest_school_name = sc.facility_name
+
+    for poi in CRITICAL_POIS:
+        if poi.get("type") == "school":
+            d = haversine_distance_m(lat, lng, poi["lat"], poi["lng"])
+            if d < min_dist:
+                min_dist = d
+                nearest_school_name = poi["name"]
+
+    is_in_school_zone = min_dist < 150.0
+    is_speed_violation = speed_kmh > 20.0
+    vulnerable_present = children_detected or pedestrians_count > 0
+
+    alert_triggered = False
+    severity = "low"
+
+    if is_in_school_zone:
+        if vulnerable_present and (is_speed_violation or not has_zebra_crossing):
+            alert_triggered = True
+            severity = "P0" if (speed_kmh > 25.0 or not has_zebra_crossing) else "P1"
+        elif is_speed_violation:
+            alert_triggered = True
+            severity = "P1"
+        elif vulnerable_present:
+            alert_triggered = True
+            severity = "P1"
+    elif vulnerable_present and (is_speed_violation or not has_zebra_crossing):
+        alert_triggered = True
+        severity = "P1"
+
+    return {
+        "is_in_school_zone": is_in_school_zone,
+        "nearest_school": nearest_school_name,
+        "distance_m": round(min_dist, 1),
+        "speed_kmh": speed_kmh,
+        "is_speed_violation": is_speed_violation,
+        "speed_limit_kmh": 20.0,
+        "has_zebra_crossing": has_zebra_crossing,
+        "children_detected": vulnerable_present,
+        "pedestrians_count": pedestrians_count,
+        "alert_triggered": alert_triggered,
+        "alert_type": "SCHOOL_CHILDREN_CROSSING_RISK" if alert_triggered else None,
+        "severity": severity,
+        "fine_amount_inr": 0.0,
+        "driver_yield_mandate": True if (is_in_school_zone or vulnerable_present) else False,
+        "advisory": f"Vision Zero Alert: School zone speed limit 20 km/h. Mandatory driver yield to vulnerable pedestrians near {nearest_school_name}.",
+        "mva_section": "IRC:35:2015 Sec 8 & Motor Vehicles (Driving) Regulations 2017 Reg 11 (Vision Zero School Pedestrian Corridor Protection)",
+        "statutory_standard": "IRC:35 / MoRTH School Zone Safety Standard"
+    }
+

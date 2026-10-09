@@ -10,7 +10,9 @@ import {
   ChevronsRight,
   Layers,
   Eye,
-  X
+  X,
+  AlertTriangle,
+  Radio
 } from "lucide-react";
 import { MetricCards } from "../components/triage/MetricCards";
 import { PriorityQueue } from "../components/triage/PriorityQueue";
@@ -263,9 +265,71 @@ export const CommandCenter: React.FC<CommandCenterProps> = ({
     }
   };
 
+  // High-Priority Forensic Alert for Hit-and-Run, Rash Driving, and School Zone Crossing risks
+  const highPriorityAlert = useMemo(() => {
+    return incidents.find(
+      (inc) =>
+        (inc.status === "ACTIVE_ALERT" || inc.status === "active" || inc.status === "open") &&
+        ["HIT_AND_RUN", "RASH_DRIVING", "SCHOOL_CHILDREN_CROSSING_RISK"].includes(inc.incident_type)
+    );
+  }, [incidents]);
+
   return (
     <div className="flex-1 flex flex-col min-h-0 bg-zinc-100 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 select-none overflow-hidden">
       
+      {/* 0. TOP STICKY FORENSIC ALERT DOCK BANNER */}
+      {highPriorityAlert && (
+        <div className="bg-rose-950/95 border-b border-rose-500/70 px-4 py-2 flex flex-wrap items-center justify-between gap-3 text-rose-100 z-30 shadow-md shrink-0">
+          <div className="flex items-center gap-3">
+            <span className="relative flex h-3 w-3 shrink-0">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-3 w-3 bg-rose-500"></span>
+            </span>
+            <div className="flex items-center flex-wrap gap-2 text-xs">
+              <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-rose-800 text-white border border-rose-600 font-mono">
+                {highPriorityAlert.incident_type.replace(/_/g, " ")}
+              </span>
+              {highPriorityAlert.plate_number && (
+                <span className="px-2 py-0.5 rounded font-mono font-bold bg-black text-amber-300 border border-amber-500/50">
+                  {highPriorityAlert.plate_number}
+                </span>
+              )}
+              <span className="font-mono text-rose-200">
+                ANPR Conf: <strong className="text-white">
+                  {Math.round(
+                    (highPriorityAlert.plate_confidence ?? 0.94) > 1
+                      ? (highPriorityAlert.plate_confidence ?? 94)
+                      : (highPriorityAlert.plate_confidence ?? 0.94) * 100
+                  )}%
+                </strong>
+              </span>
+              <span className="font-mono text-rose-300/80 hidden md:inline">
+                NavIC GPS: {highPriorityAlert.lat.toFixed(5)}, {highPriorityAlert.lng.toFixed(5)}
+              </span>
+              <span className="font-mono text-rose-300/60 hidden lg:inline">
+                {new Date(highPriorityAlert.occurred_at).toUTCString()}
+              </span>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => handleEscalateIncident(highPriorityAlert.id)}
+              className="px-3 py-1 text-xs font-bold font-mono rounded bg-rose-600 hover:bg-rose-500 active:scale-95 text-white shadow-md flex items-center gap-1.5 transition cursor-pointer"
+            >
+              <AlertTriangle className="w-3.5 h-3.5" />
+              Dispatch Alert to Traffic Police (GCTP) / Issue E-Challan
+            </button>
+            <button
+              onClick={() => handleSelectIncidentItem(highPriorityAlert)}
+              className="px-2.5 py-1 text-xs font-mono rounded bg-zinc-900 hover:bg-zinc-800 text-zinc-200 border border-zinc-700 transition cursor-pointer"
+              title="Inspect Incident Dossier"
+            >
+              Inspect
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* 1. SLIM 44px (h-11) SINGLE-LINE EXECUTIVE TELEMETRY & FILTER BAR */}
       <div className="h-11 bg-white dark:bg-zinc-900 border-b border-zinc-200 dark:border-zinc-800 px-3 py-1.5 flex items-center justify-between gap-2.5 shrink-0 z-10">
         

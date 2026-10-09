@@ -9,7 +9,9 @@ export type DefectCode =
   | "UNMARKED_SPEED_BREAKER" | "ILLEGAL_SPEED_BREAKER" 
   | "DARK_SPOT_OUTAGE"
   | "OPEN_MANHOLE" | "SUNKEN_TRENCH" | "SUBMERGED_POTHOLE" 
-  | "FOLIAGE_OBSCURED_SIGN" | "BANNER_OBSCURED_SIGN";
+  | "FOLIAGE_OBSCURED_SIGN" | "BANNER_OBSCURED_SIGN"
+  | "MISSING_ROAD_DIVIDER" | "MISSING_ZEBRA_CROSSING" 
+  | "DAMAGED_TRAFFIC_SIGN" | "WATERLOGGING_HAZARD";
 export type Severity   = "critical" | "high" | "medium" | "low";
 export type WorkOrderStatus =
   | "open" | "assigned" | "in_progress"
@@ -178,6 +180,82 @@ export interface HazardCluster {
   field_notes?: string;
   detecting_camera_position?: string;
   detecting_channel?: number;
+  water_depth_cm?: number;
+  surface_area_m2?: number;
+  drainage_failure_index?: number;
+  irc_standard?: string;
+}
+
+export interface InfrastructureDeficiency {
+  id: string;
+  cluster_code: string;
+  defect_type: DefectCode | string;
+  defect_name: string;
+  severity_level: Severity;
+  rpi_score: number;
+  road_name: string;
+  classification?: string;
+  nearest_poi?: string;
+  poi_distance_m?: number;
+  lat: number;
+  lng: number;
+  water_depth_cm?: number;
+  surface_area_m2?: number;
+  drainage_failure_index?: number;
+  irc_standard?: string;
+  field_notes?: string;
+  status?: string;
+  created_at?: string;
+}
+
+export interface SchoolZoneSafetyEvaluation {
+  is_in_school_zone: boolean;
+  nearest_school: string;
+  distance_m: number;
+  speed_kmh: number;
+  is_speed_violation: boolean;
+  speed_limit_kmh: number;
+  has_zebra_crossing: boolean;
+  children_detected: boolean;
+  pedestrians_count: number;
+  alert_triggered: boolean;
+  alert_type?: string | null;
+  severity?: string;
+  fine_amount_inr: number;
+  driver_yield_mandate: boolean;
+  advisory: string;
+  mva_section?: string;
+  statutory_standard?: string;
+  incident_id?: string;
+  incident_status?: string;
+}
+
+export interface EdgeTelemetryStreamPayload {
+  bus_id: string;
+  timestamp?: string;
+  camera_channel: string;
+  channel_id?: number;
+  gps?: {
+    lat: number;
+    lng: number;
+    speed_kmh: number;
+    heading: number;
+  };
+  lat?: number;
+  lng?: number;
+  speed_kmh?: number;
+  heading?: number;
+  traffic?: {
+    vehicle_count: number;
+    pcu_per_km: number;
+    breakdown?: Record<string, number>;
+  };
+  vehicle_count?: number;
+  density_pcu_per_km?: number;
+  imu?: {
+    gz: number;
+    axle_shock_delta: number;
+  };
 }
 
 // ── Corridor Risk ─────────────────────────────────────────────────────────────
@@ -210,6 +288,7 @@ export type IncidentType =
   | "HIT_AND_RUN"
   | "RASH_DRIVING"
   | "VULNERABLE_PEDESTRIAN"
+  | "SCHOOL_CHILDREN_CROSSING_RISK"
   | "ZEBRA_CROSSING_ENCROACHMENT"
   | "RED_LIGHT_VIOLATION"
   | "WATERLOGGING"

@@ -877,6 +877,94 @@ class ApiService {
     return { success: false };
   }
 
+  async getInfrastructureClusters(category: string = 'ALL'): Promise<HazardCluster[]> {
+    try {
+      const res = await fetch(`${API_BASE}/clusters/infrastructure?category=${encodeURIComponent(category)}`, {
+        headers: this.getAuthHeaders()
+      });
+      if (res.ok) return await res.json();
+    } catch (e) {
+      console.warn("Failed to fetch infrastructure clusters:", e);
+    }
+    return [];
+  }
+
+  async getInfrastructureDeficiencies(category: string = 'ALL'): Promise<HazardCluster[]> {
+    return this.getInfrastructureClusters(category);
+  }
+
+  async ingestInfrastructureDefect(payload: any): Promise<HazardCluster | null> {
+    try {
+      const res = await fetch(`${API_BASE}/clusters/infrastructure/ingest`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...this.getAuthHeaders()
+        },
+        body: JSON.stringify(payload)
+      });
+      if (res.ok) return await res.json();
+    } catch (e) {
+      console.warn("Failed to ingest infrastructure defect:", e);
+    }
+    return null;
+  }
+
+  async evaluateSchoolZoneSafety(payload: any): Promise<any> {
+    try {
+      const res = await fetch(`${API_BASE}/pedestrian/school-zones/evaluate`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...this.getAuthHeaders()
+        },
+        body: JSON.stringify(payload)
+      });
+      if (res.ok) return await res.json();
+    } catch (e) {
+      console.warn("Failed to evaluate school zone safety:", e);
+    }
+    return null;
+  }
+
+  async streamEdgeTelemetry(payload: any): Promise<any> {
+    try {
+      const res = await fetch(`${API_BASE}/traffic/edge/telemetry-stream`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...this.getAuthHeaders()
+        },
+        body: JSON.stringify(payload)
+      });
+      if (res.ok) return await res.json();
+    } catch (e) {
+      console.warn("Failed to stream edge telemetry:", e);
+    }
+    return null;
+  }
+
+  async sendEdgeTelemetryStream(payload: any): Promise<any> {
+    return this.streamEdgeTelemetry(payload);
+  }
+
+  async uploadEdgeEventSnapshot(payload: any): Promise<any> {
+    try {
+      const res = await fetch(`${API_BASE}/traffic/edge/event-snapshot`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...this.getAuthHeaders()
+        },
+        body: JSON.stringify(payload)
+      });
+      if (res.ok) return await res.json();
+    } catch (e) {
+      console.warn("Failed to upload edge event snapshot:", e);
+    }
+    return null;
+  }
+
   async getTrafficDensity(): Promise<TrafficDensityRecord[]> {
     try {
       const res = await fetch(`${API_BASE}/traffic/density`, {

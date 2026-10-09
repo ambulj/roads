@@ -398,6 +398,50 @@ export const OperatorInspectorPanel: React.FC<OperatorInspectorPanelProps> = ({
             )}
           </div>
 
+          {/* Statutory Infrastructure Standards & Waterlogging Metrics */}
+          {(selectedCluster.irc_standard || selectedCluster.water_depth_cm !== undefined) && (
+            <div className="bg-slate-50 dark:bg-slate-900/70 border border-slate-200 dark:border-slate-800 rounded-md p-2.5 space-y-2">
+              <div className="flex items-center justify-between text-xs">
+                <div className="flex items-center gap-1.5 text-slate-600 dark:text-slate-300">
+                  <FileText className="w-3.5 h-3.5 text-slate-500" />
+                  <span className="font-mono">Statutory Standard:</span>
+                </div>
+                <span className="px-2 py-0.5 rounded text-[11px] font-bold font-mono bg-cyan-100 dark:bg-cyan-950/80 text-cyan-800 dark:text-cyan-300 border border-cyan-300 dark:border-cyan-700">
+                  {selectedCluster.irc_standard || 'IRC:35:2015'}
+                </span>
+              </div>
+
+              {selectedCluster.water_depth_cm !== undefined && (
+                <>
+                  <div className="grid grid-cols-3 gap-2 pt-1 border-t border-slate-200 dark:border-slate-800 text-center font-mono">
+                    <div className="bg-white dark:bg-slate-950 p-1.5 rounded border border-slate-200 dark:border-slate-800">
+                      <div className="text-[10px] text-slate-500">Depth</div>
+                      <div className="text-xs font-bold text-blue-600 dark:text-blue-400">
+                        {selectedCluster.water_depth_cm.toFixed(1)} cm
+                      </div>
+                    </div>
+                    <div className="bg-white dark:bg-slate-950 p-1.5 rounded border border-slate-200 dark:border-slate-800">
+                      <div className="text-[10px] text-slate-500">Area</div>
+                      <div className="text-xs font-bold text-slate-800 dark:text-slate-200">
+                        {(selectedCluster.surface_area_m2 || 0).toFixed(1)} m²
+                      </div>
+                    </div>
+                    <div className="bg-white dark:bg-slate-950 p-1.5 rounded border border-slate-200 dark:border-slate-800">
+                      <div className="text-[10px] text-slate-500">DFI</div>
+                      <div className="text-xs font-bold text-rose-600 dark:text-rose-400">
+                        {(selectedCluster.drainage_failure_index || 0).toFixed(2)}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="p-2 rounded bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 text-[11px] text-amber-800 dark:text-amber-300 leading-tight">
+                    <strong>Aquaplaning Safety Advisory:</strong> High hydrodynamic drag &amp; loss of tire traction risk at speeds &gt; 40 km/h. Issue immediate dewatering and suction pump work order under IRC:SP:42.
+                  </div>
+                </>
+              )}
+            </div>
+          )}
+
           {/* Contractor & SLA Assignment */}
           <div className="bg-slate-50 dark:bg-slate-900/70 border border-slate-200 dark:border-slate-800 rounded-md p-2.5 space-y-2">
             <div className="flex items-center justify-between text-xs">

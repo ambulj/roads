@@ -230,6 +230,122 @@ async def get_async_db():
             await session.close()
 
 
+INITIAL_CLUSTERS_SQLITE = [
+    {
+        "id": "cl-infra-01",
+        "cluster_code": "WO-INF-001",
+        "defect_type": "MISSING_ROAD_DIVIDER",
+        "defect_name": "Missing Median Road Divider",
+        "severity_level": "critical",
+        "rpi_score": 92.5,
+        "pass_count": 6,
+        "road_name": "GST Road (NH-32) Arterial near Kathipara",
+        "classification": "National Highway (NH)",
+        "nearest_poi": "Kathipara Cloverleaf Interchange",
+        "poi_distance_m": 120.0,
+        "assigned_agency": "Tamil Nadu Highways Department",
+        "agency_phone": "+91-44-25384520",
+        "sla_hours": 24,
+        "status": "open",
+        "lat": 12.9850,
+        "lng": 80.1650,
+        "irc_standard": "IRC:SP:84",
+        "water_depth_cm": 0.0,
+        "surface_area_m2": 0.0,
+        "drainage_failure_index": 0.0,
+        "field_notes": "Broken median barrier gap > 5m on high-speed arterial curve posing head-on collision danger per IRC:SP:84.",
+        "detecting_camera_position": "FRONT_WINDSHIELD",
+        "detecting_channel": 1,
+        "created_at": "5 Sept, 05:20 am",
+        "updated_at": "5 Sept, 05:20 am",
+    },
+    {
+        "id": "cl-infra-02",
+        "cluster_code": "WO-INF-002",
+        "defect_type": "MISSING_ZEBRA_CROSSING",
+        "defect_name": "Faded Pedestrian Zebra Crossing",
+        "severity_level": "critical",
+        "rpi_score": 89.0,
+        "pass_count": 8,
+        "road_name": "St. Thomas School Corridor",
+        "classification": "School Zone Arterial",
+        "nearest_poi": "St. Thomas Higher Secondary School",
+        "poi_distance_m": 45.0,
+        "assigned_agency": "Greater Chennai Corporation (GCC)",
+        "agency_phone": "+91-44-25384520",
+        "sla_hours": 48,
+        "status": "open",
+        "lat": 13.0035,
+        "lng": 80.1980,
+        "irc_standard": "IRC:35:2015",
+        "water_depth_cm": 0.0,
+        "surface_area_m2": 0.0,
+        "drainage_failure_index": 0.0,
+        "field_notes": "Faded and obliterated thermoplastic zebra crosswalk fronting school entrance violating IRC:35:2015 Sec 8.",
+        "detecting_camera_position": "FRONT_WINDSHIELD",
+        "detecting_channel": 1,
+        "created_at": "5 Sept, 06:15 am",
+        "updated_at": "5 Sept, 06:15 am",
+    },
+    {
+        "id": "cl-infra-03",
+        "cluster_code": "WO-INF-003",
+        "defect_type": "DAMAGED_TRAFFIC_SIGN",
+        "defect_name": "Damaged School Zone Caution Sign",
+        "severity_level": "high",
+        "rpi_score": 78.5,
+        "pass_count": 5,
+        "road_name": "Anna Salai (Mount Road)",
+        "classification": "Primary Arterial",
+        "nearest_poi": "D.A.V. Senior Secondary School",
+        "poi_distance_m": 90.0,
+        "assigned_agency": "Greater Chennai Corporation (GCC)",
+        "agency_phone": "+91-44-25384520",
+        "sla_hours": 72,
+        "status": "open",
+        "lat": 13.0425,
+        "lng": 80.2345,
+        "irc_standard": "IRC:67:2022",
+        "water_depth_cm": 0.0,
+        "surface_area_m2": 0.0,
+        "drainage_failure_index": 0.0,
+        "field_notes": "Regulatory/Cautionary School Zone Ahead sign distorted and bent violating IRC:67:2022.",
+        "detecting_camera_position": "FRONT_WINDSHIELD",
+        "detecting_channel": 1,
+        "created_at": "5 Sept, 07:10 am",
+        "updated_at": "5 Sept, 07:10 am",
+    },
+    {
+        "id": "cl-infra-04",
+        "cluster_code": "WO-INF-004",
+        "defect_type": "WATERLOGGING_HAZARD",
+        "defect_name": "Critical Waterlogging & Aquaplaning Hazard",
+        "severity_level": "critical",
+        "rpi_score": 96.0,
+        "pass_count": 9,
+        "road_name": "Kathipara Grade Junction Slip Road",
+        "classification": "Interchange Grade Junction",
+        "nearest_poi": "Alandur Metro Slipway",
+        "poi_distance_m": 80.0,
+        "assigned_agency": "CMWSSB / GCC Stormwater Wing",
+        "agency_phone": "+91-44-25384520",
+        "sla_hours": 4,
+        "status": "open",
+        "lat": 13.0078,
+        "lng": 80.2045,
+        "irc_standard": "IRC:SP:42",
+        "water_depth_cm": 16.5,
+        "surface_area_m2": 48.0,
+        "drainage_failure_index": 7.92,
+        "field_notes": "Critical waterlogging at Kathipara grade junction; depth 16.5cm, area 48.0m2, DFI 7.92; immediate pump deployment required under IRC:SP:42.",
+        "detecting_camera_position": "FRONT_WINDSHIELD",
+        "detecting_channel": 1,
+        "created_at": "5 Sept, 07:30 am",
+        "updated_at": "5 Sept, 07:30 am",
+    },
+]
+
+
 def init_db():
     """Initialize schema and seed initial verified Chennai data if tables are empty."""
     # SQLite: add missing columns from older schema versions (migration-free upgrade)
@@ -250,6 +366,14 @@ def init_db():
             cursor.execute("ALTER TABLE distress_clusters ADD COLUMN concurrence_passes_count INTEGER DEFAULT 0")
         if "verification_status" not in existing_cols and existing_cols:
             cursor.execute("ALTER TABLE distress_clusters ADD COLUMN verification_status TEXT DEFAULT 'UNVERIFIED'")
+        for col, col_type in (
+            ("water_depth_cm", "REAL DEFAULT 0.0"),
+            ("surface_area_m2", "REAL DEFAULT 0.0"),
+            ("drainage_failure_index", "REAL DEFAULT 0.0"),
+            ("irc_standard", "TEXT DEFAULT ''"),
+        ):
+            if col not in existing_cols and existing_cols:
+                cursor.execute(f"ALTER TABLE distress_clusters ADD COLUMN {col} {col_type}")
 
         cursor.execute("PRAGMA table_info(contractors)")
         existing_contractor_cols = {row[1] for row in cursor.fetchall()}
@@ -335,6 +459,11 @@ def init_db():
                 cluster_dict.setdefault("detecting_camera_position", "FRONT_WINDSHIELD")
                 cluster_dict.setdefault("detecting_channel", 1)
                 db.add(DBDistressCluster(**cluster_dict))
+
+        for item in INITIAL_CLUSTERS_SQLITE:
+            if not db.query(DBDistressCluster).filter(DBDistressCluster.id == item["id"]).first():
+                db.add(DBDistressCluster(**dict(item)))
+        db.commit()
 
         # ── Seed fleet nodes ─────────────────────────────────────────────────
         if db.query(DBFleetNode).count() == 0:

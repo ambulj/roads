@@ -71,6 +71,11 @@ api_router.include_router(
     tags=["[Tier 2 Central] Vision Zero, School Zone & Hospital Safety Radar"]
 )
 api_router.include_router(
+    pedestrian.router, 
+    prefix="/pedestrian", 
+    tags=["[Tier 2 Central] Vision Zero School Zone & Pedestrian Safety"]
+)
+api_router.include_router(
     traffic.router, 
     prefix="/traffic", 
     tags=["[Tier 2 Central] Vehicle Density, IRC:106 Congestion & Bottlenecks"]

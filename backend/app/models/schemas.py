@@ -21,6 +21,10 @@ class DefectType(str, Enum):
     SUBMERGED_POTHOLE = "SUBMERGED_POTHOLE"
     FOLIAGE_OBSCURED_SIGN = "FOLIAGE_OBSCURED_SIGN"
     BANNER_OBSCURED_SIGN = "BANNER_OBSCURED_SIGN"
+    MISSING_ROAD_DIVIDER = "MISSING_ROAD_DIVIDER"
+    MISSING_ZEBRA_CROSSING = "MISSING_ZEBRA_CROSSING"
+    DAMAGED_TRAFFIC_SIGN = "DAMAGED_TRAFFIC_SIGN"
+    WATERLOGGING_HAZARD = "WATERLOGGING_HAZARD"
 
 class SeverityLevel(str, Enum):
     CRITICAL = "critical"
@@ -118,6 +122,52 @@ class HazardCluster(BaseModel):
     field_notes: Optional[str] = None
     detecting_camera_position: Optional[str] = "FRONT_WINDSHIELD"
     detecting_channel: Optional[int] = 1
+    water_depth_cm: Optional[float] = 0.0
+    surface_area_m2: Optional[float] = 0.0
+    drainage_failure_index: Optional[float] = 0.0
+    irc_standard: Optional[str] = ""
+    created_at: Optional[str] = None
+    updated_at: Optional[str] = None
+
+class InfrastructureDeficiencyIngest(BaseModel):
+    defect_type: Union[DefectType, str]
+    road_name: str
+    lat: float
+    lng: float
+    water_depth_cm: Optional[float] = 0.0
+    surface_area_m2: Optional[float] = 0.0
+    irc_standard: Optional[str] = None
+    field_notes: Optional[str] = None
+    severity_level: Optional[SeverityLevel] = None
+    reporting_bus_id: Optional[str] = "BUS-TN01-1042"
+    camera_position: Optional[str] = "FRONT_WINDSHIELD"
+    channel: Optional[int] = 1
+
+InfrastructureIngestRequest = InfrastructureDeficiencyIngest
+
+class InfrastructureDeficiencyResponse(BaseModel):
+    id: str
+    cluster_code: str
+    defect_type: str
+    defect_name: str
+    severity_level: SeverityLevel
+    rpi_score: float
+    pass_count: int = 1
+    road_name: str
+    classification: str
+    nearest_poi: Optional[str] = None
+    poi_distance_m: Optional[float] = None
+    assigned_agency: Optional[str] = None
+    agency_phone: Optional[str] = None
+    sla_hours: Optional[int] = 48
+    status: Union[WorkOrderStatus, str] = WorkOrderStatus.OPEN
+    lat: float
+    lng: float
+    water_depth_cm: Optional[float] = 0.0
+    surface_area_m2: Optional[float] = 0.0
+    drainage_failure_index: Optional[float] = 0.0
+    irc_standard: Optional[str] = ""
+    field_notes: Optional[str] = None
     created_at: Optional[str] = None
     updated_at: Optional[str] = None
 
