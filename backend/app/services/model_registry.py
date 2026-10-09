@@ -30,7 +30,8 @@ class ModelRegistry:
                 "device": "CUDA / CPU Fallback",
                 "has_working_code": True,
                 "fallback_pipeline": "Morphological Dark Cavity & Crack Contour Analyzer",
-                "regulatory_spec": "IRC:SP:20 & MoRTH Section 500",
+                "regulatory_spec": "IRC:82:2015 & MoRTH Section 500",
+                "dataset_attribution": "Roboflow Universe - Pothole Detection Dataset (CC BY 4.0)",
                 "default_description": "Active fine-tuned YOLO model detecting asphalt cavities with depth & volume estimation."
             },
             "indian_roads_yolo": {
@@ -42,6 +43,7 @@ class ModelRegistry:
                 "has_working_code": True,
                 "fallback_pipeline": "Edge Telematics & Spatial Hazard Correlation",
                 "regulatory_spec": "IRC:35 & MoRTH Urban Road Guidelines",
+                "dataset_attribution": "Roboflow Universe - Indian Road Hazards & Assets (CC BY 4.0)",
                 "default_description": "Active multi-class detector for Indian traffic corridors and infrastructure assets."
             },
             "zebra_crossing_detector": {
@@ -53,6 +55,7 @@ class ModelRegistry:
                 "has_working_code": True,
                 "fallback_pipeline": "Morphological High-Contrast Horizontal Bandpass Filter",
                 "regulatory_spec": "IRC:35:2015 Code of Practice for Road Markings",
+                "dataset_attribution": "Roboflow Universe - Pedestrian Zebra Crossing Dataset (CC BY 4.0)",
                 "default_description": "Active dual-engine perception: fine-tuned YOLO zebra model + robust IRC:35 stripe frequency analyzer."
             },
             "vehicle_detection": {
@@ -64,6 +67,7 @@ class ModelRegistry:
                 "has_working_code": True,
                 "fallback_pipeline": "Optical Flow & Contour Motion Tracker",
                 "regulatory_spec": "AIS-140 Intelligent Transportation Systems Specifications",
+                "dataset_attribution": "Roboflow Universe - Indian Traffic & Vehicle Detection (CC BY 4.0)",
                 "default_description": "Real-time road user localization for density analysis and collision risk computation."
             },
             "anpr_yolo": {
@@ -75,6 +79,7 @@ class ModelRegistry:
                 "has_working_code": True,
                 "fallback_pipeline": "Morphological Sobel Vertical Band Edge Filter + MoRTH Regex",
                 "regulatory_spec": "Central Motor Vehicles Rules (CMVR) Rule 50/51",
+                "dataset_attribution": "Kaggle & Roboflow - Indian License Plate Character OCR (CC BY 4.0)",
                 "default_description": "Active neural plate detection combined with OCR and MoRTH state/RTO syntax parsing."
             },
             "depth_3d": {
@@ -86,6 +91,7 @@ class ModelRegistry:
                 "has_working_code": True,
                 "fallback_pipeline": "Calibrated Trigonometric Pinhole Geometry (f=3.67mm)",
                 "regulatory_spec": "MoRTH Section 300 Asphalt Volumetric Standards",
+                "dataset_attribution": "Calibrated Pinhole Optics / Synthetic Geometry",
                 "default_description": "Real-time depth computation via calibrated sensor focal geometry and bounding aspect ratio."
             },
             "acoustic_imu": {
@@ -97,6 +103,7 @@ class ModelRegistry:
                 "has_working_code": True,
                 "fallback_pipeline": "Digital Signal Processing (DSP) 3-Axis Bandpass Filter (0.5–20Hz)",
                 "regulatory_spec": "AIS-140 Intelligent Transportation Systems Specifications",
+                "dataset_attribution": "Empirical Bus Accelerometer Telematics (AIS-140)",
                 "default_description": "Active DSP rule engine running on bus telematics with vertical g-force shock profiling."
             }
         }
@@ -175,6 +182,7 @@ class ModelRegistry:
                 "framework": conf["framework"],
                 "device": conf["device"],
                 "regulatory_spec": conf["regulatory_spec"],
+                "dataset_attribution": conf.get("dataset_attribution"),
                 "fallback_pipeline": conf["fallback_pipeline"],
                 "rknn_targets": rknn_targets,
                 "status_explanation": msg,

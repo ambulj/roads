@@ -424,7 +424,7 @@ export const Analytics: React.FC<AnalyticsProps> = ({ metrics, corridors, fleet 
                     </span>
                   </div>
                   <Badge variant="purple" size="sm">
-                    IRC:SP:20
+                    Contractual DLP
                   </Badge>
                 </div>
                 <p className="text-xs text-slate-500 dark:text-slate-400 mt-2 mb-2">

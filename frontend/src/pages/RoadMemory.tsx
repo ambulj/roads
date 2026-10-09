@@ -55,7 +55,7 @@ const SAMPLE_MOHUA_AUDITS: MohuaAuditRecord[] = [
     corridor: 'GST Road (NH-32) • Tambaram Sanatorium',
     officer: 'Er. K. Shanmugam (PWD-ENG-312)',
     action: 'Autonomous Fleet Re-Pass Verified Closure',
-    clause: 'MoHUA IRC:SP:20 Clause 14.2',
+    clause: 'Contractual DLP Clause & Section 63/65B BSA 2023',
     hash: 'sha256:e4b98cf91023a48e71c991823abf104d99c82301982736451029384756',
     status: 'SEALED'
   },
@@ -65,7 +65,7 @@ const SAMPLE_MOHUA_AUDITS: MohuaAuditRecord[] = [
     clusterCode: 'WO-2026-CHE-212',
     corridor: 'OMR IT Expressway (SH-49A) • Perungudi',
     officer: 'State ICCC Super Administrator (ICCC-ADMIN-001)',
-    action: 'Contractor DLP Escrow Deduction (₹24,500 Debit)',
+    action: 'Contractor DLP Retention Deduction (₹24,500 Debit)',
     clause: 'MoHUA Rule 151(iii) GFR 2017',
     hash: 'sha256:91823acbbef01923485761029384756cba9810293847561029384756ab',
     status: 'COMPLIANT'
@@ -77,7 +77,7 @@ const SAMPLE_MOHUA_AUDITS: MohuaAuditRecord[] = [
     corridor: 'Anna Salai (Mount Road) • Guindy Kathipara',
     officer: 'Er. K. Shanmugam (PWD-ENG-312)',
     action: 'Tri-Bus Spatial Consensus Verification Gate (94% Score)',
-    clause: 'MoHUA IRC:SP:20 Concurrence Gate',
+    clause: 'Contractual DLP Concurrence Gate',
     hash: 'sha256:c029384756ab91823a48e71c991823abf104d99c823019827364510293',
     status: 'VERIFIED'
   },
@@ -274,7 +274,7 @@ export const RoadMemory: React.FC = () => {
             <ShieldCheck className="w-3.5 h-3.5" />
             <span>MoHUA Statutory Audit Trail</span>
             <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-indigo-100 dark:bg-indigo-900 text-indigo-700 dark:text-indigo-300">
-              IRC:SP:20
+              Contractual DLP
             </span>
           </button>
         </div>
@@ -300,7 +300,7 @@ export const RoadMemory: React.FC = () => {
                 </div>
                 <div>
                   <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
-                    <span>MoHUA IRC:SP:20 Statutory Audit Ledger</span>
+                    <span>Contractual DLP Statutory Audit Ledger</span>
                     <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
                       CRYPTOGRAPHICALLY SEALED
                     </span>

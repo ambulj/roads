@@ -88,7 +88,7 @@ api_router.include_router(
 api_router.include_router(
     contractors.router,
     prefix="/contractors",
-    tags=["[Tier 2 Central] Contractor SLA Ledger, IRC:SP:20 & Escrow Account"]
+    tags=["[Tier 2 Central] Contractor SLA Ledger, Contractual DLP & Retention Account"]
 )
 api_router.include_router(
     copilot.router,

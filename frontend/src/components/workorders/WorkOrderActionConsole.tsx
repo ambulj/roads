@@ -453,7 +453,7 @@ export const WorkOrderActionConsole: React.FC<WorkOrderActionConsoleProps> = ({
                   {orderId}
                 </span>
                 <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-indigo-950/60 text-indigo-300 border border-indigo-800">
-                  IRC:SP:20 Cl 14.2 Compliant
+                  Contractual DLP Cl 16/17 Compliant
                 </span>
               </div>
               <p className="text-[11px] text-slate-400 truncate max-w-md">
@@ -640,7 +640,7 @@ export const WorkOrderActionConsole: React.FC<WorkOrderActionConsoleProps> = ({
                   </div>
 
                   <div className="p-2.5 rounded bg-slate-950 border border-slate-800 text-[10.5px] text-slate-400 space-y-1">
-                    <div><strong>Statutory Reference:</strong> IRC:SP:20 Clause 14 &amp; MoRTH Section 3000.</div>
+                    <div><strong>Statutory Reference:</strong> Contractual DLP Clause &amp; Section 63/65B BSA 2023.</div>
                     <div className="text-[9.5px] text-slate-500 font-mono">Tack coat RS-1 required on vertical cavity edges before 8-ton vibratory compaction.</div>
                   </div>
 
@@ -663,7 +663,7 @@ export const WorkOrderActionConsole: React.FC<WorkOrderActionConsoleProps> = ({
           {activeTab === "contractor_sla" && (
             <div className="space-y-4">
               <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
-                {/* Left: Assigned Contractor Agency & Escrow Pool */}
+                {/* Left: Assigned Contractor Agency & Retention Pool */}
                 <div className="lg:col-span-6 space-y-3">
                   <div className="p-4 rounded-lg bg-slate-900/80 border border-slate-800 space-y-3">
                     <div className="flex items-center justify-between border-b border-slate-800 pb-2">
@@ -698,13 +698,13 @@ export const WorkOrderActionConsole: React.FC<WorkOrderActionConsoleProps> = ({
                     </div>
                   </div>
 
-                  {/* Escrow Pool & Debarment Risk Meter */}
+                  {/* Retention Pool & Debarment Risk Meter */}
                   <div className="p-4 rounded-lg bg-slate-900/80 border border-slate-800 space-y-3 font-mono text-xs">
                     <div className="flex items-center justify-between border-b border-slate-800 pb-2">
                       <div className="flex items-center gap-2">
                         <Scale className="w-4 h-4 text-amber-400" />
                         <h4 className="font-bold text-xs uppercase tracking-wider text-slate-200">
-                          Escrow Security Deposit Pool
+                          Security Deposit (SD) / Retention Pool
                         </h4>
                       </div>
                       <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-950/60 text-emerald-300 border border-emerald-800">
@@ -722,7 +722,7 @@ export const WorkOrderActionConsole: React.FC<WorkOrderActionConsoleProps> = ({
                         <strong className="text-rose-400 text-xs tabular-nums">-₹45,000</strong>
                       </div>
                       <div className="p-2 rounded bg-slate-950 border border-slate-800">
-                        <span className="text-[10px] text-slate-400 block">NET ESCROW</span>
+                        <span className="text-[10px] text-slate-400 block">NET SD / RETENTION</span>
                         <strong className="text-emerald-400 text-xs tabular-nums">₹49,55,000</strong>
                       </div>
                     </div>
@@ -744,7 +744,7 @@ export const WorkOrderActionConsole: React.FC<WorkOrderActionConsoleProps> = ({
                       <div className="flex items-center gap-2">
                         <FileText className="w-4 h-4 text-indigo-400" />
                         <h4 className="font-bold text-xs uppercase tracking-wider text-slate-200">
-                          Statutory Form 14 Show-Cause Pack (IRC:SP:20 Cl 14.2)
+                          Statutory Form 14 Show-Cause Pack (Contractual DLP &amp; BSA 2023)
                         </h4>
                       </div>
                       <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-950/60 text-amber-300 border border-amber-800">
@@ -862,7 +862,7 @@ export const WorkOrderActionConsole: React.FC<WorkOrderActionConsoleProps> = ({
                   <div className="flex items-center gap-2 flex-wrap">
                     <Bus className="w-4 h-4 text-emerald-400" />
                     <h4 className="font-bold text-sm text-slate-100">
-                      Trip-Windowed Fleet Concurrence &amp; Escrow Release Gate
+                      Trip-Windowed Fleet Concurrence &amp; Retention Release Gate
                     </h4>
                     <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-cyan-950/60 text-cyan-300 border border-cyan-800">
                       Δt ≥ 2h Trip Separation Qualified
@@ -896,7 +896,7 @@ export const WorkOrderActionConsole: React.FC<WorkOrderActionConsoleProps> = ({
                     Statutory Governance &amp; Section 65B BSA 2023 Compliance Notice
                   </div>
                   <p className="text-[10.5px] text-indigo-200/90 leading-relaxed">
-                    Per BSA 2023 Section 65B &amp; MoHUA guidelines, multi-pass concurrence provides technical verification. Escrow release authorization and contractor deductions require digital certification from Assistant Engineer (AE) / Executive Engineer (EE).
+                    Per BSA 2023 Section 65B &amp; MoHUA guidelines, multi-pass concurrence provides technical verification. Retention money release authorization and contractor deductions require digital certification from Assistant Engineer (AE) / Executive Engineer (EE).
                   </p>
                 </div>
               </div>
@@ -906,7 +906,7 @@ export const WorkOrderActionConsole: React.FC<WorkOrderActionConsoleProps> = ({
                 <div className="p-3 rounded-lg bg-rose-950/50 border border-rose-800 text-xs font-mono text-rose-300 flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <AlertTriangle className="w-4 h-4 text-rose-400" />
-                    <span>Proposed Clause 14 Liquidated Damages Deduction: <strong>₹25,000 INR</strong></span>
+                    <span>Proposed Contractual DLP Liquidated Damages Deduction: <strong>₹25,000 INR</strong></span>
                   </div>
                   <span className="px-2 py-0.5 rounded bg-rose-900/60 border border-rose-700 text-[10px] font-bold">
                     7-Day Cure Window Notice Active
@@ -993,7 +993,7 @@ export const WorkOrderActionConsole: React.FC<WorkOrderActionConsoleProps> = ({
                 <div className="space-y-1">
                   <h4 className="font-bold text-xs uppercase tracking-wider text-slate-200 flex items-center gap-1.5">
                     <DollarSign className="w-3.5 h-3.5 text-emerald-400" />
-                    <span>Statutory Escrow Payment Recommendation Gate</span>
+                    <span>Statutory Security Deposit / Retention Release Gate</span>
                   </h4>
                   <p className="text-[11px] text-slate-400">
                     {isConcurrenceMet

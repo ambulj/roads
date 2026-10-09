@@ -148,7 +148,7 @@ class CityBrainEngine:
                 "selected_interventions": selected_items,
                 "pareto_tradeoff_curve": pareto_curve,
                 "optimization_algorithm": "Dynamic_Programming_01_Knapsack_Exact",
-                "statutory_mandate": "MoRTH Section 198A & IRC:SP:20 Priority Allocation"
+                "statutory_mandate": "MoRTH Section 198A & Priority Allocation"
             }
         finally:
             db.close()
@@ -360,7 +360,7 @@ class CityBrainEngine:
                 "statutory_sla_hours": c.sla_hours or 24
             },
             "xai_narrative_explanation": reasoning_narrative,
-            "recommended_intervention": "Immediate Cold-Mix Milling & Compaction (IRC:SP:20 Clause 14.1)"
+            "recommended_intervention": "Immediate Cold-Mix Milling & Compaction (IRC:82:2015)"
         }
 
     def _build_incident_xai_trace(self, inc: DBTrafficIncident) -> Dict[str, Any]:
@@ -417,7 +417,7 @@ class CityBrainEngine:
                 f"Hazard {code} represents a severe structural cavitation on Anna Salai. Proximity to school zone "
                 f"creates imminent hazard for pedestrian crossings and two-wheelers. Statutory 24-hour SLA applies."
             ),
-            "recommended_intervention": "Rapid Setting Polymer Patching (IRC:SP:20)"
+            "recommended_intervention": "Rapid Setting Polymer Patching (IRC:82)"
         }
 
     def _compute_pareto_curve(self, items: List[Dict[str, Any]]) -> List[Dict[str, Any]]:

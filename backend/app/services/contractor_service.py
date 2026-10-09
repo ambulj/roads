@@ -42,9 +42,61 @@ class PenaltyResult(tuple):
         return int(self[0])
 
 
+# IRC:82:2015 Civil Engineering Standard Constants
+SAW_CUT_MARGIN_PCT: float = 15.0       # IRC:82 Cl 5.2: Rectangular saw-cut perimeter trim (+15%)
+COMPACTION_FACTOR: float = 1.10        # IRC:82 Cl 5.4: Bulk asphalt compaction factor (+10%)
+TOTAL_IRC82_VOLUME_FACTOR: float = 1.265  # 1.15 * 1.10 = 1.265 combined volumetric multiplier
+ASPHALT_BULK_DENSITY_KG_L: float = 2.35   # 2.35 g/cm³ (MoRTH Section 500 DBM compacted bulk density)
+PWD_SOR_RATE_PER_KG: float = 68.0         # PWD SOR 2025 rate for VG-30 patch repair
+
+
+def calculate_irc82_patch_estimate(
+    cavity_area_m2: Optional[float] = None,
+    depth_cm: Optional[float] = None,
+    saw_cut_margin_pct: float = SAW_CUT_MARGIN_PCT,
+    compaction_factor: float = COMPACTION_FACTOR,
+    density_kg_l: float = ASPHALT_BULK_DENSITY_KG_L,
+    rate_inr_per_kg: float = PWD_SOR_RATE_PER_KG,
+    *,
+    cavity_volume_liters: Optional[float] = None
+) -> dict:
+    """
+    Computes IRC:82 calibrated patch repair volume, asphalt mass, and PWD SOR 2025 repair cost.
+    Formula:
+      V_cavity = Area (m²) * Depth (m) * 1000 (L)
+      V_patch  = V_cavity * (1 + saw_cut_margin / 100) * compaction_factor = V_cavity * 1.265
+      Mass     = V_patch * 2.35 kg
+      Cost     = Mass * ₹68.0
+    """
+    if cavity_volume_liters is not None:
+        raw_vol_liters = float(cavity_volume_liters)
+    elif cavity_area_m2 is not None and depth_cm is not None:
+        raw_vol_liters = float(cavity_area_m2) * (float(depth_cm) / 100.0) * 1000.0
+    elif cavity_area_m2 is not None and depth_cm is None:
+        raw_vol_liters = float(cavity_area_m2)
+    else:
+        raw_vol_liters = 0.0
+
+    trim_multiplier = 1.0 + (saw_cut_margin_pct / 100.0)
+    patch_vol_liters = raw_vol_liters * trim_multiplier * compaction_factor
+    asphalt_kg = patch_vol_liters * density_kg_l
+    repair_cost_inr = asphalt_kg * rate_inr_per_kg
+
+    return {
+        "raw_cavity_liters": round(raw_vol_liters, 2),
+        "patch_volume_liters": round(patch_vol_liters, 2),
+        "asphalt_mass_kg": round(asphalt_kg, 1),
+        "repair_cost_inr": round(repair_cost_inr, 0),
+        "saw_cut_margin_pct": saw_cut_margin_pct,
+        "compaction_factor": compaction_factor,
+        "density_kg_l": density_kg_l,
+        "rate_inr_per_kg": rate_inr_per_kg
+    }
+
+
 def calculate_clause14_penalty(re_pothole_count: int = 1) -> PenaltyResult:
     """
-    Computes statutory penalty under IRC:SP:20 Clause 14 & MoRTH Section 3000:
+    Computes statutory liquidated damages under Contractual DLP Clause (PWD/MORTH GCC Clause 16/17) & Section 63/65B BSA 2023:
       - 1st recurrence: ₹25,000 INR
       - 2nd recurrence: ₹50,000 INR
       - 3rd+ recurrence: ₹1,00,000 INR + GeM debarment notice trigger
@@ -131,14 +183,14 @@ check_within_36_month_dlp = evaluate_recurrence_window
 def generate_pfms_voucher_ref(dt: Optional[datetime.datetime] = None) -> str:
     """
     Generates a CAG-compliant Public Financial Management System (PFMS)
-    transaction voucher reference: PFMS/DLP-ESCROW/{YYYY}/{MMDD}-{HEX6}
+    transaction voucher reference: PFMS/DLP-RETENTION/{YYYY}/{MMDD}-{HEX6}
     """
     if dt is None:
         dt = datetime.datetime.now(datetime.timezone.utc)
     yyyy = dt.strftime("%Y")
     mmdd = dt.strftime("%m%d")
     hex6 = uuid.uuid4().hex[:6].upper()
-    return f"PFMS/DLP-ESCROW/{yyyy}/{mmdd}-{hex6}"
+    return f"PFMS/DLP-RETENTION/{yyyy}/{mmdd}-{hex6}"
 
 
 def generate_form14_docket_no(cluster_code: str, dt: Optional[datetime.datetime] = None) -> str:
@@ -367,7 +419,7 @@ def issue_form14_show_cause_notice(
         corridor_name=target_cluster.road_name or contractor.assigned_corridor,
         re_pothole_count=re_pothole_count,
         penalty_amount_inr=penalty_amount,
-        statutory_clause="MoHUA IRC:SP:20 Clause 14.2 & Section 63 BSA 2023",
+        statutory_clause="Contractual DLP Clause & Section 63/65B BSA 2023",
         status=status,
         notice_status=status,
         provenance="DERIVED_FROM_RECURRENT_DISTRESS",
@@ -418,7 +470,7 @@ def issue_form14_show_cause_notice(
                 contractor_name=contractor.name,
                 demerit_score=min(100.0, 75.0 + re_pothole_count * 10.0),
                 debarment_status="STATUTORY_DEBARMENT_NOTICE",
-                reason=f"Defect recurrence threshold exceeded (N={re_pothole_count} within {dlp_tier}-month DLP) under IRC:SP:20 Clause 14.2.",
+                reason=f"Defect recurrence threshold exceeded (N={re_pothole_count} within {dlp_tier}-month DLP) under Contractual DLP Clause & Section 63/65B BSA 2023.",
                 gem_portal_reference=f"GeM/{now_dt.year}/DEB-{random.randint(1000, 9999)}",
                 effective_date=now_iso
             )
@@ -456,7 +508,7 @@ def issue_form14_show_cause_notice(
         optical_status="RECURRENT_CAVITY_DETECTED",
         audit_verdict="REPAIR_FAILED_RECURRENCE",
         penalty_debit_inr=penalty_amount,
-        statutory_clause="MoHUA IRC:SP:20 Clause 14.2 & Section 63 BSA 2023",
+        statutory_clause="Contractual DLP Clause & Section 63/65B BSA 2023",
         notes=notes or f"Form 14 Show-Cause Notice issued: {docket_no}",
         verified_at=now_iso
     ))

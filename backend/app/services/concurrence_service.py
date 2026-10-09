@@ -178,7 +178,7 @@ def evaluate_concurrence_passes(
       4. Recurrence Shock Override & Empirical Penalty:
          - If any valid pass exhibits severe shock (g_norm >= 0.35g) or open cavity,
            immediately marks status = REPAIR_FAILED_RECURRENCE.
-         - Proposes Clause 14 deduction only citing empirical tripping pass; zero deduction if none.
+         - Proposes Contractual DLP deduction only citing empirical tripping pass; zero deduction if none.
       5. Structured Officer Recommendations:
          - Replaces unilateral autonomous payment releases with recommend_release,
            proposed_deduction, and PENDING_AE_REVIEW / RECOMMENDED_BY_AE approval statuses.
@@ -326,7 +326,7 @@ def evaluate_work_order_concurrence(
     Queries DBRepairAudit and DBRawIngest within 5m lane corridor of the cluster,
     strictly windowed to [t_repair, t_repair + 48h].
     If passes satisfy criteria: updates cluster to 'resolved' and 'REPAIR_VERIFIED'.
-    If shock or cavity detected: updates cluster to 'REPAIR_FAILED_RECURRENCE', proposes Clause 14 penalty,
+    If shock or cavity detected: updates cluster to 'REPAIR_FAILED_RECURRENCE', proposes Contractual DLP penalty,
     and drafts Form 14 notice without unilateral automated escrow debit.
     """
     cluster = db.query(DBDistressCluster).filter(
@@ -491,7 +491,7 @@ def evaluate_work_order_concurrence(
                     optical_status=p.optical_status,
                     audit_verdict="REPAIR_VERIFIED",
                     penalty_debit_inr=0.0,
-                    statutory_clause="MoHUA IRC:SP:20 Clause 14.2 Concurrence Clearance",
+                    statutory_clause="Contractual DLP Clause & Section 63/65B BSA 2023 Concurrence Clearance",
                     notes="Automated multi-pass physical concurrence verified.",
                     verified_at=p.timestamp
                 ))

@@ -96,7 +96,7 @@ SAMPLE_REPAIR_PHOTOS_AFTER = [
 ]
 
 SAMPLE_FIELD_NOTES = [
-    "Compacted 180kg VG-30 cold-mix asphalt under IRC:SP:20 standard. Edge sealed with RS-1 cationic bitumen emulsion.",
+    "Compacted 180kg VG-30 cold-mix asphalt under IRC:82 standard. Edge sealed with RS-1 cationic bitumen emulsion.",
     "Milled damaged asphalt to 60mm depth. Tack-coated and rolled with 8-ton pneumatic roller. Road opened to transit.",
     "Stormwater gully cleared of debris; underpass flood level dropped to 0cm. Slit drainage cover replaced.",
     "Transverse crack routing and hot-poured rubberized bitumen sealant injected. Surface skid resistance verified."
@@ -439,7 +439,7 @@ def generate_synthetic_tick() -> Dict[str, Any]:
             audit_msg = (
                 f"[AUTONOMOUS_FLEET_CLOSURE] Verified closed by Fleet Node {verifying_bus} on re-pass patrol. "
                 f"Telemetry: Gz vertical shock = 0.98g (nominal baseline, threshold < 1.15g). "
-                f"Optical AI: Defect cavity 0% detected per IRC:SP:20 standard. MoHUA cryptographic audit logged."
+                f"Optical AI: Defect cavity 0% detected per IRC:82 standard. MoHUA cryptographic audit logged."
             )
             store.update_cluster_status(
                 cluster_id=c_to_verify["id"],

@@ -787,6 +787,7 @@ export const WebGISMap: React.FC<WebGISMapProps> = ({
           .setLngLat(e.lngLat)
           .setHTML(`
             <div style="font-family: system-ui, -apple-system, sans-serif; font-size: 11px; padding: 4px; min-width: 230px;">
+              <div style="font-size: 9px; text-transform: uppercase; color: #0284c7; font-weight: bold; margin-bottom: 2px;">Illustrative Transit Corridor Trace • Fleet GPS Derived</div>
               <div style="font-weight: 800; font-size: 12px; color: ${p.color || '#06b6d4'}; margin-bottom: 2px;">
                 ${p.name || 'Transit Corridor'}
               </div>
@@ -1770,13 +1771,14 @@ export const WebGISMap: React.FC<WebGISMapProps> = ({
                 <button
                   type="button"
                   onClick={() => setShowODDesireLines(!showODDesireLines)}
+                  title="Aggregate illustrative transit corridor traces derived from fleet GPS routes (no individual or civilian tracking data collected)"
                   className={`flex items-center justify-between p-2 rounded-xl text-left transition cursor-pointer ${
                     showODDesireLines ? 'bg-cyan-50 dark:bg-cyan-950/60 text-cyan-700 dark:text-cyan-300 font-bold' : 'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
                   }`}
                 >
                   <div className="flex items-center gap-2">
                     <TrendingUp className="w-4 h-4 text-cyan-500" />
-                    <span>  OD Transit Desire Lines</span>
+                    <span>OD Transit Corridor Traces (Illustrative)</span>
                   </div>
                   {showODDesireLines && <Check className="w-4 h-4 text-cyan-500" />}
                 </button>
@@ -1978,7 +1980,7 @@ export const WebGISMap: React.FC<WebGISMapProps> = ({
               <div className="bg-slate-900/90 px-3 py-2 border-b border-slate-800/80 flex items-center justify-between">
                 <div className="flex items-center gap-1.5 font-bold text-cyan-400 text-xs">
                   <TrendingUp className="w-4 h-4 text-cyan-400 shrink-0" />
-                  <span>O-D Transit Desire Lines ( )</span>
+                  <span>O-D Transit Corridor Traces (Illustrative)</span>
                 </div>
                 <div className="flex items-center gap-1 text-slate-400">
                   <button
@@ -2000,7 +2002,7 @@ export const WebGISMap: React.FC<WebGISMapProps> = ({
               {!isODTrayMinimized && (
                 <div className="p-3">
                   <p className="text-[10.5px] text-slate-400 mb-2 leading-tight">
-                    Aggregated passenger-load proxies from cabin cameras &amp; bus GPS trip frequencies across city wards.
+                    Aggregated transit passenger-load proxies synthesized from scheduled fleet bus GPS routes and stop frequencies across municipal wards. Strictly contains zero civilian tracking or personal data.
                   </p>
                   <div className="space-y-1.5 font-mono text-[10.5px] max-h-52 overflow-y-auto pr-1 custom-scrollbar">
                     <div className="p-1.5 rounded bg-slate-900 border border-slate-800 flex items-center justify-between">

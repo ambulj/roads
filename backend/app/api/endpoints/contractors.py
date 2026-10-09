@@ -273,7 +273,7 @@ def get_contractor_penalties(
     db: Session = Depends(get_db)
 ):
     """
-    Lists historical IRC:SP:20 Clause 14 penalty dockets with PFMS voucher references,
+    Lists historical Contractual DLP penalty dockets with PFMS voucher references,
     cryptographic SHA-256 evidence links, and patrol bus telemetry proofs.
     """
     query = db.query(DBContractorPenalty)
@@ -306,7 +306,7 @@ def get_contractor_penalties(
             corridor_name=r.corridor_name,
             re_pothole_count=r.re_pothole_count or 1,
             penalty_amount_inr=float(r.penalty_amount_inr),
-            statutory_clause=r.statutory_clause or "MoHUA IRC:SP:20 Clause 14.2 & Section 63 BSA 2023",
+            statutory_clause=r.statutory_clause or "Contractual DLP Clause & Section 63/65B BSA 2023",
             status=r.status or "UNDER_NOTICE_CURE_PERIOD",
             notice_status=r.notice_status or r.status or "UNDER_NOTICE_CURE_PERIOD",
             pfms_txn_ref=r.pfms_txn_ref,
@@ -403,7 +403,7 @@ def get_contractor_escrow(contractor_id: str, db: Session = Depends(get_db)):
 async def post_auto_debit(payload: AutoDebitRequest, db: Session = Depends(get_db)):
     """
     Submits fresh telematics proving recurrent pavement distress on a resolved work order.
-    Executes automated IRC:SP:20 Clause 14 penalty debit, deducts from escrow,
+    Executes automated Contractual DLP penalty debit, deducts from Security Deposit / Retention Money,
     and returns a cryptographically signed PFMS transaction voucher.
     """
     cluster = db.query(DBDistressCluster).filter(
@@ -650,7 +650,7 @@ def get_form14_notice_pack(penalty_id: str, db: Session = Depends(get_db)):
     return {
         "notice_docket_no": penalty.notice_docket_no or f"FORM-14/DLP/2026/{penalty.cluster_code}",
         "penalty_id": penalty.id,
-        "statutory_act": "Bharatiya Sakshya Adhiniyam 2023 (Section 63 / 65B) & IRC:SP:20 Clause 14.2",
+        "statutory_act": "Bharatiya Sakshya Adhiniyam 2023 (Section 63 / 65B) & Contractual DLP Clause",
         "issued_at": penalty.issued_at,
         "cure_deadline": penalty.cure_deadline,
         "status": penalty.status,

@@ -597,7 +597,7 @@ def init_db():
             for t in INITIAL_TRAFFIC_SEEDS:
                 db.add(DBTrafficDensity(**t))
 
-        # ── Seed contractors (IRC:SP:20 Cl 14 & Escrow) ──────────────────────
+        # ── Seed contractors (Contractual DLP Cl 16/17 & SD/Retention) ───
         if db.query(DBContractor).count() == 0:
             initial_contractors = [
                 {
@@ -664,7 +664,7 @@ def init_db():
             for c in initial_contractors:
                 db.add(DBContractor(**c))
 
-        # ── Seed contractor penalties (MoHUA IRC:SP:20 Cl 14.2) ───────────────
+        # ── Seed contractor penalties (Contractual DLP & BSA 2023) ─────────
         if db.query(DBContractorPenalty).count() == 0:
             penalties = [
                 {
@@ -674,7 +674,7 @@ def init_db():
                     "corridor_name": "GST Road, Tambaram (NH-32)",
                     "re_pothole_count": 4,
                     "penalty_amount_inr": 45000.0,
-                    "statutory_clause": "MoHUA IRC:SP:20 Clause 14.2 (Defect Liability Recurrence)",
+                    "statutory_clause": "Contractual DLP Clause & Section 63/65B BSA 2023",
                     "status": "DEBIT_ISSUED",
                     "provenance": "DERIVED_FROM_RECURRENT_DISTRESS",
                     "issued_at": "12 Feb 2026"
@@ -686,7 +686,7 @@ def init_db():
                     "corridor_name": "Anna Salai Arterial Link",
                     "re_pothole_count": 3,
                     "penalty_amount_inr": 30000.0,
-                    "statutory_clause": "MoHUA IRC:SP:20 Clause 14.2",
+                    "statutory_clause": "Contractual DLP Clause & Section 63/65B BSA 2023",
                     "status": "DEBIT_ISSUED",
                     "provenance": "DERIVED_FROM_RECURRENT_DISTRESS",
                     "issued_at": "18 Feb 2026"
@@ -794,8 +794,8 @@ def init_db():
                 compaction_pct=98.2,
                 bitumen_content_pct=5.4,
                 compliance_status="PASSED_MoRTH_SPEC",
-                statutory_spec="MoRTH Section 500 / IRC:SP:20",
-                provenance="IRC_SP20_LAB_CALIBRATED_BENCHMARK",
+                statutory_spec="MoRTH Section 500 / IRC:82:2015",
+                provenance="IRC_82_LAB_CALIBRATED_BENCHMARK",
                 audited_at="02 Sept 2026"
             ))
 

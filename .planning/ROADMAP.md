@@ -44,7 +44,7 @@ RoadSaathi v4.0 grounds the entire municipal intelligence platform in rigorous r
 ### Milestone v6.0: Municipal Credibility, Real AI Inference & Physical Concurrence Hardening (Active)
 - [x] **Phase 18: ANPR Integrity & Real Character Inference** - Wire trained character detector (`anpr.pt`), eliminate pixel coordinate plate fabrication & fixed 0.94/0.95 floors, route low-confidence plates to human review queue, and unify brand as RoadSaathi.
 - [x] **Phase 19: Physical Concurrence & Officer-Certified Gating** - Time-windowed post-repair query (strictly after repair date within 48h), speed-normalized shock jerk ($G_{norm}$), fail-closed sensor handling, 3–5m lane tolerance, replace automatic debits with AE/EE officer recommendation workflows, and structured triage fields.
-- [ ] **Phase 20: Statutory & Financial Standards Rectification** - Rectify IRC:SP:20 citations to contractual DLP clauses, replace PFMS escrow vouchers with Security Deposit/Retention Money terminology, add rectangular saw-cut box trim (+15%) and compaction allowances to repair estimates, and attribute datasets.
+- [x] **Phase 20: Statutory & Financial Standards Rectification** - Rectify IRC:SP:20 citations to contractual DLP clauses, replace PFMS escrow vouchers with Security Deposit/Retention Money terminology, add rectangular saw-cut box trim (+15%) and compaction allowances to repair estimates, and attribute datasets.
 - [ ] **Phase 21: AI Ground Truth, PCU Alignment & Metric Honesty** - Display true model weights training metrics (zebra 0.993, anpr 0.693, pothole 0.471, vehicle 0.404, indian_roads 0.219), align vehicle counts to `indian_roads_detection.pt` with official IRC:106-1990 Urban PCU tables, fix light-theme text contrast, and remove unsubstantiated marketing claims.
 
 ---
@@ -188,7 +188,7 @@ Phases execute in numeric order: 15 → 16 → 17 → 18 → 19 → 20 → 21
 | 17. Multi-Camera Urban Sensing & Missing Infrastructure Perception | 1/1 | Complete | 2026-10-09 |
 | 18. ANPR Integrity & Real Character Inference | 1/1 | Complete | 2026-10-10 |
 | 19. Physical Concurrence & Officer-Certified Gating | 1/1 | Complete | 2026-10-10 |
-| 20. Statutory & Financial Standards Rectification | 0/1 | Pending | - |
+| 20. Statutory & Financial Standards Rectification | 1/1 | Complete | 2026-10-10 |
 | 21. AI Ground Truth, PCU Alignment & Metric Honesty | 0/1 | Pending | - |
 
 ---

@@ -61,10 +61,10 @@
 - [x] **GATE-01**: Time-windowed post-repair concurrence (`WHERE captured_at >= repair_completed_at AND captured_at <= repair_completed_at + 48h`) with 3–5m lane-aligned corridor tolerance and speed-normalized shock jerk ($G_{norm} = \frac{|G_z - 1.0|}{v / 30}$).
 - [x] **GATE-02**: Fail-closed telemetry handling (missing `vertical_gz` or `optical_status` marked as `NO_DATA`, never clean passes) and complete elimination of fallback fabricated penalty values (`failing_gz = 1.48`, `BUS-04`).
 - [x] **OFFICER-01**: Officer-certified recommendation workflows replacing unilateral auto-debits with AE/EE sign-off (`proposed_deduction` and `recommend_release`), plus structured defect triage fields (`acknowledged_at`, `assigned_officer_id`, structured rejection reasons).
-- [ ] **STATUTE-03**: Contractual Defect Liability Period (DLP) citations replacing rural manual "IRC:SP:20 Clause 14" across models, notices, API payloads, and UI ledgers.
-- [ ] **FINANCE-01**: Municipal financial standards alignment: replace "escrow" and `PFMS/DLP-ESCROW` voucher tokens with Security Deposit (SD) / Retention Money (`PFMS/DLP-RETENTION`).
-- [ ] **CIVIL-01**: IRC:82 civil engineering patch cost calculations with +15% rectangular saw-cut trim margin and +10% compaction allowance in volume and PWD SOR estimates.
-- [ ] **ATTRIB-01**: Public dataset attribution for Roboflow CC BY 4.0 vision weights, and explicit labeling of OD desire lines as aggregate illustrative transit traces.
+- [x] **STATUTE-03**: Contractual Defect Liability Period (DLP) citations replacing rural manual "IRC:SP:20 Clause 14" across models, notices, API payloads, and UI ledgers.
+- [x] **FINANCE-01**: Municipal financial standards alignment: replace "escrow" and `PFMS/DLP-ESCROW` voucher tokens with Security Deposit (SD) / Retention Money (`PFMS/DLP-RETENTION`).
+- [x] **CIVIL-01**: IRC:82 civil engineering patch cost calculations with +15% rectangular saw-cut trim margin and +10% compaction allowance in volume and PWD SOR estimates.
+- [x] **ATTRIB-01**: Public dataset attribution for Roboflow CC BY 4.0 vision weights, and explicit labeling of OD desire lines as aggregate illustrative transit traces.
 
 ---
 
@@ -91,7 +91,7 @@
 | SENSE-01 .. SENSE-02 | v5.0 | Phase 17 | Complete |
 | ANPR-01 .. ANPR-02, BRAND-01 | v6.0 | Phase 18 | Complete |
 | GATE-01 .. GATE-02, OFFICER-01 | v6.0 | Phase 19 | Complete |
-| STATUTE-03, FINANCE-01, CIVIL-01, ATTRIB-01 | v6.0 | Phase 20 | Pending |
+| STATUTE-03, FINANCE-01, CIVIL-01, ATTRIB-01 | v6.0 | Phase 20 | Complete |
 
 ---
 *Requirements updated: 2026-10-10 for Milestone v6.0 initiation*

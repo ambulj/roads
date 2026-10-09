@@ -130,7 +130,7 @@ export const DocumentExportModal: React.FC<DocumentExportModalProps> = ({
                     Draft Notice of Liquidated Damages &amp; SLA Breach
                   </h1>
                   <p className="text-[10px] font-mono text-slate-600">
-                    Generated under MoHUA IRC:SP:20 Clause 14.2 &amp; GCC Tender Guidelines
+                    Generated under Contractual DLP Clause &amp; Section 63/65B BSA 2023 &amp; GCC Tender Guidelines
                   </p>
                 </div>
 
@@ -178,7 +178,7 @@ export const DocumentExportModal: React.FC<DocumentExportModalProps> = ({
                   </thead>
                   <tbody>
                     <tr>
-                      <td className="border border-slate-400 p-2">IRC:SP:20 Cl. 14.2</td>
+                      <td className="border border-slate-400 p-2">Contractual DLP Cl. 16/17 &amp; BSA 2023</td>
                       <td className="border border-slate-400 p-2">Defect Liability Guarantee Breach Penalty</td>
                       <td className="border border-slate-400 p-2 text-right font-bold">₹25,000</td>
                     </tr>

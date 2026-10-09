@@ -657,7 +657,7 @@ class ZeroHardwareStreamManager:
                                 id=c_id,
                                 cluster_code=wo_code,
                                 defect_type=defect_type,
-                                defect_name=d.get("defect_name", "Pothole Cavity (IRC:SP:20)"),
+                                defect_name=d.get("defect_name", "Pothole Cavity (IRC:82:2015)"),
                                 severity_level=d.get("severity", "critical"),
                                 rpi_score=round(d.get("confidence", 0.9) * 100, 1),
                                 pass_count=1,

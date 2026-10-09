@@ -24,6 +24,7 @@ from app.services.contractor_service import (
     sign_form14_notice,
     enforce_liquidated_damages,
     dismiss_penalty_on_cure,
+    calculate_irc82_patch_estimate,
 )
 from app.spatial.poi_database import haversine_distance_m
 
@@ -41,7 +42,7 @@ def test_db():
 
 
 def test_tiered_penalty_formula():
-    """Validates IRC:SP:20 Clause 14 tiered escalation: ₹25k (1st), ₹50k (2nd), ₹100k + GeM notice (3rd+)."""
+    """Validates Contractual DLP Clause tiered escalation: ₹25k (1st), ₹50k (2nd), ₹100k + GeM notice (3rd+)."""
     # 1st recurrence
     p1 = calculate_clause14_penalty(1)
     amt1, debar1 = p1
@@ -407,10 +408,10 @@ def test_pfms_txn_ref_format():
     dt = datetime.datetime(2026, 10, 6, 15, 30, 0, tzinfo=datetime.timezone.utc)
     voucher = generate_pfms_voucher_ref(dt)
     
-    # Must match PFMS/DLP-ESCROW/{YYYY}/{MMDD}-{HEX6}
-    pattern = r"^PFMS/DLP-ESCROW/\d{4}/\d{4}-[A-F0-9]{6}$"
+    # Must match PFMS/(DLP-RETENTION|DLP-ESCROW)/{YYYY}/{MMDD}-{HEX6}
+    pattern = r"^PFMS/(DLP-RETENTION|DLP-ESCROW)/\d{4}/\d{4}-[A-F0-9]{6}$"
     assert re.match(pattern, voucher) is not None
-    assert voucher.startswith("PFMS/DLP-ESCROW/2026/1006-")
+    assert voucher.startswith("PFMS/DLP-RETENTION/2026/1006-")
 
     # Evidence hash must be exactly 64 hexadecimal characters
     cin = "U45203TN2001PLC047123"
@@ -517,7 +518,7 @@ def test_post_auto_debit_endpoint(client):
     assert data["success"] is True
     assert data["cluster_code"] == cluster_code
     assert data["penalty_amount_inr"] in (25000.0, 50000.0, 100000.0)
-    assert re.match(r"^PFMS/DLP-ESCROW/\d{4}/\d{4}-[A-F0-9]{6}$", data["pfms_txn_ref"]) is not None
+    assert re.match(r"^PFMS/(DLP-RETENTION|DLP-ESCROW)/\d{4}/\d{4}-[A-F0-9]{6}$", data["pfms_txn_ref"]) is not None
     assert len(data["evidence_sha256"]) == 64
     assert data["remaining_deposit_inr"] >= 0.0
 
@@ -533,4 +534,111 @@ def test_debarments_endpoint(client):
         assert "contractor_name" in deb
         assert "debarment_status" in deb
         assert "gem_portal_reference" in deb
+
+
+def test_statutory_clause_contractual_dlp(test_db):
+    """Asserts DBContractorPenalty default and Form 14 notice generator use Contractual DLP Clause & Section 63/65B BSA 2023."""
+    assert DBContractorPenalty.__table__.columns['statutory_clause'].default.arg == "Contractual DLP Clause & Section 63/65B BSA 2023"
+
+    pen = DBContractorPenalty(
+        id="pen-stat-test",
+        contractor_name="L&T Highways Infra Ltd",
+        cluster_code="WO-STAT-01",
+        corridor_name="GST Road",
+        penalty_amount_inr=25000.0,
+    )
+    test_db.add(pen)
+    test_db.commit()
+    test_db.refresh(pen)
+    assert pen.statutory_clause == "Contractual DLP Clause & Section 63/65B BSA 2023"
+
+    # Add contractor and existing penalties so re_pothole_count >= 3 to trigger Form 14 debarment reason
+    contractor = DBContractor(
+        id="CTR-STAT-01",
+        name="L&T Highways Infra Ltd",
+        cin="U45203TN2001PLC047123",
+        director="Er. R. Sundararaman",
+        assigned_corridor="Anna Salai",
+        zone="Zone 05",
+        security_deposit_inr=5000000.0,
+        penalties_deducted_inr=0.0
+    )
+    test_db.add(contractor)
+    # Add two existing penalties for this contractor
+    test_db.add(DBContractorPenalty(
+        id="pen-stat-prev1",
+        contractor_id="CTR-STAT-01",
+        contractor_name="L&T Highways Infra Ltd",
+        cluster_code="WO-PREV-01",
+        corridor_name="Anna Salai",
+        penalty_amount_inr=25000.0
+    ))
+    test_db.add(DBContractorPenalty(
+        id="pen-stat-prev2",
+        contractor_id="CTR-STAT-01",
+        contractor_name="L&T Highways Infra Ltd",
+        cluster_code="WO-PREV-02",
+        corridor_name="Anna Salai",
+        penalty_amount_inr=50000.0
+    ))
+    test_db.commit()
+
+    cluster = DBDistressCluster(
+        id="cl-stat-gen",
+        cluster_code="WO-STAT-02",
+        defect_type="pothole",
+        defect_name="Recurrent Void",
+        severity_level="critical",
+        rpi_score=85.0,
+        road_name="Anna Salai",
+        classification="Arterial Highway",
+        assigned_agency="L&T Highways Infra Ltd",
+        contractor_id="CTR-STAT-01",
+        status="resolved",
+        lat=13.0400,
+        lng=80.2400
+    )
+    test_db.add(cluster)
+    test_db.commit()
+
+    notice = issue_form14_show_cause_notice(
+        db=test_db,
+        cluster=cluster,
+        measured_gz=1.45,
+        bus_id="BUS-TN01-1042"
+    )
+    assert notice.statutory_clause == "Contractual DLP Clause & Section 63/65B BSA 2023"
+
+    repair_audit = test_db.query(DBRepairAudit).filter(DBRepairAudit.cluster_id == cluster.id).first()
+    assert repair_audit is not None
+    assert repair_audit.statutory_clause == "Contractual DLP Clause & Section 63/65B BSA 2023"
+
+    # Verify debarment docket reason contains statutory clause
+    debarment = test_db.query(DBContractorDebarment).filter(DBContractorDebarment.contractor_name == contractor.name).first()
+    assert debarment is not None
+    assert "Contractual DLP Clause & Section 63/65B BSA 2023" in debarment.reason
+
+
+def test_irc82_patch_estimation_logic():
+    """Asserts IRC:82 patch calculation evaluates 1.265x volume factor, 2.35 kg/L bulk density, and PWD SOR cost."""
+    est = calculate_irc82_patch_estimate(cavity_area_m2=0.65, depth_cm=8.4)
+    assert est["raw_cavity_liters"] == 54.6
+    assert est["patch_volume_liters"] == 69.07
+    assert est["asphalt_mass_kg"] == 162.3
+    assert est["repair_cost_inr"] == 11037.0
+    assert est["saw_cut_margin_pct"] == 15.0
+    assert est["compaction_factor"] == 1.10
+    assert est["density_kg_l"] == 2.35
+    assert est["rate_inr_per_kg"] == 68.0
+
+
+def test_model_registry_dataset_attributions():
+    """Asserts ModelRegistry returns CC BY 4.0 dataset attributions for public weights."""
+    from app.services.model_registry import ModelRegistry
+    status = ModelRegistry().get_status()
+    models = status.get("models", {})
+    assert "pothole_yolo" in models
+    assert "Roboflow Universe - Pothole Detection Dataset (CC BY 4.0)" in models["pothole_yolo"]["dataset_attribution"]
+    assert "zebra_crossing_detector" in models
+    assert "Roboflow Universe - Pedestrian Zebra Crossing Dataset (CC BY 4.0)" in models["zebra_crossing_detector"]["dataset_attribution"]
 

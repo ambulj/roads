@@ -704,7 +704,7 @@ export const INITIAL_ROAD_MEMORY_CORRIDORS: RoadMemoryCorridor[] = [
         date: '1 Week Ago',
         type: 'WORK_ORDER',
         title: 'Emergency Milling & Asphalt Overlay Scheduled',
-        description: 'Tender assigned to Highway Maintenance Zone 2 with strict IRC:SP:20 compliance.',
+        description: 'Tender assigned to Highway Maintenance Zone 2 with strict Contractual DLP compliance.',
         severity: 'medium'
       }
     ]
@@ -2090,7 +2090,7 @@ class ApiService {
         verification_rate_pct: 92.5,
         total_audited_repairs: 22,
         total_penalties_recovered_inr: 75000,
-        governing_code: "MoHUA IRC:SP:20 Clause 14.2"
+        governing_code: "Contractual DLP Clause & Section 63/65B BSA 2023"
       },
       recent_audits: []
     };
@@ -2219,7 +2219,7 @@ class ApiService {
         { budget_lakhs: 50, benefit_points: 1850, interventions_count: 22 }
       ],
       optimization_algorithm: "Dynamic_Programming_01_Knapsack_Exact",
-      statutory_mandate: "MoRTH Section 198A & IRC:SP:20 Priority Allocation"
+      statutory_mandate: "MoRTH Section 198A & Priority Allocation"
     };
   }
 
@@ -2275,7 +2275,7 @@ class ApiService {
         statutory_sla_hours: 24
       },
       xai_narrative_explanation: `Audited statutory prioritization trace for ${entityId}.`,
-      recommended_intervention: "Rapid Setting Polymer Patching (IRC:SP:20)"
+      recommended_intervention: "Rapid Setting Polymer Patching (IRC:82)"
     };
   }
 
@@ -2424,7 +2424,7 @@ class ApiService {
             penaltyDebitInr: p.penalty_amount_inr ?? p.penaltyDebitInr ?? 25000,
             remainingDepositInr: p.remaining_deposit_inr ?? 4975000,
             pfmsTxnRef: p.pfms_txn_ref || p.pfmsTxnRef || `PFMS/DLP-DEBIT/2026/${p.id}`,
-            clause: p.statutory_clause || p.clause || 'MoHUA IRC:SP:20 Clause 14.2 & Section 63 BSA 2023',
+            clause: p.statutory_clause || p.clause || 'Contractual DLP Clause & Section 63/65B BSA 2023',
             status: p.status || 'UNDER_NOTICE_CURE_PERIOD',
             evidenceSha256: p.evidence_sha256 || p.evidence_hash,
             noticeDocketNo: p.notice_docket_no || p.noticeDocketNo,
@@ -2761,7 +2761,7 @@ export const INITIAL_AUTO_DEBITS_DATA: AutoDebitRecord[] = [
     penaltyDebitInr: 25000,
     remainingDepositInr: 2720000,
     pfmsTxnRef: 'PFMS/DLP-DEBIT/2026/0928-8812',
-    clause: 'IRC:SP:20 Clause 14.2 / MoRTH Sec 3000 DLP Penalty',
+    clause: 'Contractual DLP Clause & Section 63/65B BSA 2023',
     status: 'EXECUTED_VIA_PFMS'
   },
   {
@@ -2777,7 +2777,7 @@ export const INITIAL_AUTO_DEBITS_DATA: AutoDebitRecord[] = [
     penaltyDebitInr: 25000,
     remainingDepositInr: 4875000,
     pfmsTxnRef: 'PFMS/DLP-DEBIT/2026/0926-4401',
-    clause: 'IRC:SP:20 Clause 14.2 / MoRTH Sec 3000 DLP Penalty',
+    clause: 'Contractual DLP Clause & Section 63/65B BSA 2023',
     status: 'EXECUTED_VIA_PFMS'
   }
 ];
@@ -2947,7 +2947,7 @@ export const INITIAL_PENALTIES: ContractorPenaltyDebit[] = [
     recurrence_distance_meters: 1.8,
     defect_type: "D40 (Pothole Cavity Recurrence)",
     penalty_amount_inr: 25000,
-    legal_clause: "MoHUA IRC:SP:20 Clause 14.2 (Defect Liability Guarantee)",
+    legal_clause: "Contractual DLP Clause & Section 63/65B BSA 2023 (Defect Liability Guarantee)",
     bank_guarantee_deducted: true,
     status: "DEBIT_CONFIRMED"
   },
@@ -2963,7 +2963,7 @@ export const INITIAL_PENALTIES: ContractorPenaltyDebit[] = [
     recurrence_distance_meters: 2.4,
     defect_type: "D40 (Pothole Cavity Recurrence)",
     penalty_amount_inr: 25000,
-    legal_clause: "MoHUA IRC:SP:20 Clause 14.2 (Defect Liability Guarantee)",
+    legal_clause: "Contractual DLP Clause & Section 63/65B BSA 2023 (Defect Liability Guarantee)",
     bank_guarantee_deducted: true,
     status: "DEBIT_CONFIRMED"
   }
@@ -3077,7 +3077,7 @@ export const INITIAL_DEBARMENTS: ContractorDebarmentDossier[] = [
     debarment_status: "STATUTORY_BARRED",
     debarment_order_no: "GCC/RD/2026/DB-084",
     gem_portal_notified: true,
-    statutory_clause: "MoHUA Rule 151(iii) GFR 2017 & IRC:SP:20 Clause 14.2",
+    statutory_clause: "MoHUA Rule 151(iii) GFR 2017 & Contractual DLP Clause",
     valid_until: "31 Dec 2027 (2-Year Bar)"
   },
   {
@@ -3092,7 +3092,7 @@ export const INITIAL_DEBARMENTS: ContractorDebarmentDossier[] = [
     debarment_status: "PROBATION",
     debarment_order_no: "SHOW-CAUSE-SC-2026-11",
     gem_portal_notified: false,
-    statutory_clause: "IRC:SP:20 Clause 14.2 Defect Audit Review",
+    statutory_clause: "Contractual DLP Clause Defect Audit Review",
     valid_until: "30 Jun 2026 (Under Probation)"
   },
   {

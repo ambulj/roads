@@ -519,7 +519,7 @@ class CopilotEngine:
                 "Contractors with highest SLA breaches",
                 "Corridors with worst road condition",
             ],
-            statutory_context="MoRTH Section 3000 & IRC:SP:20 Pavement Maintenance Standards",
+            statutory_context="MoRTH Section 3000 & Contractual DLP Pavement Maintenance Standards",
         )
 
     def _handle_contractor_audit(
@@ -569,7 +569,7 @@ class CopilotEngine:
                             "Remaining Escrow": f"₹{rem_escrow:,.0f}",
                             "Debarment Risk": c.debarment_risk or "Low",
                         },
-                        description=f"Contractor assigned to {c.assigned_corridor}. Clause 14 penalties accumulated: ₹{float(c.penalties_deducted_inr):,.0f}.",
+                        description=f"Contractor assigned to {c.assigned_corridor}. Contractual DLP penalties accumulated: ₹{float(c.penalties_deducted_inr):,.0f}.",
                         primary_action_label="View Ledger",
                         primary_action_type=CopilotActionType.VIEW_LEDGER,
                         primary_action_payload={"contractor_id": c.id, "contractor_name": c.name},
@@ -644,7 +644,7 @@ class CopilotEngine:
                 "Show unaddressed P0 potholes on GST Road",
                 "Corridors with worst road condition",
             ],
-            statutory_context="IRC:SP:20 Clause 14 & GeM Standard Debarment Conditions",
+            statutory_context="Contractual DLP Clause & GeM Standard Debarment Conditions",
         )
 
     def _handle_corridor_safety(
@@ -778,7 +778,7 @@ class CopilotEngine:
                 "Contractors with highest SLA breaches",
                 "Draft Form 14 notice for L&T breaches",
             ],
-            statutory_context="IRC:SP:20 Clause 14 & MoRTH Pavement Roughness Tolerances",
+            statutory_context="Contractual DLP Clause & MoRTH Pavement Roughness Tolerances",
         )
 
     def _handle_statutory_notice_draft(
@@ -854,7 +854,7 @@ class CopilotEngine:
             "penaltyDebitInr": statutory_penalty_amount,
             "remainingDepositInr": max(0.0, rem_deposit),
             "pfmsTxnRef": pfms_ref,
-            "clause": "IRC:SP:20 Clause 14.2 & BSA 2023 Sec 63/65B",
+            "clause": "Contractual DLP Clause & Section 63/65B BSA 2023",
             "status": "UNDER_NOTICE_CURE_PERIOD",
             "evidenceSha256": evidence_sha256,
             "noticeDocketNo": docket_no,
@@ -893,7 +893,7 @@ class CopilotEngine:
 
         summary = (
             f"Statutory Form 14 notice packet prepared for {target_ctr['name']}. "
-            f"Statutory liquidated penalty of ₹{statutory_penalty_amount:,.0f} calculated under IRC:SP:20 Clause 14.2. "
+            f"Statutory liquidated penalty of ₹{statutory_penalty_amount:,.0f} calculated under Contractual DLP Clause & Section 63/65B BSA 2023. "
             f"Evidentiary pack contains SHA-256 telemetry digest ({evidence_sha256[:12]}...) and 7-day cure window "
             f"expiring {cure_deadline_str}."
         )
@@ -908,7 +908,7 @@ class CopilotEngine:
                 "Show unaddressed P0 potholes on GST Road",
                 "Corridors with worst road condition",
             ],
-            statutory_context="BSA 2023 Section 63/65B Certificate & IRC:SP:20 Clause 14.2",
+            statutory_context="Contractual DLP Clause & Section 63/65B BSA 2023 Certificate",
         )
 
     def _handle_help_guide(self, raw_query: str) -> CopilotQueryResponse:
@@ -924,7 +924,7 @@ class CopilotEngine:
                     "Response Latency": "< 10 ms",
                     "Offline Operation": "100% Local",
                     "Supported Intents": 5,
-                    "Statutory Standards": "IRC:SP:20 & BSA 2023",
+                    "Statutory Standards": "Contractual DLP & BSA 2023",
                 },
                 description=(
                     "You can ask natural language questions regarding road distress, contractor SLA breaches, "
@@ -955,7 +955,7 @@ class CopilotEngine:
             executive_summary=summary,
             cards=cards,
             suggested_queries=SUGGESTED_PROMPTS,
-            statutory_context="MoHUA Road Quality Management & IRC:SP:20 Standard Specifications",
+            statutory_context="MoHUA Road Quality Management & Contractual DLP Standard Specifications",
         )
 
 

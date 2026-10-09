@@ -96,7 +96,7 @@ class RoadMemoryEngine:
         Evaluates a live bus pass against nearby road defects and work orders.
         Independent subsequent bus passes audit contractor repairs automatically:
         - Gz <= 1.08 -> Closes work order as REPAIR_VERIFIED
-        - Gz >= 1.30 -> Flags REPAIR_FAILED_RECURRENCE and issues IRC:SP:20 penalty debit
+        - Gz >= 1.30 -> Flags REPAIR_FAILED_RECURRENCE and issues Contractual DLP penalty debit
         """
         db = SessionLocal()
         try:
@@ -135,7 +135,7 @@ class RoadMemoryEngine:
                             optical_status="SMOOTH_SURFACE_PASS",
                             audit_verdict="REPAIR_VERIFIED",
                             penalty_debit_inr=0.0,
-                            statutory_clause="MoHUA IRC:SP:20 Clause 14.1 (Quality Clearance)",
+                            statutory_clause="Contractual DLP Clause & Section 63/65B BSA 2023 (Quality Clearance)",
                             notes=f"Subsequent transit pass by {bus_id} confirmed smooth pavement (Gz={vertical_gz}). Work order closed.",
                             verified_at=now_iso
                         )
@@ -175,7 +175,7 @@ class RoadMemoryEngine:
                             corridor_name=cluster.road_name,
                             re_pothole_count=1,
                             penalty_amount_inr=penalty_amount,
-                            statutory_clause="MoHUA IRC:SP:20 Clause 14.2 (Defect Recurrence Penalty)",
+                            statutory_clause="Contractual DLP Clause & Section 63/65B BSA 2023 (Defect Recurrence Penalty)",
                             status="DEBIT_ISSUED",
                             provenance="AUTOMATED_BUS_PASS_AUDIT",
                             issued_at=now_iso
@@ -193,7 +193,7 @@ class RoadMemoryEngine:
                             optical_status="RECURRENT_CAVITY_DETECTED",
                             audit_verdict="REPAIR_FAILED_RECURRENCE",
                             penalty_debit_inr=penalty_amount,
-                            statutory_clause="MoHUA IRC:SP:20 Clause 14.2",
+                            statutory_clause="Contractual DLP Clause & Section 63/65B BSA 2023",
                             notes=f"Subsequent transit pass by {bus_id} detected shock anomaly (Gz={vertical_gz}) on freshly closed work order. Penalty debit issued.",
                             verified_at=now_iso
                         )
@@ -286,7 +286,7 @@ class RoadMemoryEngine:
                     "verification_rate_pct": verification_rate_pct,
                     "total_audited_repairs": max(total_audits, 22),
                     "total_penalties_recovered_inr": max(total_penalty_inr, 75000.0),
-                    "governing_code": "MoHUA IRC:SP:20 Clause 14.2"
+                    "governing_code": "Contractual DLP Clause & Section 63/65B BSA 2023"
                 },
                 "recent_audits": audit_records
             }
@@ -478,7 +478,7 @@ class RoadMemoryEngine:
                         "Repeated surface fatigue (>3 cycles) indicates sub-base moisture pumping or subgrade failure. "
                         "Surface patch repair non-compliant; requires full-depth milling, granular sub-base stabilization, "
                         "and 50mm DBM + 40mm Bituminous Concrete overlay."
-                        if is_chronic else "IRC:SP:20 Routine Pavement Surface Maintenance (Pot-hole patching permitted)"
+                        if is_chronic else "IRC:82:2015 Routine Pavement Surface Maintenance (Pot-hole patching permitted)"
                     ),
                     "action_required": "FULL_DEPTH_RECONSTRUCTION_IRC37" if is_chronic else "LOCAL_PATCH_REPAIR",
                     "estimated_rehab_budget_lakhs": round(max(3.5, cluster_count * 2.2 + rec_count * 4.5), 1)

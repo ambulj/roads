@@ -301,7 +301,7 @@ class PersistentStore:
                 "recurrence_distance_meters": 1.8,
                 "defect_type": "D40 (Pothole Cavity Recurrence)",
                 "penalty_amount_inr": 25000,
-                "legal_clause": "MoHUA IRC:SP:20 Clause 14.2 (Defect Liability Guarantee)",
+                "legal_clause": "Contractual DLP Clause & Section 63/65B BSA 2023",
                 "bank_guarantee_deducted": True,
                 "status": "DEBIT_CONFIRMED"
             },
@@ -317,7 +317,7 @@ class PersistentStore:
                 "recurrence_distance_meters": 2.4,
                 "defect_type": "D40 (Pothole Cavity Recurrence)",
                 "penalty_amount_inr": 25000,
-                "legal_clause": "MoHUA IRC:SP:20 Clause 14.2 (Defect Liability Guarantee)",
+                "legal_clause": "Contractual DLP Clause & Section 63/65B BSA 2023",
                 "bank_guarantee_deducted": True,
                 "status": "DEBIT_CONFIRMED"
             }
@@ -485,7 +485,7 @@ class PersistentStore:
                 "debarment_status": "STATUTORY_BARRED",
                 "debarment_order_no": "GCC/RD/2026/DB-084",
                 "gem_portal_notified": True,
-                "statutory_clause": "MoHUA Rule 151(iii) GFR 2017 & IRC:SP:20 Clause 14.2",
+                "statutory_clause": "MoHUA Rule 151(iii) GFR 2017 & Contractual DLP Clause",
                 "valid_until": "31 Dec 2027 (2-Year Bar)"
             },
             {
@@ -500,7 +500,7 @@ class PersistentStore:
                 "debarment_status": "PROBATION",
                 "debarment_order_no": "SHOW-CAUSE-SC-2026-11",
                 "gem_portal_notified": False,
-                "statutory_clause": "IRC:SP:20 Clause 14.2 Defect Audit Review",
+                "statutory_clause": "Contractual DLP Clause Defect Audit Review",
                 "valid_until": "30 Jun 2026 (Under Probation)"
             },
             {
@@ -867,7 +867,7 @@ class PersistentStore:
                         "debarment_status": "STATUTORY_BARRED",
                         "debarment_order_no": r.gem_portal_reference,
                         "gem_portal_notified": True,
-                        "statutory_clause": "MoHUA Rule 151(iii) GFR 2017 & IRC:SP:20",
+                        "statutory_clause": "MoHUA Rule 151(iii) GFR 2017 & Contractual DLP Clause",
                         "valid_until": "31 Dec 2026",
                         "provenance": "STATUTORY_GFR_151_DOCKET"
                     }

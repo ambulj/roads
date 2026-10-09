@@ -130,7 +130,7 @@ CREATE TABLE IF NOT EXISTS traffic_density (
 );
 CREATE INDEX IF NOT EXISTS idx_traffic_density_bottleneck ON traffic_density(is_bottleneck);
 
--- 6. Statutory Contractor Penalties (MoHUA IRC:SP:20 Cl 14.2)
+-- 6. Statutory Contractor Penalties (Contractual DLP Clause & Section 63/65B BSA 2023)
 CREATE TABLE IF NOT EXISTS contractor_penalties (
     id VARCHAR(64) PRIMARY KEY,
     contractor_name VARCHAR(128) NOT NULL,
@@ -138,7 +138,7 @@ CREATE TABLE IF NOT EXISTS contractor_penalties (
     corridor_name VARCHAR(255) NOT NULL,
     re_pothole_count INT DEFAULT 1,
     penalty_amount_inr NUMERIC(10, 2) NOT NULL,
-    statutory_clause VARCHAR(128) DEFAULT 'MoHUA IRC:SP:20 Clause 14.2',
+    statutory_clause VARCHAR(128) DEFAULT 'Contractual DLP Clause & Section 63/65B BSA 2023',
     status VARCHAR(32) DEFAULT 'DEBIT_ISSUED',
     provenance VARCHAR(64) DEFAULT 'DERIVED_FROM_RECURRENT_DISTRESS',
     issued_at VARCHAR(64)

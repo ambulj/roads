@@ -219,7 +219,7 @@ export const WorkOrders: React.FC<WorkOrdersProps> = ({ clusters, onUpdateStatus
         setTimeout(() => {
           setDrillStep(4);
           // Step 4: Fleet Re-pass Autonomous Closure
-          const auditNotes = `[AUTONOMOUS_FLEET_CLOSURE] Verified closed by Fleet Node BUS-MTC-19B on re-pass patrol. Telemetry: Gz vertical shock = 0.98g (nominal baseline, threshold < 1.15g). Optical AI: Defect cavity 0% detected per IRC:SP:20 standard. MoHUA cryptographic audit logged.`;
+          const auditNotes = `[AUTONOMOUS_FLEET_CLOSURE] Verified closed by Fleet Node BUS-MTC-19B on re-pass patrol. Telemetry: Gz vertical shock = 0.98g (nominal baseline, threshold < 1.15g). Optical AI: Defect cavity 0% detected per IRC:82 standard. MoHUA cryptographic audit logged.`;
           
           onUpdateStatus(
             newClusterId,
@@ -434,7 +434,7 @@ export const WorkOrders: React.FC<WorkOrdersProps> = ({ clusters, onUpdateStatus
                 </span>
               </div>
               <p className="text-[11.5px] text-slate-500 dark:text-slate-400 mt-1 leading-none">
-                Autonomous IRC:SP:20 dispatch, statutory SLA compliance &amp; multi-pass concurrence verification.
+                Autonomous Contractual DLP dispatch, statutory SLA compliance &amp; multi-pass concurrence verification.
               </p>
             </div>
           </div>
@@ -580,7 +580,7 @@ export const WorkOrders: React.FC<WorkOrdersProps> = ({ clusters, onUpdateStatus
                   ₹{(activeAtRiskBudget / 100000).toFixed(2)} L
                 </div>
                 <div className="text-[11px] text-amber-600/80 font-medium">
-                  Clause 14 7-Day Cure Window Exposure
+                  Contractual DLP 7-Day Cure Window Exposure
                 </div>
               </div>
               <SvgGauge

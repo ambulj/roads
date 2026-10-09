@@ -206,7 +206,7 @@ class DBContractorPenalty(Base):
     corridor_name = Column(String(255), nullable=False)
     re_pothole_count = Column(Integer, default=1)
     penalty_amount_inr = Column(Float, nullable=False)
-    statutory_clause = Column(String(128), default="MoHUA IRC:SP:20 Clause 14.2 & Section 63 BSA 2023")
+    statutory_clause = Column(String(128), default="Contractual DLP Clause & Section 63/65B BSA 2023")
     status = Column(String(32), default="UNDER_NOTICE_CURE_PERIOD") # UNDER_NOTICE_CURE_PERIOD, NOTICE_SERVED, LIQUIDATED_DAMAGES_ENFORCED, CURED_BY_CONTRACTOR, DEBIT_ISSUED
     notice_status = Column(String(32), default="UNDER_NOTICE_CURE_PERIOD")
     provenance = Column(String(64), default="DERIVED_FROM_RECURRENT_DISTRESS")
@@ -300,7 +300,7 @@ class DBRepairAudit(Base):
     optical_status = Column(String(64), default="SMOOTH_SURFACE")
     audit_verdict = Column(String(32), nullable=False)  # REPAIR_VERIFIED, REPAIR_FAILED_RECURRENCE, AWAITING_PASS
     penalty_debit_inr = Column(Float, default=0.0)
-    statutory_clause = Column(String(128), default="MoHUA IRC:SP:20 Clause 14.2")
+    statutory_clause = Column(String(128), default="Contractual DLP Clause & Section 63/65B BSA 2023")
     notes = Column(Text, nullable=True)
     verified_at = Column(String(64))
 
@@ -344,8 +344,8 @@ class DBAsphaltQualityAudit(Base):
     compaction_pct = Column(Float, default=97.5)
     bitumen_content_pct = Column(Float, default=5.2)
     compliance_status = Column(String(32), default="PASSED_MoRTH_SPEC")
-    statutory_spec = Column(String(64), default="MoRTH Section 500 / IRC:SP:20")
-    provenance = Column(String(64), default="IRC_SP20_LAB_CALIBRATED_BENCHMARK")
+    statutory_spec = Column(String(64), default="MoRTH Section 500 / IRC:82:2015")
+    provenance = Column(String(64), default="IRC_82_LAB_CALIBRATED_BENCHMARK")
     audited_at = Column(String(64))
 
 class DBRoadMemoryCorridor(Base):

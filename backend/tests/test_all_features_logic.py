@@ -1,7 +1,7 @@
 """
 Comprehensive Feature Logic Verification Test Suite for RoadSaathi
 Tests:
-1. 3D Mesh Depth, Area, Volumetric & MoRTH Cost Calculations (IRC:SP:20 & MoRTH)
+1. 3D Mesh Depth, Area, Volumetric & MoRTH Cost Calculations (IRC:82 & MoRTH Section 500)
 2. Spatial DBSCAN 15m Deduplication & Pass Count Accumulation
 3. Road Priority Index (RPI) Dynamic Weighting Algorithm
 4. Contractor Work Order Lifecycle & SLA Compliance
@@ -28,28 +28,35 @@ def test_3d_mesh_depth_and_volumetric_logic():
     
     area_m2 = 0.65
     depth_cm = 8.4
-    density_kg_per_m3 = 2300.0
+    saw_cut_margin_pct = 15.0
+    compaction_factor = 1.10
+    total_irc82_factor = 1.265 # 1.15 * 1.10
+    density_kg_per_m3 = 2350.0 # 2.35 g/cm³ MoRTH Sec 500 DBM
     rate_inr_per_kg = 68.0
     
-    volume_m3 = area_m2 * (depth_cm / 100.0)
-    volume_liters = round(volume_m3 * 1000.0, 1)
-    asphalt_kg = round(volume_m3 * density_kg_per_m3)
+    raw_volume_m3 = area_m2 * (depth_cm / 100.0)
+    raw_volume_liters = round(raw_volume_m3 * 1000.0, 1)
+    
+    # Calibrated IRC:82 Volume (+15% rectangular saw-cut margin, +10% bulk compaction)
+    volume_liters = round(raw_volume_liters * total_irc82_factor, 1)
+    asphalt_kg = round((volume_liters / 1000.0) * density_kg_per_m3, 1)
     cost_inr = round(asphalt_kg * rate_inr_per_kg)
     
     print(f'  [D40 Pothole] Area: {area_m2} m2, Depth: {depth_cm} cm')
-    print(f'  -> Reconstructed Cavity Volume: {volume_liters} Liters ({volume_m3:.4f} m3)')
+    print(f'  -> Reconstructed Cavity Volume: {raw_volume_liters} Liters ({raw_volume_m3:.4f} m3)')
+    print(f'  -> Calibrated IRC:82 Patch Volume: {volume_liters} Liters')
     print(f'  -> Required Hot-Mix DBM: {asphalt_kg} kg')
     print(f'  -> Estimated Repair Cost: Rs {cost_inr}')
     
-    assert volume_liters > 50.0 and volume_liters < 60.0
-    assert asphalt_kg > 120 and asphalt_kg < 135
-    assert cost_inr > 8000 and cost_inr < 9500
+    assert volume_liters > 65.0 and volume_liters < 75.0
+    assert asphalt_kg > 155 and asphalt_kg < 170
+    assert cost_inr > 10500 and cost_inr < 11800
     
     crack_area_m2 = 0.28
     crack_depth_cm = 3.5
-    crack_vol_m3 = crack_area_m2 * (crack_depth_cm / 100.0)
-    crack_vol_liters = round(crack_vol_m3 * 1000.0, 1)
-    crack_asphalt_kg = round(crack_vol_m3 * density_kg_per_m3)
+    crack_raw_vol_m3 = crack_area_m2 * (crack_depth_cm / 100.0)
+    crack_vol_liters = round(crack_raw_vol_m3 * 1000.0 * total_irc82_factor, 1)
+    crack_asphalt_kg = round((crack_vol_liters / 1000.0) * density_kg_per_m3, 1)
     crack_cost_inr = round(crack_asphalt_kg * rate_inr_per_kg)
     
     print(f'  [D20 Crack] Area: {crack_area_m2} m2, Depth: {crack_depth_cm} cm')

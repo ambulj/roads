@@ -348,7 +348,7 @@ class SelfLearningEngine:
                 "training_time_seconds": training_time_s
             },
             "hot_reload_status": "DEPLOYED_TO_ALL_FLEET_NODES",
-            "statutory_compliance": "IRC:SP:20 Empirical AI Retraining Protocol"
+            "statutory_compliance": "IRC:82 / MoRTH Empirical AI Retraining Protocol"
         }
 
     def get_learning_status(self) -> Dict[str, Any]:

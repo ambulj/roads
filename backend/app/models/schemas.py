@@ -393,7 +393,7 @@ class ContractorPenaltyDebit(BaseModel):
     recurrence_distance_meters: float
     defect_type: str
     penalty_amount_inr: int
-    legal_clause: str  # "MoHUA IRC:SP:20 Clause 14.2"
+    legal_clause: str  # "Contractual DLP Clause & Section 63/65B BSA 2023"
     bank_guarantee_deducted: bool
     status: str  # "DEBIT_CONFIRMED" | "UNDER_APPEAL"
 
@@ -452,7 +452,7 @@ class ContractorDebarmentDossier(BaseModel):
     debarment_status: str  # "STATUTORY_BARRED" | "PROBATION" | "ELIGIBLE"
     debarment_order_no: Optional[str] = None
     gem_portal_notified: bool = True
-    statutory_clause: str = "MoHUA Rule 151(iii) GFR 2017 & IRC:SP:20"
+    statutory_clause: str = "MoHUA Rule 151(iii) GFR 2017 & Contractual DLP Clause"
     valid_until: Optional[str] = None
 
 class AsphaltQualityAudit(BaseModel):
@@ -464,7 +464,7 @@ class AsphaltQualityAudit(BaseModel):
     lay_surface_temp_c: float
     statutory_min_temp_c: float
     is_temp_compliant: bool
-    geometric_milling_shape: str  # "RECTANGULAR_IRC_SP20" | "IRREGULAR_NON_COMPLIANT"
+    geometric_milling_shape: str  # "RECTANGULAR_IRC_82" | "IRREGULAR_NON_COMPLIANT"
     compaction_score_pct: float
     qc_certification: str  # "PASSED_MORTH_SEC_500" | "REJECTED_REPAVE_ORDERED"
     audited_at: str

@@ -148,7 +148,7 @@ const INITIAL_AUTO_DEBITS: AutoDebitRecord[] = [
     penaltyDebitInr: 25000,
     remainingDepositInr: 2720000,
     pfmsTxnRef: 'PFMS/DLP-DEBIT/2026/0928-8812',
-    clause: 'IRC:SP:20 Clause 14.2 & BSA 2023 Sec 63/65B',
+    clause: 'Contractual DLP Clause & Section 63/65B BSA 2023',
     status: 'UNDER_NOTICE_7D_CURE',
     evidenceSha256: 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855',
     noticeDocketNo: 'GCC/HW/FORM-14/2026/0928-081',
@@ -169,7 +169,7 @@ const INITIAL_AUTO_DEBITS: AutoDebitRecord[] = [
     penaltyDebitInr: 25000,
     remainingDepositInr: 4875000,
     pfmsTxnRef: 'PFMS/DLP-DEBIT/2026/0926-4401',
-    clause: 'IRC:SP:20 Clause 14.2 & BSA 2023 Sec 63/65B',
+    clause: 'Contractual DLP Clause & Section 63/65B BSA 2023',
     status: 'NOTICE_SERVED',
     evidenceSha256: '9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08',
     noticeDocketNo: 'GCC/HW/FORM-14/2026/0926-079',
@@ -309,8 +309,8 @@ export const ContractorSlaLedger: React.FC<ContractorSlaLedgerProps> = ({ cluste
         thresholdGz: 1.30,
         penaltyDebitInr: debitAmount,
         remainingDepositInr: 2695000,
-        pfmsTxnRef: `PFMS/NOTICE-ESCROW/${Date.now().toString().slice(-8)}`,
-        clause: 'IRC:SP:20 Clause 14.2 & BSA 2023 Sec 63/65B',
+        pfmsTxnRef: `PFMS/DLP-RETENTION/${Date.now().toString().slice(-8)}`,
+        clause: 'Contractual DLP Clause & Section 63/65B BSA 2023',
         status: 'UNDER_NOTICE_7D_CURE',
         evidenceSha256: result?.evidence_hash || '7f8a3c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855',
         noticeDocketNo: docketNo,
@@ -327,7 +327,7 @@ export const ContractorSlaLedger: React.FC<ContractorSlaLedgerProps> = ({ cluste
 
       showSuccessToast(
         "Statutory Form 14 Notice Served",
-        `Docket: ${docketNo}. 7-day cure window initiated under IRC:SP:20 & BSA 2023.`
+        `Docket: ${docketNo}. 7-day cure window initiated under Contractual DLP Clause & Section 63/65B BSA 2023.`
       );
     } catch (err) {
       setIsSimulatingNotice(false);
@@ -371,7 +371,7 @@ export const ContractorSlaLedger: React.FC<ContractorSlaLedgerProps> = ({ cluste
     }
   };
 
-  // Enforce Liquidated Damages Escrow Debit
+  // Enforce Liquidated Damages SD / Retention Deduction
   const handleEnforceLiquidation = async () => {
     if (!selectedDebitRecord || isEnforcing) return;
     setIsEnforcing(true);
@@ -403,11 +403,11 @@ export const ContractorSlaLedger: React.FC<ContractorSlaLedgerProps> = ({ cluste
 
       showSuccessToast(
         "Liquidated Damages Enforced",
-        `₹${selectedDebitRecord.penaltyDebitInr.toLocaleString('en-IN')} debited from bank guarantee escrow.`
+        `₹${selectedDebitRecord.penaltyDebitInr.toLocaleString('en-IN')} deducted from Security Deposit (SD) / Retention Money.`
       );
     } catch (err) {
       setIsEnforcing(false);
-      showErrorToast("Enforcement Failed", "Failed to communicate with municipal escrow treasury.");
+      showErrorToast("Enforcement Failed", "Failed to communicate with municipal treasury.");
     }
   };
 
@@ -456,24 +456,24 @@ export const ContractorSlaLedger: React.FC<ContractorSlaLedgerProps> = ({ cluste
   return (
     <div className="space-y-5 select-none">
       
-      {/* HIGHLIGHTED STATUTORY SHOW-CAUSE NOTICE BANNER: IRC:SP:20 CL 14.2 & BSA 2023 SEC 63/65B */}
+      {/* HIGHLIGHTED STATUTORY SHOW-CAUSE NOTICE BANNER: CONTRACTUAL DLP CLAUSE & BSA 2023 SEC 63/65B */}
       <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-slate-900 via-indigo-950/60 to-slate-900 border border-indigo-500/30 shadow-lg relative overflow-hidden">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 relative z-10">
           <div className="space-y-1.5 max-w-2xl">
             <div className="flex items-center gap-2 flex-wrap">
               <span className="px-2.5 py-0.5 rounded-full bg-indigo-500/20 border border-indigo-500/40 text-indigo-300 font-mono text-[11px] font-bold flex items-center gap-1.5">
                 <FileText className="w-3 h-3 text-indigo-400" />
-                <span>IRC:SP:20 CLAUSE 14.2 &bull; STATUTORY SHOW-CAUSE NOTICE SYSTEM</span>
+                <span>CONTRACTUAL DLP CLAUSE &bull; STATUTORY SHOW-CAUSE NOTICE SYSTEM</span>
               </span>
               <span className="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 text-[10.5px] font-mono font-bold">
                 BSA 2023 SEC 63/65B CERTIFIED
               </span>
             </div>
             <h3 className="text-base sm:text-lg font-bold text-white tracking-tight">
-              Statutory Form 14 Show-Cause Notice &amp; Escrow Governance
+              Statutory Form 14 Show-Cause Notice &amp; Retention Money Governance
             </h3>
             <p className="text-xs text-slate-300 leading-relaxed">
-              When transit fleet buses re-cross repaired defects and confirm recurrent vertical shocks within the active Defect Liability Period (DLP), RoadSaathi serves a statutory Form 14 Show-Cause Notice with a <strong className="text-amber-300 font-mono">7-day cure window</strong> backed by Section 63/65B BSA 2023 evidence before liquidated damages are debited from the bank guarantee escrow.
+              When transit fleet buses re-cross repaired defects and confirm recurrent vertical shocks within the active Defect Liability Period (DLP), RoadSaathi serves a statutory Form 14 Show-Cause Notice with a <strong className="text-amber-300 font-mono">7-day cure window</strong> backed by Section 63/65B BSA 2023 evidence before liquidated damages are deducted from held Security Deposit (SD) / Retention Money.
             </p>
           </div>
 
@@ -600,14 +600,14 @@ export const ContractorSlaLedger: React.FC<ContractorSlaLedgerProps> = ({ cluste
           </div>
           <div className="text-[11px] text-amber-600 dark:text-amber-400 mt-1.5 flex items-center gap-1">
             <Receipt className="w-3 h-3" />
-            <span>IRC:SP:20 Clause 14.2 7d Cure Exposure</span>
+            <span>Contractual DLP Clause 7d Cure Exposure</span>
           </div>
         </div>
 
-        {/* Card 3: Net Available Escrow Balance */}
+        {/* Card 3: Security Deposit (SD) / Retention Money */}
         <div className="p-4 rounded-2xl bg-white dark:bg-[#0B101D] border border-slate-200 dark:border-slate-800 shadow-xs hover:shadow-md transition">
           <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 font-medium mb-1">
-            <span className="font-semibold uppercase tracking-wider text-[11px]">Net Available Escrow</span>
+            <span className="font-semibold uppercase tracking-wider text-[11px]">Security Deposit (SD) / Retention Money</span>
             <Clock className="w-4 h-4 text-emerald-500" />
           </div>
           <div className="text-2xl font-extrabold text-slate-900 dark:text-white font-mono tabular-nums">
@@ -621,7 +621,7 @@ export const ContractorSlaLedger: React.FC<ContractorSlaLedgerProps> = ({ cluste
           </div>
           <div className="text-[11px] text-emerald-600 dark:text-emerald-400 font-medium mt-1.5 flex items-center gap-1">
             <ShieldCheck className="w-3 h-3" />
-            <span>Safety Margin: {netEscrowRatio.toFixed(1)}% Available</span>
+            <span>Safety Margin: {netEscrowRatio.toFixed(1)}% Retention Available</span>
           </div>
         </div>
 
@@ -662,7 +662,7 @@ export const ContractorSlaLedger: React.FC<ContractorSlaLedgerProps> = ({ cluste
                 MoRTH Clause 108.4 Active
               </span>
               <span className="px-2.5 py-1 rounded-lg bg-amber-50 dark:bg-amber-950/60 border border-amber-200 dark:border-amber-900 text-amber-700 dark:text-amber-300 font-semibold">
-                IRC:SP:20 Form 14 Active
+                Contractual DLP Form 14 Active
               </span>
             </div>
           </div>
@@ -728,7 +728,7 @@ export const ContractorSlaLedger: React.FC<ContractorSlaLedgerProps> = ({ cluste
                         <div className={`font-bold tabular-nums ${ctr.penaltiesDeductedInr > 0 ? 'text-rose-600 dark:text-rose-400' : 'text-slate-400'}`}>
                           {ctr.penaltiesDeductedInr > 0 ? `-₹${ctr.penaltiesDeductedInr.toLocaleString('en-IN')}` : '₹0'}
                         </div>
-                        <div className="text-[10px] text-slate-400">Clause 14.2 &amp; SLA</div>
+                        <div className="text-[10px] text-slate-400">Contractual DLP &amp; SLA</div>
                       </td>
 
                       <td className="py-3.5 px-4 text-center">
@@ -795,7 +795,7 @@ export const ContractorSlaLedger: React.FC<ContractorSlaLedgerProps> = ({ cluste
                           <button
                             onClick={() => handleOpenCert(ctr)}
                             className="px-2.5 py-1 rounded-lg font-semibold text-[11px] bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 transition border border-slate-200 dark:border-slate-700 flex items-center gap-1 cursor-pointer"
-                            title="View / issue IRC:SP:20 Work Completion Certificate"
+                            title="View / issue Contractual DLP Work Completion Certificate"
                           >
                             <Award className="w-3 h-3 text-blue-500" />
                             <span>Cert</span>
@@ -816,7 +816,7 @@ export const ContractorSlaLedger: React.FC<ContractorSlaLedgerProps> = ({ cluste
             <div>
               <h3 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
                 <Receipt className="w-4 h-4 text-indigo-500" />
-                <span>IRC:SP:20 Clause 14.2 &bull; Statutory Form 14 Notice &amp; Audit Docket</span>
+                <span>Contractual DLP Clause &bull; Statutory Form 14 Notice &amp; Audit Docket</span>
               </h3>
               <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
                 Statutory 7-day cure window notices and certified liquidated damage debits served under Section 63/65B BSA 2023.
@@ -870,7 +870,7 @@ export const ContractorSlaLedger: React.FC<ContractorSlaLedgerProps> = ({ cluste
                       <div className="font-bold text-slate-900 dark:text-slate-100 tabular-nums">
                         ₹{rec.penaltyDebitInr.toLocaleString('en-IN')}
                       </div>
-                      <div className="text-[10px] text-slate-400">Clause 14 Escrow</div>
+                      <div className="text-[10px] text-slate-400">Contractual DLP Retention</div>
                     </td>
                     <td className="py-3.5 px-4 text-right">
                       <button
@@ -901,7 +901,7 @@ export const ContractorSlaLedger: React.FC<ContractorSlaLedgerProps> = ({ cluste
                     FORM 14 SHOW-CAUSE NOTICE (STATUTORY DRAFT)
                   </h3>
                   <div className="text-[10px] font-mono text-amber-700 dark:text-amber-300">
-                    GCC/HW/FORM-14/2026-089 &bull; IRC:SP:20 CLAUSE 14.2 &bull; 7-DAY CURE NOTICE
+                    GCC/HW/FORM-14/2026-089 &bull; CONTRACTUAL DLP CLAUSE &bull; 7-DAY CURE NOTICE
                   </div>
                 </div>
               </div>
@@ -919,7 +919,7 @@ export const ContractorSlaLedger: React.FC<ContractorSlaLedgerProps> = ({ cluste
                   GREATER CHENNAI CORPORATION &bull; SPECIAL HIGHWAYS DIVISION
                 </div>
                 <div className="text-[10px] text-slate-500 dark:text-slate-400">
-                  Ripon Building, Chennai - 600003 | Statutory Notice under IRC:SP:20 Cl 14.2 &amp; BSA 2023 Sec 63/65B
+                  Ripon Building, Chennai - 600003 | Statutory Notice under Contractual DLP Clause &amp; BSA 2023 Sec 63/65B
                 </div>
               </div>
 
@@ -961,7 +961,7 @@ export const ContractorSlaLedger: React.FC<ContractorSlaLedgerProps> = ({ cluste
                     <span className="text-right font-bold text-rose-600 tabular-nums">₹26,000</span>
                   </div>
                   <div className="grid grid-cols-3 p-2.5 bg-amber-50/60 dark:bg-amber-950/40 font-bold text-slate-900 dark:text-white">
-                    <span>TOTAL CLAUSE 14 LIQUIDATED DAMAGES:</span>
+                    <span>TOTAL CONTRACTUAL DLP LIQUIDATED DAMAGES:</span>
                     <span className="text-center">7-Day Cure Window</span>
                     <span className="text-right text-amber-700 dark:text-amber-400 font-extrabold tabular-nums">₹45,000</span>
                   </div>
@@ -969,7 +969,7 @@ export const ContractorSlaLedger: React.FC<ContractorSlaLedgerProps> = ({ cluste
               </div>
 
               <p className="text-[11px] text-slate-600 dark:text-slate-400 leading-relaxed">
-                Take notice that in accordance with IRC:SP:20 Clause 14.2 and MoRTH Standard Specifications Clause 108.4, you are hereby granted a statutory <strong>7-day cure window</strong> from the service of this notice to rectify defects. Failure to cure within this period will result in immediate debit of liquidated damages from held Bank Guarantee escrow.
+                Take notice that in accordance with Contractual Defect Liability Period (DLP) Clause (PWD/MORTH GCC Clause 16/17) and Section 63/65B BSA 2023, you are hereby granted a statutory <strong>7-day cure window</strong> from the service of this notice to rectify defects. Failure to cure within this period will result in immediate deduction of liquidated damages from held Security Deposit (SD) / Retention Money.
               </p>
 
               <div className="pt-3 border-t border-slate-200 dark:border-slate-800 flex items-center justify-between text-[10px] text-slate-500 font-mono">
@@ -1014,7 +1014,7 @@ export const ContractorSlaLedger: React.FC<ContractorSlaLedgerProps> = ({ cluste
                     MUNICIPAL WORK COMPLETION &amp; QUALITY CERTIFICATE
                   </h3>
                   <div className="text-[10px] font-mono text-emerald-700 dark:text-emerald-300">
-                    FORM IRC:SP:20 (2025 COMPLIANCE) &bull; CERT NO: GCC-QC-2026-8819
+                    CONTRACTUAL DLP COMPLIANCE &bull; CERT NO: GCC-QC-2026-8819
                   </div>
                 </div>
               </div>
@@ -1094,7 +1094,7 @@ export const ContractorSlaLedger: React.FC<ContractorSlaLedgerProps> = ({ cluste
               <div className="p-3 rounded-xl bg-emerald-50/60 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800 space-y-1.5 text-[11px]">
                 <div className="font-bold text-emerald-950 dark:text-emerald-200 flex items-center gap-1.5">
                   <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-                  <span>Verified Specifications under IRC:SP:20:</span>
+                  <span>Verified Specifications under Contractual DLP Clause:</span>
                 </div>
                 <ul className="list-disc list-inside text-slate-600 dark:text-slate-300 space-y-0.5 text-[10.5px]">
                   <li>Dense Bituminous Macadam (DBM) grade: VG-30 hot-mix asphalt (126 kg installed).</li>
@@ -1129,7 +1129,7 @@ export const ContractorSlaLedger: React.FC<ContractorSlaLedgerProps> = ({ cluste
         </div>
       )}
 
-      {/* MODAL 3: FORM 14 STATUTORY SHOW-CAUSE NOTICE PACK (IRC:SP:20 CL 14.2 & BSA 2023 SEC 63/65B) */}
+      {/* MODAL 3: FORM 14 STATUTORY SHOW-CAUSE NOTICE PACK (CONTRACTUAL DLP CLAUSE & BSA 2023 SEC 63/65B) */}
       {activeModal === 'auto_debit_voucher' && selectedDebitRecord && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm animate-fadeIn">
           <div className="relative w-full max-w-2xl rounded-2xl bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-800 shadow-2xl overflow-hidden flex flex-col max-h-[92vh]">
@@ -1141,7 +1141,7 @@ export const ContractorSlaLedger: React.FC<ContractorSlaLedgerProps> = ({ cluste
                     FORM 14 STATUTORY SHOW-CAUSE NOTICE PACK
                   </h3>
                   <div className="text-[10px] font-mono text-indigo-700 dark:text-indigo-300">
-                    DOCKET: {selectedDebitRecord.noticeDocketNo || selectedDebitRecord.id} &bull; IRC:SP:20 CLAUSE 14.2
+                    DOCKET: {selectedDebitRecord.noticeDocketNo || selectedDebitRecord.id} &bull; CONTRACTUAL DLP CLAUSE
                   </div>
                 </div>
               </div>
@@ -1159,7 +1159,7 @@ export const ContractorSlaLedger: React.FC<ContractorSlaLedgerProps> = ({ cluste
                   GREATER CHENNAI CORPORATION &bull; SPECIAL HIGHWAYS &amp; BRIDGES DIVISION
                 </div>
                 <div className="text-[10px] text-slate-500 dark:text-slate-400">
-                  Ripon Building, Chennai - 600003 | Form 14 Show-Cause Notice Pack (MoRTH / IRC:SP:20:2025)
+                  Ripon Building, Chennai - 600003 | Form 14 Show-Cause Notice Pack (Contractual DLP / PWD GCC 16/17)
                 </div>
               </div>
 
@@ -1174,7 +1174,7 @@ export const ContractorSlaLedger: React.FC<ContractorSlaLedgerProps> = ({ cluste
                     {renderNoticeStatusBadge(selectedDebitRecord.status)}
                   </div>
                   <p className="text-[11px] text-slate-600 dark:text-slate-300 leading-relaxed">
-                    Under IRC:SP:20 Clause 14.2, the contractor is served this statutory show-cause notice. The contractor is granted a period of <strong>7 days</strong> to rectify the recurrent defect prior to the automatic debit of liquidated damages from their Bank Guarantee.
+                    In accordance with Contractual Defect Liability Period (DLP) Clause (PWD/MORTH GCC Clause 16/17) and Section 63/65B BSA 2023, the contractor is served this statutory show-cause notice. The contractor is granted a period of <strong>7 days</strong> to rectify the recurrent defect prior to the automatic deduction of liquidated damages from their Security Deposit (SD) / Retention Money.
                   </p>
                   <div className="font-mono text-[11px] text-amber-700 dark:text-amber-400">
                     Cure Deadline: <strong>{selectedDebitRecord.cureDeadline || '2026-10-05 14:15 IST'}</strong>
@@ -1280,7 +1280,7 @@ export const ContractorSlaLedger: React.FC<ContractorSlaLedgerProps> = ({ cluste
                 <div className="p-3 rounded-xl bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-900 flex items-center justify-between gap-3 text-xs">
                   <div className="space-y-0.5">
                     <div className="font-bold text-rose-900 dark:text-rose-200">
-                      Enforce Escrow Debit (Liquidated Damages)
+                      Enforce Security Deposit / Retention Deduction
                     </div>
                     <div className="text-[10.5px] text-rose-700 dark:text-rose-400">
                       Use after 7-day cure window has elapsed without rectification by contractor.
@@ -1291,7 +1291,7 @@ export const ContractorSlaLedger: React.FC<ContractorSlaLedgerProps> = ({ cluste
                     disabled={isEnforcing}
                     className="px-3 py-1.5 rounded-lg bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs transition cursor-pointer disabled:opacity-50 shrink-0"
                   >
-                    {isEnforcing ? 'Debiting Escrow...' : 'Enforce Debit'}
+                    {isEnforcing ? 'Deducting SD / Retention...' : 'Enforce Deduction'}
                   </button>
                 </div>
               )}

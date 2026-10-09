@@ -375,11 +375,19 @@ export const RoadMeshVisualizerModal: React.FC<RoadMeshVisualizerModalProps> = (
   const exteriorFeeds = buildExteriorCameraFeeds(detectedBusId, sensorGz, cameraConfidence, footageImageUrl, videoEvidenceUrl);
   const activeFeed = exteriorFeeds.find((f) => f.id === activeChannelId) || exteriorFeeds[0];
 
+  // IRC:82 Civil Engineering Physical Allowances
+  const SAW_CUT_MARGIN_PCT = 15.0; // Rectangular saw-cut perimeter box trim (+15%)
+  const COMPACTION_FACTOR = 1.10;  // Bulk asphalt compaction factor (+10%)
+  const IRC82_VOLUME_FACTOR = (1.0 + SAW_CUT_MARGIN_PCT / 100.0) * COMPACTION_FACTOR; // 1.265
+
   // Dynamic Volumetric Cavity Fill & PWD SOR Cost Recalculation
   // V(d_cut) = volumeLiters * (max(0, (depthCm - cutDepthCm) / depthCm))^1.5
-  const slicedVolume = Number((volumeLiters * Math.pow(Math.max(0, (depthCm - cutDepthCm) / Math.max(0.1, depthCm)), 1.5)).toFixed(2));
-  const slicedMassKg = Math.round(slicedVolume * 2.3);
-  const slicedCost = Math.round(costInr * (slicedVolume / Math.max(0.1, volumeLiters)));
+  const rawSlicedVolume = Number(
+    (volumeLiters * Math.pow(Math.max(0, (depthCm - cutDepthCm) / Math.max(0.1, depthCm)), 1.5)).toFixed(2)
+  );
+  const slicedVolume = Number((rawSlicedVolume * IRC82_VOLUME_FACTOR).toFixed(2));
+  const slicedMassKg = Math.round(slicedVolume * 2.35); // 2.35 g/cm³ bulk density (MoRTH 500)
+  const slicedCost = Math.round(costInr * (slicedVolume / Math.max(0.1, volumeLiters * IRC82_VOLUME_FACTOR)));
 
   // Auto-play burst sequence logic
   useEffect(() => {
@@ -1058,7 +1066,7 @@ export const RoadMeshVisualizerModal: React.FC<RoadMeshVisualizerModalProps> = (
               </div>
 
               <div className="pt-1 border-t border-slate-800 flex items-center justify-between text-[9.5px]">
-                <span className="text-slate-400">Remaining Void:</span>
+                <span className="text-slate-400">IRC:82 Patch Mix:</span>
                 <span className="text-emerald-400 font-bold">{slicedVolume.toFixed(1)} L ({slicedMassKg} kg)</span>
                 <span className="text-cyan-300 font-bold">₹{slicedCost.toLocaleString()}</span>
               </div>
@@ -1686,12 +1694,15 @@ export const RoadMeshVisualizerModal: React.FC<RoadMeshVisualizerModalProps> = (
                   </div>
 
                   <div className="p-2.5 rounded-xl bg-slate-900/80 border border-slate-800">
-                    <div className="text-[10px] text-slate-400">Asphalt Hot-Mix Volume</div>
+                    <div className="text-[10px] text-slate-400 flex items-center justify-between">
+                      <span>Asphalt Hot-Mix Volume</span>
+                      <span className="text-[8.5px] px-1 py-0.2 rounded bg-emerald-950/60 text-emerald-400 border border-emerald-800/40 font-mono">IRC:82 Cl 5.2/5.4</span>
+                    </div>
                     <div className="text-sm font-bold text-emerald-400 font-mono mt-0.5">
                       {slicedVolume} L <span className="text-[10px] text-slate-400 font-normal">({slicedMassKg} kg)</span>
                     </div>
                     <div className="text-[9px] text-slate-500 mt-0.5 font-mono">
-                      {cutDepthCm > 0 ? `Sub-slice of ${volumeLiters}L total` : "Bituminous Grade-2"}
+                      Raw: {rawSlicedVolume.toFixed(1)}L • Patch (+26.5% trim/compaction)
                     </div>
                   </div>
 
@@ -1710,6 +1721,9 @@ export const RoadMeshVisualizerModal: React.FC<RoadMeshVisualizerModalProps> = (
                     </div>
                     <div className="text-base font-extrabold text-blue-400 font-mono">
                       ₹{slicedCost.toLocaleString()}
+                    </div>
+                    <div className="text-[9px] text-blue-300/80 font-mono mt-0.5">
+                      IRC:82 Cl 5.2 (+15% Saw-Cut) &amp; Cl 5.4 (+10% Compaction @ 2.35 kg/L)
                     </div>
                   </div>
                   <span className="text-[10px] text-blue-300 font-mono px-2 py-0.5 rounded bg-blue-900/50">
