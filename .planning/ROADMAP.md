@@ -34,6 +34,13 @@ RoadSaathi v4.0 grounds the entire municipal intelligence platform in rigorous r
 
 ---
 
+### Milestone v5.0: Mobile Sensing, Civic Copilot & 3D Mesh Corridor Twin (Active)
+- [ ] **Phase 15: RoadSaathi Civic Copilot & Natural Language Intelligence** - Centralized municipal natural language assistant: schema-aware SQL/aggregation queries, SLA audit lookups, Section 65B Form 14 notice drafting, and floating Command Center drawer.
+- [ ] **Phase 16: 3D Corridor Digital Twin & Surface Mesh Visualizer (Concept Prototype)** - Interactive 3D road elevation mesh & cavity depth visualizer (explicitly designated as an experimental concept prototype for now), cross-section slicing, and multi-camera exterior perspective switcher.
+- [ ] **Phase 17: Multi-Camera Urban Sensing & Missing Infrastructure Perception** - Missing road dividers, missing/faded zebra crossings (IRC:35), damaged/missing signboards (IRC:67), waterlogging depth hazards, and vulnerable pedestrian & traffic density counting.
+
+---
+
 ## Phase Details
 
 ### Phase 12: Telematics Physics & Spatial Calibration
@@ -72,10 +79,46 @@ RoadSaathi v4.0 grounds the entire municipal intelligence platform in rigorous r
 
 ---
 
+### Phase 15: RoadSaathi Civic Copilot & Natural Language Intelligence
+
+**Goal**: Equip municipal commanders and engineers with an intuitive natural language conversational assistant to query fleet telemetry, audit contractor SLA breaches, and generate statutory notices without manual SQL or spreadsheet wrangling.
+**Depends on**: Phase 14
+**Requirements**: COPILOT-01, COPILOT-02
+**Success Criteria** (what must be TRUE):
+  1. Backend provides `/api/copilot/query` endpoint with deterministic semantic dispatching across road defects, contractor penalties, ward safety rankings, and concurrence logs.
+  2. Assistant handles queries like *"Show unaddressed P0 potholes on GST Road"*, *"Which contractor has highest SLA breaches this month?"*, and *"Draft Form 14 notice for L&T breaches"*.
+  3. Frontend renders an accessible, floating Civic Copilot drawer in Command Center and Work Orders with one-click suggestion prompts, formatted tabular/markdown results, and deep links to map clusters and work orders.
+
+---
+
+### Phase 16: 3D Corridor Digital Twin & Surface Mesh Visualizer (Concept Prototype)
+
+**Goal**: Deliver an interactive 3D road surface elevation & cavity depth mesh explorer, explicitly labeled and scoped as an **experimental concept prototype for now** (monocular depth + IMU elevation profile, not high-cost LiDAR), alongside multi-camera perspective switching.
+**Depends on**: Phase 15
+**Requirements**: TWIN-01, TWIN-02
+**Success Criteria** (what must be TRUE):
+  1. Surface mesh modal and corridor twin viewer display a prominent, non-dismissible **"Experimental Concept / Proof of Concept"** disclaimer badge in all headers, tooltips, and documentation.
+  2. Interactive 3D mesh renders wireframe/solid elevation surfaces with color-coded depth contouring, cross-sectional depth slicing, and simulated walking inspection controls.
+  3. Perspective switcher allows toggling between exterior bus views (front windshield dashcam, rear road overview, left curb, right carriageway) with synchronous telemetry overlays.
+
+---
+
+### Phase 17: Multi-Camera Urban Sensing & Missing Infrastructure Perception
+
+**Goal**: Extend edge perception schemas and command dashboards to detect missing road infrastructure (dividers, zebra crossings, signboards, waterlogging) and vulnerable road user safety events as mandated by the Problem Statement.
+**Depends on**: Phase 16
+**Requirements**: SENSE-01, SENSE-02
+**Success Criteria** (what must be TRUE):
+  1. Backend defect schema and edge telemetry models support missing dividers, missing/faded zebra crossings (IRC:35), damaged/missing signboards (IRC:67), and waterlogging depth hazard metrics.
+  2. Vulnerable pedestrian alerts (school children crossing zones, high-risk jaywalking) and vehicle density classification/counting are aggregated per corridor.
+  3. Offending vehicle hit-and-run and rash driving alerts expose registration plate extraction with confidence score, GPS coordinate, and ISO timestamp in the Command Center alert stream.
+
+---
+
 ## Progress
 
 **Execution Order:**
-Phases execute in numeric order: 12 → 13 → 14
+Phases execute in numeric order: 15 → 16 → 17
 
 | Phase | Plans Complete | Status | Completed |
 |---|---|---|---|
@@ -93,6 +136,9 @@ Phases execute in numeric order: 12 → 13 → 14
 | 12. Telematics Physics & Spatial Calibration | 1/1 | Complete | 2026-10-07 |
 | 13. Municipal Statutory Show-Cause & Relaxed Multi-Pass Gating | 1/1 | Complete | 2026-10-08 |
 | 14. Ponytail Codebase Pruning & Dead Engine Deletion | 1/1 | Complete | 2026-10-08 |
+| 15. RoadSaathi Civic Copilot & Natural Language Intelligence | 0/1 | Ready | — |
+| 16. 3D Corridor Digital Twin & Surface Mesh Visualizer (Concept Prototype) | 0/1 | Ready | — |
+| 17. Multi-Camera Urban Sensing & Missing Infrastructure Perception | 0/1 | Ready | — |
 
 ---
-*Roadmap defined: 2026-10-07 for Milestone v4.0*
+*Roadmap defined: 2026-10-09 for Milestone v5.0*
