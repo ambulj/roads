@@ -65,6 +65,9 @@
 - [x] **FINANCE-01**: Municipal financial standards alignment: replace "escrow" and `PFMS/DLP-ESCROW` voucher tokens with Security Deposit (SD) / Retention Money (`PFMS/DLP-RETENTION`).
 - [x] **CIVIL-01**: IRC:82 civil engineering patch cost calculations with +15% rectangular saw-cut trim margin and +10% compaction allowance in volume and PWD SOR estimates.
 - [x] **ATTRIB-01**: Public dataset attribution for Roboflow CC BY 4.0 vision weights, and explicit labeling of OD desire lines as aggregate illustrative transit traces.
+- [ ] **AI-01**: Ground truth model weights training metrics matrix replacing synthetic random walk mAP on retraining dashboard with verified training metrics (zebra 0.993, anpr 0.693, pothole 0.471, vehicle 0.404, indian_roads 0.219).
+- [ ] **AI-02**: Official IRC:106-1990 Urban Road PCU lookup table and multi-class vehicle mapping (2W 0.5, 3W 1.2, Car 1.0, Bus/Truck 2.2, LCV 1.4, Tractor 4.0, Cycle 0.5) using `indian_roads_detection.pt` classes.
+- [ ] **THEME-01**: Accessible light-theme contrast remediation (elevating muted text from 2.5:1 to >= 4.5:1 ratio) and removal of unsubstantiated "WCAG AAA" claims in favor of verified WCAG 2.1 AA.
 
 ---
 
@@ -92,6 +95,7 @@
 | ANPR-01 .. ANPR-02, BRAND-01 | v6.0 | Phase 18 | Complete |
 | GATE-01 .. GATE-02, OFFICER-01 | v6.0 | Phase 19 | Complete |
 | STATUTE-03, FINANCE-01, CIVIL-01, ATTRIB-01 | v6.0 | Phase 20 | Complete |
+| AI-01, AI-02, THEME-01 | v6.0 | Phase 21 | Pending |
 
 ---
 *Requirements updated: 2026-10-10 for Milestone v6.0 initiation*

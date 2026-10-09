@@ -162,6 +162,17 @@ RoadSaathi v4.0 grounds the entire municipal intelligence platform in rigorous r
 
 ---
 
+### Phase 21: AI Ground Truth, PCU Alignment & Metric Honesty
+**Goal**: Replace synthetic active-learning mAP approximations with ground truth model training metrics across actual on-disk weights, integrate official IRC:106-1990 Urban Road PCU lookup table with multi-class vehicle detection, and remediate light-theme contrast while removing unsubstantiated marketing claims.
+**Depends on**: Phase 20
+**Requirements**: AI-01, AI-02, THEME-01
+**Success Criteria** (what must be TRUE):
+  1. Retraining and model performance dashboards (`SelfLearningStudio.tsx`, `EdgeAIAnalytics.tsx`, `self_learning_engine.py`) display verified training metrics for all 5 trained models (`zebra.pt` 0.993 mAP50, `anpr.pt` 0.693 mAP50, `potholedetection.pt` 0.471 mAP50, `vehicle_detection.pt` 0.404 mAP50, `indian_roads_detection.pt` 0.219 mAP50) instead of a synthetic single-number active-learning random formula.
+  2. Vehicle counting and traffic density calculations apply official IRC:106-1990 Urban Road PCU equivalents (2W 0.5, 3W 1.2, Car 1.0, Bus/Truck 2.2, LCV 1.4, Tractor 4.0, Cycle 0.5) mapped to `indian_roads_detection.pt` classes.
+  3. Light-theme text contrast across all cards and tables meets or exceeds WCAG 2.1 AA (contrast ratio $\ge 4.5:1$), and unsubstantiated "WCAG AAA" marketing claims are removed.
+
+---
+
 ## Progress
 
 **Execution Order:**
