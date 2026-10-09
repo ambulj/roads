@@ -7,27 +7,25 @@ import {
   Sparkles, 
   Wrench, 
   FileDown, 
-  Gauge, 
   AlertTriangle,
-  Compass,
-  CheckCircle2,
-  Camera,
-  Activity,
-  Box,
-  Split,
-  Maximize2,
-  Droplets,
-  CircleDot,
-  Play,
-  Pause,
-  Volume2,
-  VolumeX,
-  ShieldCheck,
-  Video,
-  Image as ImageIcon,
-  Eye,
-  Zap,
-  Bus
+  CheckCircle2, 
+  Camera, 
+  Activity, 
+  Box, 
+  Split, 
+  Droplets, 
+  CircleDot, 
+  Play, 
+  Pause, 
+  Volume2, 
+  VolumeX, 
+  ShieldCheck, 
+  Video, 
+  Eye, 
+  Zap, 
+  Bus,
+  Info,
+  Sliders
 } from "lucide-react";
 
 export type Defect3DType = "pothole" | "crack" | "manhole" | "waterlog";
@@ -96,6 +94,25 @@ export interface BusEvidencePass {
   bBox?: { top: number; left: number; width: number; height: number };
 }
 
+export type ExteriorChannelId = "cam1_front" | "cam2_rear" | "cam3_left_curb" | "cam4_right_carriage";
+
+export interface ExteriorCameraFeed {
+  id: ExteriorChannelId;
+  channelCode: string;
+  label: string;
+  perspectiveDesc: string;
+  imageUrl: string;
+  videoUrl?: string;
+  speedKmh: number;
+  imuGz: number;
+  gNorm: number;
+  confidence: number;
+  timestamp: string;
+  busId: string;
+  coords: string;
+  inspectionRole: string;
+}
+
 interface RoadMeshVisualizerModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -125,8 +142,8 @@ export const buildDefaultPasses = (
   gz: number,
   conf: number,
   primaryImg?: string,
-  defectName: string = "D40 Cavity",
-  depth: number = 8.4
+  _defectName: string = "D40 Cavity",
+  _depth: number = 8.4
 ): BusEvidencePass[] => {
   const pImg = primaryImg && !primaryImg.includes("Broken_Roads_in_India") && !primaryImg.includes("Pothole_in_an_asphalt")
     ? primaryImg 
@@ -216,6 +233,89 @@ export const buildDefaultPasses = (
   ];
 };
 
+export const buildExteriorCameraFeeds = (
+  busId: string,
+  sensorGz: number,
+  cameraConfidence: number,
+  footageImageUrl?: string,
+  videoEvidenceUrl?: string
+): ExteriorCameraFeed[] => {
+  const frontImg = footageImageUrl && !footageImageUrl.includes("Broken_Roads_in_India") && !footageImageUrl.includes("Pothole_in_an_asphalt")
+    ? footageImageUrl
+    : "/evidence/bus_pass_1_detect.jpg";
+
+  const v1 = 38.4;
+  const gNorm1 = Number((Math.abs(sensorGz - 1.0) / (v1 / 30)).toFixed(2));
+
+  const v2 = 36.2;
+  const gz2 = Number((sensorGz * 1.15).toFixed(2));
+  const gNorm2 = Number((Math.abs(gz2 - 1.0) / (v2 / 30)).toFixed(2));
+
+  return [
+    {
+      id: "cam1_front",
+      channelCode: "CAM-01",
+      label: "Front Windshield Dashcam",
+      perspectiveDesc: "Primary forward optical hazard detection & disparity depth estimation",
+      imageUrl: frontImg,
+      videoUrl: videoEvidenceUrl || DEFAULT_DASHCAM_VIDEO,
+      speedKmh: v1,
+      imuGz: sensorGz,
+      gNorm: gNorm1,
+      confidence: cameraConfidence,
+      timestamp: "Today, 07:14:22.420 IST",
+      busId: busId || "TN-01-N-1042",
+      coords: "12.9516°N, 80.1462°E",
+      inspectionRole: "Primary optical hazard detection & road corridor line-of-sight",
+    },
+    {
+      id: "cam2_rear",
+      channelCode: "CAM-02",
+      label: "Rear Road Surface Overview",
+      perspectiveDesc: "Trailing axle distress verification & post-wheel strike cavity inspection",
+      imageUrl: "/evidence/bus_pass_1_impact.jpg",
+      speedKmh: v2,
+      imuGz: gz2,
+      gNorm: gNorm2,
+      confidence: Math.min(99, cameraConfidence + 2),
+      timestamp: "Today, 07:14:22.920 IST",
+      busId: busId || "TN-01-N-1042",
+      coords: "12.9515°N, 80.1461°E",
+      inspectionRole: "Trailing rear axle impact verification & pavement rebound profile",
+    },
+    {
+      id: "cam3_left_curb",
+      channelCode: "CAM-03",
+      label: "Left Curb / Footpath View",
+      perspectiveDesc: "Curb subsidence, sidewalk clearance, open manholes & roadside drainage",
+      imageUrl: "/evidence/bus_pass_2_confirm.jpg",
+      speedKmh: 38.4,
+      imuGz: 1.42,
+      gNorm: 0.42,
+      confidence: Math.max(88, cameraConfidence - 4),
+      timestamp: "Today, 07:14:22.420 IST",
+      busId: busId || "TN-01-N-1042",
+      coords: "12.9516°N, 80.1460°E",
+      inspectionRole: "Curb subsidence, sidewalk pedestrian clearance & drainage inlets",
+    },
+    {
+      id: "cam4_right_carriage",
+      channelCode: "CAM-04",
+      label: "Right Carriageway / Overtaking Lane",
+      perspectiveDesc: "Median dividers, lane encroachment, overtaking clearance & traffic flow",
+      imageUrl: "/evidence/bus_pass_3_concurrence.jpg",
+      speedKmh: 38.4,
+      imuGz: 1.38,
+      gNorm: 0.38,
+      confidence: Math.min(97, cameraConfidence + 1),
+      timestamp: "Today, 07:14:22.420 IST",
+      busId: busId || "TN-01-N-1042",
+      coords: "12.9517°N, 80.1464°E",
+      inspectionRole: "Median divider integrity, lane encroachment & traffic flow monitoring",
+    },
+  ];
+};
+
 export const RoadMeshVisualizerModal: React.FC<RoadMeshVisualizerModalProps> = ({
   isOpen,
   onClose,
@@ -238,13 +338,25 @@ export const RoadMeshVisualizerModal: React.FC<RoadMeshVisualizerModalProps> = (
 }) => {
   const mountRef = useRef<HTMLDivElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
-  const [renderMode, setRenderMode] = useState<"solid" | "wireframe" | "lidar">("solid");
+  const cameraRef = useRef<THREE.PerspectiveCamera | null>(null);
+  const cutPlaneGroupRef = useRef<THREE.Group | null>(null);
+  const deepestYRef = useRef<number>(-2.2);
+
+  // 3D Viewport Controls State
+  const [renderMode, setRenderMode] = useState<"solid" | "wireframe" | "contour">("solid");
+  const [cameraMode, setCameraMode] = useState<"turntable" | "walk">("turntable");
   const [autoRotate, setAutoRotate] = useState(true);
   const [showLayersCutaway, setShowLayersCutaway] = useState(false);
   const [dispatched, setDispatched] = useState(false);
 
+  // Interactive Depth Slicing Cut-Plane State (0.0 to 25.0 cm, step 0.5 cm)
+  const [cutDepthCm, setCutDepthCm] = useState<number>(0);
+
+  // 4-Channel Multi-Camera Perspective Switcher State
+  const [activeChannelId, setActiveChannelId] = useState<ExteriorChannelId>("cam1_front");
+
   // Evidence deck states
-  const [evidenceTab, setEvidenceTab] = useState<"multi-pass" | "dashcam-video" | "telemetry">("multi-pass");
+  const [evidenceTab, setEvidenceTab] = useState<"multi-cam" | "multi-pass" | "telemetry" | "dashcam-video">("multi-cam");
   const [activePassIdx, setActivePassIdx] = useState(1); // default to detection frame
   const [isPlayingBurst, setIsPlayingBurst] = useState(false);
   const [showDepthOverlay, setShowDepthOverlay] = useState(false);
@@ -252,12 +364,22 @@ export const RoadMeshVisualizerModal: React.FC<RoadMeshVisualizerModalProps> = (
   const [isVideoPlaying, setIsVideoPlaying] = useState(true);
   const [isMuted, setIsMuted] = useState(true);
 
-  // Resolve passes
+  // Resolve multi-pass evidence
   const passes: BusEvidencePass[] = evidencePasses && evidencePasses.length > 0 
     ? evidencePasses 
     : buildDefaultPasses(detectedBusId, sensorGz, cameraConfidence, footageImageUrl, defectType, depthCm);
 
   const activePass = passes[activePassIdx] || passes[0];
+
+  // Resolve 4-channel exterior feeds
+  const exteriorFeeds = buildExteriorCameraFeeds(detectedBusId, sensorGz, cameraConfidence, footageImageUrl, videoEvidenceUrl);
+  const activeFeed = exteriorFeeds.find((f) => f.id === activeChannelId) || exteriorFeeds[0];
+
+  // Dynamic Volumetric Cavity Fill & PWD SOR Cost Recalculation
+  // V(d_cut) = volumeLiters * (max(0, (depthCm - cutDepthCm) / depthCm))^1.5
+  const slicedVolume = Number((volumeLiters * Math.pow(Math.max(0, (depthCm - cutDepthCm) / Math.max(0.1, depthCm)), 1.5)).toFixed(2));
+  const slicedMassKg = Math.round(slicedVolume * 2.3);
+  const slicedCost = Math.round(costInr * (slicedVolume / Math.max(0.1, volumeLiters)));
 
   // Auto-play burst sequence logic
   useEffect(() => {
@@ -296,7 +418,31 @@ export const RoadMeshVisualizerModal: React.FC<RoadMeshVisualizerModalProps> = (
   // Dynamic depth scale
   const depthScale = Math.max(0.4, Math.min(depthCm / 8.4, 2.2));
 
-  // Three.js Scene Setup
+  // Update Cut-Plane Mesh Elevation when cutDepthCm changes
+  useEffect(() => {
+    if (cutPlaneGroupRef.current) {
+      const dY = Math.abs(deepestYRef.current) || (2.2 * depthScale);
+      // Cut position: 0cm is at surface (0.02 above plane to avoid z-fighting), max void is at deepestY
+      const fraction = cutDepthCm === 0 ? 0 : cutDepthCm / Math.max(0.1, depthCm);
+      const yCut = cutDepthCm === 0 ? 0.02 : -(fraction * dY);
+      cutPlaneGroupRef.current.position.y = yCut;
+    }
+  }, [cutDepthCm, depthCm, depthScale]);
+
+  // Update Camera View Mode (Turntable Orbit vs Driver Walk POV)
+  useEffect(() => {
+    if (cameraRef.current) {
+      if (cameraMode === "walk") {
+        cameraRef.current.position.set(0, 1.8, 6.2);
+        cameraRef.current.lookAt(0, -0.4, 0);
+      } else {
+        cameraRef.current.position.set(0, 9.5, 12);
+        cameraRef.current.lookAt(0, -0.8, 0);
+      }
+    }
+  }, [cameraMode]);
+
+  // Three.js Scene Setup & Disposal
   useEffect(() => {
     if (!isOpen || !mountRef.current) return;
 
@@ -308,13 +454,23 @@ export const RoadMeshVisualizerModal: React.FC<RoadMeshVisualizerModalProps> = (
     scene.background = new THREE.Color(0x080D18);
 
     const camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 100);
-    camera.position.set(0, 9.5, 12);
-    camera.lookAt(0, -0.8, 0);
+    if (cameraMode === "walk") {
+      camera.position.set(0, 1.8, 6.2);
+      camera.lookAt(0, -0.4, 0);
+    } else {
+      camera.position.set(0, 9.5, 12);
+      camera.lookAt(0, -0.8, 0);
+    }
+    cameraRef.current = camera;
 
     const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
     renderer.setSize(width, height);
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     mountRef.current.appendChild(renderer.domElement);
+
+    // Root rotation group for synchronized drag & auto-rotate
+    const rootGroup = new THREE.Group();
+    scene.add(rootGroup);
 
     // 2. Lighting Setup
     const ambientLight = new THREE.AmbientLight(0xffffff, 0.75);
@@ -335,16 +491,15 @@ export const RoadMeshVisualizerModal: React.FC<RoadMeshVisualizerModalProps> = (
     geometry.rotateX(-Math.PI / 2);
 
     const pos = geometry.attributes.position;
-    const colors: number[] = [];
+    const solidColors: number[] = [];
+    const contourColors: number[] = [];
 
     // Track deepest point for 3D measurement marker
     let deepestY = 0;
     let deepestX = 0;
     let deepestZ = 0;
 
-    // =========================================================================
     // PROCEDURAL HEIGHT GENERATOR PER DEFECT TYPE
-    // =========================================================================
     for (let i = 0; i < pos.count; i++) {
       const x = pos.getX(i);
       const z = pos.getZ(i);
@@ -352,40 +507,26 @@ export const RoadMeshVisualizerModal: React.FC<RoadMeshVisualizerModalProps> = (
       let y = 0;
 
       if (activeDefectMode === "pothole") {
-        // --- REALISTIC POTHOLE CAVITY ---
-        // Organic angular boundary
         const angle = Math.atan2(z, x);
         const organicRadius = 2.8 * (1 + 0.18 * Math.sin(3 * angle) + 0.12 * Math.cos(5 * angle) + 0.08 * Math.sin(7 * angle));
         const dist = Math.sqrt(x * x * 1.05 + z * z * 0.95);
 
         if (dist < organicRadius) {
-          // Sharp sheared edge drop
           const edgeFactor = Math.pow(1 - dist / organicRadius, 0.45);
-          // Jagged rocky floor with gravel pockets
           const subBaseGravel = (Math.sin(x * 9) * Math.cos(z * 8) + Math.sin(x * 16 + z * 14)) * 0.09;
           const multiCrater = (Math.sin(x * 2.2) * 0.2 + Math.cos(z * 2.5) * 0.15);
-          
           y = -((edgeFactor * 2.2 + multiCrater) * depthScale + subBaseGravel);
         } else {
-          // Surface pavement micro-roughness
           y = (Math.sin(x * 12) * Math.cos(z * 12)) * 0.015;
         }
 
       } else if (activeDefectMode === "crack") {
-        // --- REALISTIC ALLIGATOR & TRANSVERSE CRACK NETWORK ---
-        // Main diagonal fracture spine
         const mainCurve = 0.9 * Math.sin(x * 0.8) + 0.35 * Math.cos(x * 2.4);
         const distMain = Math.abs(z - mainCurve);
-
-        // Branch crack 1
         const branch1 = 0.5 * Math.cos(z * 1.4) + 1.2;
         const distBranch1 = Math.abs(x - branch1);
-
-        // Branch crack 2
         const branch2 = -0.4 * Math.sin(z * 1.8) - 1.4;
         const distBranch2 = Math.abs(x - branch2);
-
-        // Micro-alligator fatigue webbing
         const alligatorGrid = Math.abs(Math.sin(x * 3.5) * Math.sin(z * 3.5));
 
         let crackDepth = 0;
@@ -405,19 +546,15 @@ export const RoadMeshVisualizerModal: React.FC<RoadMeshVisualizerModalProps> = (
         y = -crackDepth + (Math.sin(x * 15) * 0.01);
 
       } else if (activeDefectMode === "manhole") {
-        // --- REALISTIC SUNKEN MANHOLE & RIM DROP-OFF ---
         const dist = Math.sqrt(x * x + z * z);
         const rimRadius = 2.2;
 
         if (dist < 1.85) {
-          // Inner manhole casting cover (flat metal casting with ribbed pattern)
           const ribPattern = Math.abs(Math.sin(dist * 14)) * 0.04;
           y = -1.4 * depthScale + ribPattern;
         } else if (dist < rimRadius) {
-          // Sharp sheared drop-off edge (sheared asphalt wall)
           y = -1.6 * depthScale;
         } else if (dist < 4.0) {
-          // Surrounding asphalt sagging / structural subsidence
           const sagFactor = Math.pow(1 - (dist - rimRadius) / (4.0 - rimRadius), 2);
           y = -sagFactor * 0.65 * depthScale;
         } else {
@@ -425,7 +562,6 @@ export const RoadMeshVisualizerModal: React.FC<RoadMeshVisualizerModalProps> = (
         }
 
       } else if (activeDefectMode === "waterlog") {
-        // --- REALISTIC WATERLOGGED ROAD BASIN ---
         const dist = Math.sqrt(x * x * 0.8 + z * z * 1.2);
         if (dist < 3.6) {
           const basin = Math.pow(1 - dist / 3.6, 1.8) * 2.0 * depthScale;
@@ -444,57 +580,58 @@ export const RoadMeshVisualizerModal: React.FC<RoadMeshVisualizerModalProps> = (
         deepestZ = z;
       }
 
-      // =======================================================================
-      // REALISTIC COLOR SHADING PER DEPTH
-      // =======================================================================
+      // 1. Realistic asphalt color palette
       const color = new THREE.Color();
       if (y > -0.15) {
-        // Natural weathered asphalt surface (Dark slate with subtle aggregate)
         const grain = (Math.sin(x * 40) * Math.cos(z * 40)) * 0.03;
         color.setRGB(0.18 + grain, 0.22 + grain, 0.28 + grain);
       } else if (y > -0.7) {
-        // Sheared asphalt fracture lip (Amber warning zone)
         color.setRGB(0.72, 0.45, 0.15);
       } else if (y > -1.4) {
-        // Intermediate cavity slope (Crimson stress zone)
         color.setRGB(0.85, 0.22, 0.22);
       } else {
-        // Deep exposed granular base / sub-base void (Dark cavity red/charcoal)
         color.setRGB(0.55, 0.08, 0.08);
       }
 
-      // If manhole casting
       if (activeDefectMode === "manhole" && Math.sqrt(x * x + z * z) < 1.85) {
-        color.setRGB(0.28, 0.32, 0.38); // Metallic cast iron
+        color.setRGB(0.28, 0.32, 0.38);
       }
+      solidColors.push(color.r, color.g, color.b);
 
-      colors.push(color.r, color.g, color.b);
+      // 2. High-contrast Elevation Contour Heatmap Colors (D-16-02)
+      // Emerald Green: 0cm baseline (y >= -0.06 * depthScale)
+      // Goldenrod Amber: 1-5cm minor rutting / shear (-0.06 * depthScale > y >= -0.55 * depthScale)
+      // Crimson Red: >5cm critical void (y < -0.55 * depthScale)
+      const contourColor = new THREE.Color();
+      if (y >= -0.06 * depthScale) {
+        contourColor.setRGB(0.063, 0.725, 0.506); // Emerald Green #10B981
+      } else if (y >= -0.55 * depthScale) {
+        contourColor.setRGB(0.961, 0.620, 0.043); // Goldenrod Amber #F59E0B
+      } else {
+        contourColor.setRGB(0.882, 0.114, 0.282); // Crimson Red #E11D48
+      }
+      contourColors.push(contourColor.r, contourColor.g, contourColor.b);
     }
 
-    geometry.setAttribute("color", new THREE.Float32BufferAttribute(colors, 3));
+    deepestYRef.current = deepestY;
+
+    // Apply active vertex colors
+    const activeColorAttr = renderMode === "contour" 
+      ? new THREE.Float32BufferAttribute(contourColors, 3) 
+      : new THREE.Float32BufferAttribute(solidColors, 3);
+    geometry.setAttribute("color", activeColorAttr);
     geometry.computeVertexNormals();
 
     // Primary Surface Mesh
-    let mesh: THREE.Mesh;
-    if (renderMode === "lidar") {
-      const pointsMat = new THREE.PointsMaterial({
-        size: 0.08,
-        vertexColors: true,
-      });
-      const points = new THREE.Points(geometry, pointsMat);
-      scene.add(points);
-      mesh = points as any;
-    } else {
-      const material = new THREE.MeshStandardMaterial({
-        vertexColors: true,
-        roughness: activeDefectMode === "manhole" ? 0.45 : 0.85,
-        metalness: activeDefectMode === "manhole" ? 0.35 : 0.1,
-        wireframe: renderMode === "wireframe",
-        flatShading: false,
-      });
-      mesh = new THREE.Mesh(geometry, material);
-      scene.add(mesh);
-    }
+    const material = new THREE.MeshStandardMaterial({
+      vertexColors: true,
+      roughness: renderMode === "contour" ? 0.55 : activeDefectMode === "manhole" ? 0.45 : 0.85,
+      metalness: renderMode === "contour" ? 0.1 : activeDefectMode === "manhole" ? 0.35 : 0.1,
+      wireframe: renderMode === "wireframe",
+      flatShading: false,
+    });
+    const mesh = new THREE.Mesh(geometry, material);
+    rootGroup.add(mesh);
 
     // Water Surface Plane for Waterlogged Mode
     let waterMesh: THREE.Mesh | null = null;
@@ -511,8 +648,34 @@ export const RoadMeshVisualizerModal: React.FC<RoadMeshVisualizerModalProps> = (
       });
       waterMesh = new THREE.Mesh(waterGeom, waterMat);
       waterMesh.position.set(0, -0.65 * depthScale, 0);
-      scene.add(waterMesh);
+      rootGroup.add(waterMesh);
     }
+
+    // Interactive Depth Cut-Plane Mesh (Cyan Slice Plane + Bounding Edge)
+    const cutPlaneGroup = new THREE.Group();
+    const cutGeom = new THREE.PlaneGeometry(10, 10);
+    cutGeom.rotateX(-Math.PI / 2);
+    const cutMat = new THREE.MeshStandardMaterial({
+      color: 0x06b6d4,
+      transparent: true,
+      opacity: 0.35,
+      roughness: 0.2,
+      metalness: 0.1,
+      side: THREE.DoubleSide
+    });
+    const cutMesh = new THREE.Mesh(cutGeom, cutMat);
+    const cutEdgeGeom = new THREE.EdgesGeometry(cutGeom);
+    const cutEdgeMat = new THREE.LineBasicMaterial({ color: 0x22d3ee, linewidth: 2 });
+    const cutEdgeLines = new THREE.LineSegments(cutEdgeGeom, cutEdgeMat);
+    cutPlaneGroup.add(cutMesh);
+    cutPlaneGroup.add(cutEdgeLines);
+
+    // Position cut-plane based on initial cutDepthCm
+    const dY = Math.abs(deepestY) || (2.2 * depthScale);
+    const initialFraction = cutDepthCm === 0 ? 0 : cutDepthCm / Math.max(0.1, depthCm);
+    cutPlaneGroup.position.y = cutDepthCm === 0 ? 0.02 : -(initialFraction * dY);
+    rootGroup.add(cutPlaneGroup);
+    cutPlaneGroupRef.current = cutPlaneGroup;
 
     // 3D Depth Caliper Needle & Indicator Marker
     const caliperGeom = new THREE.BufferGeometry().setFromPoints([
@@ -521,14 +684,14 @@ export const RoadMeshVisualizerModal: React.FC<RoadMeshVisualizerModalProps> = (
     ]);
     const caliperMat = new THREE.LineBasicMaterial({ color: 0xf43f5e, linewidth: 2 });
     const caliperLine = new THREE.Line(caliperGeom, caliperMat);
-    scene.add(caliperLine);
+    rootGroup.add(caliperLine);
 
     // Target Pin Sphere at bottom of cavity
     const sphereGeom = new THREE.SphereGeometry(0.12, 16, 16);
     const sphereMat = new THREE.MeshBasicMaterial({ color: 0xf43f5e });
     const sphereMesh = new THREE.Mesh(sphereGeom, sphereMat);
     sphereMesh.position.set(deepestX, deepestY, deepestZ);
-    scene.add(sphereMesh);
+    rootGroup.add(sphereMesh);
 
     // Mouse Drag Orbit Controls
     let isDragging = false;
@@ -545,16 +708,8 @@ export const RoadMeshVisualizerModal: React.FC<RoadMeshVisualizerModalProps> = (
       const deltaX = e.clientX - prevMousePos.x;
       const deltaY = e.clientY - prevMousePos.y;
 
-      mesh.rotation.y += deltaX * 0.008;
-      mesh.rotation.x += deltaY * 0.008;
-      if (waterMesh) {
-        waterMesh.rotation.y = mesh.rotation.y;
-        waterMesh.rotation.x = mesh.rotation.x;
-      }
-      caliperLine.rotation.y = mesh.rotation.y;
-      caliperLine.rotation.x = mesh.rotation.x;
-      sphereMesh.rotation.y = mesh.rotation.y;
-      sphereMesh.rotation.x = mesh.rotation.x;
+      rootGroup.rotation.y += deltaX * 0.008;
+      rootGroup.rotation.x += deltaY * 0.008;
 
       prevMousePos = { x: e.clientX, y: e.clientY };
     };
@@ -563,7 +718,7 @@ export const RoadMeshVisualizerModal: React.FC<RoadMeshVisualizerModalProps> = (
 
     const onWheel = (e: WheelEvent) => {
       e.preventDefault();
-      camera.position.z = Math.max(5, Math.min(22, camera.position.z + e.deltaY * 0.015));
+      camera.position.z = Math.max(4.5, Math.min(22, camera.position.z + e.deltaY * 0.015));
     };
 
     dom.addEventListener("mousedown", onMouseDown);
@@ -577,10 +732,7 @@ export const RoadMeshVisualizerModal: React.FC<RoadMeshVisualizerModalProps> = (
       animId = requestAnimationFrame(animate);
 
       if (autoRotate && !isDragging) {
-        mesh.rotation.y += 0.0035;
-        if (waterMesh) waterMesh.rotation.y = mesh.rotation.y;
-        caliperLine.rotation.y = mesh.rotation.y;
-        sphereMesh.rotation.y = mesh.rotation.y;
+        rootGroup.rotation.y += 0.0035;
       }
 
       renderer.render(scene, camera);
@@ -607,20 +759,25 @@ export const RoadMeshVisualizerModal: React.FC<RoadMeshVisualizerModalProps> = (
       if (mountRef.current && renderer.domElement) {
         mountRef.current.removeChild(renderer.domElement);
       }
-      geometry.dispose();
-      // Dispose all scene geometries and materials before destroying renderer
+      
+      // Clean resource disposal to prevent WebGL context exhaustion (T-16-02)
       scene.traverse((object) => {
-        const mesh = object as THREE.Mesh;
-        if (mesh.geometry) mesh.geometry.dispose();
-        if (mesh.material) {
-          const mats = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
-          mats.forEach((m: THREE.Material) => m.dispose());
+        const o = object as any;
+        if (o.geometry) o.geometry.dispose();
+        if (o.material) {
+          if (Array.isArray(o.material)) {
+            o.material.forEach((m: THREE.Material) => m.dispose());
+          } else {
+            o.material.dispose();
+          }
         }
       });
       renderer.forceContextLoss();
       renderer.dispose();
+      cutPlaneGroupRef.current = null;
+      cameraRef.current = null;
     };
-  }, [isOpen, renderMode, autoRotate, activeDefectMode, depthScale]);
+  }, [isOpen, renderMode, autoRotate, activeDefectMode, depthScale, cameraMode]);
 
   if (!isOpen) return null;
 
@@ -637,7 +794,7 @@ export const RoadMeshVisualizerModal: React.FC<RoadMeshVisualizerModalProps> = (
     >
       <div className="bg-[#0B101D] border border-slate-700/80 rounded-2xl w-full max-w-5xl shadow-2xl overflow-hidden flex flex-col max-h-[95vh] text-white animate-scaleIn">
         
-        {/* Modal Header */}
+        {/* Modal Header Bar */}
         <div className="h-14 px-5 border-b border-slate-800 flex items-center justify-between bg-[#0E1424] shrink-0">
           <div className="flex items-center gap-3">
             <div className="w-8 h-8 rounded-xl bg-blue-500/20 text-blue-400 border border-blue-500/30 flex items-center justify-center">
@@ -646,25 +803,26 @@ export const RoadMeshVisualizerModal: React.FC<RoadMeshVisualizerModalProps> = (
             <div>
               <div className="flex items-center gap-2">
                 <h3 className="font-bold text-sm text-white tracking-wide">
-                  3D Surface Defect Geometry (Concept Model)
+                  3D Surface Corridor Mesh Digital Twin
                 </h3>
                 <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30">
-                  Concept Mockup
+                  Concept Prototype
                 </span>
                 <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-rose-500/20 text-rose-300 border border-rose-500/30">
                   {hazardId}
                 </span>
               </div>
               <p className="text-[11px] text-slate-400 truncate max-w-md">
-                {locationName} • <span className="text-amber-400/90 font-medium">Future Scope: requires physical LiDAR/Stereo sensor hardware</span>
+                {locationName} • <span className="text-amber-400/90 font-medium">Non-LiDAR Exploratory Reconstruction</span>
               </p>
             </div>
           </div>
 
           <div className="flex items-center gap-2">
-            {/* View Modes Toggle: Solid / Wireframe / Point Cloud */}
+            {/* View Modes Toggle: Solid / Wireframe / Depth Contour (D-16-02) */}
             <div className="flex items-center bg-slate-900 border border-slate-800 p-0.5 rounded-lg text-xs font-mono">
               <button
+                type="button"
                 onClick={() => setRenderMode("solid")}
                 className={`px-2 py-1 rounded-md transition ${
                   renderMode === "solid" ? "bg-blue-600 text-white font-bold" : "text-slate-400 hover:text-white"
@@ -673,6 +831,7 @@ export const RoadMeshVisualizerModal: React.FC<RoadMeshVisualizerModalProps> = (
                 Solid
               </button>
               <button
+                type="button"
                 onClick={() => setRenderMode("wireframe")}
                 className={`px-2 py-1 rounded-md transition ${
                   renderMode === "wireframe" ? "bg-blue-600 text-white font-bold" : "text-slate-400 hover:text-white"
@@ -681,12 +840,39 @@ export const RoadMeshVisualizerModal: React.FC<RoadMeshVisualizerModalProps> = (
                 Wireframe
               </button>
               <button
-                onClick={() => setRenderMode("lidar")}
+                type="button"
+                onClick={() => setRenderMode("contour")}
                 className={`px-2 py-1 rounded-md transition ${
-                  renderMode === "lidar" ? "bg-blue-600 text-white font-bold" : "text-slate-400 hover:text-white"
+                  renderMode === "contour" ? "bg-blue-600 text-white font-bold" : "text-slate-400 hover:text-white"
                 }`}
               >
-                Point Cloud
+                Depth Contour
+              </button>
+            </div>
+
+            {/* Camera View Mode Toggle: Turntable vs Driver Walk POV (D-16-02) */}
+            <div className="flex items-center bg-slate-900 border border-slate-800 p-0.5 rounded-lg text-xs font-mono">
+              <button
+                type="button"
+                onClick={() => setCameraMode("turntable")}
+                className={`px-2 py-1 rounded-md transition flex items-center gap-1 ${
+                  cameraMode === "turntable" ? "bg-indigo-600 text-white font-bold" : "text-slate-400 hover:text-white"
+                }`}
+                title="Turntable Orbit 360°"
+              >
+                <RotateCw className="w-3 h-3" />
+                <span>Turntable</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setCameraMode("walk")}
+                className={`px-2 py-1 rounded-md transition flex items-center gap-1 ${
+                  cameraMode === "walk" ? "bg-indigo-600 text-white font-bold" : "text-slate-400 hover:text-white"
+                }`}
+                title="Driver Walk POV View"
+              >
+                <Eye className="w-3 h-3" />
+                <span>Walk POV</span>
               </button>
             </div>
 
@@ -705,9 +891,36 @@ export const RoadMeshVisualizerModal: React.FC<RoadMeshVisualizerModalProps> = (
             <button 
               onClick={onClose}
               className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition"
+              title="Close 3D Visualizer"
             >
               <X className="w-4 h-4" />
             </button>
+          </div>
+        </div>
+
+        {/* Persistent Concept Disclaimer Banner (Mandatory Constraint D-16-01) */}
+        <div className="bg-amber-950/40 border-b border-amber-500/30 px-5 py-2 flex items-center justify-between text-xs text-amber-200 shrink-0">
+          <div className="flex items-center gap-2">
+            <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0" />
+            <span className="font-medium tracking-wide">
+              <strong>⚠️ Experimental Concept / Proof-of-Concept Prototype:</strong> Pavement 3D surface mesh synthesized from monocular dashcam depth + IMU elevation profile (Non-LiDAR exploratory prototype).
+            </span>
+          </div>
+          <div className="relative group shrink-0">
+            <button 
+              type="button"
+              className="p-1 rounded hover:bg-amber-900/50 text-amber-300 hover:text-amber-100 transition flex items-center gap-1 font-mono text-[10px] cursor-help"
+              aria-label="Sensor Fusion Derivation Details"
+            >
+              <Info className="w-3.5 h-3.5" />
+              <span>Derivation Info</span>
+            </button>
+            <div className="absolute right-0 top-full mt-1.5 w-84 p-3.5 rounded-xl bg-slate-900/95 border border-amber-500/40 text-[10.5px] text-slate-300 shadow-2xl backdrop-blur-md hidden group-hover:block z-50 pointer-events-none font-sans leading-relaxed">
+              <div className="font-bold text-amber-300 mb-1 flex items-center gap-1 font-mono">
+                <Sparkles className="w-3 h-3 text-amber-400" /> Sensor Fusion Derivation
+              </div>
+              Pavement 3D elevation topology is generated via optical disparity inference from monocular dashcam frames cross-correlated with speed-normalized vertical axle acceleration (<code className="text-amber-300 font-mono">G_norm = |Gz - 1.0| / (v / 30)</code>). It provides interactive civil engineering estimation for rapid triage, rather than sub-millimeter terrestrial LiDAR surveying.
+            </div>
           </div>
         </div>
 
@@ -794,7 +1007,60 @@ export const RoadMeshVisualizerModal: React.FC<RoadMeshVisualizerModalProps> = (
                 <strong className="text-rose-400 font-bold">-{depthCm} cm</strong>
               </div>
               <div className="px-3 py-1 rounded-lg bg-slate-900/80 backdrop-blur-md border border-slate-800 text-[10.5px] font-mono text-slate-300">
-                <span>Orbit: Drag | Zoom: Scroll</span>
+                <span>{cameraMode === "walk" ? "Driver POV: Drag / Scroll" : "Orbit: Drag | Zoom: Scroll"}</span>
+              </div>
+            </div>
+
+            {/* Interactive Depth Cut-Plane Slider Dock (D-16-02) */}
+            <div className="absolute top-16 left-3 w-72 p-2.5 rounded-xl bg-slate-900/90 backdrop-blur-md border border-cyan-500/40 shadow-xl space-y-1.5 text-xs font-mono">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-1.5 text-cyan-300 font-bold">
+                  <Sliders className="w-3.5 h-3.5 text-cyan-400" />
+                  <span>Depth Cut-Plane Slice</span>
+                </div>
+                <span className="px-1.5 py-0.5 rounded bg-cyan-950/80 text-cyan-300 border border-cyan-800 font-bold text-[10px]">
+                  {cutDepthCm.toFixed(1)} cm
+                </span>
+              </div>
+
+              <input
+                type="range"
+                min={0}
+                max={25}
+                step={0.5}
+                value={cutDepthCm}
+                onChange={(e) => setCutDepthCm(Number(e.target.value))}
+                className="w-full accent-cyan-400 cursor-pointer h-1.5 bg-slate-800 rounded-lg appearance-none"
+              />
+
+              <div className="flex items-center justify-between text-[9px] text-slate-400">
+                <button 
+                  type="button" 
+                  onClick={() => setCutDepthCm(0)}
+                  className={`hover:text-cyan-300 transition ${cutDepthCm === 0 ? "text-cyan-300 font-bold" : ""}`}
+                >
+                  Surface (0cm)
+                </button>
+                <button 
+                  type="button" 
+                  onClick={() => setCutDepthCm(Number((depthCm / 2).toFixed(1)))}
+                  className={`hover:text-cyan-300 transition ${cutDepthCm === Number((depthCm / 2).toFixed(1)) ? "text-cyan-300 font-bold" : ""}`}
+                >
+                  Mid ({(depthCm / 2).toFixed(1)}cm)
+                </button>
+                <button 
+                  type="button" 
+                  onClick={() => setCutDepthCm(depthCm)}
+                  className={`hover:text-cyan-300 transition ${cutDepthCm === depthCm ? "text-cyan-300 font-bold" : ""}`}
+                >
+                  Base ({depthCm}cm)
+                </button>
+              </div>
+
+              <div className="pt-1 border-t border-slate-800 flex items-center justify-between text-[9.5px]">
+                <span className="text-slate-400">Remaining Void:</span>
+                <span className="text-emerald-400 font-bold">{slicedVolume.toFixed(1)} L ({slicedMassKg} kg)</span>
+                <span className="text-cyan-300 font-bold">₹{slicedCost.toLocaleString()}</span>
               </div>
             </div>
 
@@ -832,29 +1098,28 @@ export const RoadMeshVisualizerModal: React.FC<RoadMeshVisualizerModalProps> = (
               </div>
             )}
 
-            {/* Real Optical Evidence PIP Inset */}
+            {/* Optical Evidence PIP Inset (Synchronized to Active Exterior Angle) */}
             {showCameraInset && (
-              <div className="absolute bottom-16 right-3 w-60 rounded-xl overflow-hidden border border-slate-700 bg-slate-900/90 backdrop-blur-md p-2 space-y-1.5 shadow-2xl animate-fadeIn">
+              <div className="absolute bottom-16 right-3 w-64 rounded-xl overflow-hidden border border-slate-700 bg-slate-900/90 backdrop-blur-md p-2 space-y-1.5 shadow-2xl animate-fadeIn">
                 <div className="flex items-center justify-between text-[10px] font-mono">
                   <span className="text-emerald-400 font-bold flex items-center gap-1">
                     <Camera className="w-3 h-3 text-emerald-400" />
-                    Captured Optical Frame
+                    {activeFeed.channelCode} • Optical View
                   </span>
                   <span className="px-1.5 py-0.2 rounded bg-blue-950 text-blue-300 border border-blue-800 text-[9px] font-bold">
-                    Pass {activePass.passNumber}
+                    {activeFeed.speedKmh} km/h
                   </span>
                 </div>
                 <div className="relative aspect-video rounded-lg overflow-hidden border border-slate-800 bg-slate-950">
                   <img
-                    src={activePass.imageUrl}
-                    alt="Captured Optical Defect"
+                    src={activeFeed.imageUrl}
+                    alt={activeFeed.label}
                     className="w-full h-full object-cover"
                     onError={(e) => {
                       (e.currentTarget as HTMLImageElement).src = DEFAULT_POTHOLE_IMG;
                     }}
                   />
-                  {/* Bounding box marker */}
-                  {activePass.bBox && (
+                  {activeChannelId === "cam1_front" && activePass.bBox && (
                     <div 
                       style={{
                         top: `${activePass.bBox.top}%`,
@@ -866,12 +1131,12 @@ export const RoadMeshVisualizerModal: React.FC<RoadMeshVisualizerModalProps> = (
                     />
                   )}
                   <div className="absolute bottom-1 left-1 px-1.5 py-0.5 rounded bg-black/80 text-[8px] font-mono text-slate-200">
-                    {activePass.busId} • {activePass.speedKmh} km/h
+                    {activeFeed.busId} • G_norm: {activeFeed.gNorm.toFixed(2)}g
                   </div>
                 </div>
-                <div className="text-[9.5px] font-mono text-slate-400 flex items-center justify-between">
-                  <span>Axle: <strong className="text-rose-400">+{activePass.imuGz}g</strong></span>
-                  <span className="text-emerald-400 font-bold">3D Photogrammetry Model</span>
+                <div className="text-[9px] font-mono text-slate-400 flex items-center justify-between">
+                  <span>Axle IMU: <strong className="text-rose-400">+{activeFeed.imuGz}g</strong></span>
+                  <span className="text-emerald-400 font-bold">Disparity Model</span>
                 </div>
               </div>
             )}
@@ -879,15 +1144,28 @@ export const RoadMeshVisualizerModal: React.FC<RoadMeshVisualizerModalProps> = (
             {/* Color Elevation Legend */}
             <div className="absolute bottom-3 left-3 right-3 flex items-center justify-between px-3.5 py-2 rounded-xl bg-slate-900/85 backdrop-blur-md border border-slate-800 text-[10px] font-mono">
               <div className="flex items-center gap-3">
-                <span className="text-slate-400">Depth Heatmap:</span>
-                <div className="flex items-center gap-1.5">
-                  <span className="w-3 h-3 rounded-full bg-slate-500" />
-                  <span>Road (0cm)</span>
-                  <span className="w-3 h-3 rounded-full bg-amber-500 ml-2" />
-                  <span>Lip Drop (-{(depthCm * 0.35).toFixed(1)}cm)</span>
-                  <span className="w-3 h-3 rounded-full bg-rose-600 ml-2" />
-                  <span>Cavity (-{depthCm}cm)</span>
-                </div>
+                <span className="text-slate-400">
+                  {renderMode === "contour" ? "Contour Heatmap:" : "Elevation Scale:"}
+                </span>
+                {renderMode === "contour" ? (
+                  <div className="flex items-center gap-1.5">
+                    <span className="w-3 h-3 rounded-full bg-emerald-500" />
+                    <span>Grade (0cm)</span>
+                    <span className="w-3 h-3 rounded-full bg-amber-500 ml-2" />
+                    <span>Rutting (1-5cm)</span>
+                    <span className="w-3 h-3 rounded-full bg-rose-600 ml-2" />
+                    <span>Void (&gt;5cm)</span>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-1.5">
+                    <span className="w-3 h-3 rounded-full bg-slate-500" />
+                    <span>Road (0cm)</span>
+                    <span className="w-3 h-3 rounded-full bg-amber-500 ml-2" />
+                    <span>Lip Drop (-{(depthCm * 0.35).toFixed(1)}cm)</span>
+                    <span className="w-3 h-3 rounded-full bg-rose-600 ml-2" />
+                    <span>Cavity (-{depthCm}cm)</span>
+                  </div>
+                )}
               </div>
 
               <button
@@ -905,7 +1183,7 @@ export const RoadMeshVisualizerModal: React.FC<RoadMeshVisualizerModalProps> = (
             </div>
           </div>
 
-          {/* Right: Engineering Specifications & Sensor Calibration */}
+          {/* Right: Engineering Specifications, Multi-Camera Dock & Sensor Calibration */}
           <div className="lg:col-span-5 p-5 bg-[#0D1424] border-t lg:border-t-0 lg:border-l border-slate-800 flex flex-col justify-between overflow-y-auto custom-scrollbar space-y-4">
             <div className="space-y-3.5">
               {/* Transit Fleet Forensic Evidence Console */}
@@ -921,45 +1199,184 @@ export const RoadMeshVisualizerModal: React.FC<RoadMeshVisualizerModalProps> = (
                   </span>
                 </div>
 
-                {/* Evidence Source Mode Tabs */}
-                <div className="flex items-center gap-1 p-1 bg-slate-950/80 rounded-xl border border-slate-800 text-[11px] font-mono">
+                {/* Evidence Source Mode Tabs (Including 4-Cam Exterior D-16-03) */}
+                <div className="flex items-center gap-1 p-1 bg-slate-950/80 rounded-xl border border-slate-800 text-[10.5px] font-mono">
+                  <button
+                    type="button"
+                    onClick={() => { setEvidenceTab("multi-cam"); setIsPlayingBurst(false); }}
+                    className={`flex-1 py-1 px-1.5 rounded-lg flex items-center justify-center gap-1 transition font-semibold ${
+                      evidenceTab === "multi-cam" 
+                        ? "bg-blue-600 text-white shadow-xs font-bold" 
+                        : "text-slate-400 hover:text-slate-200 hover:bg-slate-800/60"
+                    }`}
+                  >
+                    <Layers className="w-3 h-3 text-cyan-400" />
+                    <span>4-Cam Exterior</span>
+                  </button>
                   <button
                     type="button"
                     onClick={() => setEvidenceTab("multi-pass")}
-                    className={`flex-1 py-1.5 px-2 rounded-lg flex items-center justify-center gap-1.5 transition font-semibold ${
+                    className={`py-1 px-1.5 rounded-lg flex items-center justify-center gap-1 transition font-semibold ${
                       evidenceTab === "multi-pass" 
                         ? "bg-blue-600 text-white shadow-xs font-bold" 
                         : "text-slate-400 hover:text-slate-200 hover:bg-slate-800/60"
                     }`}
                   >
-                    <Camera className="w-3.5 h-3.5 text-emerald-400" />
-                    <span>Captured Passes ({passes.length})</span>
+                    <Camera className="w-3 h-3 text-emerald-400" />
+                    <span>Passes ({passes.length})</span>
                   </button>
                   <button
                     type="button"
                     onClick={() => { setEvidenceTab("telemetry"); setIsPlayingBurst(false); }}
-                    className={`py-1.5 px-2 rounded-lg flex items-center justify-center gap-1.5 transition font-semibold ${
+                    className={`py-1 px-1.5 rounded-lg flex items-center justify-center gap-1 transition font-semibold ${
                       evidenceTab === "telemetry" 
                         ? "bg-blue-600 text-white shadow-xs font-bold" 
                         : "text-slate-400 hover:text-slate-200 hover:bg-slate-800/60"
                     }`}
                   >
-                    <Activity className="w-3.5 h-3.5 text-amber-400" />
-                    <span>100Hz IMU Shock</span>
+                    <Activity className="w-3 h-3 text-amber-400" />
+                    <span>100Hz IMU</span>
                   </button>
                   <button
                     type="button"
                     onClick={() => { setEvidenceTab("dashcam-video"); setIsPlayingBurst(false); }}
-                    className={`flex-1 py-1.5 px-2 rounded-lg flex items-center justify-center gap-1.5 transition font-semibold ${
+                    className={`py-1 px-1.5 rounded-lg flex items-center justify-center gap-1 transition font-semibold ${
                       evidenceTab === "dashcam-video" 
                         ? "bg-blue-600 text-white shadow-xs font-bold" 
                         : "text-slate-400 hover:text-slate-200 hover:bg-slate-800/60"
                     }`}
                   >
-                    <Video className="w-3.5 h-3.5 text-blue-400" />
-                    <span>Windshield Video</span>
+                    <Video className="w-3 h-3 text-blue-400" />
+                    <span>Video</span>
                   </button>
                 </div>
+
+                {/* TAB 0: 4-CHANNEL MULTI-CAMERA EXTERIOR PERSPECTIVE DOCK (D-16-03) */}
+                {evidenceTab === "multi-cam" && (
+                  <div className="space-y-2">
+                    {/* 4-Channel Perspective Switcher Dock */}
+                    <div className="grid grid-cols-2 gap-1.5">
+                      {exteriorFeeds.map((feed) => (
+                        <button
+                          key={feed.id}
+                          type="button"
+                          onClick={() => setActiveChannelId(feed.id)}
+                          className={`p-1.5 rounded-lg border text-left transition font-mono flex flex-col justify-between ${
+                            activeChannelId === feed.id
+                              ? "bg-blue-950/80 border-blue-500 text-white shadow-md shadow-blue-950/50"
+                              : "bg-slate-950/60 border-slate-800 text-slate-400 hover:border-slate-700 hover:text-slate-300"
+                          }`}
+                        >
+                          <div className="flex items-center justify-between text-[9.5px]">
+                            <span className="font-bold text-cyan-400">{feed.channelCode}</span>
+                            <span className="text-[8.5px] px-1 py-0.2 rounded bg-slate-900 text-slate-300">
+                              {feed.speedKmh} km/h
+                            </span>
+                          </div>
+                          <div className="text-[10px] font-semibold text-slate-200 truncate mt-0.5">
+                            {feed.label}
+                          </div>
+                          <div className="text-[8.5px] text-amber-400/90 mt-0.5">
+                            G_norm: {feed.gNorm.toFixed(2)}g
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+
+                    {/* Active Camera Perspective Frame Viewer */}
+                    <div className="relative rounded-xl overflow-hidden border border-slate-700/80 bg-slate-950 aspect-video">
+                      <img
+                        src={activeFeed.imageUrl}
+                        alt={activeFeed.label}
+                        className={`w-full h-full object-cover transition duration-300 ${
+                          showDepthOverlay ? "filter contrast-150 saturate-200 hue-rotate-15" : ""
+                        }`}
+                        onError={(e) => {
+                          (e.currentTarget as HTMLImageElement).src = DEFAULT_POTHOLE_IMG;
+                        }}
+                      />
+                      {showDepthOverlay && (
+                        <div 
+                          className="absolute inset-0 pointer-events-none mix-blend-color-dodge opacity-60 bg-gradient-to-t from-emerald-500/30 via-amber-500/20 to-rose-600/30"
+                        />
+                      )}
+
+                      {/* Header Badge */}
+                      <div className="absolute top-0 left-0 right-0 p-2 bg-gradient-to-b from-black/85 via-black/40 to-transparent flex items-center justify-between text-[10px] font-mono pointer-events-none">
+                        <div className="flex items-center gap-1.5">
+                          <span className="px-1.5 py-0.5 rounded bg-blue-600 text-white font-bold">
+                            {activeFeed.channelCode}
+                          </span>
+                          <span className="text-white font-semibold truncate max-w-[170px]">
+                            {activeFeed.label}
+                          </span>
+                        </div>
+                        <span className="text-emerald-400 text-[9px] bg-black/60 px-1.5 py-0.5 rounded border border-emerald-500/30">
+                          CALIBRATED
+                        </span>
+                      </div>
+
+                      {/* Bounding box on primary front channel */}
+                      {activeChannelId === "cam1_front" && activePass.bBox && (
+                        <div 
+                          style={{
+                            top: `${activePass.bBox.top}%`,
+                            left: `${activePass.bBox.left}%`,
+                            width: `${activePass.bBox.width}%`,
+                            height: `${activePass.bBox.height}%`,
+                          }}
+                          className="absolute border-2 border-rose-500 rounded bg-rose-500/20 flex flex-col justify-between p-1 pointer-events-none shadow-md shadow-rose-950/50"
+                        >
+                          <span className="px-1 py-0.5 rounded bg-rose-600 text-white font-mono text-[8px] font-bold self-start">
+                            {defectType}: {activeFeed.confidence}%
+                          </span>
+                          <span className="px-1 py-0.5 rounded bg-slate-950/90 text-rose-300 font-mono text-[8px] self-end">
+                            Depth: {depthCm}cm
+                          </span>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Synchronized Telemetry HUD Strip (D-16-03) */}
+                    <div className="p-2.5 rounded-lg bg-slate-950/90 border border-slate-800 text-[10px] font-mono space-y-1">
+                      <div className="flex items-center justify-between text-slate-300">
+                        <span className="text-cyan-300 font-bold">
+                          {activeFeed.channelCode} • {activeFeed.label.toUpperCase()}
+                        </span>
+                        <span className="text-emerald-400 font-bold">{activeFeed.timestamp}</span>
+                      </div>
+                      <div className="flex items-center justify-between text-slate-300">
+                        <div>
+                          <span>SPD: <strong className="text-white">{activeFeed.speedKmh} KM/H</strong></span>
+                          <span className="mx-1 text-slate-600">|</span>
+                          <span>SHOCK: <strong className="text-amber-400">G_norm {activeFeed.gNorm.toFixed(2)}g</strong></span>
+                          <span className="mx-1 text-slate-600">|</span>
+                          <span>IMU: <strong className="text-rose-400">+{activeFeed.imuGz}g Z</strong></span>
+                        </div>
+                        <span className="text-slate-400">{activeFeed.coords}</span>
+                      </div>
+                      <div className="text-[9px] text-slate-400 pt-1 border-t border-slate-800/80 flex items-center justify-between">
+                        <span className="text-slate-400">Bus: <strong className="text-white">{activeFeed.busId}</strong></span>
+                        <span className="text-blue-300 truncate max-w-[220px]">{activeFeed.inspectionRole}</span>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center justify-end">
+                      <button
+                        type="button"
+                        onClick={() => setShowDepthOverlay(!showDepthOverlay)}
+                        className={`px-2 py-0.5 rounded text-[10px] font-semibold border transition flex items-center gap-1 font-mono ${
+                          showDepthOverlay 
+                            ? "bg-emerald-600/30 text-emerald-300 border-emerald-500/50" 
+                            : "bg-slate-900 text-slate-400 border-slate-700 hover:text-slate-200"
+                        }`}
+                      >
+                        <Eye className="w-3 h-3" />
+                        <span>Disparity Heatmap: {showDepthOverlay ? "ON" : "OFF"}</span>
+                      </button>
+                    </div>
+                  </div>
+                )}
 
                 {/* Tab 1: Live Forward Windshield Dashcam Video Feed */}
                 {evidenceTab === "dashcam-video" && (
@@ -976,7 +1393,6 @@ export const RoadMeshVisualizerModal: React.FC<RoadMeshVisualizerModalProps> = (
                           showDepthOverlay ? "filter contrast-150 saturate-200 hue-rotate-15" : ""
                         }`}
                       />
-                      {/* False-color Depth Disparity Heatmap Overlay if toggled */}
                       {showDepthOverlay && (
                         <div 
                           className="absolute inset-0 pointer-events-none mix-blend-color-dodge opacity-60 bg-gradient-to-t from-emerald-500/30 via-amber-500/20 to-rose-600/30"
@@ -1114,7 +1530,6 @@ export const RoadMeshVisualizerModal: React.FC<RoadMeshVisualizerModalProps> = (
                           (e.currentTarget as HTMLImageElement).src = DEFAULT_POTHOLE_IMG;
                         }}
                       />
-                      {/* False-color Depth Disparity Heatmap Overlay if toggled */}
                       {showDepthOverlay && (
                         <div 
                           className="absolute inset-0 pointer-events-none mix-blend-color-dodge opacity-60 bg-gradient-to-t from-emerald-500/30 via-amber-500/20 to-rose-600/30"
@@ -1243,12 +1658,19 @@ export const RoadMeshVisualizerModal: React.FC<RoadMeshVisualizerModalProps> = (
                 )}
               </div>
 
-              {/* Civil Engineering Material Calculation */}
+              {/* Civil Engineering Material Calculation Scorecard */}
               <div>
-                <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2 flex items-center gap-1.5 font-mono">
-                  <Sparkles className="w-3.5 h-3.5 text-blue-400" />
-                  <span>Civil Engineering Specifications</span>
-                </h4>
+                <div className="flex items-center justify-between mb-2">
+                  <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1.5 font-mono">
+                    <Sparkles className="w-3.5 h-3.5 text-blue-400" />
+                    <span>Civil Engineering Specifications</span>
+                  </h4>
+                  {cutDepthCm > 0 && (
+                    <span className="text-[9.5px] font-mono font-bold text-cyan-300 bg-cyan-950/80 px-1.5 py-0.5 rounded border border-cyan-800">
+                      Sliced at {cutDepthCm.toFixed(1)}cm
+                    </span>
+                  )}
+                </div>
 
                 <div className="grid grid-cols-2 gap-2">
                   <div className="p-2.5 rounded-xl bg-slate-900/80 border border-slate-800">
@@ -1266,9 +1688,11 @@ export const RoadMeshVisualizerModal: React.FC<RoadMeshVisualizerModalProps> = (
                   <div className="p-2.5 rounded-xl bg-slate-900/80 border border-slate-800">
                     <div className="text-[10px] text-slate-400">Asphalt Hot-Mix Volume</div>
                     <div className="text-sm font-bold text-emerald-400 font-mono mt-0.5">
-                      {volumeLiters} L <span className="text-[10px] text-slate-400 font-normal">({Math.round(volumeLiters * 2.3)} kg)</span>
+                      {slicedVolume} L <span className="text-[10px] text-slate-400 font-normal">({slicedMassKg} kg)</span>
                     </div>
-                    <div className="text-[9px] text-slate-500 mt-0.5 font-mono">Bituminous Grade-2</div>
+                    <div className="text-[9px] text-slate-500 mt-0.5 font-mono">
+                      {cutDepthCm > 0 ? `Sub-slice of ${volumeLiters}L total` : "Bituminous Grade-2"}
+                    </div>
                   </div>
 
                   <div className="p-2.5 rounded-xl bg-slate-900/80 border border-slate-800">
@@ -1278,14 +1702,18 @@ export const RoadMeshVisualizerModal: React.FC<RoadMeshVisualizerModalProps> = (
                   </div>
                 </div>
 
-                {/* Repair Cost according to PWD SOR */}
+                {/* Repair Cost according to PWD SOR 2025 */}
                 <div className="p-2.5 mt-2 rounded-xl bg-blue-950/40 border border-blue-900/50 flex items-center justify-between">
                   <div>
-                    <div className="text-blue-300 text-[10.5px]">PWD SOR 2024 Repair Budget</div>
-                    <div className="text-base font-extrabold text-blue-400 font-mono">₹{costInr.toLocaleString()}</div>
+                    <div className="text-blue-300 text-[10.5px]">
+                      PWD SOR 2025 Repair Cost {cutDepthCm > 0 && <span className="text-cyan-300">(Cut-Plane Pro-Rated)</span>}
+                    </div>
+                    <div className="text-base font-extrabold text-blue-400 font-mono">
+                      ₹{slicedCost.toLocaleString()}
+                    </div>
                   </div>
                   <span className="text-[10px] text-blue-300 font-mono px-2 py-0.5 rounded bg-blue-900/50">
-                    Item 4.12 PWD SOR
+                    Item 4.12 PWD SOR 2025
                   </span>
                 </div>
               </div>

@@ -12,13 +12,15 @@ import {
   FileText, 
   QrCode, 
   Building2, 
-  Zap
+  Zap,
+  Box
 } from 'lucide-react';
 import { HazardCluster, TrafficIncident } from '../../types';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
 import { api } from '../../services/api';
 import { ConfirmationModal, ConfirmationModalProps } from '../common/ConfirmationModal';
+import { isRoadSurfaceDefect } from '../modals/RoadMeshVisualizerModal';
 
 interface OperatorInspectorPanelProps {
   selectedCluster: HazardCluster | null;
@@ -39,6 +41,7 @@ export const OperatorInspectorPanel: React.FC<OperatorInspectorPanelProps> = ({
   onEscalateIncident,
   onNavigateToWorkOrders,
   onOpenDossierModal,
+  onOpenMeshModal,
 }) => {
   const { 
     user,
@@ -507,6 +510,17 @@ export const OperatorInspectorPanel: React.FC<OperatorInspectorPanelProps> = ({
               <div className="p-2.5 rounded-md bg-slate-100 dark:bg-slate-800 text-xs text-slate-600 dark:text-slate-300 text-center">
                 Road work orders and contractor assignment require Road / PWD Maintenance Authority clearance.
               </div>
+            )}
+
+            {onOpenMeshModal && isRoadSurfaceDefect(selectedCluster.defect_name || selectedCluster.defect_type) && (
+              <button
+                type="button"
+                onClick={onOpenMeshModal}
+                className="w-full py-1.5 px-3 rounded-md bg-amber-500/10 hover:bg-amber-500/20 text-amber-700 dark:text-amber-300 font-semibold text-xs flex items-center justify-center gap-1.5 border border-amber-500/30 transition cursor-pointer"
+              >
+                <Box className="w-3.5 h-3.5 text-amber-500" />
+                <span>Inspect 3D Surface Mesh (Concept)</span>
+              </button>
             )}
 
             {onNavigateToWorkOrders && (

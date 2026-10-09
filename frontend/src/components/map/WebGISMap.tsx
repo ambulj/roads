@@ -29,6 +29,7 @@ import { HazardCluster, FleetNode, TrafficIncident } from '../../types';
 import { Button } from '../ui/Button';
 import { api, CHENNAI_POIS } from '../../services/api';
 import { useTheme } from '../../context/ThemeContext';
+import { isRoadSurfaceDefect } from '../modals/RoadMeshVisualizerModal';
 
 interface WebGISMapProps {
   clusters: HazardCluster[];
@@ -1230,6 +1231,14 @@ export const WebGISMap: React.FC<WebGISMapProps> = ({
             >
               <span>Inspect RPI Formula &rarr;</span>
             </button>
+            ${isRoadSurfaceDefect(cluster.defect_name || cluster.defect_type) ? `
+            <button 
+              onclick="window.__roadsaathi_open_mesh_modal?.('${cluster.id}')"
+              style="width: 100%; margin-top: 4px; padding: 5px 6px; background: #0f172a; color: #f59e0b; font-size: 10px; font-weight: 700; border-radius: 5px; border: 1px solid rgba(245,158,11,0.4); cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 4px;"
+            >
+              <span>⚠️ Inspect 3D Surface Mesh (Concept) &rarr;</span>
+            </button>
+            ` : ''}
           </div>
         `;
 

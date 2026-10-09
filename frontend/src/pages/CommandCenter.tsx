@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import {
   Search,
   RotateCcw,
@@ -193,6 +193,20 @@ export const CommandCenter: React.FC<CommandCenterProps> = ({
     }
     setIsMeshModalOpen(true);
   };
+
+  useEffect(() => {
+    (window as any).__roadsaathi_open_mesh_modal = (clusterId: string) => {
+      const cluster = clusters.find((c) => c.id === clusterId);
+      if (cluster) {
+        handleInspectPothole(cluster.id, `${cluster.road_name} — ${cluster.defect_name}`);
+      } else {
+        handleInspectPothole(clusterId);
+      }
+    };
+    return () => {
+      delete (window as any).__roadsaathi_open_mesh_modal;
+    };
+  }, [clusters]);
 
   const { success: showSuccessToast } = useToast();
 
@@ -502,6 +516,11 @@ export const CommandCenter: React.FC<CommandCenterProps> = ({
                   onNavigateToWorkOrders={() => onNavigate?.("work-orders")}
                   onOpenDossierModal={() => {
                     if (activeSelectedIncident) setIsDossierOpen(true);
+                  }}
+                  onOpenMeshModal={() => {
+                    if (selectedCluster) {
+                      handleInspectPothole(selectedCluster.id, `${selectedCluster.road_name} — ${selectedCluster.defect_name}`);
+                    }
                   }}
                 />
               )}

@@ -24,10 +24,12 @@ import {
   Clock,
   Eye,
   FileCheck,
-  AlertOctagon
+  AlertOctagon,
+  Box
 } from "lucide-react";
 import { HazardCluster } from "../../types";
 import { api } from "../../services/api";
+import { isRoadSurfaceDefect } from "../modals/RoadMeshVisualizerModal";
 
 export type WorkOrderConsoleTab = "cad_audit" | "contractor_sla" | "concurrence_release";
 
@@ -38,6 +40,7 @@ interface WorkOrderActionConsoleProps {
   initialTab?: WorkOrderConsoleTab | "dispatch" | "repass" | "notice";
   onAutoClose?: (clusterId: string, afterImageUrl: string, notes: string) => void;
   onUpdateStatus?: (orderId: string, status: any, afterImg?: string, notes?: string) => void;
+  onInspect3DMesh?: (cluster: HazardCluster) => void;
 }
 
 const WARD_ENGINEERS = [
@@ -272,6 +275,7 @@ export const WorkOrderActionConsole: React.FC<WorkOrderActionConsoleProps> = ({
   initialTab = "cad_audit",
   onAutoClose,
   onUpdateStatus,
+  onInspect3DMesh,
 }) => {
   // Normalize initialTab to modern 3-tab layout
   const resolveTab = (tab: string): WorkOrderConsoleTab => {
@@ -636,6 +640,17 @@ export const WorkOrderActionConsole: React.FC<WorkOrderActionConsoleProps> = ({
                     <div><strong>Statutory Reference:</strong> IRC:SP:20 Clause 14 &amp; MoRTH Section 3000.</div>
                     <div className="text-[9.5px] text-slate-500 font-mono">Tack coat RS-1 required on vertical cavity edges before 8-ton vibratory compaction.</div>
                   </div>
+
+                  {cluster && isRoadSurfaceDefect(cluster.defect_name || cluster.defect_type) && (
+                    <button
+                      type="button"
+                      onClick={() => onInspect3DMesh?.(cluster)}
+                      className="w-full mt-3 py-2 px-3 rounded-lg bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/30 text-xs font-semibold flex items-center justify-center gap-2 transition cursor-pointer"
+                    >
+                      <Box className="w-3.5 h-3.5 text-amber-400" />
+                      <span>Inspect 3D Corridor Mesh (Concept)</span>
+                    </button>
+                  )}
                 </div>
               </div>
             </div>
