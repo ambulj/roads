@@ -14,7 +14,7 @@ RoadSaathi's command center relies on MapLibre GL JS to provide real-time spatia
 In earlier iterations, map controls, analytical layer selectors, and popup inspectors were dispersed across multiple disconnected elements or basic inline HTML strings. Phase 6 modernizes the WebGIS experience into a cohesive, high-performance command HUD featuring:
 1. **Glassmorphic Floating Map Control Dock & Quick Corridor Navigation**: A floating pill toolbar with quick corridor jumps (`map.flyTo`), heading compass reset, basemap switcher, and split-view toggle.
 2. **High-Contrast Cluster Inspection Popup Cards**: Rich, accessible floating forensic cards with before/after thumbnails, defect code badges (`D40 Pothole`, `D20 Alligator Crack`), pass consensus counts, color-coded RPI score pills (P0 Critical, P1 High, P2 Routine), and direct 1-click hooks to [`RPIFormulaModal.tsx`](file:///c:/Users/sauja/Downloads/roads/frontend/src/components/modals/RPIFormulaModal.tsx).
-3. **Streamlined Zero-Flicker Layer Visibility Menu**: An organized dropdown/drawer controlling 6 analytical map layers (Defect Clusters, Live Transit Fleet, PS 26124 OD Desire Lines, Monsoon Flood Inundation Contours, Sensitive POIs, and Traffic Flow Bottlenecks) leveraging reactive MapLibre `setLayoutProperty('visibility')` and `setData()` calls without WebGL context destruction.
+3. **Streamlined Zero-Flicker Layer Visibility Menu**: An organized dropdown/drawer controlling 6 analytical map layers (Defect Clusters, Live Transit Fleet,   OD Desire Lines, Monsoon Flood Inundation Contours, Sensitive POIs, and Traffic Flow Bottlenecks) leveraging reactive MapLibre `setLayoutProperty('visibility')` and `setData()` calls without WebGL context destruction.
 
 ---
 
@@ -124,7 +124,7 @@ sequenceDiagram
 |---|---|---|---|---|
 | `potholes-heat-layer` | Defect Clusters & Heatmap | GeoJSON Point | `heatmap` & DOM Markers | Visible (Active) |
 | `bus-positions` | Transit Fleet Live Buses | GeoJSON Point | `circle` Pulse & 5Hz Markers | Visible (Active) |
-| `od-desire-lines-layer`| PS 26124 OD Desire Lines | GeoJSON LineString | `line` Bezier Arcs | User Toggled |
+| `od-desire-lines-layer`|   OD Desire Lines | GeoJSON LineString | `line` Bezier Arcs | User Toggled |
 | `monsoon-contours-layer`| Monsoon Hydro Contours | GeoJSON Polygon | `fill` & `line` Contours | User Toggled |
 | `poi-sensitive-layer` | Sensitive POIs (Hospitals/Schools) | GeoJSON Point / Markers | `circle` & Symbol Markers | Visible (Active) |
 | `traffic-congestion-lines`| Traffic Bottlenecks & Congestion | GeoJSON LineString | `line` Traffic Flow Polylines | User Toggled |

@@ -744,8 +744,8 @@ class ApiService {
   private isServerHealthy = true;
 
   private getAuthHeaders(): Record<string, string> {
-    const token = typeof window !== 'undefined' ? (localStorage.getItem('SeherSaathi_jwt_token') || localStorage.getItem('SeherSaathi_jwt_token')) : null;
-    const role = typeof window !== 'undefined' ? (localStorage.getItem('SeherSaathi_active_role') || localStorage.getItem('SeherSaathi_active_role') || 'maintenance') : 'maintenance';
+    const token = typeof window !== 'undefined' ? (localStorage.getItem('roadsaathi_jwt_token') || localStorage.getItem('SeherSaathi_jwt_token')) : null;
+    const role = typeof window !== 'undefined' ? (localStorage.getItem('roadsaathi_active_role') || localStorage.getItem('SeherSaathi_active_role') || 'maintenance') : 'maintenance';
     const headers: Record<string, string> = {};
     if (token) {
       headers['Authorization'] = `Bearer ${token}`;

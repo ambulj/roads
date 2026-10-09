@@ -18,7 +18,7 @@ In RoadSaathi's current operational UI, the primary Command Center viewport (`Co
    - The right-hand triage and inspector pane occupies 380px (420px on XL screens) permanently, preventing operators from expanding the WebGIS map to 100% widescreen for spatial analysis without switching tabs.
 
 3. **Intrusive Floating Map HUD Cards**:
-   - In `WebGISMap.tsx`, active analytical layers (such as *Origin-Destination Transit Desire Lines (PS 26124)* and *Municipal Blind Spots*) spawn absolute floating cards at `top-14 right-3` and `top-14 center`.
+   - In `WebGISMap.tsx`, active analytical layers (such as *Origin-Destination Transit Desire Lines ( )* and *Municipal Blind Spots*) spawn absolute floating cards at `top-14 right-3` and `top-14 center`.
    - These floating cards obscure the map canvas, corridor labels, and markers. Additionally, corridor elevation and roughness profiles lack a unified docking tray.
 
 4. **Floating Map Controls Overhead**:
@@ -108,7 +108,7 @@ In RoadSaathi's current operational UI, the primary Command Center viewport (`Co
 - Eliminate high-z-index floating cards at `top-14 right-3` (OD Desire Lines) and `top-14 center` (Municipal Coverage Blind Spots) that block camera navigation and top-level GIS layers.
 - Implement unified **Slide-Up Bottom Analytical Trays** docked neatly above the map legend (`bottom-12 left-3 max-w-lg w-full z-20`).
 - Trays supported:
-  1. **OD Transit Desire Lines Sheet (PS 26124)**:
+  1. **OD Transit Desire Lines Sheet ( )**:
      - Aggregated passenger loads, peak flow PCU, corridor roughness delay penalties, and LoS ratings.
   2. **Municipal Blind Spots Sheet (Phase 2 Expansion)**:
      - Zero-pass streets, target vehicle classes (Swachh Bharat waste compactors, utility vans).

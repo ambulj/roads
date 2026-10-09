@@ -13,7 +13,7 @@
 - Segmented the 979+ LOC continuous scrolling view into a 5-tab segmented workspace preventing visual clutter and GPU/memory overhead from hidden charts:
   1. 📊 **Overview KPI (`overview`)**: Executive scorecards (`MetricCards`), 4-stat KPI ribbon, Speed vs Distress dual-spline area chart, Statutory RPI IRC:SP:20 Weights radial bar chart, PCI Decay historical bar chart, and MoRTH Liquidated Damages donut chart.
   2. 🛣️ **Corridor Health (`corridors`)**: Chennai Arterial Road Corridor Risk Matrix table (5 corridors), Defect severity breakdown (P0 Critical, P1 High, P2 Routine) with color-coded progress bars, and Edge Fleet Ingest Diagnostics.
-  3. 🚦 **Traffic & OD Flow (`traffic`)**: GTFS Public Transit Delay Attribution table ($t_{distress}$ vs $t_{traffic}$), IRC:106 Road Bottlenecks & Capacity Choke Points with LoS grades, and SIH PS 26124 OD Desire Lines Flow Matrix cards.
+  3. 🚦 **Traffic & OD Flow (`traffic`)**: GTFS Public Transit Delay Attribution table ($t_{distress}$ vs $t_{traffic}$), IRC:106 Road Bottlenecks & Capacity Choke Points with LoS grades, and SIH   OD Desire Lines Flow Matrix cards.
   4. 🛡️ **Safety & Lighting (`safety`)**: Vision Zero Safe School & Hospital Corridor Index with institutional grades (A+ to F) and zebra/signage compliance, alongside Night-Time Luminescence & Dark Spot Outage Audit table (<5 Lux).
   5. 👁️ **Edge ANPR & Vision AI (`anpr`)**: Interactive Edge ANPR OCR Scanner test with Section 65B legal admissibility badge, and Arterial Traffic Density & Vehicle Classification grid.
 - **Active Pill Switchers**: Styled using `bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 font-semibold border border-indigo-200 dark:border-indigo-800/80 shadow-xs`.

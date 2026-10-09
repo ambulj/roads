@@ -12,7 +12,7 @@
 |:---|:---|:---|:---|
 | **GIS-01** | Statutory RPI Mathematical Formula & Sliders | `python -m pytest -o pythonpath=backend backend/tests/test_explainable_webgis.py -k test_rpi_formula -v` | RPI score calculation violates weights (40/20/20/20), monsoon multiplier fails, or score is not clamped $[0, 100]$. |
 | **GIS-02** | Live Dashcam 30 FPS Perception & Telemetry Sidecar | `npm --prefix frontend run build` | TypeScript compilation fails, Canvas overlay fails typing, or sample scenarios fail to bundle. |
-| **GIS-03** | PS 26124 Origin-Destination Transit Desire Lines | `python -m pytest -o pythonpath=backend backend/tests/test_explainable_webgis.py -k test_od_matrix -v` | OD matrix endpoint `/api/traffic/od-matrix` fails, transit hubs missing, or passenger volume $< 0$. |
+| **GIS-03** |   Origin-Destination Transit Desire Lines | `python -m pytest -o pythonpath=backend backend/tests/test_explainable_webgis.py -k test_od_matrix -v` | OD matrix endpoint `/api/traffic/od-matrix` fails, transit hubs missing, or passenger volume $< 0$. |
 | **Full Phase 4 Suite** | Backend & Frontend Integrated Verification | `python -m pytest -o pythonpath=backend backend/tests/test_explainable_webgis.py -v && npm --prefix frontend run build` | Any test failure or build failure. |
 
 ---
@@ -32,5 +32,5 @@
 
 - [x] RPI mathematical formulation is deterministic, explainable, and adheres to statutory weights.
 - [x] 30 FPS Canvas video overlay HUD tracks hazards in real time with synchronized 5Hz IMU telematics ticker.
-- [x] PS 26124 OD Transit Desire Lines layer renders curved arcs with passenger density metrics and roughness ridership impact.
+- [x]   OD Transit Desire Lines layer renders curved arcs with passenger density metrics and roughness ridership impact.
 - [x] Zero TypeScript errors on `npm run build`.

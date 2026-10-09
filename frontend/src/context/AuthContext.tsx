@@ -220,8 +220,9 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | null>(null);
 
-const STORAGE_ROLE_KEY = 'SeherSaathi_active_role';
-const STORAGE_AUTH_KEY = 'SeherSaathi_auth_session';
+const STORAGE_ROLE_KEY = 'roadsaathi_active_role';
+const STORAGE_AUTH_KEY = 'roadsaathi_auth_session';
+const STORAGE_TOKEN_KEY = 'roadsaathi_jwt_token';
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => {
@@ -246,7 +247,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const refreshKPIs = useCallback(async () => {
     try {
-      const token = typeof window !== 'undefined' ? (localStorage.getItem('SeherSaathi_jwt_token') || localStorage.getItem('SeherSaathi_jwt_token')) : null;
+      const token = typeof window !== 'undefined' ? (localStorage.getItem(STORAGE_TOKEN_KEY) || localStorage.getItem('SeherSaathi_jwt_token')) : null;
       const res = await fetch('/api/auth/kpis', {
         headers: token ? { 'Authorization': `Bearer ${token}` } : {}
       });
@@ -276,7 +277,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (res.ok) {
       const data = await res.json();
       if (data?.access_token && typeof window !== 'undefined') {
-        localStorage.setItem('SeherSaathi_jwt_token', data.access_token);
+        localStorage.setItem(STORAGE_TOKEN_KEY, data.access_token);
         localStorage.setItem('SeherSaathi_jwt_token', data.access_token);
       }
       return data;
@@ -367,7 +368,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setIsAuthenticated(false);
     if (typeof window !== 'undefined') {
       localStorage.setItem(STORAGE_AUTH_KEY, 'false');
-      localStorage.removeItem('SeherSaathi_jwt_token');
+      localStorage.removeItem(STORAGE_TOKEN_KEY);
       localStorage.removeItem('SeherSaathi_jwt_token');
       sessionStorage.removeItem(STORAGE_AUTH_KEY);
     }

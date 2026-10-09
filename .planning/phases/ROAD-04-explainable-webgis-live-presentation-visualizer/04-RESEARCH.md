@@ -21,7 +21,7 @@ Phase 4 bridges deep computer vision, statutory road maintenance standards (IRC:
    - Renders 30 FPS color-coded bounding boxes, confidence tags, DPDP Act 2023 face/license plate redaction bounding masks, and 3D wireframe depth grids with cylindrical cavity volume estimation ($V = \frac{\pi}{4} \cdot d^2 \cdot h$).
    - Synchronized telemetry sidecars stream real-time 5Hz coordinates, speed, vertical IMU shock acceleration ($g_z$), and optical match probabilities.
    - Pre-bundled offline scenario clips in `/sample_clips/` provide instant demonstration across 4 key civic corridors without network dependency.
-3. **PS 26124 Origin-Destination Transit Desire Lines (`GIS-03`)**:
+3. **  Origin-Destination Transit Desire Lines (`GIS-03`)**:
    - The MapLibre GL layer in [WebGISMap.tsx](file:///c:/Users/sauja/Downloads/roads/frontend/src/components/map/WebGISMap.tsx) renders curvature-interpolated GeoJSON desire lines connecting key multimodal transit hubs across Chennai (Central, Guindy, Tambaram, OMR Tidel Park, Kathipara Cloverleaf, Koyambedu CMBT).
    - Dynamic stroke weights and color scales map daily passenger transit flows ($<10\text{k}$, $10\text{k}-25\text{k}$, $>25\text{k}$ trips/day) with interactive popups detailing International Roughness Index (IRI) transit delays and cabin capacity percentages.
    - Backed by backend endpoints in [traffic.py](file:///c:/Users/sauja/Downloads/roads/backend/app/api/endpoints/traffic.py) (`/api/traffic/od-matrix`, `/api/traffic/density`) and [analytics.py](file:///c:/Users/sauja/Downloads/roads/backend/app/api/endpoints/analytics.py) (`/api/analytics/transit-delays`).
@@ -106,10 +106,10 @@ The modal provides real-time telematics tickers and supports 4 pre-bundled offli
 
 ---
 
-## 4. Topic 3: PS 26124 Origin-Destination Transit Desire Lines (GIS-03)
+## 4. Topic 3:   Origin-Destination Transit Desire Lines (GIS-03)
 
 ### 4.1 Curvature-Interpolated Bezier Arcs & Corridor Flow
-Fulfilling Problem Statement **PS 26124**, [WebGISMap.tsx](file:///c:/Users/sauja/Downloads/roads/frontend/src/components/map/WebGISMap.tsx) renders dynamic origin-destination transit corridors:
+Fulfilling Problem Statement ** **, [WebGISMap.tsx](file:///c:/Users/sauja/Downloads/roads/frontend/src/components/map/WebGISMap.tsx) renders dynamic origin-destination transit corridors:
 - **Corridors Monitored**:
   - `od-tambaram-broadway`: GST Arterial Trunk (Route 21G) — 4,820 trips/day, 84% cabin load proxy, 5.4 min distress delay.
   - `od-koyambedu-siruseri`: OMR IT Expressway (Route 570X) — 6,450 trips/day, 92% cabin load proxy, 7.2 min distress delay.
@@ -185,7 +185,7 @@ npm run build
 - Test POI distance clamping: Verify $D \ge 1500\text{ m}$ produces 0 proximity points while $D = 50\text{ m}$ scores $\ge 96.6$ pts.
 - Test SLA assignment logic: Verify $\text{RPI} \ge 85.0 \implies \text{P0 (24h)}$, $70.0 \le \text{RPI} < 85.0 \implies \text{P1 (48h)}$, and $\text{RPI} < 70.0 \implies \text{P2 (72h)}$.
 
-#### 2. PS 26124 OD Desire Lines & Traffic Endpoints:
+#### 2.   OD Desire Lines & Traffic Endpoints:
 - Verify `GET /api/traffic/od-matrix` returns 200 OK with valid OD corridor pairs (`od-tambaram-broadway`, `od-koyambedu-siruseri`, etc.).
 - Verify PCU flow, peak travel-time ratio, and distress delay attribution fields are present and numerically valid.
 - Verify `GET /api/traffic/density` and `GET /api/traffic/bottlenecks` calculate correct Level of Service (LoS) and speed drop percentages.
@@ -206,7 +206,7 @@ npm run build
    - Confirm formula synchronization between `rpi_engine.py` and `RPIFormulaModal.tsx`.
 3. **Step 3: Live Dashcam HUD & Cavity Mesh Synchronization**
    - Verify 30 FPS Canvas overlay rendering and pre-bundled scenario clip paths.
-4. **Step 4: PS 26124 Desire Lines MapLayer & Legend**
+4. **Step 4:   Desire Lines MapLayer & Legend**
    - Test toggle control, curved arc rendering, and hover/click popup data formatting.
 5. **Step 5: Full Integration & Regression Test Run**
    - Run automated backend test suites and `npm run build`.

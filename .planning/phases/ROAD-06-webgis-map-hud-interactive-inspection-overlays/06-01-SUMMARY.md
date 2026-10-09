@@ -26,7 +26,7 @@ Wave 1 Plan 06-01 modernized RoadSaathi's primary WebGIS command center into a c
    - Zero-flicker toggling for:
      1. Defect Clusters & Potholes (`showDefects` / `potholes-heat-layer` & markers)
      2. Transit Fleet Live Buses (`showFleet` / `bus-positions` GeoJSON layer & DOM markers)
-     3. PS 26124 OD Transit Desire Lines (`showODDesireLines` / `od-desire-lines-layer`)
+     3.   OD Transit Desire Lines (`showODDesireLines` / `od-desire-lines-layer`)
      4. Monsoon Hydro Flood Contours (`showMonsoonContours` / `monsoon-contours-fill` and `monsoon-contours-line`)
      5. Sensitive POIs (Hospitals, Schools, Transit Interchanges) (`showPOIs` / POI markers with statutory RPI boost pills)
      6. Traffic Bottlenecks & Congestion (`showTrafficCongestion` / `traffic-congestion-lines`)

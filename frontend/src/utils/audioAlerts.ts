@@ -29,6 +29,7 @@ class AudioAlertEngine {
   public toggleMute(): boolean {
     this.isMuted = !this.isMuted;
     try {
+      localStorage.setItem('roadsaathi_sound_muted', String(this.isMuted));
       localStorage.setItem('SeherSaathi_sound_muted', String(this.isMuted));
     } catch {}
     if (!this.isMuted) {

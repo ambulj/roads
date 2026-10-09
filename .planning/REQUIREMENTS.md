@@ -44,13 +44,20 @@
 
 ---
 
-### Milestone v5.0: Mobile Sensing, Civic Copilot & 3D Mesh Corridor Twin (Active)
+### Milestone v5.0: Mobile Sensing, Civic Copilot & 3D Mesh Corridor Twin (Complete)
 - [x] **COPILOT-01**: Backend schema-aware natural language assistant query dispatcher (`/api/copilot/query`) executing structured SQL/aggregation over road defects, contractor SLA breaches, ward risk indices, and drafting statutory notices.
 - [x] **COPILOT-02**: Floating slide-over Civic Copilot drawer in Command Center & Work Orders with quick municipal prompts, deep-links to clusters/work orders, and markdown response formatting.
 - [x] **TWIN-01**: Interactive 3D Corridor Digital Twin & Surface Elevation Mesh Viewer with depth cavity slicing and elevation contours, featuring prominent "Experimental Concept / Proof of Concept" badging and disclaimer.
 - [x] **TWIN-02**: Multi-camera perspective viewer supporting exterior bus angles (front, rear, left curb, right carriageway) with synchronized spatial telemetry and inspection HUD overlays.
-- [ ] **SENSE-01**: Missing infrastructure perception and classification (missing road dividers, faded/missing zebra crossings per IRC:35, damaged/missing signboards per IRC:67, waterlogging depth hazard index).
-- [ ] **SENSE-02**: Urban traffic flow & vulnerable road user perception (vehicle density classification & counting, school children crossing zone alerts, and offending vehicle hit-and-run/rash driving tracking alerts).
+- [x] **SENSE-01**: Missing infrastructure perception and classification (missing road dividers, faded/missing zebra crossings per IRC:35, damaged/missing signboards per IRC:67, waterlogging depth hazard index).
+- [x] **SENSE-02**: Urban traffic flow & vulnerable road user perception (vehicle density classification & counting, school children crossing zone alerts, and offending vehicle hit-and-run/rash driving tracking alerts).
+
+---
+
+### Milestone v6.0: Municipal Credibility, Real AI Inference & Physical Concurrence Hardening (Active)
+- [x] **ANPR-01**: Complete removal of all synthetic plate generation from vehicle bbox coordinates and hardcoded confidence floors; true character detection using trained `backend/app/weights/anpr.pt` model with mean character confidence.
+- [x] **ANPR-02**: Indian vehicle registration validation regex (`^[A-Z]{2}[0-9]{1,2}[A-Z]{1,3}[0-9]{4}$`) with fail-closed behavior routing unrecognized crops or confidence $< 0.90$ to `REQUIRES_HUMAN_REVIEW` instead of `AUTO_ADMISSIBLE`.
+- [x] **BRAND-01**: Unified product branding as **RoadSaathi** across all 17+ codebases, configuration files, and UI displays, eliminating obsolete SeherSaathi references.
 
 ---
 
@@ -74,7 +81,8 @@
 | SIMPLIFY-01 | v4.0 | Phase 14 | Complete |
 | COPILOT-01 .. COPILOT-02 | v5.0 | Phase 15 | Complete |
 | TWIN-01 .. TWIN-02 | v5.0 | Phase 16 | Complete |
-| SENSE-01 .. SENSE-02 | v5.0 | Phase 17 | Active |
+| SENSE-01 .. SENSE-02 | v5.0 | Phase 17 | Complete |
+| ANPR-01 .. ANPR-02, BRAND-01 | v6.0 | Phase 18 | Pending |
 
 ---
-*Requirements updated: 2026-10-09 for Milestone v5.0*
+*Requirements updated: 2026-10-10 for Milestone v6.0 initiation*

@@ -30,7 +30,7 @@ In current iterations:
 ### 1.2 Target Vision (Milestone v3.2 & DECLUTTER-03)
 - Transform `Analytics.tsx` into a **5-Tab Segmented Executive Workspace** with responsive horizontal scroll pill switchers and two-way URL query synchronization (`#/analytics?tab=overview | corridors | traffic | safety | anpr`).
 - Polish `WorkOrders.tsx` CAD backlog table with **compact cell density (`py-2.5 px-3`)**, monospace tabular numbers (`font-mono tabular-nums`), clean action clusters (`Inspect`, `Release Escrow`, `Dispatch`), and seamless deep-dive drawer integration (`WorkOrderActionConsole.tsx`).
-- Preserve all existing domain functionality: MoRTH PCI curves, IRC:SP:20 contractor penalty ledgers, SIH PS 26124 OD Transit Desire Lines, Vision Zero school zone grading, dark spot luminescence tracking, and Edge ANPR OCR inference.
+- Preserve all existing domain functionality: MoRTH PCI curves, IRC:SP:20 contractor penalty ledgers, SIH   OD Transit Desire Lines, Vision Zero school zone grading, dark spot luminescence tracking, and Edge ANPR OCR inference.
 
 ---
 
@@ -57,7 +57,7 @@ In current iterations:
   │• 4-Stat Ribbon          │ │  Risk Matrix    │ │  Distress Time  │ │  School Zones   │ │  ANPR OCR Test  │
   │• Speed vs Distress      │ │• P0/P1/P2 Defect│ │• IRC:106 Choke  │ │  (IRC:35/MoRTH) │ │• HSRP Sec 65B   │
   │  Dual-Spline Area Chart │ │  Breakdown      │ │  Points & LoS   │ │• Night Darkspots│ │  Compliance    │
-  │• RPI Statutory Weights  │ │• Action Status  │ │• PS 26124 OD    │ │  Luminescence   │ │• Arterial PCU   │
+  │• RPI Statutory Weights  │ │• Action Status  │ │•   OD    │ │  Luminescence   │ │• Arterial PCU   │
   │  Radial Bar Chart       │ │• Fleet Ingest   │ │  Desire Lines   │ │  Outage Audit   │ │  Traffic Density│
   │• PCI Decay & Damages    │ │  Diagnostics    │ │  Flow Matrix    │ │  (<5 Lux Alerts)│ │  Grid           │
   └─────────────────────────┘ └─────────────────┘ └─────────────────┘ └─────────────────┘ └─────────────────┘
@@ -78,7 +78,7 @@ In current iterations:
 ### 2.3 Tab 3: 🚦 Traffic Dynamics & OD Transit Flow (`traffic`)
 - **GTFS Public Transit Delay Attribution:** Separates transit delay caused by surface pavement distress ($t_{distress}$) from background peak congestion delay ($t_{traffic}$) with headway regularity metrics.
 - **IRC:106 Road Bottlenecks & Capacity Choke Points:** Real-time monitoring of LoS E & F segments, passenger car unit (PCU) densities, average velocity drops, root cause diagnosis, and diversion recommendations.
-- **SIH PS 26124 Origin-Destination (OD) Desire Lines Flow Matrix:** Detailed inter-nodal corridor cards displaying Origin $\to$ Destination flow vectors, distance ($km$), actual transit time vs scheduled delay, hourly PCU volume, and pavement distress travel-time attribution.
+- **SIH   Origin-Destination (OD) Desire Lines Flow Matrix:** Detailed inter-nodal corridor cards displaying Origin $\to$ Destination flow vectors, distance ($km$), actual transit time vs scheduled delay, hourly PCU volume, and pavement distress travel-time attribution.
 
 ### 2.4 Tab 4: 🛡️ Safety & Lighting Infrastructure (`safety`)
 - **Vision Zero Safe School & Hospital Corridor Index:** Comprehensive multi-class safety evaluation across vulnerable civic institutions. Features institutional letter grades (A+ to F), overall safety score progress bars, IRC:35 zebra crossing compliance, caution signage installation status, and pedestrian footpath clearance percentages.

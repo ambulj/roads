@@ -51,6 +51,20 @@ class ANPREngine:
         self._easyocr_reader = None
         self._easyocr_attempted = False
         self.track_cache = PlateTrackCache(min_confidence=0.85)
+        self._yolo_anpr_model = None
+
+    def _get_yolo_anpr_model(self):
+        """Lazily loads the trained character detection model (anpr.pt)."""
+        if self._yolo_anpr_model is None:
+            try:
+                from pathlib import Path
+                from ultralytics import YOLO
+                weights_path = Path(__file__).resolve().parent.parent / "weights" / "anpr.pt"
+                if weights_path.exists():
+                    self._yolo_anpr_model = YOLO(str(weights_path))
+            except Exception:
+                self._yolo_anpr_model = None
+        return self._yolo_anpr_model
 
     def _get_onnx_recognizer(self) -> INT8ONNXPlateRecognizer:
         """Lazily initializes the INT8 ONNX recognizer singleton (<150MB VRAM)."""
@@ -149,7 +163,12 @@ class ANPREngine:
         # Sort candidate plates by area (largest candidate first)
         candidate_plates.sort(key=lambda c: c[4], reverse=True)
 
-        if candidate_plates and (not vehicle_bbox or len(candidate_plates) > 0):
+        recognized_plate = None
+        confidence = 0.0
+        global_box = [0, 0, 0, 0]
+        plate_crop = None
+
+        if candidate_plates:
             best_cand = candidate_plates[0]
             bx, by, bw, bh, _, aspect = best_cand
             global_box = [roi_x1 + bx, roi_y1 + by, roi_x1 + bx + bw, roi_y1 + by + bh]
@@ -159,44 +178,28 @@ class ANPREngine:
             if plate_text:
                 recognized_plate = plate_text
                 confidence = conf
-            elif vehicle_bbox:
-                vx1, vy1, vx2, vy2 = vehicle_bbox
-                vw, vh = vx2 - vx1, vy2 - vy1
-                rto_list = ["01", "02", "07", "09", "10", "11", "14", "22"]
-                series_list = ["AX", "BK", "CB", "DM", "EJ", "FK", "GH", "JC"]
-                rto_idx = (vx1 * 13 + vy1 * 7) % len(rto_list)
-                series_idx = (vw * 19 + vh * 11) % len(series_list)
-                reg_num = (vx1 * 37 + vy1 * 23 + vw * 17 + vh * 13) % 8999 + 1001
-                recognized_plate = f"TN{rto_list[rto_idx]}{series_list[series_idx]}{reg_num}"
-                confidence = 0.94
-            else:
-                return {
-                    "success": False,
-                    "plate_number": None,
-                    "formatted_plate": None,
-                    "confidence": 0.0,
-                    "inference_time_ms": round((time.perf_counter() - start_t) * 1000, 2),
-                }
-        elif vehicle_bbox:
-            # Deterministic plate localization on lower bumper center of vehicle
+
+        # Secondary attempt: vehicle bumper crop if candidate contour missed
+        if not recognized_plate and vehicle_bbox and len(vehicle_bbox) == 4:
             vx1, vy1, vx2, vy2 = vehicle_bbox
             vw = max(1, vx2 - vx1)
             vh = max(1, vy2 - vy1)
-            pw = max(30, int(vw * 0.32))
-            ph = max(12, int(vh * 0.14))
+            pw = max(30, int(vw * 0.35))
+            ph = max(14, int(vh * 0.16))
             px1 = vx1 + int((vw - pw) / 2)
-            py1 = vy1 + int(vh * 0.72)
-            global_box = [max(0, px1), max(0, py1), min(w, px1 + pw), min(h, py1 + ph)]
-            plate_crop = img[global_box[1]:global_box[3], global_box[0]:global_box[2]]
+            py1 = vy1 + int(vh * 0.70)
+            bumper_box = [max(0, px1), max(0, py1), min(w, px1 + pw), min(h, py1 + ph)]
+            bumper_crop = img[bumper_box[1]:bumper_box[3], bumper_box[0]:bumper_box[2]]
+            if bumper_crop.size > 0:
+                plate_text, conf = self._read_plate_characters(bumper_crop)
+                if plate_text:
+                    recognized_plate = plate_text
+                    confidence = conf
+                    global_box = bumper_box
+                    plate_crop = bumper_crop
 
-            rto_list = ["01", "02", "07", "09", "10", "11", "14", "22"]
-            series_list = ["AX", "BK", "CB", "DM", "EJ", "FK", "GH", "JC"]
-            rto_idx = (vx1 * 13 + vy1 * 7) % len(rto_list)
-            series_idx = (vw * 19 + vh * 11) % len(series_list)
-            reg_num = (vx1 * 37 + vy1 * 23 + vw * 17 + vh * 13) % 8999 + 1001
-            recognized_plate = f"TN{rto_list[rto_idx]}{series_list[series_idx]}{reg_num}"
-            confidence = 0.94
-        else:
+        # Zero Plate Fabrication: Fail-closed if no characters or valid plate read
+        if not recognized_plate or confidence <= 0.0:
             return {
                 "success": False,
                 "plate_number": None,
@@ -243,13 +246,48 @@ class ANPREngine:
 
     def _read_plate_characters(self, plate_crop: np.ndarray) -> Tuple[Optional[str], float]:
         """
-        Executes INT8 ONNX plate recognition and MoRTH syntax repair.
-        Guarantees <150MB VRAM footprint.
+        Executes genuine plate recognition using:
+        1. Trained character detector YOLOv8 model (anpr.pt) with left-to-right box sorting.
+        2. INT8 ONNX recognizer fallback (when available).
+        Zero confidence floors: returns genuine model confidence without artificial minimums.
         """
         if plate_crop is None or plate_crop.size == 0:
             return None, 0.0
 
-        # 1. Primary: INT8 ONNX recognizer
+        # 1. Primary: Fine-tuned character detector YOLOv8 (anpr.pt)
+        yolo_anpr = self._get_yolo_anpr_model()
+        if yolo_anpr is not None:
+            try:
+                results = yolo_anpr(plate_crop, verbose=False)
+                if results and len(results) > 0:
+                    boxes = results[0].boxes
+                    if boxes is not None and len(boxes) > 0:
+                        char_detections = []
+                        names = getattr(yolo_anpr, "names", {})
+                        for b in boxes:
+                            x1, y1, x2, y2 = b.xyxy[0].tolist()
+                            c_conf = float(b.conf[0].item())
+                            cls_id = int(b.cls[0].item())
+                            char_label = names.get(cls_id, str(cls_id))
+                            # Filter non-character classes
+                            if char_label not in ("object", "undefined"):
+                                char_detections.append((x1, char_label, c_conf))
+
+                        if len(char_detections) >= 6:
+                            # Sort characters strictly left-to-right
+                            char_detections.sort(key=lambda item: item[0])
+                            chars = [item[1] for item in char_detections]
+                            confs = [item[2] for item in char_detections]
+                            raw_str = "".join(chars).upper()
+                            mean_conf = round(float(sum(confs) / len(confs)), 3)
+
+                            repaired_plate, is_valid = MoRTHSyntaxEngine.validate_and_repair_plate(raw_str)
+                            if is_valid or len(repaired_plate) >= 6:
+                                return repaired_plate, mean_conf
+            except Exception:
+                pass
+
+        # 2. Secondary: INT8 ONNX recognizer (without artificial floors)
         try:
             recognizer = self._get_onnx_recognizer()
             if not getattr(recognizer, "is_stub", False):
@@ -257,33 +295,11 @@ class ANPREngine:
                 if raw_text:
                     repaired_plate, is_valid = MoRTHSyntaxEngine.validate_and_repair_plate(raw_text)
                     if is_valid or len(repaired_plate) >= 6:
-                        return repaired_plate, max(conf, 0.94)
-            else:
-                # Stub mode: try cached EasyOCR singleton for live synthetic plate images
-                reader = self._get_easyocr_reader()
-                if reader is not None:
-                    gray = cv2.cvtColor(plate_crop, cv2.COLOR_BGR2GRAY) if len(plate_crop.shape) == 3 else plate_crop
-                    results = reader.readtext(gray)
-                    ocr_text = ""
-                    for _, txt, _ in results:
-                        cleaned = re.sub(r"[^A-Z0-9]", "", txt.upper())
-                        if len(cleaned) >= 4:
-                            ocr_text += cleaned
-                    if ocr_text:
-                        repaired_plate, is_valid = MoRTHSyntaxEngine.validate_and_repair_plate(ocr_text)
-                        if is_valid or len(repaired_plate) >= 6:
-                            return repaired_plate, 0.96
-
-                # If no OCR result from EasyOCR, use stub recognizer
-                raw_text, conf = recognizer.recognize(plate_crop)
-                if raw_text:
-                    repaired_plate, is_valid = MoRTHSyntaxEngine.validate_and_repair_plate(raw_text)
-                    if is_valid or len(repaired_plate) >= 6:
-                        return repaired_plate, max(conf, 0.94)
+                        return repaired_plate, float(conf)
         except Exception:
             pass
 
-        # 2. Fallback: Edge contour heuristics
+        # 3. Fallback: Edge contour character grouping (no artificial floors)
         gray = cv2.cvtColor(plate_crop, cv2.COLOR_BGR2GRAY) if len(plate_crop.shape) == 3 else plate_crop
         _, thresh = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)
         contours, _ = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
@@ -295,7 +311,8 @@ class ANPREngine:
                 chars.append((cx, cy, cw, ch))
 
         if 6 <= len(chars) <= 11:
-            confidence = round(min(0.98, 0.85 + (len(chars) * 0.012)), 2)
+            # Genuine estimate based on character density without exceeding 0.70 for unread contours
+            confidence = round(0.50 + (len(chars) * 0.02), 2)
             return None, confidence
 
         return None, 0.0

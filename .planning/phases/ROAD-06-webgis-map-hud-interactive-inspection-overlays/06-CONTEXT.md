@@ -32,7 +32,7 @@ Phase 6 modernizes the primary WebGIS command center experience in RoadSaathi. I
   - Clean dropdown / accordion drawer for layer visibility toggles:
     1. *Defect Clusters & Potholes*
     2. *Transit Fleet Live Buses*
-    3. *PS 26124 OD Transit Desire Lines*
+    3. *  OD Transit Desire Lines*
     4. *Monsoon Inundation Flood Contours*
     5. *Sensitive POIs (Hospitals, Schools, Interchanges)*
     6. *Traffic Bottlenecks & Congestion*

@@ -12,7 +12,7 @@
 Phase 4 completes the presentation, explainability, and civic command interface of RoadSaathi v3.0. It delivers three critical user-facing capabilities:
 1. **Explainable RPI Mathematical Model (`GIS-01`)**: An interactive Road Priority Index explainer modal ([`RPIFormulaModal.tsx`](file:///c:/Users/sauja/Downloads/roads/frontend/src/components/modals/RPIFormulaModal.tsx)) allowing municipal engineers and judges to inspect and dynamically tune the statutory formula terms (Severity 40%, Consensus Passes 20%, Road Hierarchy 20%, POI Proximity 20%, with Monsoon Multiplier), with real-time recalculation and P0/P1/P2 SLA category re-evaluation.
 2. **Live Dashcam 30 FPS Visualizer (`GIS-02`)**: A synchronized dual-pane video perception modal ([`UploadFootageModal.tsx`](file:///c:/Users/sauja/Downloads/roads/frontend/src/components/modals/UploadFootageModal.tsx)) rendering 30 FPS bounding boxes, confidence tags, and pothole 3D depth meshes overlaid directly on HTML5 video via Canvas 2D/WebGL, synchronized with a live 5Hz AIS-140 IMU/GPS telemetry ticker and pre-bundled offline demonstration clips.
-3. **PS 26124 Origin-Destination Transit Desire Lines Layer (`GIS-03`)**: An interactive WebGIS layer in MapLibre ([`WebGISMap.tsx`](file:///c:/Users/sauja/Downloads/roads/frontend/src/components/map/WebGISMap.tsx)) displaying curvature-interpolated GeoJSON Great Circle/Bezier desire lines connecting major transit hubs (Chennai Central, Guindy, Tambaram, OMR Tidel Park, Kathipara Cloverleaf) with passenger load volumes, peak flow matrices, and pavement roughness ridership penalties.
+3. **  Origin-Destination Transit Desire Lines Layer (`GIS-03`)**: An interactive WebGIS layer in MapLibre ([`WebGISMap.tsx`](file:///c:/Users/sauja/Downloads/roads/frontend/src/components/map/WebGISMap.tsx)) displaying curvature-interpolated GeoJSON Great Circle/Bezier desire lines connecting major transit hubs (Chennai Central, Guindy, Tambaram, OMR Tidel Park, Kathipara Cloverleaf) with passenger load volumes, peak flow matrices, and pavement roughness ridership penalties.
 
 ---
 
@@ -45,13 +45,13 @@ Phase 4 completes the presentation, explainability, and civic command interface 
   3. *OMR 4K Expressway Corridor* (OMR IT Highway • Missing Divider & Infrastructure Radar)
   4. *Pedestrian Crosswalk Zone* (School Zone Crossing • IRC:35 Compliance)
 
-### Area 3: PS 26124 Origin-Destination Transit Desire Lines (GIS-03)
+### Area 3:   Origin-Destination Transit Desire Lines (GIS-03)
 - **D-07 (MapLibre GeoJSON Curved Arc Rendering)**: Transit flows are rendered as curvature-interpolated Bezier Great Circle arcs in GeoJSON over MapLibre GL.
 - **D-08 (Flow Matrix & Dynamic Legend)**:
   - Line stroke width and gradient color represent daily passenger volume: Thin cyan ($< 10\text{k}$ passengers/day), Medium blue ($10\text{k} - 25\text{k}$), Thick amber/rose ($> 25\text{k}$ heavy arterial flow).
   - Hubs connected: Chennai Central, Guindy Intermodal, Tambaram Junction, OMR Tidel Park, Kathipara Cloverleaf, Koyambedu CMBT.
 - **D-09 (Roughness Penalty Metric)**: Each transit link displays the IRI roughness index along the corridor, calculating the estimated transit travel delay and passenger comfort penalty caused by pavement distress.
-- **D-10 (Toggleable WebGIS Layer Control)**: A dedicated toggle button in the map layer control panel allows toggling the "Transit Desire Lines (PS 26124)" layer on/off without interfering with defect clusters or fleet bus markers.
+- **D-10 (Toggleable WebGIS Layer Control)**: A dedicated toggle button in the map layer control panel allows toggling the "Transit Desire Lines ( )" layer on/off without interfering with defect clusters or fleet bus markers.
 
 ---
 
@@ -60,7 +60,7 @@ Phase 4 completes the presentation, explainability, and civic command interface 
 - **IRC:82:2015**: Code of Practice for Maintenance of Bituminous Roads.
 - **IRC:SP:20:2002**: Rural Roads Manual (Clause 14 Defect Liability Period).
 - **IRC:35:2015**: Code of Practice for Road Markings (Pedestrian Crosswalks & Lane Discipline).
-- **PS 26124**: Problem Statement Specification for Origin-Destination Public Transit Passenger Flow & Infrastructure Corridor Optimization.
+- ** **: Problem Statement Specification for Origin-Destination Public Transit Passenger Flow & Infrastructure Corridor Optimization.
 - **MapLibre GL JS v4**: Open-source WebGL/WebGIS vector tile mapping specification.
 
 ---

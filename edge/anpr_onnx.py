@@ -197,9 +197,9 @@ class INT8ONNXPlateRecognizer:
         outputs = self.session.run([self.output_name], {self.input_name: tensor_in})
         logits = outputs[0]
 
-        # For synthetic stub, provide default candidate
-        if np.all(logits == 0) and default_candidate:
-            return default_candidate, 0.95
+        # For synthetic stub or unreadable input, return empty string and zero confidence
+        if np.all(logits == 0):
+            return "", 0.0
 
         # Decode CTC greedy sequence
         chars = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ-"
@@ -212,7 +212,7 @@ class INT8ONNXPlateRecognizer:
             prev = p
 
         result_str = "".join(decoded)
-        return (result_str if len(result_str) >= 6 else (default_candidate or "")), 0.94
+        return (result_str if len(result_str) >= 6 else ""), (0.85 if len(result_str) >= 6 else 0.0)
 
 
 class MoRTHSyntaxEngine:

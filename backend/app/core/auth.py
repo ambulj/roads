@@ -32,7 +32,7 @@ def verify_password(password: str, expected_hash: str, salt: str) -> bool:
     return hmac.compare_digest(computed_hash, expected_hash)
 
 DEFAULT_GOV_PASSWORD = "chennai@2026"
-DEFAULT_SALT = "SeherSaathi_salt_2026"
+DEFAULT_SALT = "RoadSaathi_salt_2026"
 DEFAULT_PW_HASH = "c48c3acb586a71bfac26854fca1a837b984ebd03b4390ae7b19903562294ddc5"
 
 # ── Seeded Government Personas (4 Official Civic Profiles + Admin Superuser) ──

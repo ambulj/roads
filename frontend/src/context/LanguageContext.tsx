@@ -458,11 +458,12 @@ const LanguageContext = createContext<LanguageContextType | undefined>(undefined
 
 export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [language, setLanguageState] = useState<Language>(() => {
-    const saved = localStorage.getItem('SeherSaathi_lang') || localStorage.getItem('SeherSaathi_lang');
+    const saved = localStorage.getItem('roadsaathi_lang') || localStorage.getItem('SeherSaathi_lang');
     return (saved === 'hi' || saved === 'en' || saved === 'ta') ? (saved as Language) : 'en';
   });
 
   useEffect(() => {
+    localStorage.setItem('roadsaathi_lang', language);
     localStorage.setItem('SeherSaathi_lang', language);
     document.documentElement.setAttribute('lang', language);
   }, [language]);

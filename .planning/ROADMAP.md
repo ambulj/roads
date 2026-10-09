@@ -34,10 +34,18 @@ RoadSaathi v4.0 grounds the entire municipal intelligence platform in rigorous r
 
 ---
 
-### Milestone v5.0: Mobile Sensing, Civic Copilot & 3D Mesh Corridor Twin (Active)
+### Milestone v5.0: Mobile Sensing, Civic Copilot & 3D Mesh Corridor Twin (Complete)
 - [x] **Phase 15: RoadSaathi Civic Copilot & Natural Language Intelligence** - Centralized municipal natural language assistant: schema-aware SQL/aggregation queries, SLA audit lookups, Section 65B Form 14 notice drafting, and floating Command Center drawer.
 - [x] **Phase 16: 3D Corridor Digital Twin & Surface Mesh Visualizer (Concept Prototype)** - Interactive 3D road elevation mesh & cavity depth visualizer (explicitly designated as an experimental concept prototype for now), cross-section slicing, and multi-camera exterior perspective switcher.
-- [ ] **Phase 17: Multi-Camera Urban Sensing & Missing Infrastructure Perception** - Missing road dividers, missing/faded zebra crossings (IRC:35), damaged/missing signboards (IRC:67), waterlogging depth hazards, and vulnerable pedestrian & traffic density counting.
+- [x] **Phase 17: Multi-Camera Urban Sensing & Missing Infrastructure Perception** - Missing road dividers, missing/faded zebra crossings (IRC:35), damaged/missing signboards (IRC:67), waterlogging depth hazards, and vulnerable pedestrian & traffic density counting.
+
+---
+
+### Milestone v6.0: Municipal Credibility, Real AI Inference & Physical Concurrence Hardening (Active)
+- [ ] **Phase 18: ANPR Integrity & Real Character Inference** - Wire trained character detector (`anpr.pt`), eliminate pixel coordinate plate fabrication & fixed 0.94/0.95 floors, route low-confidence plates to human review queue, and unify brand as RoadSaathi.
+- [ ] **Phase 19: Physical Concurrence & Officer-Certified Gating** - Time-windowed post-repair query (strictly after repair date within 48h), speed-normalized shock jerk ($G_{norm}$), fail-closed sensor handling, 3–5m lane tolerance, replace automatic debits with AE/EE officer recommendation workflows, and structured triage fields.
+- [ ] **Phase 20: Statutory & Financial Standards Rectification** - Rectify IRC:SP:20 citations to contractual DLP clauses, replace PFMS escrow vouchers with Security Deposit/Retention Money terminology, add rectangular saw-cut box trim (+15%) and compaction allowances to repair estimates, and attribute datasets.
+- [ ] **Phase 21: AI Ground Truth, PCU Alignment & Metric Honesty** - Display true model weights training metrics (zebra 0.993, anpr 0.693, pothole 0.471, vehicle 0.404, indian_roads 0.219), align vehicle counts to `indian_roads_detection.pt` with official IRC:106-1990 Urban PCU tables, fix light-theme text contrast, and remove unsubstantiated marketing claims.
 
 ---
 
@@ -117,8 +125,22 @@ RoadSaathi v4.0 grounds the entire municipal intelligence platform in rigorous r
 
 ## Progress
 
+### Phase 18: ANPR Integrity & Real Character Inference
+**Goal**: Wire the real character detector (`anpr.pt`), eliminate pixel coordinate plate fabrication & fixed 0.94/0.95 floors, route unreadable or low-confidence plates to the human review queue, and unify branding as RoadSaathi.
+**Depends on**: Phase 17
+**Requirements**: ANPR-01, ANPR-02, BRAND-01
+**Success Criteria** (what must be TRUE):
+  1. No plate strings or confidence values are synthesized from vehicle bounding box coordinates or modulo arithmetic in `anpr_engine.py` or `anpr_onnx.py`.
+  2. Character detections from `backend/app/weights/anpr.pt` are mapped, sorted left-to-right, validated against the Indian vehicle registration format (`^[A-Z]{2}[0-9]{1,2}[A-Z]{1,3}[0-9]{4}$`), and scored using genuine mean character confidence.
+  3. Detections with confidence $< 0.90$ or unreadable crops cleanly produce `success=False` or `review_status="REQUIRES_HUMAN_REVIEW"`, populating the review queue rather than receiving automatic admissibility.
+  4. Branding is 100% unified as **RoadSaathi** across all codebase files, eliminating obsolete SeherSaathi references.
+
+---
+
+## Progress
+
 **Execution Order:**
-Phases execute in numeric order: 15 → 16 → 17
+Phases execute in numeric order: 15 → 16 → 17 → 18 → 19 → 20 → 21
 
 | Phase | Plans Complete | Status | Completed |
 |---|---|---|---|
@@ -138,7 +160,11 @@ Phases execute in numeric order: 15 → 16 → 17
 | 14. Ponytail Codebase Pruning & Dead Engine Deletion | 1/1 | Complete | 2026-10-08 |
 | 15. RoadSaathi Civic Copilot & Natural Language Intelligence | 1/1 | Complete | 2026-10-09 |
 | 16. 3D Corridor Digital Twin & Surface Mesh Visualizer (Concept Prototype) | 1/1 | Complete | 2026-10-09 |
-| 17. Multi-Camera Urban Sensing & Missing Infrastructure Perception | 0/1 | Ready | — |
+| 17. Multi-Camera Urban Sensing & Missing Infrastructure Perception | 1/1 | Complete | 2026-10-09 |
+| 18. ANPR Integrity & Real Character Inference | 1/1 | Complete | 2026-10-10 |
+| 19. Physical Concurrence & Officer-Certified Gating | 0/1 | Pending | - |
+| 20. Statutory & Financial Standards Rectification | 0/1 | Pending | - |
+| 21. AI Ground Truth, PCU Alignment & Metric Honesty | 0/1 | Pending | - |
 
 ---
-*Roadmap defined: 2026-10-09 for Milestone v5.0*
+*Roadmap defined: 2026-10-10 for Milestone v6.0*

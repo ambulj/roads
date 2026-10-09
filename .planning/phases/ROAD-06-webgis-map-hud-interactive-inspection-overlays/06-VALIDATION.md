@@ -25,4 +25,4 @@
    - Clicking a defect pin displays a sleek floating card with forensic photo thumbnail, defect code, pass count, and RPI score pill.
    - "Inspect RPI Formula" button opens `RPIFormulaModal.tsx` pre-populated with the clicked cluster's live parameters.
 3. **Layer Visibility Control**:
-   - Toggles Defect Clusters, Transit Buses, PS 26124 OD Desire Lines, Monsoon Flood Zones, POIs, and Traffic Bottlenecks reactively using `setLayoutProperty` without WebGL context loss.
+   - Toggles Defect Clusters, Transit Buses,   OD Desire Lines, Monsoon Flood Zones, POIs, and Traffic Bottlenecks reactively using `setLayoutProperty` without WebGL context loss.

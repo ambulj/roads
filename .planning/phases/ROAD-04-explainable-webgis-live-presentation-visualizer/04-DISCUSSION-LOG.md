@@ -10,7 +10,7 @@
 
 ### Q1: Discussion Scope Selection
 - **Question:** Which areas of Phase 4 (Explainable WebGIS & Live Presentation Visualizer) would you like to discuss and configure?
-- **User Selection:** All 3 core areas: RPI Mathematical Explainer, Live Dashcam 30 FPS Canvas Tracking, and PS 26124 Origin-Destination Transit Desire Lines.
+- **User Selection:** All 3 core areas: RPI Mathematical Explainer, Live Dashcam 30 FPS Canvas Tracking, and   Origin-Destination Transit Desire Lines.
 - **Outcome:** Comprehensive coverage across GIS-01, GIS-02, and GIS-03.
 
 ### Q2: RPI Formula Modal & Interactive Sliders (GIS-01)
@@ -23,8 +23,8 @@
 - **User Selection:** Client-side Canvas 2D/WebGL bounding box renderer synchronized with HTML5 video timeline and live 5Hz IMU/GPS telemetry ticker, with bundled zero-network sample video clips.
 - **Outcome:** Locked Decision D-04 through D-06.
 
-### Q4: PS 26124 Origin-Destination Transit Desire Lines (GIS-03)
-- **Question:** For PS 26124 Origin-Destination Desire Lines (GIS-03), how should transit flows and zone-to-zone matrices be displayed on WebGIS?
+### Q4:   Origin-Destination Transit Desire Lines (GIS-03)
+- **Question:** For   Origin-Destination Desire Lines (GIS-03), how should transit flows and zone-to-zone matrices be displayed on WebGIS?
 - **User Selection:** Curvature-interpolated GeoJSON Great Circle / Bezier desire arcs rendered directly in MapLibre GL with thickness/color coded by daily passenger trip volume and interactive zone tooltip breakdown.
 - **Outcome:** Locked Decision D-07 through D-10.
 
@@ -34,4 +34,4 @@
 
 - **RPI Explainer**: Interactive 4-factor formula + Monsoon expansion multiplier with dynamic real-time slider re-evaluation and SLA reclassification.
 - **Live Dashcam Tracking**: 30 FPS `<canvas>` synchronized on HTML5 video with 5Hz AIS-140 IMU telematics ticker and bundled offline demo scenarios.
-- **OD Transit Desire Lines (PS 26124)**: MapLibre Bezier arc layer mapping Chennai transit flows with passenger volumes, peak loads, and road roughness delay penalties.
+- **OD Transit Desire Lines ( )**: MapLibre Bezier arc layer mapping Chennai transit flows with passenger volumes, peak loads, and road roughness delay penalties.

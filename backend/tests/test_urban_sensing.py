@@ -319,3 +319,70 @@ def test_infrastructure_clusters_query_and_filtering(client):
     for item in waterlogs:
         assert item["defect_type"] in ["WATERLOGGING_HAZARD", "WATERLOGGING"]
         assert item["water_depth_cm"] is not None
+
+
+def test_anpr_zero_fabrication_and_review_queue():
+    """
+    Verifies Task 1 (18-01-01) & Task 3 (18-01-03) requirements:
+    1. Zero plate fabrication on empty/unreadable inputs (returns success=False, confidence=0.0).
+    2. No artificial 0.94/0.95 confidence floors.
+    3. Low confidence (<0.90) and unreadable plates cleanly route to review queue with review_status="REQUIRES_HUMAN_REVIEW".
+    """
+    import numpy as np
+    from app.services.anpr_engine import anpr_engine
+    from app.services.hit_and_run_engine import hit_and_run_engine
+
+    # 1. Blank/Empty Image Test -> Must return success=False and 0.0 confidence (NO fabricated plate)
+    blank_img = np.zeros((480, 640, 3), dtype=np.uint8)
+    res_blank = anpr_engine.detect_plate(blank_img, vehicle_bbox=[100, 100, 300, 300])
+    assert res_blank["success"] is False
+    assert res_blank["plate_number"] is None
+    assert res_blank["confidence"] == 0.0
+
+    # 2. Random Noise Image Test -> Must NOT synthesize TN registration from coordinates
+    noise_img = np.random.randint(0, 255, (200, 200, 3), dtype=np.uint8)
+    res_noise = anpr_engine.detect_plate(noise_img, vehicle_bbox=[20, 20, 180, 180])
+    assert res_noise["success"] is False
+    assert res_noise["plate_number"] is None
+    assert res_noise["confidence"] == 0.0
+
+    # 3. Hit and Run Review Queue Gate -> Low confidence plate (< 0.90) must receive review_status="PENDING_REVIEW"
+    # Seed 2 earlier positions to establish trajectory history (>= 3 points needed)
+    hit_and_run_engine.analyze_vehicle_behavior(
+        track_id="trk-test-42",
+        plate_number=None,
+        plate_confidence=0.0,
+        current_speed_kmh=20.0,
+        bbox=[100, 100, 200, 200],
+        nearby_pedestrians_or_vehicles=[{"bbox_pixels": [110, 110, 150, 150]}],
+        sensor_gz_jerk=0.98
+    )
+    hit_and_run_engine.analyze_vehicle_behavior(
+        track_id="trk-test-42",
+        plate_number=None,
+        plate_confidence=0.0,
+        current_speed_kmh=24.0,
+        bbox=[105, 105, 205, 205],
+        nearby_pedestrians_or_vehicles=[{"bbox_pixels": [110, 110, 150, 150]}],
+        sensor_gz_jerk=0.98
+    )
+
+    incident = hit_and_run_engine.analyze_vehicle_behavior(
+        track_id="trk-test-42",
+        plate_number=None,
+        plate_confidence=0.0,
+        current_speed_kmh=68.0,
+        bbox=[120, 120, 220, 220],
+        nearby_pedestrians_or_vehicles=[{"bbox_pixels": [110, 110, 150, 150]}],
+        sensor_gz_jerk=2.5,
+        lat=13.0070,
+        lng=80.2030,
+        road_name="GST Road",
+        bus_id="BUS-TN01-1042"
+    )
+    assert incident is not None
+    assert incident["detected"] is True
+    assert incident["review_status"] == "PENDING_REVIEW"
+    assert incident["plate_number"] == "UNIDENTIFIED"
+    assert incident["plate_confidence"] == 0.0
+

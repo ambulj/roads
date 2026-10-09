@@ -106,7 +106,7 @@ const getInitialRoute = (): AppRoute => {
   if (baseRoute === "capture") return "fleet";
   if (VALID_ROUTES.includes(baseRoute as AppRoute)) return baseRoute as AppRoute;
   try {
-    const saved = localStorage.getItem("SeherSaathi_active_route");
+    const saved = localStorage.getItem("roadsaathi_active_route") || localStorage.getItem("SeherSaathi_active_route");
     if (saved) {
       if (getLegacyAnalyticsTab(saved)) return "analytics";
       if (saved === "capture") return "fleet";
@@ -202,6 +202,7 @@ export const App: React.FC = () => {
       const newHash = effectiveQuery ? `#/${target}?${effectiveQuery}` : `#/${target}`;
       window.location.hash = newHash;
       try {
+        localStorage.setItem("roadsaathi_active_route", target);
         localStorage.setItem("SeherSaathi_active_route", target);
       } catch {}
       setIsMobileMenuOpen(false);

@@ -44,7 +44,7 @@ pytest -o pythonpath=backend backend/tests/test_concurrence_gating.py backend/te
    - [ ] Click through each of the 5 sub-tabs:
      - 📊 `overview`: Executive Scorecards (`MetricCards`), 4-stat ribbon, Speed vs Distress dual-spline, Priority weights radial bar, Pavement degradation bar chart, Contractor liquidated damages donut chart.
      - 🛣️ `corridors`: 5-corridor risk matrix table, defect breakdown, Edge fleet diagnostics.
-     - 🚦 `traffic`: GTFS public transit delay attribution, IRC:106 bottlenecks choke points, PS 26124 OD Desire Lines flow matrix.
+     - 🚦 `traffic`: GTFS public transit delay attribution, IRC:106 bottlenecks choke points,   OD Desire Lines flow matrix.
      - 🛡️ `safety`: Vision Zero school zone grading, Night darkspots & luminescence audit table.
      - 👁️ `anpr`: Interactive license plate OCR scanner test, arterial traffic density cards.
    - [ ] Confirm active pill token styling (`bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300`).
