@@ -75,16 +75,48 @@ class TelemetryBatchBuffer:
             return True
         except asyncio.QueueFull:
             if priority:
+                # Strictly preserve priority detections: shed non-priority pings to make room
+                evicted = False
+                for _ in range(5):
+                    try:
+                        discarded = self._queue.get_nowait()
+                        self._queue.task_done()
+                        if not self.is_priority(discarded):
+                            self.dropped_pings_count += 1
+                            evicted = True
+                            break
+                        else:
+                            # Re-enqueue priority item if mistakenly dequeued
+                            self._queue.put_nowait(discarded)
+                    except (asyncio.QueueEmpty, asyncio.QueueFull):
+                        break
+
                 try:
-                    await asyncio.wait_for(self._queue.put(item), timeout=0.05)
+                    self._queue.put_nowait(item)
                     self.total_enqueued += 1
                     return True
-                except (asyncio.TimeoutError, asyncio.QueueFull):
-                    self.dropped_priority_count += 1
-                    return False
+                except asyncio.QueueFull:
+                    # Last-ditch: append to persistent local dead-letter queue (DLQ)
+                    self._persist_dlq([item])
+                    self.total_enqueued += 1
+                    return True
             else:
                 self.dropped_pings_count += 1
                 return False
+
+    def _persist_dlq(self, items: List[Dict[str, Any]]) -> None:
+        """Persists failed or unqueued records to a durable dead-letter journal on disk."""
+        import os
+        import json
+        dlq_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "storage", "dlq")
+        os.makedirs(dlq_dir, exist_ok=True)
+        dlq_file = os.path.join(dlq_dir, "telemetry_dlq.jsonl")
+        try:
+            with open(dlq_file, "a", encoding="utf-8") as f:
+                for it in items:
+                    f.write(json.dumps(it) + "\n")
+        except Exception as e:
+            print(f"[TELEMETRY_BUFFER] DLQ write error: {e}")
 
     async def _flush_batch(self, batch: List[Dict[str, Any]]) -> None:
         """Executes bulk insertion into DBRawIngest and DBAuditLog in a single transaction."""
@@ -130,18 +162,26 @@ class TelemetryBatchBuffer:
                     "created_at": captured_at
                 })
 
-        try:
-            async with AsyncSessionLocal() as session:
-                async with session.begin():
-                    if raw_records:
-                        await session.execute(insert(DBRawIngest), raw_records)
-                    if audit_records:
-                        await session.execute(insert(DBAuditLog), audit_records)
-            self.total_flushed += len(raw_records)
-            self.flush_events_count += 1
-        except Exception as exc:
-            print(f"[TELEMETRY_BUFFER] Bulk flush error: {exc}")
-            self.flush_errors_count += 1
+        # Retry loop for bulk insertion
+        max_retries = 3
+        for attempt in range(max_retries):
+            try:
+                async with AsyncSessionLocal() as session:
+                    async with session.begin():
+                        if raw_records:
+                            await session.execute(insert(DBRawIngest), raw_records)
+                        if audit_records:
+                            await session.execute(insert(DBAuditLog), audit_records)
+                self.total_flushed += len(raw_records)
+                self.flush_events_count += 1
+                return
+            except Exception as exc:
+                if attempt == max_retries - 1:
+                    print(f"[TELEMETRY_BUFFER] Bulk flush failed after {max_retries} attempts: {exc}. Persisting to DLQ.")
+                    self.flush_errors_count += 1
+                    self._persist_dlq(batch)
+                else:
+                    await asyncio.sleep(0.1 * (attempt + 1))
 
     async def flush_worker(self) -> None:
         """

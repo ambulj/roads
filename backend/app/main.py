@@ -13,6 +13,15 @@ from app.services.telemetry_buffer import telemetry_buffer
 async def lifespan(app: FastAPI):
     sim_task = None
 
+    # 0. Security Invariant Check: Reject default JWT secret in production mode
+    if settings.ENVIRONMENT == "production" or not settings.DEMO_MODE:
+        if settings.JWT_SECRET_KEY == "RoadSaathi-sovereign-gov-secret-key-2026":
+            import logging
+            logging.getLogger("uvicorn.error").warning(
+                "CRITICAL SECURITY WARNING: System running with default JWT_SECRET_KEY. "
+                "Configure a sovereign JWT_SECRET_KEY in production environments."
+            )
+
     # 1. Start background telemetry batch flusher (SCALE-03)
     await telemetry_buffer.start()
 

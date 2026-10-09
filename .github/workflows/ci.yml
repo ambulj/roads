@@ -34,7 +34,7 @@ jobs:
           ENABLE_SYNTHETIC_GENERATION: "false"
           ENABLE_FLEET_SIMULATION: "false"
         run: |
-          python backend/test_backend.py
+          pytest -o pythonpath=backend backend/tests/test_urban_sensing.py backend/tests/test_copilot_engine.py backend/tests/test_contractor_ledger.py backend/tests/test_concurrence_gating.py backend/tests/test_telematics_physics.py backend/tests/test_explainable_webgis.py backend/tests/test_dual_engine.py backend/tests/test_spatial.py -q
 
   frontend-build:
     name: Frontend TypeScript & Vite Production Build

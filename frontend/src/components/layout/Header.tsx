@@ -135,9 +135,15 @@ export const Header: React.FC<HeaderProps> = ({
           </div>
 
           <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-zinc-100 dark:bg-zinc-900 text-zinc-700 dark:text-zinc-300 font-medium">
-            <span className={`w-2 h-2 rounded-full ${isBackendConnected ? "bg-emerald-500" : "bg-rose-500"}`}></span>
-            <span>{isBackendConnected ? "Central Live" : "Offline"}</span>
+            <span className={`w-2 h-2 rounded-full ${isBackendConnected ? "bg-emerald-500" : "bg-amber-500 animate-pulse"}`}></span>
+            <span>{isBackendConnected ? "Central Live" : "Offline (Local Standby)"}</span>
           </div>
+
+          {!isBackendConnected && (
+            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-amber-500/10 border border-amber-500/30 text-amber-700 dark:text-amber-400 font-semibold text-xs animate-pulse">
+              <span>⚠️ SIMULATED DATA — NOT LIVE OBSERVATIONS</span>
+            </div>
+          )}
         </div>
       </div>
 

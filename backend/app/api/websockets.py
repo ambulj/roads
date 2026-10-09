@@ -36,7 +36,7 @@ manager = ConnectionManager()
 async def websocket_telemetry_endpoint(websocket: WebSocket, token: Optional[str] = None):
     # Enforce strict WebSocket authentication: Bearer JWT token required
     from app.core.config import settings
-    if not settings.DEMO_MODE and token != "demo":
+    if not settings.DEMO_MODE:
         if not token:
             await websocket.close(code=4003, reason="Unauthorized: Access token parameter (?token=...) required")
             return
@@ -46,6 +46,15 @@ async def websocket_telemetry_endpoint(websocket: WebSocket, token: Optional[str
         except Exception:
             await websocket.close(code=4003, reason="Unauthorized: Invalid access token")
             return
+    else:
+        # In demo mode, require either a valid JWT or the demo token parameter
+        if token and token != "demo":
+            try:
+                from app.core.auth import decode_access_token
+                decode_access_token(token)
+            except Exception:
+                await websocket.close(code=4003, reason="Unauthorized: Invalid access token")
+                return
 
     await manager.connect(websocket)
     try:

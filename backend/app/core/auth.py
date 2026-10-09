@@ -231,15 +231,15 @@ def get_current_user(
             "permissions": payload.get("permissions", ["work_orders", "clusters", "command"])
         }
     
-    # Fallback to demo persona if provided in header
-    if x_demo_role:
+    # Fallback to demo persona only when DEMO_MODE is explicitly enabled
+    if settings.DEMO_MODE and x_demo_role:
         canonical_key = resolve_canonical_role(x_demo_role)
         if canonical_key in SEEDED_USERS:
             return SEEDED_USERS[canonical_key]
         
     raise HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
-        detail="Not authenticated. Bearer token required.",
+        detail="Not authenticated. Valid Bearer token required.",
         headers={"WWW-Authenticate": "Bearer"}
     )
 
