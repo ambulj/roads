@@ -45,8 +45,8 @@
 ---
 
 ### Milestone v5.0: Mobile Sensing, Civic Copilot & 3D Mesh Corridor Twin (Active)
-- [ ] **COPILOT-01**: Backend schema-aware natural language assistant query dispatcher (`/api/copilot/query`) executing structured SQL/aggregation over road defects, contractor SLA breaches, ward risk indices, and drafting statutory notices.
-- [ ] **COPILOT-02**: Floating slide-over Civic Copilot drawer in Command Center & Work Orders with quick municipal prompts, deep-links to clusters/work orders, and markdown response formatting.
+- [x] **COPILOT-01**: Backend schema-aware natural language assistant query dispatcher (`/api/copilot/query`) executing structured SQL/aggregation over road defects, contractor SLA breaches, ward risk indices, and drafting statutory notices.
+- [x] **COPILOT-02**: Floating slide-over Civic Copilot drawer in Command Center & Work Orders with quick municipal prompts, deep-links to clusters/work orders, and markdown response formatting.
 - [ ] **TWIN-01**: Interactive 3D Corridor Digital Twin & Surface Elevation Mesh Viewer with depth cavity slicing and elevation contours, featuring prominent "Experimental Concept / Proof of Concept" badging and disclaimer.
 - [ ] **TWIN-02**: Multi-camera perspective viewer supporting exterior bus angles (front, rear, left curb, right carriageway) with synchronized spatial telemetry and inspection HUD overlays.
 - [ ] **SENSE-01**: Missing infrastructure perception and classification (missing road dividers, faded/missing zebra crossings per IRC:35, damaged/missing signboards per IRC:67, waterlogging depth hazard index).
@@ -72,7 +72,7 @@
 | PHYSICS-01 .. PHYSICS-02 | v4.0 | Phase 12 | Complete |
 | STATUTE-01 .. STATUTE-02 | v4.0 | Phase 13 | Complete |
 | SIMPLIFY-01 | v4.0 | Phase 14 | Complete |
-| COPILOT-01 .. COPILOT-02 | v5.0 | Phase 15 | Active |
+| COPILOT-01 .. COPILOT-02 | v5.0 | Phase 15 | Complete |
 | TWIN-01 .. TWIN-02 | v5.0 | Phase 16 | Active |
 | SENSE-01 .. SENSE-02 | v5.0 | Phase 17 | Active |
 

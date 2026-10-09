@@ -35,7 +35,7 @@ RoadSaathi v4.0 grounds the entire municipal intelligence platform in rigorous r
 ---
 
 ### Milestone v5.0: Mobile Sensing, Civic Copilot & 3D Mesh Corridor Twin (Active)
-- [ ] **Phase 15: RoadSaathi Civic Copilot & Natural Language Intelligence** - Centralized municipal natural language assistant: schema-aware SQL/aggregation queries, SLA audit lookups, Section 65B Form 14 notice drafting, and floating Command Center drawer.
+- [x] **Phase 15: RoadSaathi Civic Copilot & Natural Language Intelligence** - Centralized municipal natural language assistant: schema-aware SQL/aggregation queries, SLA audit lookups, Section 65B Form 14 notice drafting, and floating Command Center drawer.
 - [ ] **Phase 16: 3D Corridor Digital Twin & Surface Mesh Visualizer (Concept Prototype)** - Interactive 3D road elevation mesh & cavity depth visualizer (explicitly designated as an experimental concept prototype for now), cross-section slicing, and multi-camera exterior perspective switcher.
 - [ ] **Phase 17: Multi-Camera Urban Sensing & Missing Infrastructure Perception** - Missing road dividers, missing/faded zebra crossings (IRC:35), damaged/missing signboards (IRC:67), waterlogging depth hazards, and vulnerable pedestrian & traffic density counting.
 
@@ -136,7 +136,7 @@ Phases execute in numeric order: 15 → 16 → 17
 | 12. Telematics Physics & Spatial Calibration | 1/1 | Complete | 2026-10-07 |
 | 13. Municipal Statutory Show-Cause & Relaxed Multi-Pass Gating | 1/1 | Complete | 2026-10-08 |
 | 14. Ponytail Codebase Pruning & Dead Engine Deletion | 1/1 | Complete | 2026-10-08 |
-| 15. RoadSaathi Civic Copilot & Natural Language Intelligence | 0/1 | Ready | — |
+| 15. RoadSaathi Civic Copilot & Natural Language Intelligence | 1/1 | Complete | 2026-10-09 |
 | 16. 3D Corridor Digital Twin & Surface Mesh Visualizer (Concept Prototype) | 0/1 | Ready | — |
 | 17. Multi-Camera Urban Sensing & Missing Infrastructure Perception | 0/1 | Ready | — |
 
