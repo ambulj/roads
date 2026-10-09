@@ -21,6 +21,8 @@ import { DocumentExportModal } from "./components/modals/DocumentExportModal";
 import { KeyboardShortcutsModal } from "./components/modals/KeyboardShortcutsModal";
 import { FullLifecycleSimulationModal } from "./components/modals/FullLifecycleSimulationModal";
 import { UploadFootageModal } from "./components/modals/UploadFootageModal";
+import { CivicCopilotDrawer } from "./components/copilot/CivicCopilotDrawer";
+import { Sparkles } from "lucide-react";
 import { audioAlerts } from "./utils/audioAlerts";
 import { useTelemetrySocket } from "./hooks/useTelemetrySocket";
 import { INITIAL_CORRIDORS, api } from "./services/api";
@@ -131,6 +133,7 @@ export const App: React.FC = () => {
   const [isRPIModalOpen, setIsRPIModalOpen] = useState(false);
   const [rpiModalClusterId, setRpiModalClusterId] = useState<string | null>(null);
   const [selectedIncident, setSelectedIncident] = useState<TrafficIncident | null>(null);
+  const [isCopilotOpen, setIsCopilotOpen] = useState(false);
 
   useEffect(() => {
     (window as any).__roadsaathi_open_rpi_modal = (clusterId?: string) => {
@@ -226,8 +229,15 @@ export const App: React.FC = () => {
       const target = e.target as HTMLElement;
       if (target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.isContentEditable) return;
 
-      // Cmd/Ctrl+K → Command Palette
-      if ((e.metaKey || e.ctrlKey) && e.key === "k") {
+      // Cmd/Ctrl+K (without Shift) → Civic Copilot
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k" && !e.shiftKey) {
+        e.preventDefault();
+        setIsCopilotOpen((prev) => !prev);
+        return;
+      }
+
+      // Cmd/Ctrl+Shift+K or Cmd/Ctrl+P → Command Palette
+      if ((e.metaKey || e.ctrlKey) && (e.key.toLowerCase() === "p" || (e.shiftKey && e.key.toLowerCase() === "k"))) {
         e.preventDefault();
         setIsCommandPaletteOpen((prev) => !prev);
         return;
@@ -235,6 +245,7 @@ export const App: React.FC = () => {
 
       // Escape → close any open modal
       if (e.key === "Escape") {
+        if (isCopilotOpen) { setIsCopilotOpen(false); return; }
         if (isCommandPaletteOpen) { setIsCommandPaletteOpen(false); return; }
         if (isDocumentModalOpen) { setIsDocumentModalOpen(false); return; }
         if (isShortcutsModalOpen) { setIsShortcutsModalOpen(false); return; }
@@ -540,6 +551,50 @@ export const App: React.FC = () => {
         onClose={() => setIsRPIModalOpen(false)}
         selectedCluster={clusters.find(c => c.id === rpiModalClusterId) || clusters[0] || null}
         clusters={clusters}
+      />
+
+      {/* Floating Civic Copilot Action Button (FAB) */}
+      {isAuthenticated && (
+        <button
+          type="button"
+          onClick={() => setIsCopilotOpen((prev) => !prev)}
+          title="Open Civic Copilot (Ctrl+K)"
+          aria-label="Open Civic Copilot"
+          className="fixed bottom-6 right-6 z-40 group flex items-center gap-2.5 px-4 py-3 rounded-full bg-gradient-to-r from-indigo-600 via-indigo-500 to-amber-500 text-white font-medium shadow-xl shadow-indigo-600/30 hover:shadow-indigo-600/50 hover:scale-105 active:scale-95 transition-all focus:outline-hidden focus:ring-4 focus:ring-indigo-500/30 border border-white/20"
+        >
+          <div className="relative flex items-center justify-center">
+            <Sparkles className="w-5 h-5 animate-pulse text-amber-200" />
+            <span className="absolute -top-1 -right-1 flex h-2 w-2">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-300"></span>
+            </span>
+          </div>
+          <span className="text-sm font-semibold tracking-wide hidden sm:inline-block">
+            Civic Copilot
+          </span>
+          <kbd className="hidden md:inline-flex items-center px-1.5 py-0.5 text-[10px] font-mono font-semibold rounded bg-black/25 text-white/90 border border-white/20">
+            Ctrl+K
+          </kbd>
+        </button>
+      )}
+
+      {/* Global Civic Copilot Slide-Over Drawer */}
+      <CivicCopilotDrawer
+        isOpen={isCopilotOpen}
+        onClose={() => setIsCopilotOpen(false)}
+        onNavigate={handleNavigate}
+        onFlyToMap={(target) => {
+          handleNavigate("command");
+          window.dispatchEvent(new CustomEvent("roadsaathi:fly-to", { detail: target }));
+        }}
+        onInspectBacklog={(clusterCode) => {
+          handleNavigate("work-orders");
+          window.dispatchEvent(new CustomEvent("roadsaathi:inspect-ticket", { detail: { clusterCode } }));
+        }}
+        onViewLedger={(contractorId) => {
+          handleNavigate("work-orders");
+          window.location.hash = "#/work-orders?tab=sla";
+        }}
       />
     </div>
   );

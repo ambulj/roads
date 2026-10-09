@@ -11,7 +11,7 @@ from fastapi import APIRouter
 from app.api.endpoints import (
     telemetry, clusters, work_orders, fleet, analytics, incidents,
     models, streams, auth, traffic, dispatch, simulation, learning, road_memory, city_brain, privacy, evidence,
-    pedestrian, contractors
+    pedestrian, contractors, copilot
 )
 from app.api import websockets
 
@@ -84,6 +84,11 @@ api_router.include_router(
     contractors.router,
     prefix="/contractors",
     tags=["[Tier 2 Central] Contractor SLA Ledger, IRC:SP:20 & Escrow Account"]
+)
+api_router.include_router(
+    copilot.router,
+    prefix="/copilot",
+    tags=["[Tier 2 Central] RoadSaathi Civic Copilot & Natural Language Intelligence"]
 )
 api_router.include_router(
     analytics.router, 

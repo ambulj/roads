@@ -209,6 +209,32 @@ export const ContractorSlaLedger: React.FC<ContractorSlaLedgerProps> = ({ cluste
     }).catch(() => {});
   }, []);
 
+  // Listen for Copilot Form 14 Notice drafting deep-link event
+  useEffect(() => {
+    const handleOpenForm14 = (e: Event) => {
+      const customEvent = e as CustomEvent<AutoDebitRecord>;
+      if (customEvent.detail) {
+        const record = customEvent.detail;
+        setAutoDebits((prev) => {
+          if (prev.some(d => d.id === record.id || (d.noticeDocketNo && d.noticeDocketNo === record.noticeDocketNo))) {
+            return prev;
+          }
+          return [record, ...prev];
+        });
+        setSelectedDebitRecord(record);
+        const matchedCtr = contractors.find(
+          c => c.id === record.contractorId || (record.contractorName && c.name.toLowerCase().includes(record.contractorName.toLowerCase().slice(0, 5)))
+        ) || contractors[0];
+        setSelectedContractor(matchedCtr);
+        setActiveViewTab('auto_debit_ledger');
+        setActiveModal('auto_debit_voucher');
+      }
+    };
+
+    window.addEventListener('roadsaathi:open-form14', handleOpenForm14);
+    return () => window.removeEventListener('roadsaathi:open-form14', handleOpenForm14);
+  }, [contractors]);
+
   const totalGrossBonds = contractors.reduce((acc, c) => acc + c.securityDepositInr, 0);
   const totalSecurityDeposits = contractors.reduce((acc, c) => acc + (c.securityDepositInr - c.penaltiesDeductedInr), 0);
   const totalPenaltiesCollected = contractors.reduce((acc, c) => acc + c.penaltiesDeductedInr, 0);

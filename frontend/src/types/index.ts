@@ -843,5 +843,53 @@ export interface BottleneckAlert {
   detected_at: string;
 }
 
+// ── Copilot Intelligence & Natural Language Types ─────────────────────────────
+export type CopilotActionType = 
+  | 'FLY_TO_MAP' 
+  | 'INSPECT_BACKLOG' 
+  | 'VIEW_LEDGER' 
+  | 'OPEN_FORM14_MODAL' 
+  | 'FILTER_VIEW';
+
+export interface CopilotActionCard {
+  id: string;
+  type: 'DEFECT_CLUSTER' | 'CONTRACTOR_DOSSIER' | 'CORRIDOR_METRIC' | 'STATUTORY_NOTICE_CARD' | 'HELP_GUIDE' | string;
+  title: string;
+  subtitle?: string;
+  badge?: string;
+  badge_variant?: 'rose' | 'amber' | 'emerald' | 'indigo' | 'slate';
+  metrics: Record<string, string | number>;
+  description?: string;
+  primary_action_label?: string;
+  primary_action_type?: CopilotActionType;
+  primary_action_payload?: Record<string, any>;
+  secondary_action_label?: string;
+  secondary_action_type?: CopilotActionType;
+  secondary_action_payload?: Record<string, any>;
+}
+
+export interface CopilotQueryRequest {
+  query: string;
+  context?: Record<string, any>;
+}
+
+export interface CopilotQueryResponse {
+  query: string;
+  intent: string;
+  executive_summary: string;
+  cards: CopilotActionCard[];
+  suggested_queries: string[];
+  latency_ms: number;
+  statutory_context?: string;
+}
+
+export interface CopilotChatMessage {
+  id: string;
+  role: 'user' | 'assistant';
+  content?: string;
+  response?: CopilotQueryResponse;
+  timestamp: string;
+}
+
 
 

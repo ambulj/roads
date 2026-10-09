@@ -6,7 +6,8 @@ import {
   RoadMemoryCorridor, LearningStatusResponse, LearningQueueItem, RoadMemorySummaryResponse,
   BudgetOptimizationResult, ShiftTriageResult, XAIReasoningTrace, ChronicFailuresResult,
   PrivacyStatus, PrivacyConfigPayload,
-  ODMatrixResponse, TrafficDensityRecord, BottleneckAlert
+  ODMatrixResponse, TrafficDensityRecord, BottleneckAlert,
+  CopilotActionCard, CopilotQueryRequest, CopilotQueryResponse
 } from '../types';
 
 export interface ContractorAgency {
@@ -2470,6 +2471,63 @@ class ApiService {
       escrow_holdback_released: false,
       failure_reason: "Network error during concurrence verification"
     };
+  }
+
+  async queryCopilot(request: CopilotQueryRequest | string): Promise<CopilotQueryResponse> {
+    const reqBody: CopilotQueryRequest = typeof request === 'string' ? { query: request } : request;
+    try {
+      const res = await fetch(`${API_BASE}/copilot/query`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...this.getAuthHeaders()
+        },
+        body: JSON.stringify(reqBody),
+        signal: AbortSignal.timeout(6000),
+      });
+      if (res.ok) {
+        return await res.json();
+      }
+    } catch (e) {
+      console.warn("Civic Copilot backend request failed, using local fallback response:", e);
+    }
+    return {
+      query: reqBody.query,
+      intent: "GENERAL_HELP_GUIDE",
+      executive_summary: "Civic Copilot is operating in local fallback mode.",
+      cards: [],
+      suggested_queries: [
+        "Show unaddressed P0 potholes on GST Road",
+        "Contractors with highest SLA breaches",
+        "Corridors with worst road condition",
+        "Draft Form 14 notice for L&T breaches"
+      ],
+      latency_ms: 1.2
+    };
+  }
+
+  async queryCivicCopilot(query: string, conversation_history?: any[]): Promise<CopilotQueryResponse> {
+    return this.queryCopilot({ query, context: { history: conversation_history } });
+  }
+
+  async getCopilotSuggestions(): Promise<string[]> {
+    try {
+      const res = await fetch(`${API_BASE}/copilot/suggestions`, {
+        headers: this.getAuthHeaders(),
+        signal: AbortSignal.timeout(3000)
+      });
+      if (res.ok) {
+        return await res.json();
+      }
+    } catch (e) {
+      console.warn("Failed to fetch suggestions from backend:", e);
+    }
+    return [
+      "Show unaddressed P0 potholes on GST Road",
+      "Contractors with highest SLA breaches",
+      "Corridors with worst road condition",
+      "Draft Form 14 notice for L&T breaches"
+    ];
   }
 }
 
