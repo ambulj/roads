@@ -117,8 +117,10 @@ class TestProductionHardening(unittest.TestCase):
         res_ingest = client.post("/api/traffic/ingest", json=ingest_payload)
         self.assertEqual(res_ingest.status_code, 200)
         data = res_ingest.json()
-        # PCU = 40*0.5 + 10*1.0 + 30*1.0 + 5*3.0 + 2*3.0 = 20 + 10 + 30 + 15 + 6 = 81.0
-        self.assertEqual(data["density_pcu_per_km"], 81.0)
+        # Under official IRC:106-1990 Table 1:
+        # PCU = 40*0.5 (2W) + 10*1.2 (3W) + 30*1.0 (4W) + 5*2.2 (Bus) + 2*2.2 (Truck)
+        #     = 20.0 + 12.0 + 30.0 + 11.0 + 4.4 = 77.4 PCU
+        self.assertEqual(data["density_pcu_per_km"], 77.4)
         self.assertTrue(data["is_bottleneck"])
 
         # 3. Query active bottlenecks
@@ -247,6 +249,79 @@ class TestProductionHardening(unittest.TestCase):
                 self.assertIn("X-DPDP-Authorized-Role", res_dl.headers)
             else:
                 self.assertIn(res_dl.status_code, (200, 404))
+
+    # ── 10. STATUTORY IRC:106 CONFORMANCE & GROUND TRUTH METRICS MATRIX ──────
+    def test_11_irc106_pcu_table_one_conformance(self):
+        """Verify strict adherence to IRC:106-1990 Table 1 urban road PCU equivalents."""
+        from app.core.traffic_scoring import calculate_irc106_pcu, map_class_to_irc106_pcu, IRC106_PCU_FACTORS
+        
+        # Check Table 1 factors
+        self.assertEqual(IRC106_PCU_FACTORS["2w"], 0.5)
+        self.assertEqual(IRC106_PCU_FACTORS["3w"], 1.2)
+        self.assertEqual(IRC106_PCU_FACTORS["car"], 1.0)
+        self.assertEqual(IRC106_PCU_FACTORS["lcv"], 1.4)
+        self.assertEqual(IRC106_PCU_FACTORS["bus"], 2.2)
+        self.assertEqual(IRC106_PCU_FACTORS["truck"], 2.2)
+        self.assertEqual(IRC106_PCU_FACTORS["tractor"], 4.0)
+        self.assertEqual(IRC106_PCU_FACTORS["bicycle"], 0.5)
+        self.assertEqual(IRC106_PCU_FACTORS["cart"], 1.5)
+
+        # Check multi-class detection mapping
+        self.assertEqual(map_class_to_irc106_pcu("Autorickshaw"), 1.2)
+        self.assertEqual(map_class_to_irc106_pcu("Tempo"), 1.4)
+        self.assertEqual(map_class_to_irc106_pcu("Ambulance"), 1.4)
+        self.assertEqual(map_class_to_irc106_pcu("Tractor"), 4.0)
+        self.assertEqual(map_class_to_irc106_pcu("Cycle"), 0.5)
+        self.assertEqual(map_class_to_irc106_pcu("MotorBike"), 0.5)
+        self.assertEqual(map_class_to_irc106_pcu("Bus"), 2.2)
+        self.assertEqual(map_class_to_irc106_pcu("Truck"), 2.2)
+        self.assertEqual(map_class_to_irc106_pcu("Car"), 1.0)
+
+        # Full mixed composition test
+        pcu = calculate_irc106_pcu(
+            counts_2w=10,      # 5.0
+            counts_3w=5,       # 6.0
+            counts_4w=10,      # 10.0
+            counts_bus=2,      # 4.4
+            counts_truck=1,    # 2.2
+            counts_lcv=2,      # 2.8
+            counts_tractor=1,  # 4.0
+            counts_cycle=4,    # 2.0
+            counts_cart=2      # 3.0
+        )
+        # Expected = 5.0 + 6.0 + 10.0 + 4.4 + 2.2 + 2.8 + 4.0 + 2.0 + 3.0 = 39.4
+        self.assertEqual(pcu, 39.4)
+
+    def test_12_ground_truth_model_metrics_matrix(self):
+        """Verify exposure of empirical training metrics matrix for all 5 verified weights."""
+        # 1. Learning status endpoint
+        res_ls = client.get("/api/learning/status")
+        self.assertEqual(res_ls.status_code, 200)
+        ls_data = res_ls.json()
+        self.assertIn("ground_truth_models", ls_data)
+        models = {m["weight_file"]: m for m in ls_data["ground_truth_models"]}
+        self.assertIn("zebra.pt", models)
+        self.assertEqual(models["zebra.pt"]["map_50"], 0.993)
+        self.assertIn("anpr.pt", models)
+        self.assertEqual(models["anpr.pt"]["map_50"], 0.693)
+        self.assertIn("potholedetection.pt", models)
+        self.assertEqual(models["potholedetection.pt"]["map_50"], 0.471)
+        self.assertIn("vehicle_detection.pt", models)
+        self.assertEqual(models["vehicle_detection.pt"]["map_50"], 0.404)
+        self.assertIn("indian_roads_detection.pt", models)
+        self.assertEqual(models["indian_roads_detection.pt"]["map_50"], 0.219)
+
+        # Macro metrics
+        self.assertIn("macro_metrics", ls_data)
+        self.assertEqual(ls_data["macro_metrics"]["mean_map_50"], 0.556)
+
+        # 2. Models status endpoint
+        res_ms = client.get("/api/models/status")
+        self.assertEqual(res_ms.status_code, 200)
+        ms_data = res_ms.json()
+        zebra_meta = ms_data["models"]["zebra_crossing_detector"]
+        self.assertIsNotNone(zebra_meta.get("metrics"))
+        self.assertEqual(zebra_meta["metrics"]["map_50"], 0.993)
 
 if __name__ == "__main__":
     unittest.main()

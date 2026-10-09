@@ -497,6 +497,9 @@ class TrafficDensityIngest(BaseModel):
     counts_4w: int = 0
     counts_bus: int = 0
     counts_truck: int = 0
+    counts_lcv: Optional[int] = 0
+    counts_tractor: Optional[int] = 0
+    counts_cycle: Optional[int] = 0
     average_speed_kmh: float = 35.0
     free_flow_speed_kmh: float = 50.0
     reported_by: str = "EDGE-CAM-01"

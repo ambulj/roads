@@ -357,15 +357,15 @@ export const CommandCenter: React.FC<CommandCenterProps> = ({
         {/* Center: Real-Time Live Metric Chips */}
         <div className="hidden sm:flex items-center gap-1.5 overflow-x-auto text-[11px] font-mono shrink-0">
           <div className="flex items-center gap-1 px-2 py-0.5 rounded bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-700">
-            <span className="text-zinc-400">Fleet:</span>
+            <span className="text-zinc-600 dark:text-zinc-400">Fleet:</span>
             <strong className="text-cyan-600 dark:text-cyan-400">{onlineFleetCount}/5 Active</strong>
           </div>
           <div className="flex items-center gap-1 px-2 py-0.5 rounded bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-700">
-            <span className="text-zinc-400">Hazards:</span>
+            <span className="text-zinc-600 dark:text-zinc-400">Hazards:</span>
             <strong className="text-amber-600 dark:text-amber-400">{hazardClustersCount}</strong>
           </div>
           <div className="flex items-center gap-1 px-2 py-0.5 rounded bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-700">
-            <span className="text-zinc-400">Incidents:</span>
+            <span className="text-zinc-600 dark:text-zinc-400">Incidents:</span>
             <strong className="text-rose-600 dark:text-rose-400">{incidentCount}</strong>
           </div>
         </div>

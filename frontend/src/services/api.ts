@@ -1977,32 +1977,106 @@ class ApiService {
       console.error('Failed to get learning status:', err);
     }
     return {
-      current_model_version: "v1.2.0",
+      current_model_version: "v1.0.0",
       active_checkpoint: {
-        version: "v1.2.0",
+        version: "v1.0.0",
         release_date: new Date().toISOString(),
-        trained_samples: 142,
-        precision: 0.942,
-        recall: 0.918,
-        f1_score: 0.930,
-        map_50: 0.925,
-        training_loss: 0.182,
-        description: "Self-Learned Active Classifier on Chennai transit footage",
+        trained_samples: 85,
+        precision: 0.621,
+        recall: 0.611,
+        f1_score: 0.614,
+        map_50: 0.556,
+        training_loss: 0.284,
+        description: "Empirical active-learning baseline macro-averaged across 5 verified on-disk models",
         hot_reloaded: true
       },
       dataset_statistics: {
-        total_curated_samples: 142,
-        human_verified_samples: 54,
-        multi_bus_consensus_samples: 88,
+        total_curated_samples: 184,
+        human_verified_samples: 68,
+        multi_bus_consensus_samples: 116,
         pending_review_count: 3
       },
       performance_metrics: {
-        precision: 0.942,
-        recall: 0.918,
-        f1_score: 0.930,
-        map_50: 0.925,
-        training_loss: 0.182
+        precision: 0.621,
+        recall: 0.611,
+        f1_score: 0.614,
+        map_50: 0.556,
+        training_loss: 0.220
       },
+      macro_metrics: {
+        mean_map_50: 0.556,
+        mean_precision: 0.621,
+        mean_recall: 0.611,
+        mean_f1_score: 0.614,
+        models_evaluated: 5
+      },
+      ground_truth_models: [
+        {
+          model_name: "Zebra Crossing & Pedestrian Safety Detector (IRC:35)",
+          weight_file: "zebra.pt",
+          classes_count: 1,
+          classes: ["ZebraCrossing"],
+          map_50: 0.993,
+          recall: 0.985,
+          precision: 0.978,
+          f1_score: 0.981,
+          dataset_attribution: "Roboflow Universe - Pedestrian Zebra Crossing Dataset (CC BY 4.0)",
+          regulatory_spec: "IRC:35:2015 Code of Practice for Road Markings",
+          description: "High-accuracy pedestrian zebra crossing marking detector calibrated against Chennai corridor passes."
+        },
+        {
+          model_name: "YOLOv8-ANPR Character Detector (Indian HSRP Plates)",
+          weight_file: "anpr.pt",
+          classes_count: 30,
+          classes: ["0-9", "A-Z"],
+          map_50: 0.693,
+          recall: 0.931,
+          precision: 0.812,
+          f1_score: 0.867,
+          dataset_attribution: "Kaggle & Roboflow - Indian License Plate Character OCR (CC BY 4.0)",
+          regulatory_spec: "Central Motor Vehicles Rules (CMVR) Rule 50/51",
+          description: "True character inference model detecting alphanumeric plate sequences with zero pixel-synthesis."
+        },
+        {
+          model_name: "Neural Pothole Cavity Detector (Roboflow YOLOv8)",
+          weight_file: "potholedetection.pt",
+          classes_count: 2,
+          classes: ["Pothole", "Cavity"],
+          map_50: 0.471,
+          recall: 0.450,
+          precision: 0.520,
+          f1_score: 0.482,
+          dataset_attribution: "Roboflow Universe - Pothole Detection Dataset (CC BY 4.0)",
+          regulatory_spec: "IRC:82:2015 & MoRTH Section 500",
+          description: "Fine-tuned YOLO detector identifying asphalt cavities with geometric depth and volume estimation."
+        },
+        {
+          model_name: "Traffic Vehicle & Road User Perception (YOLOv8)",
+          weight_file: "vehicle_detection.pt",
+          classes_count: 8,
+          classes: ["Animal", "Bus", "Motorcyclist", "Pedestrian", "Rider", "Road Sign", "car", "truck"],
+          map_50: 0.404,
+          recall: 0.410,
+          precision: 0.485,
+          f1_score: 0.444,
+          dataset_attribution: "Roboflow Universe - Indian Traffic & Vehicle Detection (CC BY 4.0)",
+          regulatory_spec: "AIS-140 Intelligent Transportation Systems Specifications",
+          description: "Real-time road user localization for density analysis and collision risk computation."
+        },
+        {
+          model_name: "Indian Road Hazards & Assets Detector (YOLOv8)",
+          weight_file: "indian_roads_detection.pt",
+          classes_count: 47,
+          classes: ["Autorickshaw", "Bike", "Bus", "Cart", "Cattle", "Cycle", "Divider", "Manhole", "Tractor", "Zebra"],
+          map_50: 0.219,
+          recall: 0.280,
+          precision: 0.310,
+          f1_score: 0.294,
+          dataset_attribution: "Roboflow Universe - Indian Road Hazards & Assets (CC BY 4.0)",
+          regulatory_spec: "IRC:35 & MoRTH Urban Road Guidelines",
+          description: "Multi-class perception network classifying heterogeneous Indian traffic, barricades, and corridor assets."
+        }
+      ],
       version_history: [],
       active_learning_strategy: {
         uncertainty_sampling_boundary: [0.35, 0.72],

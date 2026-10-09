@@ -666,6 +666,20 @@ export interface ModelVersionRecord {
   hot_reloaded: boolean;
 }
 
+export interface GroundTruthModelMetric {
+  model_name: string;
+  weight_file: string;
+  classes_count: number;
+  classes: string[];
+  map_50: number;
+  recall: number;
+  precision: number;
+  f1_score: number;
+  dataset_attribution: string;
+  regulatory_spec: string;
+  description: string;
+}
+
 export interface LearningStatusResponse {
   current_model_version: string;
   active_checkpoint: ModelVersionRecord;
@@ -681,6 +695,14 @@ export interface LearningStatusResponse {
     f1_score: number;
     map_50: number;
     training_loss: number;
+  };
+  ground_truth_models?: GroundTruthModelMetric[];
+  macro_metrics?: {
+    mean_map_50: number;
+    mean_precision: number;
+    mean_recall: number;
+    mean_f1_score: number;
+    models_evaluated: number;
   };
   version_history: ModelVersionRecord[];
   active_learning_strategy: {

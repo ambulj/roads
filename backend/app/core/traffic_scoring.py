@@ -11,14 +11,21 @@
 
 from typing import Dict, Any, Optional
 
-# IRC:106-1990 Urban Road PCU Factors (Commercial / Transit Vehicle Equivalent)
+# IRC:106-1990 Table 1: Recommended PCU Factors for Urban Roads in Plain Areas
 IRC106_PCU_FACTORS = {
-    "2w": 0.5,     # Motorcycle, Scooter, Moped
-    "3w": 1.0,     # Auto-rickshaw
-    "4w": 1.0,     # Passenger Car, Taxi, Small Van
-    "bus": 3.0,    # Transit Bus (IRC:106 Heavy Transit Vehicle)
-    "truck": 3.0,  # Commercial Truck / Lorry
-    "heavy_truck": 3.0 # Multi-axle commercial vehicle
+    "2w": 0.5,             # Motor cycle, Scooter, Moped (0.5 PCU)
+    "3w": 1.2,             # Auto-rickshaw (1.2 PCU)
+    "car": 1.0,            # Passenger Car, Pick-up, Taxi, Van (1.0 PCU)
+    "4w": 1.0,             # Car equivalent alias
+    "lcv": 1.4,            # Light Commercial Vehicle, Mini-Bus, Tempo, Ambulance (1.4 PCU)
+    "bus": 2.2,            # Transit Bus, Standard City Bus (2.2 PCU)
+    "truck": 2.2,          # Heavy Commercial Vehicle / 2-Axle Truck (2.2 PCU)
+    "heavy_truck": 2.2,    # Truck equivalent
+    "tractor": 4.0,        # Agricultural Tractor / Trailer (4.0 PCU)
+    "bicycle": 0.5,        # Pedal Cycle (0.5 PCU)
+    "cycle": 0.5,          # Bicycle alias
+    "cycle_rickshaw": 1.5, # Cycle Rickshaw (1.5 PCU)
+    "cart": 1.5            # Hand Cart / Horse Cart (1.5 PCU)
 }
 
 def calculate_irc106_pcu(
@@ -26,20 +33,55 @@ def calculate_irc106_pcu(
     counts_3w: int = 0,
     counts_4w: int = 0,
     counts_bus: int = 0,
-    counts_truck: int = 0
+    counts_truck: int = 0,
+    counts_lcv: int = 0,
+    counts_tractor: int = 0,
+    counts_cycle: int = 0,
+    counts_cart: int = 0
 ) -> float:
     """
-    Computes total Passenger Car Units (PCU) per IRC:106-1990:
-    PCU = (2W * 0.5) + (3W * 1.0) + (Car * 1.0) + (Bus * 2.2) + (Truck * 2.2)
+    Computes total Passenger Car Units (PCU) strictly per IRC:106-1990 Table 1:
+    PCU = (2W * 0.5) + (3W * 1.2) + (Car * 1.0) + (LCV * 1.4) +
+          (Bus * 2.2) + (Truck * 2.2) + (Tractor * 4.0) + (Cycle * 0.5) + (Cart * 1.5)
     """
     pcu = (
         (counts_2w * IRC106_PCU_FACTORS["2w"]) +
         (counts_3w * IRC106_PCU_FACTORS["3w"]) +
         (counts_4w * IRC106_PCU_FACTORS["4w"]) +
         (counts_bus * IRC106_PCU_FACTORS["bus"]) +
-        (counts_truck * IRC106_PCU_FACTORS["truck"])
+        (counts_truck * IRC106_PCU_FACTORS["truck"]) +
+        (counts_lcv * IRC106_PCU_FACTORS["lcv"]) +
+        (counts_tractor * IRC106_PCU_FACTORS["tractor"]) +
+        (counts_cycle * IRC106_PCU_FACTORS["cycle"]) +
+        (counts_cart * IRC106_PCU_FACTORS["cart"])
     )
     return round(float(pcu), 2)
+
+def map_class_to_irc106_pcu(class_name: str) -> float:
+    """
+    Maps detected labels from indian_roads_detection.pt and vehicle_detection.pt
+    to official IRC:106-1990 Table 1 Passenger Car Unit (PCU) factors.
+    """
+    name = class_name.lower().replace("_", "").replace(" ", "").replace("-", "")
+    if any(k in name for k in ["motorcycle", "motorbike", "scooter", "bike", "2w"]):
+        return IRC106_PCU_FACTORS["2w"]       # 0.5
+    if any(k in name for k in ["autorickshaw", "auto", "3w"]):
+        return IRC106_PCU_FACTORS["3w"]       # 1.2
+    if any(k in name for k in ["tractor"]):
+        return IRC106_PCU_FACTORS["tractor"]  # 4.0
+    if any(k in name for k in ["bus"]):
+        return IRC106_PCU_FACTORS["bus"]      # 2.2
+    if any(k in name for k in ["truck", "lorry"]):
+        return IRC106_PCU_FACTORS["truck"]    # 2.2
+    if any(k in name for k in ["lcv", "tempo", "ambulance"]):
+        return IRC106_PCU_FACTORS["lcv"]      # 1.4
+    if any(k in name for k in ["cycle", "bicycle"]):
+        return IRC106_PCU_FACTORS["cycle"]    # 0.5
+    if any(k in name for k in ["cart", "rikshaw", "cyclerickshaw"]):
+        return IRC106_PCU_FACTORS["cart"]     # 1.5
+    if any(k in name for k in ["car", "taxi", "van", "suv", "4w"]):
+        return IRC106_PCU_FACTORS["car"]      # 1.0
+    return 1.0  # Default passenger car equivalent
 
 
 def classify_congestion(

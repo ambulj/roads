@@ -4,6 +4,7 @@ import numpy as np
 from typing import List, Dict, Any, Optional
 from app.models.schemas import SafeCorridorScore
 from app.spatial.poi_database import CRITICAL_POIS
+from app.core.traffic_scoring import map_class_to_irc106_pcu
 
 CHENNAI_SAFE_CORRIDORS: List[SafeCorridorScore] = [
     SafeCorridorScore(
@@ -369,21 +370,18 @@ class PedestrianCrossingFusionEngine:
             h = max(1, box[3] - box[1])
             total_veh_area += (w * h)
 
-            if "car" in lbl:
+            factor = map_class_to_irc106_pcu(lbl)
+            total_pcu += factor
+            if "car" in lbl or "taxi" in lbl:
                 breakdown["car"] += 1
-                total_pcu += 1.0
             elif "bus" in lbl:
                 breakdown["bus"] += 1
-                total_pcu += 3.0
-            elif "truck" in lbl:
+            elif "truck" in lbl or "lorry" in lbl:
                 breakdown["truck"] += 1
-                total_pcu += 3.0
-            elif "bike" in lbl or "motorcycle" in lbl or "scooter" in lbl:
+            elif any(k in lbl for k in ["bike", "motorcycle", "scooter"]):
                 breakdown["bike"] += 1
-                total_pcu += 0.5
             else:
                 breakdown["other"] += 1
-                total_pcu += 1.0
 
         occupancy = round(min(1.0, total_veh_area / road_area), 3)
         v_count = len(vehicles)

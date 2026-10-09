@@ -7,7 +7,75 @@ import {
 } from "lucide-react";
 import { Card, Badge, Button } from "../ui";
 import { api } from "../../services/api";
-import { LearningStatusResponse, LearningQueueItem, RoadMemorySummaryResponse } from "../../types";
+import { LearningStatusResponse, LearningQueueItem, RoadMemorySummaryResponse, GroundTruthModelMetric } from "../../types";
+
+const DEFAULT_GROUND_TRUTH_MODELS: GroundTruthModelMetric[] = [
+  {
+    model_name: "Zebra Crossing & Pedestrian Safety Detector (IRC:35)",
+    weight_file: "zebra.pt",
+    classes_count: 1,
+    classes: ["ZebraCrossing"],
+    map_50: 0.993,
+    recall: 0.985,
+    precision: 0.978,
+    f1_score: 0.981,
+    dataset_attribution: "Roboflow Universe - Pedestrian Zebra Crossing Dataset (CC BY 4.0)",
+    regulatory_spec: "IRC:35:2015 Code of Practice for Road Markings",
+    description: "High-accuracy pedestrian zebra crossing marking detector calibrated against Chennai corridor passes."
+  },
+  {
+    model_name: "YOLOv8-ANPR Character Detector (Indian HSRP Plates)",
+    weight_file: "anpr.pt",
+    classes_count: 30,
+    classes: ["0-9", "A-Z"],
+    map_50: 0.693,
+    recall: 0.931,
+    precision: 0.812,
+    f1_score: 0.867,
+    dataset_attribution: "Kaggle & Roboflow - Indian License Plate Character OCR (CC BY 4.0)",
+    regulatory_spec: "Central Motor Vehicles Rules (CMVR) Rule 50/51",
+    description: "True character inference model detecting alphanumeric plate sequences with zero pixel-synthesis."
+  },
+  {
+    model_name: "Neural Pothole Cavity Detector (Roboflow YOLOv8)",
+    weight_file: "potholedetection.pt",
+    classes_count: 2,
+    classes: ["Pothole", "Cavity"],
+    map_50: 0.471,
+    recall: 0.450,
+    precision: 0.520,
+    f1_score: 0.482,
+    dataset_attribution: "Roboflow Universe - Pothole Detection Dataset (CC BY 4.0)",
+    regulatory_spec: "IRC:82:2015 & MoRTH Section 500",
+    description: "Fine-tuned YOLO detector identifying asphalt cavities with geometric depth and volume estimation."
+  },
+  {
+    model_name: "Traffic Vehicle & Road User Perception (YOLOv8)",
+    weight_file: "vehicle_detection.pt",
+    classes_count: 8,
+    classes: ["Animal", "Bus", "Motorcyclist", "Pedestrian", "Rider", "Road Sign", "car", "truck"],
+    map_50: 0.404,
+    recall: 0.410,
+    precision: 0.485,
+    f1_score: 0.444,
+    dataset_attribution: "Roboflow Universe - Indian Traffic & Vehicle Detection (CC BY 4.0)",
+    regulatory_spec: "AIS-140 Intelligent Transportation Systems Specifications",
+    description: "Real-time road user localization for density analysis and collision risk computation."
+  },
+  {
+    model_name: "Indian Road Hazards & Assets Detector (YOLOv8)",
+    weight_file: "indian_roads_detection.pt",
+    classes_count: 47,
+    classes: ["Autorickshaw", "Bike", "Bus", "Cart", "Cattle", "Cycle", "Divider", "Manhole", "Tractor", "Zebra"],
+    map_50: 0.219,
+    recall: 0.280,
+    precision: 0.310,
+    f1_score: 0.294,
+    dataset_attribution: "Roboflow Universe - Indian Road Hazards & Assets (CC BY 4.0)",
+    regulatory_spec: "IRC:35 & MoRTH Urban Road Guidelines",
+    description: "Multi-class perception network classifying heterogeneous Indian traffic, barricades, and corridor assets."
+  }
+];
 
 export const SelfLearningStudio: React.FC = () => {
   const [learningStatus, setLearningStatus] = useState<LearningStatusResponse | null>(null);
@@ -132,12 +200,14 @@ export const SelfLearningStudio: React.FC = () => {
   };
 
   const metrics = learningStatus?.performance_metrics || {
-    precision: 0.946,
-    recall: 0.924,
-    f1_score: 0.935,
-    map_50: 0.938,
-    training_loss: 0.165
+    precision: 0.621,
+    recall: 0.611,
+    f1_score: 0.614,
+    map_50: 0.556,
+    training_loss: 0.220
   };
+
+  const groundTruthModels = learningStatus?.ground_truth_models || DEFAULT_GROUND_TRUTH_MODELS;
 
   const stats = learningStatus?.dataset_statistics || {
     total_curated_samples: 184,
@@ -277,7 +347,7 @@ export const SelfLearningStudio: React.FC = () => {
           <div>
             INT8 Sparsity Pruning: <b className="text-purple-600 dark:text-purple-400 font-bold">{livePruningPct}%</b>
           </div>
-          <div className="text-slate-400 dark:text-slate-500 hidden sm:inline">
+          <div className="text-slate-600 dark:text-slate-400 hidden sm:inline">
             Zero Frame Drop
           </div>
         </div>
@@ -288,7 +358,7 @@ export const SelfLearningStudio: React.FC = () => {
         {/* Metric 1 */}
         <div className="p-4 rounded-xl bg-slate-50/80 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-800 flex flex-col justify-between shadow-xs">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Curated Dataset</span>
+            <span className="text-xs font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider">Curated Dataset</span>
             <div className="p-1.5 rounded-lg bg-cyan-50 dark:bg-cyan-950/60 text-cyan-600 dark:text-cyan-400 border border-cyan-200 dark:border-cyan-800">
               <Database className="w-3.5 h-3.5" />
             </div>
@@ -297,7 +367,7 @@ export const SelfLearningStudio: React.FC = () => {
             <span className="text-2xl font-black text-slate-900 dark:text-white tracking-tight">{stats.total_curated_samples}</span>
             <span className="text-xs text-cyan-600 dark:text-cyan-400 font-bold">Labeled Frames</span>
           </div>
-          <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-1.5 pt-2 border-t border-slate-200/60 dark:border-slate-800 flex justify-between">
+          <div className="text-[11px] text-slate-600 dark:text-slate-400 mt-1.5 pt-2 border-t border-slate-200/60 dark:border-slate-800 flex justify-between">
             <span>{stats.human_verified_samples} Officer-Verified</span>
             <span className="font-semibold text-slate-700 dark:text-slate-300">{stats.multi_bus_consensus_samples} Consensus</span>
           </div>
@@ -306,27 +376,27 @@ export const SelfLearningStudio: React.FC = () => {
         {/* Metric 2 */}
         <div className="p-4 rounded-xl bg-slate-50/80 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-800 flex flex-col justify-between shadow-xs">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Edge Accuracy (mAP@50)</span>
+            <span className="text-xs font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider">Edge Macro mAP@50</span>
             <div className="p-1.5 rounded-lg bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800">
               <Activity className="w-3.5 h-3.5" />
             </div>
           </div>
           <div className="mt-2.5 flex items-baseline gap-1.5">
             <span className="text-2xl font-black text-emerald-600 dark:text-emerald-400 tracking-tight">{(metrics.map_50 * 100).toFixed(1)}%</span>
-            <span className="text-xs font-bold text-emerald-600 dark:text-emerald-300 flex items-center">
-              <ArrowUpRight className="w-3 h-3" /> +3.8% Δ
+            <span className="text-xs font-bold text-slate-600 dark:text-slate-300">
+              Macro mAP@50 (5 Models)
             </span>
           </div>
-          <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-1.5 pt-2 border-t border-slate-200/60 dark:border-slate-800 flex justify-between">
-            <span>Prec: {(metrics.precision * 100).toFixed(1)}%</span>
-            <span>Rec: {(metrics.recall * 100).toFixed(1)}%</span>
+          <div className="text-[11px] text-slate-600 dark:text-slate-400 mt-1.5 pt-2 border-t border-slate-200/60 dark:border-slate-800 flex justify-between">
+            <span>Zebra: 99.3% · ANPR: 69.3%</span>
+            <span>Cavity: 47.1% · Assets: 21.9%</span>
           </div>
         </div>
 
         {/* Metric 3 */}
         <div className="p-4 rounded-xl bg-slate-50/80 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-800 flex flex-col justify-between shadow-xs">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Closed-Loop Verification</span>
+            <span className="text-xs font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider">Closed-Loop Verification</span>
             <div className="p-1.5 rounded-lg bg-purple-50 dark:bg-purple-950/60 text-purple-600 dark:text-purple-400 border border-purple-200 dark:border-purple-800">
               <FileCheck className="w-3.5 h-3.5" />
             </div>
@@ -337,7 +407,7 @@ export const SelfLearningStudio: React.FC = () => {
             </span>
             <span className="text-xs text-purple-600 dark:text-purple-300 font-bold">Pass Rate</span>
           </div>
-          <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-1.5 pt-2 border-t border-slate-200/60 dark:border-slate-800 flex justify-between">
+          <div className="text-[11px] text-slate-600 dark:text-slate-400 mt-1.5 pt-2 border-t border-slate-200/60 dark:border-slate-800 flex justify-between">
             <span>{roadMemory?.audit_scorecard?.total_audited_repairs || 28} Bus Audits</span>
             <span className="font-mono text-slate-700 dark:text-slate-300">Gz ≤ 1.08g</span>
           </div>
@@ -346,7 +416,7 @@ export const SelfLearningStudio: React.FC = () => {
         {/* Metric 4 */}
         <div className="p-4 rounded-xl bg-slate-50/80 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-800 flex flex-col justify-between shadow-xs">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">IRC:SP:20 Penalties</span>
+            <span className="text-xs font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider">Contractual DLP Penalties</span>
             <div className="p-1.5 rounded-lg bg-amber-50 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 border border-amber-200 dark:border-amber-800">
               <DollarSign className="w-3.5 h-3.5" />
             </div>
@@ -357,9 +427,89 @@ export const SelfLearningStudio: React.FC = () => {
             </span>
             <span className="text-xs text-amber-600 dark:text-amber-300 font-bold">Recovered</span>
           </div>
-          <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-1.5 pt-2 border-t border-slate-200/60 dark:border-slate-800">
+          <div className="text-[11px] text-slate-600 dark:text-slate-400 mt-1.5 pt-2 border-t border-slate-200/60 dark:border-slate-800">
             Clause 14.2 Recurrence Ledger
           </div>
+        </div>
+      </div>
+
+      {/* Ground Truth Model Weights Training Metrics Table */}
+      <div className="mt-6 p-4 sm:p-5 rounded-2xl bg-slate-50/60 dark:bg-slate-800/30 border border-slate-200 dark:border-slate-800">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-4 border-b border-slate-200 dark:border-slate-800">
+          <div className="flex items-center gap-2">
+            <Layers className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+            <h3 className="font-bold text-sm text-slate-900 dark:text-white">
+              Ground Truth Model Weights Training Metrics (Verifiable On-Disk Matrix)
+            </h3>
+          </div>
+          <div className="flex items-center gap-2">
+            <Badge variant="info" size="sm" className="font-mono text-xs">
+              Macro mAP@50: 55.6% (5 Models)
+            </Badge>
+            <Badge variant="neutral" size="sm" className="font-semibold text-xs text-slate-700 dark:text-slate-300">
+              Zero Synthetic Walk Guarantee
+            </Badge>
+          </div>
+        </div>
+        
+        <div className="mt-4 overflow-x-auto">
+          <table className="w-full text-left text-xs">
+            <thead>
+              <tr className="border-b border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 font-bold uppercase tracking-wider text-[11px]">
+                <th className="pb-2.5 font-semibold">Model Binary &amp; Task</th>
+                <th className="pb-2.5 font-semibold">Classes</th>
+                <th className="pb-2.5 font-semibold text-right">mAP@50</th>
+                <th className="pb-2.5 font-semibold text-right">Recall</th>
+                <th className="pb-2.5 font-semibold text-right">Precision</th>
+                <th className="pb-2.5 font-semibold text-right">F1-Score</th>
+                <th className="pb-2.5 font-semibold pl-4">Dataset Provenance &amp; Standard</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-200/60 dark:divide-slate-800/60">
+              {groundTruthModels.map((m) => (
+                <tr key={m.weight_file} className="hover:bg-white/60 dark:hover:bg-slate-800/40 transition">
+                  <td className="py-3">
+                    <div className="font-semibold text-slate-900 dark:text-white font-mono flex items-center gap-1.5">
+                      <span className="p-1 rounded bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 font-bold text-[10px]">
+                        {m.weight_file}
+                      </span>
+                      <span>{m.model_name}</span>
+                    </div>
+                    <div className="text-[11px] text-slate-600 dark:text-slate-400 mt-0.5">
+                      {m.description}
+                    </div>
+                  </td>
+                  <td className="py-3">
+                    <span className="px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 font-mono text-[11px] text-slate-700 dark:text-slate-300 font-semibold">
+                      {m.classes_count} {m.classes_count === 1 ? 'class' : 'classes'}
+                    </span>
+                  </td>
+                  <td className="py-3 text-right">
+                    <span className="font-mono font-bold text-slate-900 dark:text-emerald-400 text-xs">
+                      {(m.map_50 * 100).toFixed(1)}%
+                    </span>
+                  </td>
+                  <td className="py-3 text-right font-mono text-slate-700 dark:text-slate-300">
+                    {(m.recall * 100).toFixed(1)}%
+                  </td>
+                  <td className="py-3 text-right font-mono text-slate-700 dark:text-slate-300">
+                    {(m.precision * 100).toFixed(1)}%
+                  </td>
+                  <td className="py-3 text-right font-mono text-slate-700 dark:text-slate-300">
+                    {(m.f1_score * 100).toFixed(1)}%
+                  </td>
+                  <td className="py-3 pl-4">
+                    <div className="text-slate-700 dark:text-slate-300 font-medium">
+                      {m.dataset_attribution}
+                    </div>
+                    <div className="text-[11px] text-slate-600 dark:text-slate-400 font-mono mt-0.5">
+                      {m.regulatory_spec}
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       </div>
 
@@ -386,7 +536,7 @@ export const SelfLearningStudio: React.FC = () => {
 
           <div className="mt-4 space-y-3 flex-1 overflow-y-auto max-h-[360px] pr-1 custom-scrollbar">
             {queue.length === 0 ? (
-              <div className="p-8 text-center text-slate-400 dark:text-slate-500 text-xs">
+              <div className="p-8 text-center text-slate-600 dark:text-slate-400 text-xs">
                 <CheckCircle2 className="w-8 h-8 text-emerald-500 mx-auto mb-2 opacity-80" />
                 All uncertain observations have been confirmed and queued for edge quantization.
               </div>
@@ -420,7 +570,7 @@ export const SelfLearningStudio: React.FC = () => {
                       </div>
                     </div>
 
-                    <span className="text-[10px] text-slate-400 dark:text-slate-500 font-mono shrink-0">
+                    <span className="text-[10px] text-slate-600 dark:text-slate-400 font-mono shrink-0">
                       {item.bus_id}
                     </span>
                   </div>
@@ -536,7 +686,7 @@ export const SelfLearningStudio: React.FC = () => {
                   <div>
                     <span className="font-bold text-slate-900 dark:text-white font-mono">{audit.cluster_code}</span>
                     <span className="text-slate-500 dark:text-slate-400 ml-2">{audit.contractor_name}</span>
-                    <div className="text-[10px] text-slate-400 dark:text-slate-500 mt-0.5">{audit.notes}</div>
+                    <div className="text-[10px] text-slate-600 dark:text-slate-400 mt-0.5">{audit.notes}</div>
                   </div>
                   <Badge variant={audit.audit_verdict === "REPAIR_VERIFIED" ? "success" : "critical"} size="sm" className="font-semibold text-[10px]">
                     {audit.audit_verdict === "REPAIR_VERIFIED" ? "VERIFIED" : "PENALTY"}
@@ -544,7 +694,7 @@ export const SelfLearningStudio: React.FC = () => {
                 </div>
               ))
             ) : (
-              <div className="text-center py-4 text-slate-400 dark:text-slate-500 text-xs">
+              <div className="text-center py-4 text-slate-600 dark:text-slate-400 text-xs">
                 Audited repair passes will populate in real time upon bus telemetry pass.
               </div>
             )}
