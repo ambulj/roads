@@ -1102,16 +1102,47 @@ export const LiveCameraFeed: React.FC<LiveCameraFeedProps> = ({
             {showBoundingBoxes && (
               <div className="absolute top-3 right-3 z-10 flex items-center gap-2 pointer-events-none">
                 <div className="bg-slate-950/85 backdrop-blur-md px-3 py-1.5 rounded-xl border border-slate-700/80 text-[11px] font-mono flex items-center gap-2 shadow-xl">
-                  <span className={`w-2 h-2 rounded-full ${activeDetections.length > 0 ? "bg-rose-500 animate-pulse" : "bg-emerald-400"}`} />
-                  <span className="text-slate-200">
-                    AI CV: <strong className={activeDetections.length > 0 ? "text-rose-400 font-bold" : "text-emerald-400"}>
-                      {activeDetections.length > 0 ? `${activeDetections.length} HAZARD DETECTED` : "ALL CLEAR"}
-                    </strong>
-                  </span>
-                  {activeDetections.length > 0 && (
-                    <span className="text-rose-300 font-bold bg-rose-950/60 px-1.5 py-0.5 rounded border border-rose-600/40 text-[10px]">
-                      {activeDetections[0].defect_name || activeDetections[0].label || 'D40'} ({Math.round((activeDetections[0].confidence || 0.95) * 100)}%)
-                    </span>
+                  {activeDetections.length > 0 ? (
+                    <>
+                      {activeDetections.some(d => d.defect_code === 'D40' || d.type === 'POTHOLE_D40' || d.severity === 'critical') ? (
+                        <>
+                          <span className="w-2 h-2 rounded-full bg-rose-500 animate-pulse" />
+                          <span className="text-slate-200">
+                            AI CV: <strong className="text-rose-400 font-bold">{activeDetections.length} HAZARD DETECTED</strong>
+                          </span>
+                          <span className="text-rose-300 font-bold bg-rose-950/60 px-1.5 py-0.5 rounded border border-rose-600/40 text-[10px]">
+                            {activeDetections[0].defect_name || activeDetections[0].label || 'D40'} ({Math.round((activeDetections[0].confidence || 0.95) * 100)}%)
+                          </span>
+                        </>
+                      ) : activeDetections.some(d => d.defect_code === 'ZEBRA_CROSSING') ? (
+                        <>
+                          <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                          <span className="text-slate-200">
+                            AI CV: <strong className="text-emerald-400 font-bold">CROSSWALK IDENTIFIED</strong>
+                          </span>
+                          <span className="text-emerald-300 font-bold bg-emerald-950/60 px-1.5 py-0.5 rounded border border-emerald-600/40 text-[10px]">
+                            IRC:35 Zebra Marking ({Math.round((activeDetections[0].confidence || 0.95) * 100)}%)
+                          </span>
+                        </>
+                      ) : (
+                        <>
+                          <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
+                          <span className="text-slate-200">
+                            AI CV: <strong className="text-amber-400 font-bold">{activeDetections.length} ENTITY DETECTED</strong>
+                          </span>
+                          <span className="text-amber-300 font-bold bg-amber-950/60 px-1.5 py-0.5 rounded border border-amber-600/40 text-[10px]">
+                            {activeDetections[0].defect_name || activeDetections[0].label} ({Math.round((activeDetections[0].confidence || 0.95) * 100)}%)
+                          </span>
+                        </>
+                      )}
+                    </>
+                  ) : (
+                    <>
+                      <span className="w-2 h-2 rounded-full bg-emerald-400" />
+                      <span className="text-slate-200">
+                        AI CV: <strong className="text-emerald-400 font-semibold">ALL CLEAR (NO HAZARD)</strong>
+                      </span>
+                    </>
                   )}
                 </div>
               </div>

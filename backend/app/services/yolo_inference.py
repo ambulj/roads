@@ -1173,11 +1173,14 @@ class YoloInferenceEngine:
                         bx2, by2 = int(xyxy[2] * scale_x), int(xyxy[3] * scale_y)
                         bw, bh = max(1, bx2 - bx1), max(1, by2 - by1)
 
-                        if bw < 25 or bh < 25:
+                        # Filter out full-frame, sky-spanning, or panoramic false positive artifacts
+                        # Zebra crosswalks are on the road surface: bw cannot span > 80% width with bh > 40% height,
+                        # and must be located in lower road perspective (by2 > h * 0.35)
+                        if bw > int(w * 0.75) and bh > int(h * 0.40):
                             continue
-
-                        # Filter out full-frame or sky-spanning false positive artifacts
-                        if (bw > int(w * 0.85) and bh > int(h * 0.65)) or (by1 < int(h * 0.10) and by2 > int(h * 0.80)):
+                        if by1 < int(h * 0.15) and by2 < int(h * 0.45):
+                            continue
+                        if by2 < int(h * 0.30):
                             continue
 
                         # Validate that patch actually contains alternating stripe patterns and contrast
