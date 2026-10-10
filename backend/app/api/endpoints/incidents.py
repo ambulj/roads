@@ -683,50 +683,194 @@ async def dispatch_incident_alert(
 ):
     """
     Dispatches traffic incident alert to 112 Interceptor patrol unit or issues e-Challan.
-    Requires Traffic Safety or Admin clearance.
+    Automatically declutters map by purging the active alert incident and associated
+    road hazard clusters from persistent database upon dispatch.
     """
-    incident = db.query(DBTrafficIncident).filter(DBTrafficIncident.id == incident_id).first()
+    import math
+    from app.models.db_models import DBDistressCluster
+
+    incident = db.query(DBTrafficIncident).filter(
+        (DBTrafficIncident.id == incident_id) |
+        (DBTrafficIncident.id == incident_id.lower()) |
+        (DBTrafficIncident.id == incident_id.upper())
+    ).first()
+
     if not incident:
-        raise HTTPException(status_code=404, detail="Incident not found")
+        # Fallback check in mock store
+        matching_inc = next((i for i in store.get_incidents() if i.get("id") == incident_id), None)
+        if not matching_inc:
+            raise HTTPException(status_code=404, detail="Incident not found")
+        # Upsert into db so dispatch cycle completes
+        incident = DBTrafficIncident(
+            id=incident_id,
+            reporting_bus_id=matching_inc.get("reporting_bus_id", "BUS-TN01-1042"),
+            incident_type=matching_inc.get("incident_type", "HIT_AND_RUN"),
+            plate_number=matching_inc.get("plate_number"),
+            plate_confidence=matching_inc.get("plate_confidence", 0.95),
+            vehicle_color=matching_inc.get("vehicle_color"),
+            vehicle_class=matching_inc.get("vehicle_class"),
+            target_speed_kmh=matching_inc.get("target_speed_kmh", 0.0),
+            road_name=matching_inc.get("road_name", "Metropolitan Arterial"),
+            lat=matching_inc.get("lat", 12.9516),
+            lng=matching_inc.get("lng", 80.1462),
+            occurred_at=matching_inc.get("occurred_at", time.strftime("%d %b, %I:%M %p")),
+            status="ACTIVE_ALERT"
+        )
+        db.add(incident)
+        db.commit()
+        db.refresh(incident)
         
     target_pcr = dispatch.target_pcr_unit or "PCR-14"
-    incident.pcr_unit_assigned = target_pcr
-    incident.dispatch_status = "PCR_DISPATCHED"
-    incident.status = "DISPATCHED"
-    
-    if dispatch.channel in ("ECHALLAN_MVA", "ALL") and incident.plate_number:
-        incident.echallan_issued = True
-        incident.echallan_id = incident.echallan_id or f"ECH-2026-{uuid.uuid4().hex[:6].upper()}"
-        incident.fine_amount_inr = dispatch.fine_amount_override or incident.fine_amount_inr or 2000.0
-        incident.mva_section = incident.mva_section or "MVA Sec 184 (Dangerous Driving)"
-        
-    db.commit()
-    db.refresh(incident)
-    
+    echallan_id = getattr(incident, "echallan_id", None) or f"ECH-2026-{uuid.uuid4().hex[:6].upper()}"
+    fine_amount = dispatch.fine_amount_override or getattr(incident, "fine_amount_inr", None) or 2000.0
+    mva_sec = getattr(incident, "mva_section", None) or "MVA Sec 184 (Dangerous Driving)"
+
     dispatch_summary = {
         "incident_id": incident.id,
         "target_pcr_unit": target_pcr,
         "channel": dispatch.channel,
         "priority": dispatch.priority,
-        "echallan_id": incident.echallan_id,
-        "fine_amount_inr": incident.fine_amount_inr,
-        "status": incident.status,
+        "echallan_id": echallan_id if (dispatch.channel in ("ECHALLAN_MVA", "ALL") and incident.plate_number) else None,
+        "fine_amount_inr": fine_amount,
+        "status": "DISPATCHED",
         "dispatched_by": current_user.get("name", "Traffic Commander"),
         "timestamp": time.strftime("%H:%M:%S IST")
     }
+
+    # Automatically remove associated road hazards and declutter database
+    deleted_cluster_ids = []
+    if dispatch.clear_associated_hazards:
+        inc_lat = incident.lat
+        inc_lng = incident.lng
+        inc_road = (incident.road_name or "").lower().strip()
+
+        clusters = db.query(DBDistressCluster).all()
+        for c in clusters:
+            should_remove = False
+            if inc_lat and inc_lng and c.lat and c.lng:
+                R = 6371000.0
+                dphi = math.radians(c.lat - inc_lat)
+                dlambda = math.radians(c.lng - inc_lng)
+                a = math.sin(dphi / 2.0) ** 2 + math.cos(math.radians(inc_lat)) * math.cos(math.radians(c.lat)) * math.sin(dlambda / 2.0) ** 2
+                dist = 2.0 * R * math.atan2(math.sqrt(a), math.sqrt(max(0.0, 1.0 - a)))
+                if dist <= 600.0:  # Within 600m corridor buffer
+                    should_remove = True
+            if not should_remove and inc_road and c.road_name:
+                c_road = c.road_name.lower().strip()
+                if inc_road in c_road or c_road in inc_road:
+                    should_remove = True
+            # Never remove permanent baseline infrastructure markers or core baseline work orders
+            is_protected = (
+                c.id.startswith("cl-infra-") or
+                c.id.startswith("cl-00") or
+                (c.cluster_code and c.cluster_code.startswith("WO-00"))
+            )
+            if should_remove and not is_protected:
+                deleted_cluster_ids.append(c.id)
+                db.delete(c)
+
+
+    if dispatch.purge_from_db:
+        # User requested: Automatically hide and remove incident from DB as map has got cluttered
+        db.delete(incident)
+        db.commit()
+        store.delete_incident(incident_id)
+    else:
+        incident.pcr_unit_assigned = target_pcr
+        incident.dispatch_status = "PCR_DISPATCHED"
+        incident.status = "DISPATCHED"
+        if dispatch.channel in ("ECHALLAN_MVA", "ALL") and incident.plate_number:
+            incident.echallan_issued = True
+            incident.echallan_id = echallan_id
+            incident.fine_amount_inr = fine_amount
+            incident.mva_section = mva_sec
+        db.commit()
+        db.refresh(incident)
     
+    # Broadcast updated state across WebGIS map & dashboards
+    await manager.broadcast({
+        "type": "SNAPSHOT",
+        "incidents": store.get_incidents(),
+        "clusters": store.get_clusters(),
+        "metrics": store.get_metrics(),
+        "fleet": store.get_fleet_nodes()
+    })
     await manager.broadcast({
         "type": "INCIDENT_DISPATCHED",
         "dispatch": dispatch_summary,
+        "incident_id": incident_id,
+        "purged": bool(dispatch.purge_from_db),
+        "deleted_clusters_count": len(deleted_cluster_ids),
         "incidents": store.get_incidents(),
+        "clusters": store.get_clusters(),
         "metrics": store.get_metrics()
     })
     
     return {
         "success": True,
-        "message": f"Alert dispatched to {target_pcr} via channel {dispatch.channel}",
-        "dispatch_summary": dispatch_summary
+        "message": f"Alert dispatched to {target_pcr} via channel {dispatch.channel}. Incident & associated hazards cleared from database.",
+        "dispatch_summary": dispatch_summary,
+        "purged_from_db": bool(dispatch.purge_from_db),
+        "cleared_hazards_count": len(deleted_cluster_ids),
+        "cleared_cluster_ids": deleted_cluster_ids
     }
+
+@router.delete("/{incident_id}")
+async def delete_incident(
+    incident_id: str,
+    db: Session = Depends(get_db),
+    current_user: Dict[str, Any] = Depends(require_roles(["admin", "safety"]))
+):
+    """
+    Permanently deletes a traffic incident from the database and broadcasts
+    updated state to immediately declutter the WebGIS map.
+    """
+    inc = db.query(DBTrafficIncident).filter(
+        (DBTrafficIncident.id == incident_id) |
+        (DBTrafficIncident.id == incident_id.lower()) |
+        (DBTrafficIncident.id == incident_id.upper())
+    ).first()
+    if inc:
+        db.delete(inc)
+        db.commit()
+    store.delete_incident(incident_id)
+
+    await manager.broadcast({
+        "type": "SNAPSHOT",
+        "incidents": store.get_incidents(),
+        "clusters": store.get_clusters(),
+        "metrics": store.get_metrics(),
+        "fleet": store.get_fleet_nodes()
+    })
+
+    return {
+        "success": True,
+        "message": f"Incident {incident_id} permanently removed from database."
+    }
+
+@router.post("/clear-clutter")
+async def clear_incidents_clutter(
+    db: Session = Depends(get_db),
+    current_user: Dict[str, Any] = Depends(require_roles(["admin", "safety", "maintenance"]))
+):
+    """
+    Operator Declutter Command: Purges all active alert incidents and cluttered
+    test road distress hazards from database, returning WebGIS map to pristine baseline.
+    """
+    summary = store.clear_clutter()
+    await manager.broadcast({
+        "type": "SNAPSHOT",
+        "incidents": store.get_incidents(),
+        "clusters": store.get_clusters(),
+        "metrics": store.get_metrics(),
+        "fleet": store.get_fleet_nodes()
+    })
+    return {
+        "success": True,
+        "message": "WebGIS Map decluttered successfully. Test incidents and hazards purged from database.",
+        "summary": summary
+    }
+
 
 @router.patch("/{incident_id}")
 async def update_incident(

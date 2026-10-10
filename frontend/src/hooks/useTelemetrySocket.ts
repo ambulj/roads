@@ -18,8 +18,19 @@ export function useTelemetrySocket() {
   const refreshIncidents = useCallback(async () => {
     try {
       const data = await api.getIncidents();
-      if (Array.isArray(data) && data.length > 0) {
+      if (Array.isArray(data)) {
         setIncidents(data);
+      }
+    } catch {
+      // fallback
+    }
+  }, []);
+
+  const refreshClusters = useCallback(async () => {
+    try {
+      const data = await api.getClusters();
+      if (Array.isArray(data)) {
+        setClusters(data);
       }
     } catch {
       // fallback
@@ -28,7 +39,9 @@ export function useTelemetrySocket() {
 
   useEffect(() => {
     refreshIncidents();
-  }, [refreshIncidents]);
+    refreshClusters();
+  }, [refreshIncidents, refreshClusters]);
+
 
   const connect = useCallback(() => {
     if (isDestroyedRef.current) return;
@@ -158,6 +171,8 @@ export function useTelemetrySocket() {
           } else if (data.type === 'INCIDENT_DISPATCHED') {
             if (data.incidents && Array.isArray(data.incidents)) {
               setIncidents(data.incidents);
+            } else if (data.incident_id && data.purged) {
+              setIncidents((prev) => prev.filter((i) => i.id !== data.incident_id));
             } else if (data.dispatch) {
               setIncidents((prev) => prev.map((i) => (i.id === data.dispatch.incident_id ? {
                 ...i,
@@ -167,7 +182,11 @@ export function useTelemetrySocket() {
                 fine_amount_inr: data.dispatch.fine_amount_inr || i.fine_amount_inr
               } : i)));
             }
+            if (data.clusters && Array.isArray(data.clusters)) {
+              setClusters(data.clusters);
+            }
             if (data.metrics) setMetrics(data.metrics);
+
           } else if (data.type === 'CLUSTER_UPDATE' || data.type === 'WORK_ORDER_UPDATE') {
             if (data.cluster_id && data.update) {
               setClusters((prev) => prev.map((c) => 
@@ -448,7 +467,9 @@ export function useTelemetrySocket() {
     setClusters,
     setIncidents,
     refreshIncidents,
+    refreshClusters,
     sendIngest,
     sendIncident
   };
 }
+

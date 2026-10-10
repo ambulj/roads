@@ -16,8 +16,11 @@ from app.models.schemas import (
     ClusterTriageRequest
 )
 from app.models.db_models import DBDistressCluster, DBAuditLog
+from app.api.websockets import manager
+from app.core.auth import require_roles
 
 router = APIRouter()
+
 
 VALID_TRIAGE_ACTIONS = {"ACKNOWLEDGE", "ASSIGN", "REJECT"}
 VALID_REJECTION_REASONS = {"FALSE_POSITIVE", "DUPLICATE_CLUSTER", "JURISDICTION_NON_PWD", "UNDER_ACTIVE_REPAIR"}
@@ -427,4 +430,63 @@ def triage_cluster(
     db.commit()
     db.refresh(cluster)
     return _row_to_cluster(cluster)
+
+
+@router.delete("/{cluster_id}")
+async def delete_cluster_endpoint(
+    cluster_id: str,
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(require_roles(["admin", "safety", "maintenance"]))
+):
+    """
+    Permanently deletes a road hazard cluster from the database and broadcasts
+    updated state to immediately declutter the WebGIS map.
+    """
+    cl = db.query(DBDistressCluster).filter(
+        (DBDistressCluster.id == cluster_id) |
+        (DBDistressCluster.cluster_code == cluster_id) |
+        (DBDistressCluster.id == cluster_id.lower()) |
+        (DBDistressCluster.id == cluster_id.upper())
+    ).first()
+    if cl:
+        db.delete(cl)
+        db.commit()
+    store.delete_cluster(cluster_id)
+
+    await manager.broadcast({
+        "type": "SNAPSHOT",
+        "incidents": store.get_incidents(),
+        "clusters": store.get_clusters(),
+        "metrics": store.get_metrics(),
+        "fleet": store.get_fleet_nodes()
+    })
+
+    return {
+        "success": True,
+        "message": f"Hazard cluster {cluster_id} permanently removed from database."
+    }
+
+
+@router.post("/clear-clutter")
+async def clear_clusters_clutter(
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(require_roles(["admin", "safety", "maintenance"]))
+):
+    """
+    Purges cluttered test distress clusters from database and broadcasts clean state.
+    """
+    summary = store.clear_clutter()
+    await manager.broadcast({
+        "type": "SNAPSHOT",
+        "incidents": store.get_incidents(),
+        "clusters": store.get_clusters(),
+        "metrics": store.get_metrics(),
+        "fleet": store.get_fleet_nodes()
+    })
+    return {
+        "success": True,
+        "message": "Hazard clusters decluttered successfully.",
+        "summary": summary
+    }
+
 

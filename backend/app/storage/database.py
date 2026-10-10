@@ -458,9 +458,12 @@ def init_db():
         )
 
         # ── Seed clusters ────────────────────────────────────────────────────
-        if db.query(DBDistressCluster).count() == 0:
-            from app.storage.mock_database import INITIAL_SEED_CLUSTERS
-            for item in INITIAL_SEED_CLUSTERS:
+        from app.storage.mock_database import INITIAL_SEED_CLUSTERS
+        for item in INITIAL_SEED_CLUSTERS:
+            existing = db.query(DBDistressCluster).filter(
+                (DBDistressCluster.id == item["id"]) | (DBDistressCluster.cluster_code == item["cluster_code"])
+            ).first()
+            if not existing:
                 cluster_dict = dict(item)
                 cluster_dict.setdefault("detecting_camera_position", "FRONT_WINDSHIELD")
                 cluster_dict.setdefault("detecting_channel", 1)
@@ -470,6 +473,7 @@ def init_db():
             if not db.query(DBDistressCluster).filter(DBDistressCluster.id == item["id"]).first():
                 db.add(DBDistressCluster(**dict(item)))
         db.commit()
+
 
         # ── Seed fleet nodes ─────────────────────────────────────────────────
         if db.query(DBFleetNode).count() == 0:

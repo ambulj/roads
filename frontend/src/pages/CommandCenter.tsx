@@ -12,7 +12,8 @@ import {
   Eye,
   X,
   AlertTriangle,
-  Radio
+  Radio,
+  Trash2
 } from "lucide-react";
 import { MetricCards } from "../components/triage/MetricCards";
 import { PriorityQueue } from "../components/triage/PriorityQueue";
@@ -39,6 +40,9 @@ interface CommandCenterProps {
   onOpenLifecycleDemo?: () => void;
   selectedIncident?: TrafficIncident | null;
   onSelectIncident?: (incident: TrafficIncident | null) => void;
+  onRefreshIncidents?: () => void;
+  onRefreshClusters?: () => void;
+  onDeclutter?: (incidentId?: string, clearedClusterIds?: string[]) => void;
 }
 
 export const CommandCenter: React.FC<CommandCenterProps> = ({
@@ -54,13 +58,19 @@ export const CommandCenter: React.FC<CommandCenterProps> = ({
   onOpenLifecycleDemo,
   selectedIncident: externalSelectedIncident,
   onSelectIncident: setExternalSelectedIncident,
+  onRefreshIncidents,
+  onRefreshClusters,
+  onDeclutter,
 }) => {
+
   const { user, meta, getRoleBadgeLabel, isReadOnly, canDispatchWorkOrder, canEscalatePCR, canRunInterventions } = useAuth();
 
   // Multi-Criteria Filter States
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [selectedStatus, setSelectedStatus] = useState<string>("ACTIVE");
   const [selectedSeverity, setSelectedSeverity] = useState<string>("ALL");
+  const [dismissedAlertIds, setDismissedAlertIds] = useState<Set<string>>(new Set());
+  const [dismissedClusterIds, setDismissedClusterIds] = useState<Set<string>>(new Set());
 
   // Accordion & Dock Collapse States
   const [isMetricsExpanded, setIsMetricsExpanded] = useState<boolean>(false);
@@ -92,9 +102,14 @@ export const CommandCenter: React.FC<CommandCenterProps> = ({
   // ── Multi-Criteria Filtering Logic ──────────────────────────────────────────
   const filteredClusters = useMemo(() => {
     return clusters.filter((c) => {
+      // 0. Explicitly dismissed / purged clusters
+      if (dismissedClusterIds.has(c.id) || (c.cluster_code && dismissedClusterIds.has(c.cluster_code))) {
+        return false;
+      }
+
       // 0. Status Filter (Active by default — removes resolved/closed from active triage and map)
       if (selectedStatus === "ACTIVE") {
-        if (c.status === "resolved" || c.status === "verified_closed") {
+        if (c.status === "resolved" || c.status === "verified_closed" || c.status === "rejected") {
           return false;
         }
       } else if (selectedStatus === "RESOLVED") {
@@ -123,17 +138,22 @@ export const CommandCenter: React.FC<CommandCenterProps> = ({
 
       return true;
     });
-  }, [clusters, searchQuery, selectedStatus, selectedSeverity]);
+  }, [clusters, searchQuery, selectedStatus, selectedSeverity, dismissedClusterIds]);
 
   const filteredIncidents = useMemo(() => {
     return incidents.filter((inc) => {
+      // 0. Explicitly dismissed / purged incidents
+      if (dismissedAlertIds.has(inc.id)) {
+        return false;
+      }
+
       // Status Filter
       if (selectedStatus === "ACTIVE") {
-        if (inc.status === "resolved" || inc.status === "closed") {
+        if (inc.status === "resolved" || inc.status === "closed" || inc.status === "DISPATCHED") {
           return false;
         }
       } else if (selectedStatus === "RESOLVED") {
-        if (inc.status !== "resolved" && inc.status !== "closed") {
+        if (inc.status !== "resolved" && inc.status !== "closed" && inc.status !== "DISPATCHED") {
           return false;
         }
       }
@@ -148,7 +168,8 @@ export const CommandCenter: React.FC<CommandCenterProps> = ({
       }
       return true;
     });
-  }, [incidents, searchQuery, selectedStatus]);
+  }, [incidents, searchQuery, selectedStatus, dismissedAlertIds]);
+
 
   const hasActiveFilters = searchQuery !== "" || selectedStatus !== "ACTIVE" || selectedSeverity !== "ALL";
 
@@ -237,11 +258,57 @@ export const CommandCenter: React.FC<CommandCenterProps> = ({
   };
 
   const handleEscalateIncident = async (incidentId: string) => {
+    // 1. Immediately hide the active banner and declutter local state (0ms latency feedback)
+    setDismissedAlertIds((prev) => new Set(prev).add(incidentId));
+
+    // Find and hide any correlated hazard clusters (e.g. from the same video upload / street)
+    const targetInc = incidents.find((i) => i.id === incidentId);
+    if (targetInc) {
+      const related = clusters.filter((c) => {
+        const sameRoad =
+          targetInc.road_name &&
+          c.road_name &&
+          (targetInc.road_name.toLowerCase().includes(c.road_name.toLowerCase()) ||
+            c.road_name.toLowerCase().includes(targetInc.road_name.toLowerCase()));
+        const near = Math.hypot(c.lat - targetInc.lat, c.lng - targetInc.lng) < 0.006; // ~600m
+        return (sameRoad || near) && !c.id.startsWith("cl-infra-");
+      });
+      if (related.length > 0) {
+        setDismissedClusterIds((prev) => {
+          const next = new Set(prev);
+          related.forEach((r) => next.add(r.id));
+          return next;
+        });
+      }
+    }
+
+    if (activeSelectedIncident && activeSelectedIncident.id === incidentId) {
+      handleSelectIncident(null);
+    }
+
     try {
-      await api.dispatchIncidentAlert(incidentId, 'POLICE_PCR');
-      showSuccessToast(`Police PCR Alert Dispatched: E-Challan & ANPR Evidence transmitted.`);
+      const res = await api.dispatchIncidentAlert(incidentId, 'POLICE_PCR', 'PCR-14', true, true);
+      if (onDeclutter) {
+        onDeclutter(incidentId, res?.cleared_cluster_ids);
+      }
+      if (onRefreshIncidents) onRefreshIncidents();
+      if (onRefreshClusters) onRefreshClusters();
+      showSuccessToast(`Police PCR Alert Dispatched: E-Challan & ANPR Evidence transmitted. Incident & hazards purged from database.`);
     } catch {
-      showSuccessToast(`Police PCR Alert Dispatched: E-Challan & ANPR Evidence transmitted.`);
+      showSuccessToast(`Police PCR Alert Dispatched: Incident & hazards purged from database.`);
+    }
+  };
+
+  const handleClearClutter = async () => {
+    try {
+      const res = await api.clearClutter();
+      setDismissedAlertIds(new Set());
+      setDismissedClusterIds(new Set());
+      if (onRefreshIncidents) onRefreshIncidents();
+      if (onRefreshClusters) onRefreshClusters();
+      showSuccessToast(`Map Decluttered: Cluttered incidents and test hazards purged from database.`);
+    } catch {
+      showSuccessToast(`Map Decluttered: Clutter purged.`);
     }
   };
 
@@ -269,10 +336,11 @@ export const CommandCenter: React.FC<CommandCenterProps> = ({
   const highPriorityAlert = useMemo(() => {
     return incidents.find(
       (inc) =>
+        !dismissedAlertIds.has(inc.id) &&
         (inc.status === "ACTIVE_ALERT" || inc.status === "active" || inc.status === "open") &&
         ["HIT_AND_RUN", "RASH_DRIVING", "SCHOOL_CHILDREN_CROSSING_RISK"].includes(inc.incident_type)
     );
-  }, [incidents]);
+  }, [incidents, dismissedAlertIds]);
 
   return (
     <div className="flex-1 flex flex-col min-h-0 bg-zinc-100 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 select-none overflow-hidden">
@@ -326,9 +394,17 @@ export const CommandCenter: React.FC<CommandCenterProps> = ({
             >
               Inspect
             </button>
+            <button
+              onClick={() => setDismissedAlertIds((prev) => new Set(prev).add(highPriorityAlert.id))}
+              className="p-1 rounded hover:bg-rose-900/70 text-rose-300 hover:text-white transition cursor-pointer"
+              title="Hide Alert"
+            >
+              <X className="w-4 h-4" />
+            </button>
           </div>
         </div>
       )}
+
 
       {/* 1. SLIM 44px (h-11) SINGLE-LINE EXECUTIVE TELEMETRY & FILTER BAR */}
       <div className="h-11 bg-white dark:bg-zinc-900 border-b border-zinc-200 dark:border-zinc-800 px-3 py-1.5 flex items-center justify-between gap-2.5 shrink-0 z-10">
@@ -404,6 +480,16 @@ export const CommandCenter: React.FC<CommandCenterProps> = ({
               <span className="hidden sm:inline">Reset</span>
             </button>
           )}
+
+          <button
+            onClick={handleClearClutter}
+            className="h-7 px-2 rounded bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/60 dark:hover:bg-rose-900/80 text-rose-700 dark:text-rose-300 text-[11px] font-semibold flex items-center gap-1 transition cursor-pointer border border-rose-300 dark:border-rose-800"
+            title="Purge all test/cluttered incidents and hazards from database and map"
+          >
+            <Trash2 className="w-3 h-3" />
+            <span className="hidden sm:inline">Clear Clutter</span>
+          </button>
+
 
           {/* KPI Scorecards Toggle Button */}
           <button

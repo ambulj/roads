@@ -863,7 +863,9 @@ class ApiService {
   async dispatchIncidentAlert(
     incidentId: string,
     channel: string = 'ALL',
-    targetPcr: string = 'PCR-14'
+    targetPcr: string = 'PCR-14',
+    purgeFromDb: boolean = true,
+    clearAssociatedHazards: boolean = true
   ): Promise<any> {
     try {
       const res = await fetch(`${API_BASE}/incidents/${incidentId}/dispatch`, {
@@ -875,7 +877,9 @@ class ApiService {
         body: JSON.stringify({
           channel,
           target_pcr_unit: targetPcr,
-          priority: 'P0_EMERGENCY'
+          priority: 'P0_EMERGENCY',
+          purge_from_db: purgeFromDb,
+          clear_associated_hazards: clearAssociatedHazards
         })
       });
       if (res.ok) return await res.json();
@@ -884,6 +888,46 @@ class ApiService {
     }
     return { success: false };
   }
+
+  async deleteIncident(incidentId: string): Promise<boolean> {
+    try {
+      const res = await fetch(`${API_BASE}/incidents/${incidentId}`, {
+        method: 'DELETE',
+        headers: this.getAuthHeaders()
+      });
+      return res.ok;
+    } catch (e) {
+      console.warn("Failed to delete incident:", e);
+      return false;
+    }
+  }
+
+  async deleteCluster(clusterId: string): Promise<boolean> {
+    try {
+      const res = await fetch(`${API_BASE}/clusters/${clusterId}`, {
+        method: 'DELETE',
+        headers: this.getAuthHeaders()
+      });
+      return res.ok;
+    } catch (e) {
+      console.warn("Failed to delete cluster:", e);
+      return false;
+    }
+  }
+
+  async clearClutter(): Promise<any> {
+    try {
+      const res = await fetch(`${API_BASE}/incidents/clear-clutter`, {
+        method: 'POST',
+        headers: this.getAuthHeaders()
+      });
+      if (res.ok) return await res.json();
+    } catch (e) {
+      console.warn("Failed to clear clutter:", e);
+    }
+    return { success: false };
+  }
+
 
   async getInfrastructureClusters(category: string = 'ALL'): Promise<HazardCluster[]> {
     try {

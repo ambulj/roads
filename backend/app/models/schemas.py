@@ -530,6 +530,9 @@ class IncidentDispatchAction(BaseModel):
     target_pcr_unit: Optional[str] = "PCR-14"
     fine_amount_override: Optional[float] = None
     priority: str = "P0_EMERGENCY"
+    purge_from_db: Optional[bool] = True
+    clear_associated_hazards: Optional[bool] = True
+
 
 # ── EDGE SYNC & LOW-BANDWIDTH ARCHITECTURE SCHEMAS ──────────────────────────
 

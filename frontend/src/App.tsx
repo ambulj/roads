@@ -152,7 +152,8 @@ export const App: React.FC = () => {
   const { toggleTheme } = useTheme();
   const { success: showSuccessToast, info: showInfoToast, warning: showWarningToast } = useToast();
 
-  const { isConnected, fleet, clusters, incidents, metrics, auditLogs, latestLatency, setFleet, setClusters, setIncidents, refreshIncidents, sendIngest, sendIncident } = useTelemetrySocket();
+  const { isConnected, fleet, clusters, incidents, metrics, auditLogs, latestLatency, setFleet, setClusters, setIncidents, refreshIncidents, refreshClusters, sendIngest, sendIncident } = useTelemetrySocket();
+
 
 
   useEffect(() => {
@@ -447,7 +448,18 @@ export const App: React.FC = () => {
                 onOpenLifecycleDemo={() => setIsLifecycleModalOpen(true)}
                 selectedIncident={selectedIncident}
                 onSelectIncident={setSelectedIncident}
+                onRefreshIncidents={refreshIncidents}
+                onRefreshClusters={refreshClusters}
+                onDeclutter={(incidentId, clearedClusterIds) => {
+                  if (incidentId) {
+                    setIncidents((prev) => prev.filter((i) => i.id !== incidentId));
+                  }
+                  if (clearedClusterIds && clearedClusterIds.length > 0) {
+                    setClusters((prev) => prev.filter((c) => !clearedClusterIds.includes(c.id)));
+                  }
+                }}
               />
+
             )}
             {currentRoute === "memory" && hasAccessToRoute("memory") && <RoadMemory />}
             {currentRoute === "incidents" && hasAccessToRoute("incidents") && (

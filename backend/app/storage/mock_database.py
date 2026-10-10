@@ -1052,6 +1052,134 @@ class PersistentStore:
         finally:
             db.close()
 
+    def delete_incident(self, incident_id: str) -> bool:
+        db = self._get_db_session()
+        try:
+            from app.models.db_models import DBTrafficIncident
+            inc = db.query(DBTrafficIncident).filter(
+                (DBTrafficIncident.id == incident_id) | 
+                (DBTrafficIncident.id == incident_id.lower()) | 
+                (DBTrafficIncident.id == incident_id.upper())
+            ).first()
+            if inc:
+                db.delete(inc)
+                db.commit()
+                return True
+            return False
+        finally:
+            db.close()
+
+    def delete_cluster(self, cluster_id: str) -> bool:
+        db = self._get_db_session()
+        try:
+            from app.models.db_models import DBDistressCluster
+            cl = db.query(DBDistressCluster).filter(
+                (DBDistressCluster.id == cluster_id) | 
+                (DBDistressCluster.cluster_code == cluster_id) | 
+                (DBDistressCluster.id == cluster_id.lower()) | 
+                (DBDistressCluster.id == cluster_id.upper())
+            ).first()
+            if cl:
+                db.delete(cl)
+                db.commit()
+                return True
+            return False
+        finally:
+            db.close()
+
+    def clear_incident_and_associated_hazards(self, incident_id: str, radius_m: float = 600.0) -> Dict[str, Any]:
+        import math
+        db = self._get_db_session()
+        try:
+            from app.models.db_models import DBTrafficIncident, DBDistressCluster
+            inc = db.query(DBTrafficIncident).filter(
+                (DBTrafficIncident.id == incident_id) | 
+                (DBTrafficIncident.id == incident_id.lower()) | 
+                (DBTrafficIncident.id == incident_id.upper())
+            ).first()
+            deleted_cluster_ids = []
+            if inc:
+                inc_lat = inc.lat
+                inc_lng = inc.lng
+                inc_road = (inc.road_name or "").lower().strip()
+
+                clusters = db.query(DBDistressCluster).all()
+                for c in clusters:
+                    should_remove = False
+                    if inc_lat and inc_lng and c.lat and c.lng:
+                        R = 6371000.0
+                        dphi = math.radians(c.lat - inc_lat)
+                        dlambda = math.radians(c.lng - inc_lng)
+                        a = math.sin(dphi / 2.0) ** 2 + math.cos(math.radians(inc_lat)) * math.cos(math.radians(c.lat)) * math.sin(dlambda / 2.0) ** 2
+                        dist = 2.0 * R * math.atan2(math.sqrt(a), math.sqrt(max(0.0, 1.0 - a)))
+                        if dist <= radius_m:
+                            should_remove = True
+                    if not should_remove and inc_road and c.road_name:
+                        c_road = c.road_name.lower().strip()
+                        if inc_road in c_road or c_road in inc_road:
+                            should_remove = True
+                    is_protected = (
+                        c.id.startswith("cl-infra-") or
+                        c.id.startswith("cl-00") or
+                        (c.cluster_code and c.cluster_code.startswith("WO-00"))
+                    )
+                    if should_remove and not is_protected:
+                        deleted_cluster_ids.append(c.id)
+                        db.delete(c)
+
+                db.delete(inc)
+                db.commit()
+                return {
+                    "success": True,
+                    "incident_id": incident_id,
+                    "deleted_clusters_count": len(deleted_cluster_ids),
+                    "deleted_cluster_ids": deleted_cluster_ids
+                }
+            return {
+                "success": False,
+                "incident_id": incident_id,
+                "deleted_clusters_count": 0,
+                "deleted_cluster_ids": []
+            }
+        finally:
+            db.close()
+
+    def clear_clutter(self) -> Dict[str, Any]:
+        """Clears cluttered test incidents and hazard clusters from database and returns summary."""
+        db = self._get_db_session()
+        try:
+            from app.models.db_models import DBTrafficIncident, DBDistressCluster
+            incidents_to_del = db.query(DBTrafficIncident).all()
+            deleted_incidents = 0
+            for inc in incidents_to_del:
+                # Remove active alert and test upload incidents to declutter
+                db.delete(inc)
+                deleted_incidents += 1
+
+            clusters_to_del = db.query(DBDistressCluster).all()
+            deleted_clusters = 0
+            for c in clusters_to_del:
+                # Keep verified baseline work orders and infrastructure fixtures, remove all cluttered test clusters
+                is_protected = (
+                    c.id.startswith("cl-infra-") or
+                    c.id.startswith("cl-00") or
+                    (c.cluster_code and c.cluster_code.startswith("WO-00"))
+                )
+                if not is_protected:
+                    db.delete(c)
+                    deleted_clusters += 1
+
+            db.commit()
+            return {
+                "success": True,
+                "deleted_incidents": deleted_incidents,
+                "deleted_clusters": deleted_clusters
+            }
+        finally:
+            db.close()
+
+
+
     @property
     def fleet_nodes(self) -> List[Dict[str, Any]]:
         return self.get_fleet_nodes()
