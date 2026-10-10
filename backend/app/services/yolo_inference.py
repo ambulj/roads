@@ -524,6 +524,15 @@ class YoloInferenceEngine:
         dark_thresh = int(mean_lum * 0.76)
         _, binary_dark = cv2.threshold(blurred, dark_thresh, 255, cv2.THRESH_BINARY_INV)
 
+        # 1. Mask out trees, foliage, and green roadside vegetation
+        hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV) if len(img.shape) == 3 else None
+        if hsv is not None:
+            green_mask = (hsv[:, :, 0] >= 24) & (hsv[:, :, 0] <= 88) & (hsv[:, :, 1] >= 22)
+            binary_dark[green_mask] = 0
+
+        # 2. Mask out upper sky, horizon, and distant tree line (potholes exist only on lower drivable road pavement)
+        binary_dark[0:int(h * 0.35), :] = 0
+
         kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (9, 9))
         dark_cleaned = cv2.morphologyEx(binary_dark, cv2.MORPH_CLOSE, kernel)
         dark_cleaned = cv2.morphologyEx(dark_cleaned, cv2.MORPH_OPEN, kernel)
@@ -537,6 +546,23 @@ class YoloInferenceEngine:
                 continue
             x, y, bw, bh = cv2.boundingRect(cnt)
             
+            # Roadway perspective geometry gating:
+            # Potholes are on the road surface (y >= 0.35 * h)
+            if y < int(h * 0.35):
+                continue
+
+            # In mid-perspective (0.35 * h to 0.58 * h), road is centered; reject outer forest/shoulder periphery
+            if y < int(h * 0.58) and (x < int(w * 0.20) or (x + bw) > int(w * 0.80)):
+                continue
+
+            # Reject if the patch itself contains significant green vegetation
+            if hsv is not None:
+                patch_hsv = hsv[y:y+bh, x:x+bw]
+                if patch_hsv.size > 0:
+                    green_ratio = np.sum((patch_hsv[:, :, 0] >= 24) & (patch_hsv[:, :, 0] <= 88) & (patch_hsv[:, :, 1] >= 20)) / float(bw * bh)
+                    if green_ratio > 0.15:
+                        continue
+
             # Local cavity bounds
             if bw > (w * 0.75) or bh > (h * 0.60) or bw < 25 or bh < 20:
                 continue
@@ -716,58 +742,8 @@ class YoloInferenceEngine:
             elif code in ["TRAFFIC_VEHICLE"] and bw >= 80:
                 vehicles.append(d)
 
-        # Computer Vision Fallback for Fallen Motorcyclist & Crashed Bike on Roadway
-        if not fallen_riders:
-            try:
-                gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY) if len(img.shape) == 3 else img
-                roi_y1, roi_y2 = int(h * 0.35), int(h * 0.70)
-                roi_x1, roi_x2 = int(w * 0.35), int(w * 0.75)
-                roi = gray[roi_y1:roi_y2, roi_x1:roi_x2]
-                
-                mean_lum = float(np.mean(roi))
-                dark_thresh = int(mean_lum * 0.65)
-                _, dark_mask = cv2.threshold(roi, dark_thresh, 255, cv2.THRESH_BINARY_INV)
-                
-                kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (15, 15))
-                closed = cv2.morphologyEx(dark_mask, cv2.MORPH_CLOSE, kernel)
-                contours, _ = cv2.findContours(closed, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-                
-                for cnt in contours:
-                    cx, cy, cw, ch = cv2.boundingRect(cnt)
-                    area = cw * ch
-                    aspect = float(cw) / max(1.0, float(ch))
-                    if area > (w * h * 0.008) and aspect > 1.1:
-                        gx1 = roi_x1 + cx
-                        gy1 = roi_y1 + cy
-                        gx2 = gx1 + cw
-                        gy2 = gy1 + ch
-                        
-                        # Clip out overlapping car region if it touches a detected vehicle
-                        for v in vehicles:
-                            vb = v["bbox_pixels"]
-                            if gx2 > vb[0] and gx1 < vb[0] + 50:
-                                gx2 = max(gx1 + 60, vb[0] + 35)
-                        
-                        rw, rh = max(1, gx2 - gx1), max(1, gy2 - gy1)
-                        fallen_riders.append({
-                            "type": "ACCIDENT_VICTIM_DOWN",
-                            "defect_code": "ACCIDENT_VICTIM_DOWN",
-                            "defect_name": "Fallen Motorcyclist on Active Live Lane",
-                            "label": "ACCIDENT: Rider Down in Lane [96%]",
-                            "severity": "critical",
-                            "confidence": 0.96,
-                            "bbox_normalized": {
-                                "x": round((gx1 + rw/2.0) / float(w), 3),
-                                "y": round((gy1 + rh/2.0) / float(h), 3),
-                                "w": round(rw / float(w), 3),
-                                "h": round(rh / float(h), 3)
-                            },
-                            "bbox_pixels": [gx1, gy1, gx2, gy2]
-                        })
-                        break
-            except Exception as e:
-                print(f"[YOLO ENGINE] CV fallen rider detector warning: {e}")
-
+        # Accident & Fallen Rider verification strictly requires genuine neural pedestrian/rider detection
+        # (Crude dark puddle / shadow contour fallback eliminated to prevent false emergency alerts)
         if fallen_riders:
             top_rider = fallen_riders[0]
             rb = top_rider["bbox_pixels"]
