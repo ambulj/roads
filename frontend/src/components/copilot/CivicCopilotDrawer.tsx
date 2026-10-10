@@ -25,6 +25,7 @@ import {
   CopilotActionType,
 } from '../../types';
 import { api } from '../../services/api';
+import { CivicCopilotLogo } from './CivicCopilotLogo';
 
 interface CivicCopilotDrawerProps {
   isOpen: boolean;
@@ -355,8 +356,8 @@ export const CivicCopilotDrawer: React.FC<CivicCopilotDrawerProps> = ({
         {/* Drawer Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-slate-200 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-900/80 backdrop-blur-md">
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-indigo-600 via-indigo-500 to-amber-500 flex items-center justify-center text-white shadow-md shadow-indigo-500/20">
-              <Sparkles className="w-5 h-5 animate-pulse" />
+            <div className="w-9 h-9 rounded-xl bg-zinc-900 dark:bg-zinc-100 text-indigo-400 dark:text-indigo-600 flex items-center justify-center shadow-md border border-zinc-800 dark:border-zinc-200">
+              <CivicCopilotLogo className="w-5 h-5" />
             </div>
             <div>
               <div className="flex items-center gap-2">
@@ -422,8 +423,8 @@ export const CivicCopilotDrawer: React.FC<CivicCopilotDrawerProps> = ({
                 className={`flex gap-3 ${isUser ? 'justify-end' : 'justify-start'}`}
               >
                 {!isUser && (
-                  <div className="w-7 h-7 rounded-lg bg-indigo-100 dark:bg-indigo-900/60 text-indigo-600 dark:text-indigo-300 flex items-center justify-center shrink-0 mt-0.5">
-                    <Bot className="w-4 h-4" />
+                  <div className="w-7 h-7 rounded-lg bg-zinc-100 dark:bg-zinc-800 text-indigo-600 dark:text-indigo-400 flex items-center justify-center shrink-0 mt-0.5 border border-zinc-200 dark:border-zinc-700">
+                    <CivicCopilotLogo className="w-4 h-4" />
                   </div>
                 )}
 

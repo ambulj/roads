@@ -22,6 +22,7 @@ import { KeyboardShortcutsModal } from "./components/modals/KeyboardShortcutsMod
 import { FullLifecycleSimulationModal } from "./components/modals/FullLifecycleSimulationModal";
 import { UploadFootageModal } from "./components/modals/UploadFootageModal";
 import { CivicCopilotDrawer } from "./components/copilot/CivicCopilotDrawer";
+import { CivicCopilotLogo } from "./components/copilot/CivicCopilotLogo";
 import { Sparkles } from "lucide-react";
 import { audioAlerts } from "./utils/audioAlerts";
 import { useTelemetrySocket } from "./hooks/useTelemetrySocket";
@@ -573,19 +574,15 @@ export const App: React.FC = () => {
           onClick={() => setIsCopilotOpen((prev) => !prev)}
           title="Open Civic Copilot (Ctrl+K)"
           aria-label="Open Civic Copilot"
-          className="fixed bottom-6 right-6 z-40 group flex items-center gap-2.5 px-4 py-3 rounded-full bg-gradient-to-r from-indigo-600 via-indigo-500 to-amber-500 text-white font-medium shadow-xl shadow-indigo-600/30 hover:shadow-indigo-600/50 hover:scale-105 active:scale-95 transition-all focus:outline-hidden focus:ring-4 focus:ring-indigo-500/30 border border-white/20"
+          className="fixed bottom-6 right-6 z-40 group flex items-center gap-2.5 px-3.5 py-2.5 rounded-full bg-zinc-900 hover:bg-zinc-800 dark:bg-zinc-100 dark:hover:bg-white text-white dark:text-zinc-950 font-semibold shadow-xl shadow-zinc-950/20 hover:shadow-zinc-950/30 hover:scale-105 active:scale-95 transition-all focus:outline-hidden focus:ring-4 focus:ring-indigo-500/30 border border-zinc-700/60 dark:border-zinc-300 cursor-pointer"
         >
-          <div className="relative flex items-center justify-center">
-            <Sparkles className="w-5 h-5 animate-pulse text-amber-200" />
-            <span className="absolute -top-1 -right-1 flex h-2 w-2">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-300"></span>
-            </span>
+          <div className="flex items-center justify-center p-1 rounded-full bg-indigo-600/30 dark:bg-indigo-500/20 text-indigo-400 dark:text-indigo-600">
+            <CivicCopilotLogo className="w-4 h-4" />
           </div>
-          <span className="text-sm font-semibold tracking-wide hidden sm:inline-block">
+          <span className="text-xs font-bold tracking-tight hidden sm:inline-block">
             Civic Copilot
           </span>
-          <kbd className="hidden md:inline-flex items-center px-1.5 py-0.5 text-[10px] font-mono font-semibold rounded bg-black/25 text-white/90 border border-white/20">
+          <kbd className="hidden md:inline-flex items-center px-1.5 py-0.5 text-[10px] font-mono font-semibold rounded bg-zinc-800 dark:bg-zinc-200 text-zinc-300 dark:text-zinc-700 border border-zinc-700 dark:border-zinc-300">
             Ctrl+K
           </kbd>
         </button>

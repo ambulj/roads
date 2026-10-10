@@ -22,6 +22,7 @@ import { DETECTED_POTHOLES } from "../components/dashboard/DetectedPotholesMeshD
 import { WebGISMap } from "../components/map/WebGISMap";
 import { IncidentDossierModal } from "../components/modals/IncidentDossierModal";
 import { RoadMeshVisualizerModal, PotholeSensorTelemetry } from "../components/modals/RoadMeshVisualizerModal";
+import { SyntheticGeneratorControl } from "../components/common/SyntheticGeneratorControl";
 import { HazardCluster, FleetNode, MetricSummary, PerceptionLogEntry, TrafficIncident } from "../types";
 import { useAuth } from "../context/AuthContext";
 import { useToast } from "../context/ToastContext";
@@ -409,25 +410,48 @@ export const CommandCenter: React.FC<CommandCenterProps> = ({
       {/* 1. SLIM 44px (h-11) SINGLE-LINE EXECUTIVE TELEMETRY & FILTER BAR */}
       <div className="h-11 bg-white dark:bg-zinc-900 border-b border-zinc-200 dark:border-zinc-800 px-3 py-1.5 flex items-center justify-between gap-2.5 shrink-0 z-10">
         
-        {/* Left: Quick Search */}
-        <div className="relative flex-1 min-w-[180px] max-w-xs sm:max-w-sm">
-          <Search className="w-3.5 h-3.5 text-zinc-400 absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
-          <input
-            type="text"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search corridor, POI, or defect..."
-            className="w-full h-7 pl-8 pr-7 text-xs bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-500 focus:outline-hidden focus:border-cyan-500 font-mono transition"
+        {/* Left: Quick Search with Integrated Declutter & Synthetic Data Controls */}
+        <div className="flex items-center gap-1.5 flex-1 min-w-[260px] max-w-sm sm:max-w-md lg:max-w-xl">
+          <div className="relative flex-1">
+            <Search className="w-3.5 h-3.5 text-zinc-400 absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search corridor, POI, or defect..."
+              className="w-full h-7 pl-8 pr-7 text-xs bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-500 focus:outline-hidden focus:border-cyan-500 font-mono transition"
+            />
+            {searchQuery && (
+              <button
+                onClick={() => setSearchQuery("")}
+                className="absolute right-2 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 cursor-pointer"
+                title="Clear search"
+              >
+                <X className="w-3 h-3" />
+              </button>
+            )}
+          </div>
+
+          {/* Declutter Button docked in Search Bar */}
+          <button
+            onClick={handleClearClutter}
+            className="h-7 px-2.5 rounded bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/60 dark:hover:bg-rose-900/80 text-rose-700 dark:text-rose-300 text-xs font-semibold flex items-center gap-1.5 transition cursor-pointer border border-rose-300 dark:border-rose-800 shrink-0 shadow-2xs"
+            title="Purge test incidents and hazard clutter from database and map"
+          >
+            <Trash2 className="w-3.5 h-3.5 shrink-0" />
+            <span className="hidden sm:inline">Declutter</span>
+          </button>
+
+          {/* Dedicated Synthetic Data Generation Control in Search Bar */}
+          <SyntheticGeneratorControl
+            variant="search"
+            onGenerated={() => {
+              if (onRefreshIncidents) onRefreshIncidents();
+              if (onRefreshClusters) onRefreshClusters();
+            }}
+            onDeclutter={handleClearClutter}
+            className="shrink-0"
           />
-          {searchQuery && (
-            <button
-              onClick={() => setSearchQuery("")}
-              className="absolute right-2 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200"
-              title="Clear search"
-            >
-              <X className="w-3 h-3" />
-            </button>
-          )}
         </div>
 
         {/* Center: Real-Time Live Metric Chips */}
@@ -480,15 +504,6 @@ export const CommandCenter: React.FC<CommandCenterProps> = ({
               <span className="hidden sm:inline">Reset</span>
             </button>
           )}
-
-          <button
-            onClick={handleClearClutter}
-            className="h-7 px-2 rounded bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/60 dark:hover:bg-rose-900/80 text-rose-700 dark:text-rose-300 text-[11px] font-semibold flex items-center gap-1 transition cursor-pointer border border-rose-300 dark:border-rose-800"
-            title="Purge all test/cluttered incidents and hazards from database and map"
-          >
-            <Trash2 className="w-3 h-3" />
-            <span className="hidden sm:inline">Clear Clutter</span>
-          </button>
 
 
           {/* KPI Scorecards Toggle Button */}

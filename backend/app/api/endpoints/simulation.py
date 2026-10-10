@@ -12,7 +12,9 @@ class SimulationTogglePayload(BaseModel):
     demo_mode: Optional[bool] = None
 
 class SimulationGeneratePayload(BaseModel):
-    mode: Optional[str] = "all" # 'all' | 'hazard' | 'pothole' | 'pedestrian' | 'hit_and_run' | 'waterlogging'
+    mode: Optional[str] = "all" # 'all' | 'hazard' | 'pothole' | 'pedestrian' | 'hit_and_run' | 'waterlogging' | 'infrastructure'
+    count: Optional[int] = 1
+    corridor: Optional[str] = None
 
 @router.get("/status")
 def get_simulation_status():
@@ -51,13 +53,16 @@ async def toggle_simulation(payload: SimulationTogglePayload):
 async def trigger_synthetic_generation(payload: Optional[SimulationGeneratePayload] = None):
     """
     Explicitly triggers on-demand synthetic data generation on user request.
-    Can generate a single targeted hazard, pedestrian event, hit-and-run incident, or full urban cycle.
+    Can generate targeted hazards, pedestrian events, hit-and-run incidents, or full urban cycles,
+    with custom batch counts and corridor targeting.
     """
     from app.services.synthetic_generator import generate_on_demand_synthetic
     from app.storage.mock_database import store
 
     mode = payload.mode if payload else "all"
-    result = generate_on_demand_synthetic(mode=mode)
+    count = payload.count if payload else 1
+    corridor = payload.corridor if payload else None
+    result = generate_on_demand_synthetic(mode=mode, count=count, corridor=corridor)
 
     # Broadcast updated state to all connected frontends
     try:
