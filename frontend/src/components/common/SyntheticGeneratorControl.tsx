@@ -73,11 +73,21 @@ export const SyntheticGeneratorControl: React.FC<SyntheticGeneratorControlProps>
     try {
       const corridorArg = corridorToRun === "all" ? undefined : corridorToRun;
       const res = await api.generateSyntheticData(modeToRun, countToRun, corridorArg);
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('roadsaathi:telemetry:refresh', {
+          detail: {
+            incidents: res?.incidents,
+            clusters: res?.clusters,
+            metrics: res?.metrics
+          }
+        }));
+      }
       if (res?.success && res.data?.message) {
         setLastMessage(res.data.message);
         onGenerated?.(res.data);
       } else {
         setLastMessage(`Injected ${countToRun} synthetic event(s) into telemetry.`);
+        onGenerated?.(res);
       }
     } catch (err) {
       console.error("Synthetic generation failed:", err);
@@ -110,10 +120,20 @@ export const SyntheticGeneratorControl: React.FC<SyntheticGeneratorControlProps>
     setIsDecluttering(true);
     setIsOpen(false);
     try {
+      let res;
       if (onDeclutter) {
-        await onDeclutter();
+        res = await onDeclutter();
       } else {
-        await api.clearClutter();
+        res = await api.clearClutter();
+      }
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('roadsaathi:telemetry:refresh', {
+          detail: {
+            incidents: res?.incidents,
+            clusters: res?.clusters,
+            metrics: res?.metrics
+          }
+        }));
       }
       setLastMessage("Map and Database Decluttered: Test incidents & excess hazards purged.");
       onGenerated?.({ action: "declutter" });
@@ -131,6 +151,9 @@ export const SyntheticGeneratorControl: React.FC<SyntheticGeneratorControlProps>
     setIsOpen(false);
     try {
       const res = await api.resetBaseline();
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('roadsaathi:telemetry:refresh', { detail: res }));
+      }
       if (res?.success) {
         setLastMessage(res.message || "Platform reset to minimal clean baseline.");
         onGenerated?.(res);

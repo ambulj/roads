@@ -17,7 +17,7 @@ from app.models.schemas import (
 )
 from app.models.db_models import DBDistressCluster, DBAuditLog
 from app.api.websockets import manager
-from app.core.auth import require_roles
+from app.core.auth import require_roles, get_optional_current_user
 
 router = APIRouter()
 
@@ -470,23 +470,30 @@ async def delete_cluster_endpoint(
 @router.post("/clear-clutter")
 async def clear_clusters_clutter(
     db: Session = Depends(get_db),
-    current_user: dict = Depends(require_roles(["admin", "safety", "maintenance"]))
+    current_user: Optional[dict] = Depends(get_optional_current_user)
 ):
     """
     Purges cluttered test distress clusters from database and broadcasts clean state.
     """
     summary = store.clear_clutter()
+    incidents = store.get_incidents()
+    clusters = store.get_clusters()
+    metrics = store.get_metrics()
+    fleet = store.get_fleet_nodes()
     await manager.broadcast({
         "type": "SNAPSHOT",
-        "incidents": store.get_incidents(),
-        "clusters": store.get_clusters(),
-        "metrics": store.get_metrics(),
-        "fleet": store.get_fleet_nodes()
+        "incidents": incidents,
+        "clusters": clusters,
+        "metrics": metrics,
+        "fleet": fleet
     })
     return {
         "success": True,
         "message": "Hazard clusters decluttered successfully.",
-        "summary": summary
+        "summary": summary,
+        "incidents": incidents,
+        "clusters": clusters,
+        "metrics": metrics
     }
 
 

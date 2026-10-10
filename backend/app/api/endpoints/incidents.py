@@ -25,7 +25,7 @@ from app.core.statutory_engine import (
     CAMERA_POSITIONS
 )
 from app.api.websockets import manager
-from app.core.auth import require_roles, get_current_user
+from app.core.auth import require_roles, get_current_user, get_optional_current_user
 
 router = APIRouter()
 
@@ -851,24 +851,31 @@ async def delete_incident(
 @router.post("/clear-clutter")
 async def clear_incidents_clutter(
     db: Session = Depends(get_db),
-    current_user: Dict[str, Any] = Depends(require_roles(["admin", "safety", "maintenance"]))
+    current_user: Optional[Dict[str, Any]] = Depends(get_optional_current_user)
 ):
     """
     Operator Declutter Command: Purges all active alert incidents and cluttered
     test road distress hazards from database, returning WebGIS map to pristine baseline.
     """
     summary = store.clear_clutter()
+    incidents = store.get_incidents()
+    clusters = store.get_clusters()
+    metrics = store.get_metrics()
+    fleet = store.get_fleet_nodes()
     await manager.broadcast({
         "type": "SNAPSHOT",
-        "incidents": store.get_incidents(),
-        "clusters": store.get_clusters(),
-        "metrics": store.get_metrics(),
-        "fleet": store.get_fleet_nodes()
+        "incidents": incidents,
+        "clusters": clusters,
+        "metrics": metrics,
+        "fleet": fleet
     })
     return {
         "success": True,
         "message": "WebGIS Map decluttered successfully. Test incidents and hazards purged from database.",
-        "summary": summary
+        "summary": summary,
+        "incidents": incidents,
+        "clusters": clusters,
+        "metrics": metrics
     }
 
 

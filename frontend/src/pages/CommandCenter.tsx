@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from "react";
+import React, { useState, useMemo, useEffect, useRef } from "react";
 import {
   Search,
   RotateCcw,
@@ -68,10 +68,48 @@ export const CommandCenter: React.FC<CommandCenterProps> = ({
 
   // Multi-Criteria Filter States
   const [searchQuery, setSearchQuery] = useState<string>("");
+  const [isSearchOpen, setIsSearchOpen] = useState<boolean>(false);
+  const searchContainerRef = useRef<HTMLDivElement>(null);
   const [selectedStatus, setSelectedStatus] = useState<string>("ACTIVE");
   const [selectedSeverity, setSelectedSeverity] = useState<string>("ALL");
-  const [dismissedAlertIds, setDismissedAlertIds] = useState<Set<string>>(new Set());
-  const [dismissedClusterIds, setDismissedClusterIds] = useState<Set<string>>(new Set());
+  const [dismissedAlertIds, setDismissedAlertIds] = useState<Set<string>>(() => {
+    try {
+      const saved = sessionStorage.getItem('roadsaathi_dismissed_alerts');
+      return saved ? new Set(JSON.parse(saved)) : new Set();
+    } catch {
+      return new Set();
+    }
+  });
+  const [dismissedClusterIds, setDismissedClusterIds] = useState<Set<string>>(() => {
+    try {
+      const saved = sessionStorage.getItem('roadsaathi_dismissed_clusters');
+      return saved ? new Set(JSON.parse(saved)) : new Set();
+    } catch {
+      return new Set();
+    }
+  });
+
+  useEffect(() => {
+    try {
+      sessionStorage.setItem('roadsaathi_dismissed_alerts', JSON.stringify(Array.from(dismissedAlertIds)));
+    } catch {}
+  }, [dismissedAlertIds]);
+
+  useEffect(() => {
+    try {
+      sessionStorage.setItem('roadsaathi_dismissed_clusters', JSON.stringify(Array.from(dismissedClusterIds)));
+    } catch {}
+  }, [dismissedClusterIds]);
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (searchContainerRef.current && !searchContainerRef.current.contains(e.target as Node)) {
+        setIsSearchOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   // Accordion & Dock Collapse States
   const [isMetricsExpanded, setIsMetricsExpanded] = useState<boolean>(false);
@@ -305,6 +343,19 @@ export const CommandCenter: React.FC<CommandCenterProps> = ({
       const res = await api.clearClutter();
       setDismissedAlertIds(new Set());
       setDismissedClusterIds(new Set());
+      try {
+        sessionStorage.removeItem('roadsaathi_dismissed_alerts');
+        sessionStorage.removeItem('roadsaathi_dismissed_clusters');
+      } catch {}
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('roadsaathi:telemetry:refresh', {
+          detail: {
+            incidents: res?.incidents,
+            clusters: res?.clusters,
+            metrics: res?.metrics
+          }
+        }));
+      }
       if (onRefreshIncidents) onRefreshIncidents();
       if (onRefreshClusters) onRefreshClusters();
       showSuccessToast(`Map Decluttered: Cluttered incidents and test hazards purged from database.`);
@@ -323,6 +374,11 @@ export const CommandCenter: React.FC<CommandCenterProps> = ({
     if (isDockCollapsed) {
       setIsDockCollapsed(false);
     }
+    if (c.lat && c.lng && !isNaN(Number(c.lat)) && !isNaN(Number(c.lng))) {
+      window.dispatchEvent(new CustomEvent('roadsaathi:fly-to', {
+        detail: { lat: Number(c.lat), lng: Number(c.lng), zoom: 16.5 }
+      }));
+    }
   };
 
   const handleSelectIncidentItem = (inc: TrafficIncident) => {
@@ -330,6 +386,11 @@ export const CommandCenter: React.FC<CommandCenterProps> = ({
     setDockTab('inspector');
     if (isDockCollapsed) {
       setIsDockCollapsed(false);
+    }
+    if (inc.lat && inc.lng && !isNaN(Number(inc.lat)) && !isNaN(Number(inc.lng))) {
+      window.dispatchEvent(new CustomEvent('roadsaathi:fly-to', {
+        detail: { lat: Number(inc.lat), lng: Number(inc.lng), zoom: 16.5 }
+      }));
     }
   };
 
@@ -411,13 +472,20 @@ export const CommandCenter: React.FC<CommandCenterProps> = ({
       <div className="h-11 bg-white dark:bg-zinc-900 border-b border-zinc-200 dark:border-zinc-800 px-3 py-1.5 flex items-center justify-between gap-2.5 shrink-0 z-10">
         
         {/* Left: Quick Search with Integrated Declutter & Synthetic Data Controls */}
-        <div className="flex items-center gap-1.5 flex-1 min-w-[260px] max-w-sm sm:max-w-md lg:max-w-xl">
+        <div ref={searchContainerRef} className="relative flex items-center gap-1.5 flex-1 min-w-[260px] max-w-sm sm:max-w-md lg:max-w-xl">
           <div className="relative flex-1">
             <Search className="w-3.5 h-3.5 text-zinc-400 absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
             <input
               type="text"
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+              onFocus={() => setIsSearchOpen(true)}
+              onChange={(e) => {
+                setSearchQuery(e.target.value);
+                if (!isSearchOpen) setIsSearchOpen(true);
+              }}
+              onKeyDown={(e) => {
+                if (e.key === "Escape") setIsSearchOpen(false);
+              }}
               placeholder="Search corridor, POI, or defect..."
               className="w-full h-7 pl-8 pr-7 text-xs bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-500 focus:outline-hidden focus:border-cyan-500 font-mono transition"
             />
@@ -432,7 +500,7 @@ export const CommandCenter: React.FC<CommandCenterProps> = ({
             )}
           </div>
 
-          {/* Declutter Button docked in Search Bar */}
+          {/* Quick Access Declutter Button */}
           <button
             onClick={handleClearClutter}
             className="h-7 px-2.5 rounded bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/60 dark:hover:bg-rose-900/80 text-rose-700 dark:text-rose-300 text-xs font-semibold flex items-center gap-1.5 transition cursor-pointer border border-rose-300 dark:border-rose-800 shrink-0 shadow-2xs"
@@ -442,7 +510,7 @@ export const CommandCenter: React.FC<CommandCenterProps> = ({
             <span className="hidden sm:inline">Declutter</span>
           </button>
 
-          {/* Dedicated Synthetic Data Generation Control in Search Bar */}
+          {/* Dedicated Synthetic Data Generation Control */}
           <SyntheticGeneratorControl
             variant="search"
             onGenerated={() => {
@@ -452,6 +520,115 @@ export const CommandCenter: React.FC<CommandCenterProps> = ({
             onDeclutter={handleClearClutter}
             className="shrink-0"
           />
+
+          {/* DROPDOWN SEARCH TRAY: OPENS UNDERNEATH SEARCH BAR WITH BOTTOM CONTROLS */}
+          {isSearchOpen && (
+            <div className="absolute left-0 top-full mt-1.5 w-[360px] sm:w-[480px] bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl shadow-2xl z-50 overflow-hidden font-mono text-xs animate-in fade-in slide-in-from-top-1 duration-150">
+              {/* Top matches / suggestions */}
+              <div className="p-2.5 max-h-56 overflow-y-auto custom-scrollbar space-y-1">
+                {searchQuery.trim() ? (
+                  <>
+                    <div className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider px-2 py-1">
+                      Matching Corridors & Defects ({filteredClusters.length + filteredIncidents.length})
+                    </div>
+                    {filteredClusters.length === 0 && filteredIncidents.length === 0 && (
+                      <div className="px-3 py-4 text-center text-zinc-400 text-xs">
+                        No matches found for "{searchQuery}". Try "GST Road" or "Pothole".
+                      </div>
+                    )}
+                    {filteredClusters.slice(0, 4).map((c) => (
+                      <button
+                        key={c.id}
+                        onClick={() => {
+                          handleSelectClusterItem(c);
+                          setIsSearchOpen(false);
+                        }}
+                        className="w-full text-left px-2.5 py-1.5 rounded hover:bg-zinc-100 dark:hover:bg-zinc-800 flex items-center justify-between text-xs transition cursor-pointer"
+                      >
+                        <div className="truncate mr-2">
+                          <span className="font-semibold text-zinc-900 dark:text-zinc-100">{c.road_name}</span>
+                          <span className="text-zinc-500 text-[11px] ml-1.5">({c.defect_name || c.defect_type})</span>
+                        </div>
+                        <span className="text-[10px] px-1.5 py-0.5 rounded bg-zinc-200 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 shrink-0">
+                          RPI {c.rpi_score}
+                        </span>
+                      </button>
+                    ))}
+                    {filteredIncidents.slice(0, 3).map((inc) => (
+                      <button
+                        key={inc.id}
+                        onClick={() => {
+                          handleSelectIncidentItem(inc);
+                          setIsSearchOpen(false);
+                        }}
+                        className="w-full text-left px-2.5 py-1.5 rounded hover:bg-rose-50 dark:hover:bg-rose-950/40 flex items-center justify-between text-xs transition cursor-pointer"
+                      >
+                        <div className="truncate mr-2 text-rose-600 dark:text-rose-400">
+                          <span className="font-semibold">{inc.incident_type.replace(/_/g, " ")}</span>
+                          <span className="text-zinc-500 text-[11px] ml-1.5 truncate">{inc.road_name}</span>
+                        </div>
+                        <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-rose-100 dark:bg-rose-900/60 text-rose-700 dark:text-rose-300 shrink-0">
+                          {inc.plate_number || "ALERT"}
+                        </span>
+                      </button>
+                    ))}
+                  </>
+                ) : (
+                  <>
+                    <div className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider px-2 py-1">
+                      Quick Corridor & Defect Presets
+                    </div>
+                    <div className="flex flex-wrap gap-1.5 px-2 py-1">
+                      {["GST Road", "Kathipara", "Anna Salai", "OMR IT Corridor", "Pothole D40", "School Zone", "Hit-and-Run"].map((tag) => (
+                        <button
+                          key={tag}
+                          onClick={() => {
+                            setSearchQuery(tag);
+                          }}
+                          className="px-2.5 py-1 rounded-md bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-zinc-700 dark:text-zinc-300 text-[11px] transition cursor-pointer"
+                        >
+                          {tag}
+                        </button>
+                      ))}
+                    </div>
+                  </>
+                )}
+              </div>
+
+              {/* BOTTOM OF SEARCH BAR DROPDOWN: DEDICATED DECLUTTER & SYNTHETIC CONTROLS */}
+              <div className="px-3 py-2 bg-zinc-50 dark:bg-zinc-950 border-t border-zinc-200 dark:border-zinc-800 flex flex-wrap items-center justify-between gap-2">
+                <div className="flex items-center gap-1.5">
+                  <button
+                    onClick={() => {
+                      handleClearClutter();
+                      setIsSearchOpen(false);
+                    }}
+                    className="h-7 px-2.5 rounded bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/60 dark:hover:bg-rose-900/80 text-rose-700 dark:text-rose-300 text-xs font-semibold flex items-center gap-1.5 transition cursor-pointer border border-rose-300 dark:border-rose-800 shadow-2xs"
+                    title="Purge test incidents and hazard clutter from database and map"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                    <span>Declutter Map</span>
+                  </button>
+                  <span className="text-[10px] text-zinc-400 hidden sm:inline">Purge test clutter</span>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <SyntheticGeneratorControl
+                    variant="search"
+                    onGenerated={() => {
+                      if (onRefreshIncidents) onRefreshIncidents();
+                      if (onRefreshClusters) onRefreshClusters();
+                      setIsSearchOpen(false);
+                    }}
+                    onDeclutter={() => {
+                      handleClearClutter();
+                      setIsSearchOpen(false);
+                    }}
+                  />
+                </div>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Center: Real-Time Live Metric Chips */}

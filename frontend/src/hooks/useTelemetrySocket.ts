@@ -40,6 +40,29 @@ export function useTelemetrySocket() {
   useEffect(() => {
     refreshIncidents();
     refreshClusters();
+
+    const handleTelemetryRefresh = (event: Event) => {
+      const customEvent = event as CustomEvent;
+      const detail = customEvent.detail;
+      if (detail?.incidents && Array.isArray(detail.incidents)) {
+        setIncidents(detail.incidents);
+      } else {
+        refreshIncidents();
+      }
+      if (detail?.clusters && Array.isArray(detail.clusters)) {
+        setClusters(detail.clusters);
+      } else {
+        refreshClusters();
+      }
+      if (detail?.metrics) {
+        setMetrics(detail.metrics);
+      }
+    };
+
+    window.addEventListener('roadsaathi:telemetry:refresh', handleTelemetryRefresh);
+    return () => {
+      window.removeEventListener('roadsaathi:telemetry:refresh', handleTelemetryRefresh);
+    };
   }, [refreshIncidents, refreshClusters]);
 
 
@@ -197,7 +220,7 @@ export function useTelemetrySocket() {
             }
             if (data.metrics) setMetrics(data.metrics);
             if (data.latest_log) pushAuditLog(data.latest_log);
-          } else if (data.type === 'SYNTHETIC_CYCLE_TICK') {
+          } else if (data.type === 'SYNTHETIC_CYCLE_TICK' || data.type === 'SYNTHETIC_GENERATED_EVENT') {
             if (data.metrics) setMetrics(data.metrics);
             if (data.clusters) setClusters(data.clusters);
             if (data.incidents) setIncidents(data.incidents);

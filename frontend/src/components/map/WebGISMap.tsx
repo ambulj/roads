@@ -1221,6 +1221,79 @@ export const WebGISMap: React.FC<WebGISMapProps> = ({
     };
   }, [clusters, selectedCluster, onSelectCluster, onOpenRPIModal]);
 
+  // Smoothly Fly and Zoom map to selected hazard cluster or incident from Triage Queue
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !isMapReady) return;
+
+    if (
+      selectedIncident &&
+      selectedIncident.lat &&
+      selectedIncident.lng &&
+      !isNaN(Number(selectedIncident.lat)) &&
+      !isNaN(Number(selectedIncident.lng))
+    ) {
+      map.flyTo({
+        center: [Number(selectedIncident.lng), Number(selectedIncident.lat)],
+        zoom: 16.5,
+        pitch: 45,
+        speed: 1.4,
+        essential: true,
+      });
+
+      const marker = incidentMarkersRef.current[selectedIncident.id];
+      if (marker) {
+        const popup = marker.getPopup();
+        if (popup && !popup.isOpen()) {
+          marker.togglePopup();
+        }
+      }
+    } else if (
+      selectedCluster &&
+      selectedCluster.lat &&
+      selectedCluster.lng &&
+      !isNaN(Number(selectedCluster.lat)) &&
+      !isNaN(Number(selectedCluster.lng))
+    ) {
+      map.flyTo({
+        center: [Number(selectedCluster.lng), Number(selectedCluster.lat)],
+        zoom: 16.5,
+        pitch: 45,
+        speed: 1.4,
+        essential: true,
+      });
+
+      const marker = markersRef.current[selectedCluster.id];
+      if (marker) {
+        const popup = marker.getPopup();
+        if (popup && !popup.isOpen()) {
+          marker.togglePopup();
+        }
+      }
+    }
+  }, [selectedCluster, selectedIncident, isMapReady]);
+
+  // Global window listener for programmatic fly-to requests
+  useEffect(() => {
+    const handleFlyToEvent = (e: Event) => {
+      const map = mapRef.current;
+      if (!map || !isMapReady) return;
+      const detail = (e as CustomEvent).detail;
+      const { lat, lng, zoom } = detail || {};
+      if (lat && lng && !isNaN(Number(lat)) && !isNaN(Number(lng))) {
+        map.flyTo({
+          center: [Number(lng), Number(lat)],
+          zoom: zoom || 16.5,
+          pitch: 45,
+          speed: 1.4,
+          essential: true,
+        });
+      }
+    };
+    window.addEventListener('roadsaathi:fly-to', handleFlyToEvent);
+    return () => window.removeEventListener('roadsaathi:fly-to', handleFlyToEvent);
+  }, [isMapReady]);
+
   // Render Defect Cluster Markers with High-Contrast Inspection Popup Cards
   useEffect(() => {
     const map = mapRef.current;
@@ -1237,6 +1310,7 @@ export const WebGISMap: React.FC<WebGISMapProps> = ({
     const isVisible = showDefects && (layerFilter === 'all' || layerFilter === 'hazards');
 
     clusters.forEach((cluster) => {
+      if (!cluster.lat || !cluster.lng || isNaN(Number(cluster.lat)) || isNaN(Number(cluster.lng))) return;
       const isCritical = cluster.severity_level === 'critical';
       const isHigh = cluster.severity_level === 'high';
       const isResolved = cluster.status === 'resolved' || cluster.status === 'verified_closed';
@@ -1536,9 +1610,10 @@ export const WebGISMap: React.FC<WebGISMapProps> = ({
       }
     });
 
-    const showIncidents = layerFilter === 'all' || layerFilter === 'incidents';
+    const isIncidentVisible = showIncidents && (layerFilter === 'all' || layerFilter === 'incidents');
 
     incidents.forEach((incident) => {
+      if (!incident.lat || !incident.lng || isNaN(Number(incident.lat)) || isNaN(Number(incident.lng))) return;
       const isHitAndRun = incident.incident_type === 'HIT_AND_RUN';
       const isRashDriving = incident.incident_type === 'RASH_DRIVING';
       const isWaterlog = incident.incident_type === 'WATERLOGGING';
@@ -1547,7 +1622,7 @@ export const WebGISMap: React.FC<WebGISMapProps> = ({
       if (!incidentMarkersRef.current[incident.id]) {
         const el = document.createElement('div');
         el.className = 'cursor-pointer group transition-transform hover:scale-125';
-        el.style.display = showIncidents ? 'block' : 'none';
+        el.style.display = isIncidentVisible ? 'block' : 'none';
         el.innerHTML = `
           <div style="position: relative; display: flex; align-items: center; justify-content: center;">
             <div style="width: 22px; height: 22px; border-radius: 50%; background: #09090b; border: 2px solid ${color}; box-shadow: 0 0 8px ${color}66; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: bold; font-family: monospace; color: ${color};">
@@ -1602,11 +1677,11 @@ export const WebGISMap: React.FC<WebGISMapProps> = ({
 
         incidentMarkersRef.current[incident.id] = marker;
       } else {
-        incidentMarkersRef.current[incident.id].getElement().style.display = showIncidents ? 'block' : 'none';
+        incidentMarkersRef.current[incident.id].getElement().style.display = isIncidentVisible ? 'block' : 'none';
         incidentMarkersRef.current[incident.id].setLngLat([incident.lng, incident.lat]);
       }
     });
-  }, [incidents, layerFilter, isMapReady, onSelectIncident]);
+  }, [incidents, showIncidents, layerFilter, isMapReady, onSelectIncident]);
 
   // Direct marker visibility synchronization effects
   useEffect(() => {

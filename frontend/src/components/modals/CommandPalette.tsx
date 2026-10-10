@@ -1,9 +1,12 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import {
   Search, LayoutDashboard, ChartColumn, Truck, ClipboardList, Smartphone,
-  Cpu, Calculator, Award, History, ShieldAlert, X, Sun, Moon, Keyboard
+  Cpu, Calculator, Award, History, ShieldAlert, X, Sun, Moon, Keyboard,
+  Trash2, Sparkles
 } from "lucide-react";
 import { useTheme } from "../../context/ThemeContext";
+import { SyntheticGeneratorControl } from "../common/SyntheticGeneratorControl";
+import { api } from "../../services/api";
 
 interface CommandPaletteProps {
   isOpen: boolean;
@@ -12,6 +15,7 @@ interface CommandPaletteProps {
   onTriggerDedup: () => void;
   onOpenRPIModal: () => void;
   onOpenBriefModal: () => void;
+  onDeclutter?: () => void;
 }
 
 interface Action {
@@ -40,6 +44,40 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
     { id: "nav-fleet",     label: "Fleet Nodes & Telemetry",            icon: Truck,           category: "Navigate", shortcut: "5",   action: () => { onNavigate("fleet");       onClose(); } },
     { id: "nav-orders",    label: "Work Orders",                        icon: ClipboardList,   category: "Navigate", shortcut: "6",   action: () => { onNavigate("work-orders"); onClose(); } },
     { id: "nav-capture",   label: "Report Issue / Field Camera",        icon: Smartphone,      category: "Navigate", shortcut: "7",   action: () => { onNavigate("capture");     onClose(); } },
+    { id: "act-declutter", label: "Purge Clutter & Declutter Map (Reset Clean State)", icon: Trash2,     category: "Action",   shortcut: "D",    action: async () => {
+      try {
+        const res = await api.clearClutter();
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new CustomEvent('roadsaathi:telemetry:refresh', {
+            detail: {
+              incidents: res?.incidents,
+              clusters: res?.clusters,
+              metrics: res?.metrics
+            }
+          }));
+        }
+      } catch (e) {
+        console.warn(e);
+      }
+      onClose();
+    } },
+    { id: "act-synthetic", label: "Generate Synthetic Telemetry & Hazards (On-Demand)", icon: Sparkles,   category: "Action",   shortcut: "G",    action: async () => {
+      try {
+        const res = await api.generateSyntheticData("all", 1);
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new CustomEvent('roadsaathi:telemetry:refresh', {
+            detail: {
+              incidents: res?.incidents,
+              clusters: res?.clusters,
+              metrics: res?.metrics
+            }
+          }));
+        }
+      } catch (e) {
+        console.warn(e);
+      }
+      onClose();
+    } },
     { id: "act-dedup",     label: "Run Spatial Multi-Pass Deduplication", icon: Cpu,             category: "Action",   shortcut: "",    action: () => { onTriggerDedup();          onClose(); } },
     { id: "act-theme",     label: `Toggle Theme (currently ${theme === "dark" ? "Dark" : "Light"})`, icon: theme === "dark" ? Sun : Moon, category: "Action", shortcut: "T", action: () => { toggleTheme(); onClose(); } },
     { id: "act-rpi",       label: "Road Priority Index Formula",        icon: Calculator,      category: "Info",     shortcut: "",    action: () => { onOpenRPIModal();          onClose(); } },
@@ -169,15 +207,63 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
           )}
         </div>
 
-        {/* Footer */}
-        <div className="px-4 py-2.5 border-t border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/80 flex items-center justify-between">
+        {/* Footer with Integrated Declutter and Synthetic Data Generation Controls */}
+        <div className="px-4 py-2.5 border-t border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/90 flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-3 text-[11px] text-slate-500 dark:text-slate-400">
             <Keyboard className="w-3.5 h-3.5" />
             <span><kbd className="font-mono">↑ ↓</kbd> navigate</span>
             <span><kbd className="font-mono">↵</kbd> select</span>
             <span><kbd className="font-mono">Esc</kbd> close</span>
           </div>
-          <span className="text-[11px] text-blue-600 dark:text-blue-400 font-semibold">RoadSaathi</span>
+
+          {/* Bottom Search Controls: Declutter & Synthetic Generator */}
+          <div className="flex items-center gap-2">
+            <button
+              onClick={async () => {
+                try {
+                  const res = await api.clearClutter();
+                  if (typeof window !== 'undefined') {
+                    window.dispatchEvent(new CustomEvent('roadsaathi:telemetry:refresh', {
+                      detail: {
+                        incidents: res?.incidents,
+                        clusters: res?.clusters,
+                        metrics: res?.metrics
+                      }
+                    }));
+                  }
+                } catch (e) {
+                  console.warn(e);
+                }
+                onClose();
+              }}
+              className="h-7 px-2.5 rounded bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/60 dark:hover:bg-rose-900/80 text-rose-700 dark:text-rose-300 text-xs font-semibold flex items-center gap-1.5 transition cursor-pointer border border-rose-300 dark:border-rose-800 shadow-2xs"
+              title="Purge test incidents and hazard clutter from database and map"
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+              <span>Declutter</span>
+            </button>
+
+            <SyntheticGeneratorControl
+              variant="search"
+              onGenerated={(data) => {
+                if (typeof window !== 'undefined') {
+                  window.dispatchEvent(new CustomEvent('roadsaathi:telemetry:refresh', { detail: data }));
+                }
+              }}
+              onDeclutter={async () => {
+                const res = await api.clearClutter();
+                if (typeof window !== 'undefined') {
+                  window.dispatchEvent(new CustomEvent('roadsaathi:telemetry:refresh', {
+                    detail: {
+                      incidents: res?.incidents,
+                      clusters: res?.clusters,
+                      metrics: res?.metrics
+                    }
+                  }));
+                }
+              }}
+            />
+          </div>
         </div>
       </div>
     </div>

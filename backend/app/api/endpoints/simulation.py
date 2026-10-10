@@ -64,6 +64,11 @@ async def trigger_synthetic_generation(payload: Optional[SimulationGeneratePaylo
     corridor = payload.corridor if payload else None
     result = generate_on_demand_synthetic(mode=mode, count=count, corridor=corridor)
 
+    incidents = store.get_incidents()
+    clusters = store.get_clusters()
+    metrics = store.get_metrics()
+    fleet = store.fleet_nodes
+
     # Broadcast updated state to all connected frontends
     try:
         if manager.active_connections:
@@ -71,18 +76,28 @@ async def trigger_synthetic_generation(payload: Optional[SimulationGeneratePaylo
                 "type": "SYNTHETIC_GENERATED_EVENT",
                 "mode": mode,
                 "result": result,
-                "metrics": store.get_metrics(),
-                "clusters": store.get_clusters(),
-                "incidents": store.get_incidents(),
-                "fleet": store.fleet_nodes,
+                "metrics": metrics,
+                "clusters": clusters,
+                "incidents": incidents,
+                "fleet": fleet,
                 "latest_log": store.audit_logs[0] if store.audit_logs else None
+            })
+            await manager.broadcast({
+                "type": "SNAPSHOT",
+                "metrics": metrics,
+                "clusters": clusters,
+                "incidents": incidents,
+                "fleet": fleet
             })
     except Exception as e:
         print(f"[SIMULATION API] Broadcast notice: {e}")
 
     return {
         "success": True,
-        "data": result
+        "data": result,
+        "incidents": incidents,
+        "clusters": clusters,
+        "metrics": metrics
     }
 
 @router.post("/reset-baseline")

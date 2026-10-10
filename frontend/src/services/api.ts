@@ -499,14 +499,14 @@ export const INITIAL_INCIDENTS: TrafficIncident[] = [
     pcr_unit_assigned: "PCR-DELTA-09 (Guindy Station)",
     pcr_dispatch_time: "5 Sept, 05:14 am",
     snapshot_url: "/evidence/hit_and_run_annotated.jpg",
-    road_name: "Katraj-Dehu Bypass Corridor (Pune Highway NH-48)",
-    lat: 18.5204,
-    lng: 73.8567,
+    road_name: "GST Road (NH-32) near Airport Flyover Corridor",
+    lat: 12.9850,
+    lng: 80.1650,
     occurred_at: "5 Sept, 05:12 am",
     status: "ACTIVE_ALERT",
     mva_section: "MVA 1988 Sec 134(a)(b) & Sec 184 (Hit & Run)",
     fine_amount_inr: 10000,
-    description: "LEVEL 1 RED ALERT: Motorcyclist down on active lane. Suspect vehicle MH14KB7316 fled collision corridor."
+    description: "LEVEL 1 RED ALERT: Motorcyclist down on active lane. Suspect vehicle TN09CB4412 fled collision corridor."
   },
   {
     id: "inc-002",
