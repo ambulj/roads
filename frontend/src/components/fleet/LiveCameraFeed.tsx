@@ -49,7 +49,7 @@ export const LiveCameraFeed: React.FC<LiveCameraFeedProps> = ({
   const [currentJerk, setCurrentJerk] = useState(bus.imu_jerk_gz || 0.98);
   const [simPace, setSimPace] = useState<number>(1.0);
   const [isPaused, setIsPaused] = useState<boolean>(false);
-  const [feedMode, setFeedMode] = useState<'sample' | 'rtsp' | 'canvas' | 'webcam'>('sample');
+  const [feedMode, setFeedMode] = useState<'sample' | 'rtsp' | 'canvas' | 'webcam'>('rtsp');
   const [streamVersion, setStreamVersion] = useState<number>(Date.now());
   const [rtspError, setRtspError] = useState<boolean>(false);
   const [selectedChannel, setSelectedChannel] = useState<number>(1);
@@ -640,26 +640,21 @@ export const LiveCameraFeed: React.FC<LiveCameraFeedProps> = ({
         const t = video ? video.currentTime : Date.now() / 1000;
 
         if (selectedChannel === 1) {
-          // CH 1: Windshield Pothole & Road Distress Patrol
-          const cycle = (t * 0.35) % 1;
-          const z = Math.pow(cycle, 1.8);
-          const cavY = h * (0.50 + z * 0.38);
-          const cavX = w * (0.34 + z * 0.09);
-          const cavW = 90 + z * 140;
-          const cavH = 45 + z * 70;
+          // CH 1: Windshield Pothole & Road Distress Patrol (calibrated to visible roadway ahead, y: 0.38 - 0.62)
+          const cycle = (t * 0.30) % 1;
+          const z = Math.pow(cycle, 1.4);
+          const cavY = h * (0.38 + z * 0.24); // Never exceeds 0.62 (stops before vehicle hood)
+          const cavX = w * (0.42 + z * 0.04);
+          const cavW = 60 + z * 95;
+          const cavH = 30 + z * 45;
           drawCornerBox(ctx, cavX, cavY, cavW, cavH, '#ef4444', 'POTHOLE D40 [96%]', 'DEPTH: 8.4cm | SLA: 24H');
 
-          // Secondary alligator cracking on right lane
-          const crackCycle = ((t + 1.2) * 0.28) % 1;
-          const cz = Math.pow(crackCycle, 1.5);
-          const crackY = h * (0.54 + cz * 0.32);
-          const crackX = w * (0.62 + cz * 0.06);
-          drawCornerBox(ctx, crackX, crackY, 110 + cz * 100, 50 + cz * 40, '#f59e0b', 'ALLIGATOR CRACK D20 [89%]', 'IRC:SP:84');
-
-          // Leading transit vehicle ahead
-          const vehX = w * 0.22 + Math.sin(t * 0.8) * 8;
-          const vehY = h * 0.44;
-          drawCornerBox(ctx, vehX, vehY, 130, 95, '#38bdf8', 'VEHICLE [94%]', 'MTC BUS ROUTE 21G');
+          // Secondary alligator cracking on lane surface
+          const crackCycle = ((t + 1.2) * 0.25) % 1;
+          const cz = Math.pow(crackCycle, 1.3);
+          const crackY = h * (0.40 + cz * 0.22);
+          const crackX = w * (0.55 + cz * 0.03);
+          drawCornerBox(ctx, crackX, crackY, 70 + cz * 75, 35 + cz * 35, '#f59e0b', 'ALLIGATOR CRACK D20 [89%]', 'IRC:SP:84');
         } else if (selectedChannel === 2) {
           // CH 2: Rear Overtake & ANPR
           const sway = Math.sin(t * 1.2) * 12;
@@ -789,21 +784,21 @@ export const LiveCameraFeed: React.FC<LiveCameraFeedProps> = ({
 
         {/* Right: Quick Action Controls */}
         <div className="flex items-center gap-1.5">
-          {/* Real Dashcam Clip Mode Toggle */}
+          {/* Live RTSP AI vs Dashcam Clip Mode Toggle */}
           <button
             onClick={() => {
-              setFeedMode(feedMode === 'sample' ? 'rtsp' : 'sample');
+              setFeedMode(feedMode === 'rtsp' ? 'sample' : 'rtsp');
               setRtspError(false);
             }}
-            title={feedMode === 'sample' ? "Switch to Live RTSP Feed" : "Load Real Road Dashcam Clip with AI Bounding Boxes"}
+            title={feedMode === 'rtsp' ? "Switch to Local Sample Dashcam Clip" : "Switch to Live RTSP Feed with Real YOLO AI"}
             className={`px-2.5 py-1 rounded-lg border text-xs font-mono font-bold flex items-center gap-1.5 transition cursor-pointer ${
-              feedMode === 'sample'
-                ? "bg-rose-600 border-rose-500 text-white shadow-xs"
-                : "bg-slate-900 hover:bg-slate-800 border-slate-800 text-rose-400 hover:text-rose-300"
+              feedMode === 'rtsp'
+                ? "bg-emerald-600 border-emerald-500 text-white shadow-xs"
+                : "bg-slate-900 hover:bg-slate-800 border-slate-800 text-slate-300 hover:text-white"
             }`}
           >
             <Video className="w-3.5 h-3.5" />
-            <span className="hidden sm:inline">{feedMode === 'sample' ? "Dashcam Active" : "Dashcam Clip"}</span>
+            <span className="hidden sm:inline">{feedMode === 'rtsp' ? "Live AI Stream" : "Dashcam Clip"}</span>
           </button>
 
           {/* Pause / Play */}
