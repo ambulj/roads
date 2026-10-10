@@ -910,6 +910,14 @@ class YoloInferenceEngine:
             }
 
         start_time = time.perf_counter()
+
+        # 0. Intelligent Pre-Scaling for high-resolution input (prevents 2+ second latency on multi-megapixel photos)
+        orig_h, orig_w = img.shape[:2]
+        if orig_w > 1280 or orig_h > 960:
+            pre_scale = min(1280.0 / float(orig_w), 960.0 / float(orig_h))
+            pw, ph = int(orig_w * pre_scale), int(orig_h * pre_scale)
+            img = cv2.resize(img, (pw, ph), interpolation=cv2.INTER_AREA)
+
         quality_metrics = self.compute_image_quality(img)
         
         # 1. DPDP Act 2023 Privacy Redaction: Anonymize faces FIRST before road hazard perception
@@ -931,6 +939,20 @@ class YoloInferenceEngine:
             scale_y = float(h) / float(target_h)
 
         from app.services.anpr_engine import anpr_engine
+
+        # Channel Role Specialization Flags:
+        # CH 1: Windshield Road Patrol -> Potholes, Zebra, Indian Roads (Manholes, Barriers, Pedestrians), CV Distress
+        # CH 2: Rear Overtake & Tailgate -> Vehicles, ANPR Plates, Accident Collisions
+        # CH 3: Curbside Pedestrian -> Zebra Crosswalks, Pedestrians, School Safety Zones
+        # CH 4: Cabin & Driver DMS -> Face Privacy & Cabin Safety
+        # CH 0 / Generic: Full Multi-Model Suite
+        ch = int(channel) if str(channel).isdigit() else 1
+        run_anpr = ch in (2, 0)
+        run_vehicle_model = ch in (2, 0)
+        run_pothole_model = ch in (1, 0)
+        run_zebra_model = ch in (1, 3, 0)
+        run_cv_distress = ch in (1, 0)
+        run_accident = ch in (1, 2, 0)
 
         # Adaptive confidence thresholding based on ambient illumination lux proxy
         lux = quality_metrics.get("illumination_lux", 120.0)
@@ -976,8 +998,8 @@ class YoloInferenceEngine:
                             detected_vehicle_boxes.append([bx1, by1, bx2, by2])
                             d_code, d_name, d_label, sev, c_bgr = "TRAFFIC_VEHICLE", f"{cls_name.capitalize()} in Traffic Flow", cls_name.upper(), "low", (255, 185, 0)
                             
-                            # Run ANPR on prominent vehicles only (width >= 100px)
-                            if bw >= 100:
+                            # Run ANPR on prominent vehicles only (width >= 100px) when enabled for channel
+                            if run_anpr and bw >= 100:
                                 anpr_res = anpr_engine.detect_plate(sanitized_base, vehicle_bbox=[bx1, by1, bx2, by2])
                                 if anpr_res.get("success") and anpr_res.get("plate_number"):
                                     plate_num = anpr_res["plate_number"]
@@ -1023,8 +1045,8 @@ class YoloInferenceEngine:
             except Exception as e:
                 print(f"[YOLO ENGINE] Indian roads model warning: {e}")
 
-        # 2. Supplementary Vehicle & Vulnerable Road User Detection
-        if self.vehicle_model is not None:
+        # 2. Supplementary Vehicle & Vulnerable Road User Detection (CH 2 Rear Overtake / Tailgate Radar or Generic)
+        if run_vehicle_model and self.vehicle_model is not None:
             try:
                 v_results = self.vehicle_model(infer_img, conf=veh_conf, device=self.device, verbose=False)
                 for r in v_results:
@@ -1054,7 +1076,7 @@ class YoloInferenceEngine:
                             d_code, d_name, d_label, sev, c_bgr = "TRAFFIC_VEHICLE", f"{cls_name.capitalize()} in Flow", cls_name.upper(), "low", (255, 185, 0)
                             
                             # Run ANPR on prominent vehicles only (width >= 100px)
-                            if bw >= 100:
+                            if run_anpr and bw >= 100:
                                 anpr_res = anpr_engine.detect_plate(sanitized_base, vehicle_bbox=[bx1, by1, bx2, by2])
                                 if anpr_res.get("success") and anpr_res.get("plate_number"):
                                     plate_num = anpr_res["plate_number"]
@@ -1093,8 +1115,8 @@ class YoloInferenceEngine:
             except Exception as e:
                 print(f"[YOLO ENGINE] Vehicle model warning: {e}")
 
-        # If channel 2 and no plate yet, run full-frame ANPR scan (only if vehicle or candidates detected)
-        if not any(d.get("defect_code") == "ANPR_PLATE" for d in raw_detections):
+        # If channel 2 or generic and no plate yet, run full-frame ANPR scan (only if vehicle or candidates detected)
+        if run_anpr and not any(d.get("defect_code") == "ANPR_PLATE" for d in raw_detections):
             if detected_vehicle_boxes:
                 anpr_full = anpr_engine.detect_plate(sanitized_base, vehicle_bbox=detected_vehicle_boxes[0])
                 if anpr_full.get("success") and anpr_full.get("plate_number"):
@@ -1113,8 +1135,8 @@ class YoloInferenceEngine:
                         "bbox_pixels": anpr_full["bbox_pixels"]
                     })
 
-        # 3. Neural Pothole Detection
-        if self.pothole_model is not None:
+        # 3. Neural Pothole Detection (CH 1 Windshield Pavement Patrol or Generic)
+        if run_pothole_model and self.pothole_model is not None:
             try:
                 p_results = self.pothole_model(infer_img, conf=pothole_conf, device=self.device, verbose=False)
                 for r in p_results:
@@ -1161,8 +1183,8 @@ class YoloInferenceEngine:
             except Exception as e:
                 print(f"[YOLO ENGINE] Pothole model inference warning: {e}")
 
-        # 4. Neural Zebra Crossing Model
-        if self.zebra_model is not None:
+        # 4. Neural Zebra Crossing Model (CH 1 Windshield / CH 3 Curbside Pedestrian or Generic)
+        if run_zebra_model and self.zebra_model is not None:
             try:
                 z_results = self.zebra_model(infer_img, conf=zebra_conf, device=self.device, verbose=False)
                 for r in z_results:
@@ -1213,23 +1235,24 @@ class YoloInferenceEngine:
                 print(f"[YOLO ENGINE] Zebra model inference warning: {e}")
 
         # 5. Computer Vision Void & Cavity Analyzer (Excluding vehicles, pedestrians, and zebra crossings)
-        ped_exclusion_boxes = [d["bbox_pixels"] for d in raw_detections if d.get("defect_code") in ["PEDESTRIAN", "ZEBRA_CROSSING", "SCHOOL_CHILDREN_CROSSING_RISK"]]
-        total_exclusion = (detected_vehicle_boxes or []) + ped_exclusion_boxes
+        if run_cv_distress:
+            ped_exclusion_boxes = [d["bbox_pixels"] for d in raw_detections if d.get("defect_code") in ["PEDESTRIAN", "ZEBRA_CROSSING", "SCHOOL_CHILDREN_CROSSING_RISK"]]
+            total_exclusion = (detected_vehicle_boxes or []) + ped_exclusion_boxes
 
-        try:
-            cv_cavities = self._detect_void_and_cavity_cv(sanitized_base, vehicle_boxes=total_exclusion)
-            raw_detections.extend(cv_cavities)
-        except Exception as e:
-            print(f"[YOLO ENGINE] CV cavity detector warning: {e}")
+            try:
+                cv_cavities = self._detect_void_and_cavity_cv(sanitized_base, vehicle_boxes=total_exclusion)
+                raw_detections.extend(cv_cavities)
+            except Exception as e:
+                print(f"[YOLO ENGINE] CV cavity detector warning: {e}")
 
-        # 6. Computer Vision Crack & Waterlogging Analyzers
-        try:
-            cv_cracks = self._detect_cracks_cv(sanitized_base, vehicle_boxes=total_exclusion)
-            raw_detections.extend(cv_cracks)
-            cv_water = self._detect_waterlogging_cv(sanitized_base)
-            raw_detections.extend(cv_water)
-        except Exception as e:
-            print(f"[YOLO ENGINE] CV crack/water detector warning: {e}")
+            # 6. Computer Vision Crack & Waterlogging Analyzers
+            try:
+                cv_cracks = self._detect_cracks_cv(sanitized_base, vehicle_boxes=total_exclusion)
+                raw_detections.extend(cv_cracks)
+                cv_water = self._detect_waterlogging_cv(sanitized_base)
+                raw_detections.extend(cv_water)
+            except Exception as e:
+                print(f"[YOLO ENGINE] CV crack/water detector warning: {e}")
 
         # 6.2 School Zone & Pedestrian Crosswalk Group Consolidation
         ped_dets = [d for d in raw_detections if d.get("defect_code") == "PEDESTRIAN"]
@@ -1262,13 +1285,14 @@ class YoloInferenceEngine:
                 "bbox_pixels": [g_x1, g_y1, g_x2, g_y2]
             })
 
-        # 6.5 Hit-and-Run Collision and Fallen Rider Emergency Detection
-        try:
-            accident_events = self._detect_hit_and_run_and_accidents(sanitized_base, raw_detections)
-            if accident_events:
-                raw_detections.extend(accident_events)
-        except Exception as e:
-            print(f"[YOLO ENGINE] Accident detector warning: {e}")
+        # 6.5 Hit-and-Run Collision and Fallen Rider Emergency Detection (CH 1 Windshield / CH 2 Rear or Generic)
+        if run_accident:
+            try:
+                accident_events = self._detect_hit_and_run_and_accidents(sanitized_base, raw_detections)
+                if accident_events:
+                    raw_detections.extend(accident_events)
+            except Exception as e:
+                print(f"[YOLO ENGINE] Accident detector warning: {e}")
 
         # 7. Priority Ranking & Non-Maximum Suppression (NMS)
         PRIORITY_MAP = {
@@ -1336,8 +1360,8 @@ class YoloInferenceEngine:
         if burn_overlay and detections:
             annotated = self.render_hud_overlay(annotated, detections)
 
-        # Apply DPDP Act 2023 optical face blurring/privacy redaction
-        sanitized_frame, _ = privacy_engine.anonymize_frame(annotated, burn_privacy_badge=False)
+        # Optical face blurring/privacy redaction is already embedded in sanitized_base from Step 1
+        sanitized_frame = annotated
 
         # Store permanent evidence in EvidenceVault if requested
         evidence_record = None

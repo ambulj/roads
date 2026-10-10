@@ -1,6 +1,7 @@
 import os
 import time
 import threading
+import queue
 import cv2
 import numpy as np
 from typing import Dict, Any, List, Optional, Generator
@@ -21,6 +22,8 @@ class RealRTSPWorker:
         
         self.is_running = False
         self.thread: Optional[threading.Thread] = None
+        self._ai_queue: queue.Queue = queue.Queue(maxsize=1)
+        self._ai_thread: Optional[threading.Thread] = None
         self.latest_frame: Optional[np.ndarray] = None
         self.latest_jpeg: Optional[bytes] = None
         self.latest_detections: List[Dict[str, Any]] = []
@@ -40,11 +43,15 @@ class RealRTSPWorker:
         if self.is_running:
             return
         self.is_running = True
+        self._ai_thread = threading.Thread(target=self._ai_worker_loop, daemon=True, name=f"AI-{self.bus_id}-CH{self.channel}")
+        self._ai_thread.start()
         self.thread = threading.Thread(target=self._capture_loop, daemon=True, name=f"RTSP-{self.bus_id}-CH{self.channel}")
         self.thread.start()
 
     def stop(self):
         self.is_running = False
+        if self._ai_thread and self._ai_thread.is_alive():
+            self._ai_thread.join(timeout=1.0)
         if self.thread and self.thread.is_alive():
             self.thread.join(timeout=2.0)
 
@@ -122,21 +129,25 @@ class RealRTSPWorker:
                     cv2.FONT_HERSHEY_SIMPLEX, 0.5, (140, 150, 165), 1, cv2.LINE_AA)
         return frame
 
-    def _async_infer_worker(self, frame: np.ndarray):
-        """Runs multi-model YOLO and DPDP Act 2023 privacy inference in background on CUDA."""
-        try:
-            res = yolo_engine.detect_road_hazards(frame, channel=self.channel, burn_overlay=False)
-            with self.lock:
-                self.latest_detections = res.get("detections", [])
-        except Exception as e:
-            pass
-        finally:
-            self._infer_busy = False
+    def _ai_worker_loop(self):
+        """Dedicated background AI perception worker on CUDA; never blocks the 30 FPS video thread."""
+        while self.is_running:
+            try:
+                frame = self._ai_queue.get(timeout=0.2)
+            except queue.Empty:
+                continue
+            try:
+                res = yolo_engine.detect_road_hazards(frame, channel=self.channel, burn_overlay=False, save_evidence=False)
+                with self.lock:
+                    self.latest_detections = res.get("detections", [])
+            except Exception:
+                pass
+            finally:
+                self._ai_queue.task_done()
 
     def _capture_loop(self):
         source = int(self.rtsp_url) if str(self.rtsp_url).isdigit() else self.rtsp_url
         cap = None
-        self._infer_busy = False
 
         # Resolve relative local file paths to absolute disk paths
         if isinstance(source, str) and not source.isdigit() and not source.startswith(("rtsp://", "srt://", "http://", "https://")):
@@ -271,6 +282,7 @@ class RealRTSPWorker:
 
                 if ret and frame is not None:
                     self.frame_count += 1
+                    frame_start_perf = time.perf_counter()
                     now = time.time()
                     elapsed = now - self.last_frame_time
                     if elapsed > 0:
@@ -279,45 +291,48 @@ class RealRTSPWorker:
                     
                     h, w = frame.shape[:2]
                     
-                    # 1. Real-Time GPU Neural Perception & DPDP Act 2023 Privacy
-                    if self.overlay_ai:
-                        try:
-                            # Direct neural inference synchronized with frame capture for zero-lag box alignment
-                            if self.frame_count % 3 == 0 or not self.latest_detections:
-                                res = yolo_engine.detect_road_hazards(frame, channel=self.channel, burn_overlay=True, save_evidence=False)
-                                self.latest_detections = res.get("detections", [])
-                                display_frame = res.get("annotated_frame", frame)
-                            else:
-                                if self.latest_detections:
-                                    display_frame = yolo_engine.render_hud_overlay(frame.copy(), self.latest_detections)
-                                else:
-                                    display_frame = frame
-                        except Exception:
-                            display_frame = frame
-                    else:
-                        display_frame = frame
-                    
-                    # Downscale for web streaming if ultra-high resolution (e.g. 4K) to eliminate browser network lag
+                    # Standardize ultra-high resolution (e.g. 4K camera) frames immediately to 720p HD streaming canvas
                     if w > 1280:
                         stream_w = 1280
                         stream_h = int(h * (1280.0 / float(w)))
-                        stream_frame = cv2.resize(display_frame, (stream_w, stream_h), interpolation=cv2.INTER_LINEAR)
-                    else:
-                        stream_frame = display_frame
+                        frame = cv2.resize(frame, (stream_w, stream_h), interpolation=cv2.INTER_LINEAR)
+                        h, w = stream_h, stream_w
 
-                    _, buffer = cv2.imencode('.jpg', stream_frame, [cv2.IMWRITE_JPEG_QUALITY, 75])
+                    # 1. Real-Time GPU Neural Perception & DPDP Act 2023 Privacy (Zero-Lag Asynchronous)
+                    if self.overlay_ai:
+                        # Feed the dedicated background AI worker whenever it is ready (queue is empty)
+                        if self._ai_queue.empty():
+                            try:
+                                self._ai_queue.put_nowait(frame.copy())
+                            except queue.Full:
+                                pass
+
+                        # Render HUD overlay instantly using the latest detections (<1ms)
+                        with self.lock:
+                            current_dets = list(self.latest_detections)
+                        if current_dets:
+                            display_frame = yolo_engine.render_hud_overlay(frame.copy(), current_dets)
+                        else:
+                            display_frame = frame
+                    else:
+                        display_frame = frame
+
+                    _, buffer = cv2.imencode('.jpg', display_frame, [cv2.IMWRITE_JPEG_QUALITY, 75])
                     jpeg_bytes = buffer.tobytes()
                     
                     with self.lock:
                         self.latest_frame = display_frame
                         self.latest_jpeg = jpeg_bytes
                         
-                    # Precise pacing: sleep only the remaining budget to maintain target FPS without compounding lag
+                    # Precise pacing: high-resolution Windows pacing without OS timer oversleeping
                     target_delay = 1.0 / max(1.0, float(self.sampling_fps))
-                    spent = time.time() - now
+                    spent = time.perf_counter() - frame_start_perf
                     remaining = target_delay - spent
-                    if remaining > 0.001:
-                        time.sleep(remaining)
+                    if remaining > 0.002:
+                        if remaining > 0.015:
+                            time.sleep(remaining - 0.003)
+                        while (time.perf_counter() - frame_start_perf) < target_delay:
+                            pass
                 else:
                     self.is_connected = False
                     if cap is not None:
