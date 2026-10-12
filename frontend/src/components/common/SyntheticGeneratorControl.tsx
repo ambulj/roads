@@ -24,6 +24,7 @@ export interface SyntheticGeneratorControlProps {
   onDeclutter?: () => void;
   className?: string;
   variant?: "search" | "header" | "compact" | "banner";
+  dropDirection?: "up" | "down";
 }
 
 const CHENNAI_CORRIDORS = [
@@ -39,18 +40,25 @@ export const SyntheticGeneratorControl: React.FC<SyntheticGeneratorControlProps>
   onGenerated,
   onDeclutter,
   className = "",
-  variant = "search"
+  variant = "search",
+  dropDirection = "down"
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   const [isDecluttering, setIsDecluttering] = useState(false);
   const [lastMessage, setLastMessage] = useState<string | null>(null);
 
-  // Controlled Generator Parameters
+  // Controlled Generator Parameters — Default OFF so page reload never auto-generates synthetic data
   const [selectedMode, setSelectedMode] = useState<string>("all");
   const [selectedCount, setSelectedCount] = useState<number>(1);
   const [selectedCorridor, setSelectedCorridor] = useState<string>("all");
-  const [isStreamActive, setIsStreamActive] = useState<boolean>(true);
+  const [isStreamActive, setIsStreamActive] = useState<boolean>(() => {
+    try {
+      return localStorage.getItem("roadsaathi_synthetic_enabled") === "true";
+    } catch {
+      return false;
+    }
+  });
 
   const menuRef = useRef<HTMLDivElement>(null);
 
@@ -63,6 +71,15 @@ export const SyntheticGeneratorControl: React.FC<SyntheticGeneratorControlProps>
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
+
+  // When Synthetic Generator Toggle is ON, periodically generate synthetic telemetry every 25s
+  useEffect(() => {
+    if (!isStreamActive) return;
+    const timer = setInterval(() => {
+      handleGenerate(selectedMode, 1, selectedCorridor);
+    }, 25000);
+    return () => clearInterval(timer);
+  }, [isStreamActive, selectedMode, selectedCorridor]);
 
   const handleGenerate = async (
     modeToRun: string = selectedMode,
@@ -107,10 +124,18 @@ export const SyntheticGeneratorControl: React.FC<SyntheticGeneratorControlProps>
 
   const handleToggleStream = async () => {
     const nextState = !isStreamActive;
+    setIsStreamActive(nextState);
     try {
+      localStorage.setItem("roadsaathi_synthetic_enabled", String(nextState));
       await api.toggleSimulation({ synthetic_generation: nextState });
-      setIsStreamActive(nextState);
-      setLastMessage(`Synthetic telemetry background streaming: ${nextState ? "ACTIVE (5m loop)" : "PAUSED (Manual Only)"}`);
+      setLastMessage(
+        nextState
+          ? "Synthetic Data Generator: ON (Auto-streaming active)"
+          : "Synthetic Data Generator: OFF (Auto-generation paused)"
+      );
+      if (nextState) {
+        await handleGenerate(selectedMode, 1, selectedCorridor);
+      }
     } catch (e) {
       console.warn("Failed to toggle stream:", e);
     }
@@ -172,7 +197,7 @@ export const SyntheticGeneratorControl: React.FC<SyntheticGeneratorControlProps>
   const isSearchVariant = variant === "search";
 
   return (
-    <div className={`relative inline-block ${className}`} ref={menuRef}>
+    <div className={`relative inline-flex items-center gap-1.5 ${className}`} ref={menuRef}>
       {/* Toast Feedback */}
       {lastMessage && (
         <div className="fixed bottom-5 right-5 z-50 flex items-center gap-2 px-4 py-3 bg-zinc-900/95 text-white dark:bg-zinc-100 dark:text-zinc-900 text-xs font-semibold rounded-xl shadow-2xl border border-amber-500/40 backdrop-blur-md animate-in slide-in-from-bottom-3 duration-300 max-w-md">
@@ -187,15 +212,47 @@ export const SyntheticGeneratorControl: React.FC<SyntheticGeneratorControlProps>
         </div>
       )}
 
-      {/* Button Trigger Docked in Search Bar / Header */}
+      {/* Dedicated ON/OFF Toggle Switch for Synthetic Data Generator */}
+      <button
+        type="button"
+        onClick={handleToggleStream}
+        role="switch"
+        aria-checked={isStreamActive}
+        title={isStreamActive ? "Synthetic Data Generator is ON (Click to turn OFF)" : "Synthetic Data Generator is OFF (Click to turn ON)"}
+        className={`flex items-center gap-1.5 px-2 rounded border text-xs font-semibold transition cursor-pointer ${
+          isSearchVariant ? "h-7" : "h-8"
+        } ${
+          isStreamActive
+            ? "bg-emerald-500/15 border-emerald-500/50 text-emerald-700 dark:text-emerald-300"
+            : "bg-zinc-100 dark:bg-zinc-800 border-zinc-300 dark:border-zinc-700 text-zinc-600 dark:text-zinc-400"
+        }`}
+      >
+        <span
+          className={`w-6 h-3.5 rounded-full relative transition-colors flex items-center px-0.5 ${
+            isStreamActive ? "bg-emerald-500" : "bg-zinc-400 dark:bg-zinc-600"
+          }`}
+        >
+          <span
+            className={`w-2.5 h-2.5 rounded-full bg-white shadow-xs transition-transform ${
+              isStreamActive ? "translate-x-2.5" : "translate-x-0"
+            }`}
+          />
+        </span>
+        <span className="font-mono text-[10.5px]">
+          Synth: {isStreamActive ? "ON" : "OFF"}
+        </span>
+      </button>
+
+      {/* Button Trigger Docked in Command Palette */}
       <div className={`flex items-center rounded bg-amber-500/10 dark:bg-amber-500/20 border border-amber-500/30 hover:border-amber-500/60 transition shadow-xs ${
         isSearchVariant ? "h-7" : "h-8"
       }`}>
         {/* Quick Generate Action */}
         <button
+          type="button"
           onClick={() => handleGenerate(selectedMode, selectedCount, selectedCorridor)}
           disabled={isGenerating}
-          title="Click to generate synthetic test data with current settings"
+          title="Click to generate synthetic test data once with current settings"
           className={`flex items-center gap-1.5 font-semibold text-amber-700 dark:text-amber-300 hover:text-amber-800 dark:hover:text-amber-200 transition cursor-pointer disabled:opacity-50 ${
             isSearchVariant ? "px-2 text-xs" : "px-3 text-xs"
           }`}
@@ -215,6 +272,7 @@ export const SyntheticGeneratorControl: React.FC<SyntheticGeneratorControlProps>
 
         {/* Dropdown Options Toggle */}
         <button
+          type="button"
           onClick={() => setIsOpen((p) => !p)}
           disabled={isGenerating}
           title="Open Synthetic Data Generation & Declutter Controller"
@@ -229,7 +287,11 @@ export const SyntheticGeneratorControl: React.FC<SyntheticGeneratorControlProps>
 
       {/* Comprehensive Generation & Declutter Popover Control Panel */}
       {isOpen && (
-        <div className="absolute right-0 top-full mt-1.5 w-80 sm:w-96 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-2xl p-3 z-50 text-xs space-y-3 animate-in fade-in zoom-in-95 duration-150">
+        <div
+          className={`absolute right-0 ${
+            dropDirection === "up" ? "bottom-full mb-2" : "top-full mt-1.5"
+          } w-80 sm:w-96 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-2xl p-3 z-50 text-xs space-y-3 animate-in fade-in zoom-in-95 duration-150`}
+        >
           
           {/* Header */}
           <div className="flex items-center justify-between pb-2 border-b border-zinc-100 dark:border-zinc-800">

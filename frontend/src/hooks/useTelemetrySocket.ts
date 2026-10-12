@@ -6,7 +6,7 @@ export function useTelemetrySocket() {
   const [isConnected, setIsConnected] = useState(false);
   const [fleet, setFleet] = useState<FleetNode[]>(INITIAL_FLEET);
   const [clusters, setClusters] = useState<HazardCluster[]>(INITIAL_CLUSTERS);
-  const [incidents, setIncidents] = useState<TrafficIncident[]>(INITIAL_INCIDENTS);
+  const [incidents, setIncidents] = useState<TrafficIncident[]>([]);
   const [metrics, setMetrics] = useState<MetricSummary>(INITIAL_METRICS);
   const [auditLogs, setAuditLogs] = useState<PerceptionLogEntry[]>(INITIAL_AUDIT_LOGS);
   const [latestLatency, setLatestLatency] = useState<number>(72);

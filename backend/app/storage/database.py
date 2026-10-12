@@ -457,26 +457,27 @@ def init_db():
             compute_statutory_citation, get_nearest_pcr_unit, generate_echallan_id
         )
 
-        # ── Seed clusters ────────────────────────────────────────────────────
-        from app.storage.mock_database import INITIAL_SEED_CLUSTERS
-        for item in INITIAL_SEED_CLUSTERS:
-            existing = db.query(DBDistressCluster).filter(
-                (DBDistressCluster.id == item["id"]) | (DBDistressCluster.cluster_code == item["cluster_code"])
-            ).first()
-            if not existing:
-                cluster_dict = dict(item)
-                cluster_dict.setdefault("detecting_camera_position", "FRONT_WINDSHIELD")
-                cluster_dict.setdefault("detecting_channel", 1)
-                db.add(DBDistressCluster(**cluster_dict))
+        # ── Seed clusters, fleet, and incidents strictly on first DB creation ─
+        is_first_boot = db.query(DBFleetNode).count() == 0
 
-        for item in INITIAL_CLUSTERS_SQLITE:
-            if not db.query(DBDistressCluster).filter(DBDistressCluster.id == item["id"]).first():
-                db.add(DBDistressCluster(**dict(item)))
-        db.commit()
+        if is_first_boot:
+            from app.storage.mock_database import INITIAL_SEED_CLUSTERS
+            for item in INITIAL_SEED_CLUSTERS:
+                existing = db.query(DBDistressCluster).filter(
+                    (DBDistressCluster.id == item["id"]) | (DBDistressCluster.cluster_code == item["cluster_code"])
+                ).first()
+                if not existing:
+                    cluster_dict = dict(item)
+                    cluster_dict.setdefault("detecting_camera_position", "FRONT_WINDSHIELD")
+                    cluster_dict.setdefault("detecting_channel", 1)
+                    db.add(DBDistressCluster(**cluster_dict))
 
+            for item in INITIAL_CLUSTERS_SQLITE:
+                if not db.query(DBDistressCluster).filter(DBDistressCluster.id == item["id"]).first():
+                    db.add(DBDistressCluster(**dict(item)))
+            db.commit()
 
-        # ── Seed fleet nodes ─────────────────────────────────────────────────
-        if db.query(DBFleetNode).count() == 0:
+            # ── Seed fleet nodes ─────────────────────────────────────────────────
             from app.storage.mock_database import INITIAL_SEED_FLEET
             for bus in INITIAL_SEED_FLEET:
                 bus_dict = dict(bus)
@@ -484,8 +485,8 @@ def init_db():
                 bus_dict.setdefault("cameras_config", '{"ch1":"FRONT_WINDSHIELD","ch2":"REAR_OVERTAKE","ch3":"LEFT_CURBSIDE","ch4":"DRIVER_CABIN"}')
                 db.add(DBFleetNode(**bus_dict))
 
-        # ── Seed traffic incidents ────────────────────────────────────────────
-        if db.query(DBTrafficIncident).filter(DBTrafficIncident.id == "inc-003").first() is None:
+        # ── Seed traffic incidents only on first boot ─────────────────────────
+        if is_first_boot and db.query(DBTrafficIncident).filter(DBTrafficIncident.id == "inc-003").first() is None:
             initial_incidents = [
                 {
                     "id": "inc-001",

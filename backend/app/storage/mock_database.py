@@ -1159,11 +1159,10 @@ class PersistentStore:
             clusters_to_del = db.query(DBDistressCluster).all()
             deleted_clusters = 0
             for c in clusters_to_del:
-                # Keep verified baseline work orders and infrastructure fixtures, remove all cluttered test clusters
+                # Keep only canonical baseline work orders and fixtures, purge all synthetic clusters
                 is_protected = (
-                    c.id.startswith("cl-infra-") or
-                    c.id.startswith("cl-00") or
-                    (c.cluster_code and c.cluster_code.startswith("WO-00"))
+                    c.id in ("cl-infra-01", "cl-infra-02", "cl-infra-03", "cl-infra-04", "cl-0001", "cl-0002") or
+                    (c.cluster_code and c.cluster_code in ("WO-0001", "WO-0002", "WO-INF-001", "WO-INF-002", "WO-INF-003", "WO-INF-004"))
                 )
                 if not is_protected:
                     db.delete(c)

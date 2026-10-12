@@ -1653,12 +1653,12 @@ class ApiService {
 
   async getIncidents(): Promise<TrafficIncident[]> {
     try {
-      const res = await fetch(`${API_BASE}/incidents`, { signal: AbortSignal.timeout(1500) });
+      const res = await fetch(`${API_BASE}/incidents`, { signal: AbortSignal.timeout(3000) });
       if (res.ok) return await res.json();
     } catch {
       // fallback
     }
-    return INITIAL_INCIDENTS;
+    return [];
   }
 
   async createIncident(incident: Partial<TrafficIncident>): Promise<TrafficIncident> {

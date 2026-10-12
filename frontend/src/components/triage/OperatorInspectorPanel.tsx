@@ -399,7 +399,7 @@ export const OperatorInspectorPanel: React.FC<OperatorInspectorPanelProps> = ({
           </div>
 
           {/* Statutory Infrastructure Standards & Waterlogging Metrics */}
-          {(selectedCluster.irc_standard || selectedCluster.water_depth_cm !== undefined) && (
+          {(Boolean(selectedCluster.irc_standard) || (selectedCluster.water_depth_cm || 0) > 0 || selectedCluster.defect_type?.includes('WATERLOGGING')) && (
             <div className="bg-slate-50 dark:bg-slate-900/70 border border-slate-200 dark:border-slate-800 rounded-md p-2.5 space-y-2">
               <div className="flex items-center justify-between text-xs">
                 <div className="flex items-center gap-1.5 text-slate-600 dark:text-slate-300">
@@ -411,13 +411,13 @@ export const OperatorInspectorPanel: React.FC<OperatorInspectorPanelProps> = ({
                 </span>
               </div>
 
-              {selectedCluster.water_depth_cm !== undefined && (
+              {((selectedCluster.water_depth_cm || 0) > 0 || selectedCluster.defect_type?.includes('WATERLOGGING')) && (
                 <>
                   <div className="grid grid-cols-3 gap-2 pt-1 border-t border-slate-200 dark:border-slate-800 text-center font-mono">
                     <div className="bg-white dark:bg-slate-950 p-1.5 rounded border border-slate-200 dark:border-slate-800">
                       <div className="text-[10px] text-slate-500">Depth</div>
                       <div className="text-xs font-bold text-blue-600 dark:text-blue-400">
-                        {selectedCluster.water_depth_cm.toFixed(1)} cm
+                        {(selectedCluster.water_depth_cm || 0).toFixed(1)} cm
                       </div>
                     </div>
                     <div className="bg-white dark:bg-slate-950 p-1.5 rounded border border-slate-200 dark:border-slate-800">

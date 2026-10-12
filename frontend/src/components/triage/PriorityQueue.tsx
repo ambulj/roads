@@ -41,7 +41,8 @@ export const PriorityQueue: React.FC<PriorityQueueProps> = ({
 
     if (poiFilter === 'critical_pois') {
       list = list.filter((c) =>
-        c.poi_tags?.some((p) => p.category === 'hospital' || p.category === 'school' || p.category === 'emergency')
+        c.poi_tags?.some((p) => p.category === 'hospital' || p.category === 'school' || p.category === 'emergency') ||
+        /hospital|school|medical|college|institute|clinic|university/i.test(c.nearest_poi || '')
       );
     } else if (poiFilter === 'd40') {
       list = list.filter((c) => c.defect_type === 'D40');

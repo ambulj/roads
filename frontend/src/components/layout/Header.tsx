@@ -151,44 +151,17 @@ export const Header: React.FC<HeaderProps> = ({
 
       {/* ── RIGHT: TOOLS, ROLE PROFILE & CONTROLS ─────────────────────────── */}
       <div className="flex items-center gap-2.5 sm:gap-3">
-        {/* Search Bar Group with Integrated Declutter & Synthetic Data Controls */}
+        {/* Command Palette Trigger */}
         <div className="hidden md:flex items-center gap-1.5">
           <button
             onClick={onOpenCommandPalette}
             className="flex items-center gap-2 px-3 py-1.5 text-xs text-zinc-500 dark:text-zinc-400 bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-lg hover:border-zinc-300 dark:hover:border-zinc-700 transition-colors cursor-pointer"
-            title="Open Command Palette (⌘K)"
+            title="Open Command Palette (Ctrl+P / ⌘⇧K)"
           >
             <Search className="w-3.5 h-3.5 text-zinc-400" />
-            <span>Search command...</span>
-            <kbd className="text-xs bg-zinc-200 dark:bg-zinc-800 px-1.5 py-0.5 rounded text-zinc-600 dark:text-zinc-400 font-mono">⌘K</kbd>
+            <span>Command Palette...</span>
+            <kbd className="text-xs bg-zinc-200 dark:bg-zinc-800 px-1.5 py-0.5 rounded text-zinc-600 dark:text-zinc-400 font-mono">Ctrl+P</kbd>
           </button>
-
-          <button
-            onClick={async () => {
-              try {
-                await api.clearClutter();
-                window.dispatchEvent(new CustomEvent("roadsaathi:refresh-telemetry"));
-              } catch (e) {
-                console.warn(e);
-              }
-            }}
-            className="h-8 px-2.5 rounded-lg bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/50 dark:hover:bg-rose-900/80 text-rose-700 dark:text-rose-300 text-xs font-semibold flex items-center gap-1.5 border border-rose-200 dark:border-rose-800/80 transition cursor-pointer"
-            title="Purge test incidents and hazard clutter"
-          >
-            <Trash2 className="w-3.5 h-3.5" />
-            <span className="hidden xl:inline">Declutter</span>
-          </button>
-
-          <SyntheticGeneratorControl
-            variant="header"
-            onGenerated={() => {
-              window.dispatchEvent(new CustomEvent("roadsaathi:refresh-telemetry"));
-            }}
-            onDeclutter={async () => {
-              await api.clearClutter();
-              window.dispatchEvent(new CustomEvent("roadsaathi:refresh-telemetry"));
-            }}
-          />
         </div>
 
         {/* Audio Mute Toggle */}

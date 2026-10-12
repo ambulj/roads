@@ -1625,10 +1625,10 @@ export const WebGISMap: React.FC<WebGISMapProps> = ({
         el.style.display = isIncidentVisible ? 'block' : 'none';
         el.innerHTML = `
           <div style="position: relative; display: flex; align-items: center; justify-content: center;">
-            <div style="width: 22px; height: 22px; border-radius: 50%; background: #09090b; border: 2px solid ${color}; box-shadow: 0 0 8px ${color}66; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: bold; font-family: monospace; color: ${color};">
+            <div style="width: 24px; height: 24px; border-radius: 50%; background: #09090b; border: 2px solid ${color}; box-shadow: 0 0 10px ${color}88; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: bold; font-family: monospace; color: ${color};">
               !
             </div>
-            <div class="opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity duration-150" style="position: absolute; top: -20px; font-family: monospace; font-size: 8.5px; font-weight: 700; background: #09090b; color: ${color}; padding: 1px 5px; border-radius: 3px; border: 1px solid ${color}; white-space: nowrap; z-index: 30;">
+            <div class="pointer-events-none transition-opacity duration-150" style="position: absolute; top: -20px; font-family: monospace; font-size: 8.5px; font-weight: 700; background: #09090b; color: ${color}; padding: 1px 5px; border-radius: 3px; border: 1px solid ${color}; white-space: nowrap; z-index: 30;">
               ${String(incident.incident_type).replace(/_/g, ' ')}
             </div>
           </div>
@@ -1779,7 +1779,7 @@ export const WebGISMap: React.FC<WebGISMapProps> = ({
               >
                 <div className="px-2 py-1.5 text-[10px] font-mono font-bold uppercase text-slate-400 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
                   <span>Analytical GIS Layers</span>
-                  <span className="text-amber-500 font-bold">{activeGisCount}/10 Active</span>
+                  <span className="text-amber-500 font-bold">{activeGisCount}/12 Active</span>
                 </div>
 
                 {/* 1. Defect Clusters & Potholes */}

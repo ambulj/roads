@@ -83,5 +83,16 @@ edge_buffer_*.json
 *.mkv
 frontend/public/sample_clips/
 
-
-
+# ── Local Agent & Planning Tooling ───────────────────────────
+.planning/
+.gsd/
+.agent/
+.agents/
+.gemini/
+adapters/
+scripts/
+GSD-STYLE.md
+PROJECT_RULES.md
+model_capabilities.yaml
+weights/
+backend/weights/

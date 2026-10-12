@@ -140,9 +140,9 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
       className="fixed inset-0 z-50 flex items-start justify-center pt-[15vh] px-4 bg-slate-900/60 dark:bg-black/70 backdrop-blur-sm animate-fadeIn"
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
-      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl w-full max-w-xl shadow-modal overflow-hidden flex flex-col animate-scaleIn">
+      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl w-full max-w-xl shadow-modal flex flex-col animate-scaleIn">
         {/* Search row */}
-        <div className="flex items-center gap-3 px-4 py-3 border-b border-slate-200 dark:border-slate-800">
+        <div className="flex items-center gap-3 px-4 py-3 border-b border-slate-200 dark:border-slate-800 rounded-t-2xl">
           <Search className="w-4 h-4 text-blue-600 dark:text-blue-400 shrink-0" />
           <input
             ref={inputRef}
@@ -208,17 +208,18 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
         </div>
 
         {/* Footer with Integrated Declutter and Synthetic Data Generation Controls */}
-        <div className="px-4 py-2.5 border-t border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/90 flex flex-wrap items-center justify-between gap-3">
-          <div className="flex items-center gap-3 text-[11px] text-slate-500 dark:text-slate-400">
+        <div className="px-4 py-2.5 border-t border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/90 rounded-b-2xl flex flex-wrap items-center justify-between gap-2">
+          <div className="flex items-center gap-2.5 text-[11px] text-slate-500 dark:text-slate-400">
             <Keyboard className="w-3.5 h-3.5" />
             <span><kbd className="font-mono">↑ ↓</kbd> navigate</span>
             <span><kbd className="font-mono">↵</kbd> select</span>
             <span><kbd className="font-mono">Esc</kbd> close</span>
           </div>
 
-          {/* Bottom Search Controls: Declutter & Synthetic Generator */}
+          {/* Exclusive Command Palette Controls: Declutter & Synthetic Generator (with ON/OFF Toggle) */}
           <div className="flex items-center gap-2">
             <button
+              type="button"
               onClick={async () => {
                 try {
                   const res = await api.clearClutter();
@@ -245,6 +246,7 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
 
             <SyntheticGeneratorControl
               variant="search"
+              dropDirection="up"
               onGenerated={(data) => {
                 if (typeof window !== 'undefined') {
                   window.dispatchEvent(new CustomEvent('roadsaathi:telemetry:refresh', { detail: data }));
